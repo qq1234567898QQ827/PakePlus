@@ -1,972 +1,1043 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-  <title>高中物理 · 碰撞实验 | 弹性 & 完全非弹性</title>
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-    body {
-      background: #0b0b1a;
-      font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', 'Noto Sans SC', sans-serif;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      min-height: 100vh;
-      padding: 20px;
-      color: #e0e0f0;
-      -webkit-tap-highlight-color: transparent;
-      user-select: none;
-      -webkit-user-select: none;
-    }
-    .container {
-      width: 100%;
-      max-width: 880px;
-      display: flex;
-      flex-direction: column;
-      gap: 18px;
-    }
-    header {
-      text-align: center;
-    }
-    header h1 {
-      font-size: clamp(1.5rem, 3vw, 2rem);
-      font-weight: 700;
-      letter-spacing: 0.04em;
-      background: linear-gradient(135deg, #ff4d6a, #c084fc, #4da6ff);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      margin-bottom: 4px;
-    }
-    header .subtitle {
-      font-size: 0.88rem;
-      color: #8899bb;
-      letter-spacing: 0.05em;
-    }
-    .canvas-card {
-      background: #111130;
-      border: 1px solid #2a2a50;
-      border-radius: 20px;
-      padding: 12px 12px 8px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.6);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 6px;
-    }
-    canvas {
-      display: block;
-      border-radius: 14px;
-      background: #07071a;
-      box-shadow: inset 0 2px 18px rgba(0,0,0,0.7);
-      cursor: default;
-      max-width: 100%;
-      height: auto;
-      touch-action: none;
-    }
-    .canvas-hint {
-      font-size: 0.75rem;
-      color: #5a5a7a;
-      letter-spacing: 0.03em;
-      text-align: center;
-    }
-    .mode-selector {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-      justify-content: center;
-    }
-    .mode-btn {
-      background: #1a1a38;
-      border: 2px solid #2a2a50;
-      color: #bcc;
-      padding: 10px 20px;
-      border-radius: 28px;
-      cursor: pointer;
-      font-size: 0.9rem;
-      font-weight: 600;
-      letter-spacing: 0.04em;
-      transition: all 0.25s;
-      white-space: nowrap;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-    .mode-btn small {
-      font-size: 0.68rem;
-      font-weight: 400;
-      opacity: 0.8;
-    }
-    .mode-btn:hover {
-      border-color: #555;
-      color: #fff;
-      box-shadow: 0 0 20px rgba(255,255,255,0.06);
-    }
-    .mode-btn.active {
-      border-color: #888;
-      color: #fff;
-      box-shadow: 0 0 24px rgba(180,180,255,0.2);
-    }
-    .mode-btn.elastic-active.active {
-      background: #2a2040;
-      border-color: #c084fc;
-      box-shadow: 0 0 24px rgba(180,130,255,0.3);
-    }
-    .mode-btn.inelastic-active.active {
-      background: #2a1a28;
-      border-color: #ff9d7a;
-      box-shadow: 0 0 24px rgba(255,140,100,0.3);
-    }
-    .controls-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 16px;
-      width: 100%;
-    }
-    .control-group {
-      background: #181840;
-      border: 1px solid #2a2a50;
-      border-radius: 16px;
-      padding: 14px 16px;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-    .control-group h3 {
-      font-size: 0.95rem;
-      font-weight: 700;
-      letter-spacing: 0.04em;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .dot {
-      display: inline-block;
-      width: 14px;
-      height: 14px;
-      border-radius: 50%;
-      flex-shrink: 0;
-    }
-    .dot.red {
-      background: #ff4d6a;
-      box-shadow: 0 0 10px #ff4d6a88;
-    }
-    .dot.blue {
-      background: #4da6ff;
-      box-shadow: 0 0 10px #4da6ff88;
-    }
-    .slider-row {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-    .slider-row label {
-      font-size: 0.78rem;
-      color: #aab;
-      white-space: nowrap;
-      min-width: 44px;
-      letter-spacing: 0.03em;
-    }
-    .slider-row input[type="range"] {
-      -webkit-appearance: none;
-      flex: 1;
-      height: 8px;
-      border-radius: 10px;
-      background: #1e1e3a;
-      outline: none;
-      cursor: pointer;
-    }
-    .slider-row input[type="range"]::-webkit-slider-thumb {
-      -webkit-appearance: none;
-      width: 26px;
-      height: 26px;
-      border-radius: 50%;
-      cursor: pointer;
-      border: 2px solid rgba(255,255,255,0.3);
-      transition: 0.2s;
-    }
-    .slider-red::-webkit-slider-thumb {
-      background: #ff4d6a;
-      box-shadow: 0 0 16px #ff4d6a88;
-    }
-    .slider-blue::-webkit-slider-thumb {
-      background: #4da6ff;
-      box-shadow: 0 0 16px #4da6ff88;
-    }
-    .slider-value {
-      font-weight: 700;
-      font-size: 0.85rem;
-      min-width: 70px;
-      text-align: right;
-      letter-spacing: 0.03em;
-    }
-    .slider-red + .slider-value {
-      color: #ff6b80;
-    }
-    .slider-blue + .slider-value {
-      color: #6db8ff;
-    }
-    .data-panel {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      justify-content: center;
-      align-items: center;
-      width: 100%;
-      font-size: 0.82rem;
-      letter-spacing: 0.03em;
-    }
-    .data-item {
-      background: #181840;
-      border: 1px solid #2a2a50;
-      border-radius: 12px;
-      padding: 8px 12px;
-      text-align: center;
-      min-width: 80px;
-      flex: 1 1 100px;
-      max-width: 150px;
-    }
-    .data-item .data-val {
-      font-weight: 700;
-      font-size: 1.05rem;
-      color: #ffd166;
-    }
-    .data-item .data-label {
-      font-size: 0.7rem;
-      color: #8899bb;
-      margin-top: 3px;
-    }
-    .data-item.highlight {
-      border-color: #ffd16655;
-      box-shadow: 0 0 12px rgba(255,200,60,0.15);
-    }
-    .data-item.warn {
-      border-color: #ff6b6b55;
-    }
-    .btn-row {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-      justify-content: center;
-    }
-    .btn {
-      background: #1a1a38;
-      border: 1px solid #2a2a50;
-      color: #ccd;
-      padding: 10px 22px;
-      border-radius: 26px;
-      cursor: pointer;
-      font-size: 0.88rem;
-      font-weight: 600;
-      letter-spacing: 0.04em;
-      transition: all 0.25s;
-      white-space: nowrap;
-    }
-    .btn:hover {
-      background: #252548;
-      border-color: #555;
-      color: #fff;
-      box-shadow: 0 0 18px rgba(255,255,255,0.08);
-    }
-    .btn.primary {
-      background: #2a2250;
-      border-color: #6a5acd;
-      color: #e8e0ff;
-    }
-    .btn.primary:hover {
-      background: #352a60;
-      box-shadow: 0 0 24px rgba(120,100,220,0.35);
-    }
-    @media (max-width: 500px) {
-      .mode-btn {
-        padding: 8px 14px;
-        font-size: 0.8rem;
-      }
-      .data-item {
-        min-width: 60px;
-        padding: 6px 8px;
-      }
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>绳波干涉动画 - 相向传播</title>
+    <style>
+        :root {
+            --bg: #1a1a2e;
+            --panel-bg: #16213e;
+            --text: #e0e0e0;
+            --accent: #ff6b6b;
+            --accent2: #4ecdc4;
+            --slider-track: #2a2a4a;
+            --border: #333366;
+            --golden: #f0c060;
+            --purple: #c084fc;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: var(--bg);
+            font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 10px;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        .container {
+            background: var(--panel-bg);
+            border-radius: 20px;
+            padding: 25px 30px 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), 0 0 0 1px var(--border);
+            max-width: 1200px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+        }
+
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .title {
+            font-size: 1.6em;
+            font-weight: 700;
+            background: linear-gradient(135deg, #ff6b6b, #ff8e8e, #4ecdc4, #6edcd6);
+            background-size: 200% 200%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: gradientShift 4s ease infinite;
+            letter-spacing: 1px;
+        }
+        @keyframes gradientShift {
+            0%,
+            100% {
+                background-position: 0% 50%;
+            }
+            50% {
+                background-position: 100% 50%;
+            }
+        }
+
+        .time-display {
+            font-size: 0.95em;
+            color: #aab;
+            background: rgba(255, 255, 255, 0.04);
+            padding: 8px 16px;
+            border-radius: 20px;
+            letter-spacing: 0.5px;
+            font-variant-numeric: tabular-nums;
+            font-family: 'SF Mono', 'Consolas', 'Menlo', monospace;
+            white-space: nowrap;
+        }
+        .time-display span {
+            color: #ff8e8e;
+            font-weight: 600;
+        }
+
+        .canvas-wrapper {
+            position: relative;
+            background: rgba(0, 0, 0, 0.35);
+            border-radius: 14px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+            box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: auto;
+            cursor: default;
+        }
+
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(255, 255, 255, 0.03);
+            padding: 10px 16px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            transition: border-color 0.3s;
+        }
+        .control-group:hover {
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+        .control-group label {
+            font-size: 0.9em;
+            font-weight: 600;
+            color: #ccc;
+            white-space: nowrap;
+            letter-spacing: 0.5px;
+            min-width: 40px;
+        }
+        .control-group label.amp-label {
+            color: #ff8e8e;
+        }
+        .control-group label.speed-label {
+            color: #6edcd6;
+        }
+
+        input[type="range"] {
+            -webkit-appearance: none;
+            width: 130px;
+            height: 6px;
+            border-radius: 3px;
+            background: var(--slider-track);
+            outline: none;
+            cursor: pointer;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            background: #fff;
+            border: 3px solid #888;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            transition: all 0.2s;
+        }
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.1);
+            border-color: #fff;
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
+        }
+        #ampSlider::-webkit-slider-thumb {
+            border-color: #ff6b6b;
+            background: #fff5f5;
+        }
+        #speedSlider::-webkit-slider-thumb {
+            border-color: #4ecdc4;
+            background: #f5fffe;
+        }
+
+        .value-badge {
+            display: inline-block;
+            min-width: 45px;
+            text-align: center;
+            font-weight: 700;
+            font-size: 0.9em;
+            padding: 3px 8px;
+            border-radius: 8px;
+            letter-spacing: 0.5px;
+        }
+        .value-badge.amp-badge {
+            background: rgba(255, 107, 107, 0.15);
+            color: #ff8e8e;
+        }
+        .value-badge.speed-badge {
+            background: rgba(78, 205, 196, 0.15);
+            color: #6edcd6;
+        }
+
+        .btn {
+            padding: 10px 22px;
+            border-radius: 25px;
+            border: none;
+            font-size: 0.95em;
+            font-weight: 600;
+            cursor: pointer;
+            letter-spacing: 1px;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+            white-space: nowrap;
+        }
+        .btn-reset {
+            background: rgba(255, 255, 255, 0.08);
+            color: #ddd;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .btn-reset:hover {
+            background: rgba(255, 255, 255, 0.16);
+            border-color: rgba(255, 255, 255, 0.4);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+        }
+        .btn-pause {
+            background: rgba(240, 192, 96, 0.15);
+            color: #f0c060;
+            border: 1px solid rgba(240, 192, 96, 0.3);
+            min-width: 90px;
+        }
+        .btn-pause:hover {
+            background: rgba(240, 192, 96, 0.25);
+            border-color: rgba(240, 192, 96, 0.5);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+        }
+        .btn-pause.paused {
+            background: rgba(120, 200, 120, 0.2);
+            color: #8fdf8f;
+            border-color: rgba(120, 200, 120, 0.4);
+        }
+
+        .legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 14px;
+            justify-content: center;
+            align-items: center;
+            padding: 4px 0;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            font-size: 0.82em;
+            color: #bbb;
+            letter-spacing: 0.5px;
+        }
+        .legend-dot {
+            width: 13px;
+            height: 13px;
+            border-radius: 50%;
+            flex-shrink: 0;
+            box-shadow: 0 0 8px currentColor;
+        }
+        .legend-dot.red {
+            background: #ff4444;
+            box-shadow: 0 0 10px #ff4444aa;
+        }
+        .legend-dot.blue {
+            background: #4499ff;
+            box-shadow: 0 0 10px #4499ffaa;
+        }
+        .legend-dot.black {
+            background: #333;
+            border: 2px solid #888;
+            box-shadow: 0 0 6px #88888844;
+        }
+        .legend-dot.purple {
+            background: #c084fc;
+            box-shadow: 0 0 12px #c084fccc;
+            width: 15px;
+            height: 15px;
+        }
+        .legend-dot.yellow {
+            background: #f0c040;
+            box-shadow: 0 0 12px #f0c040cc;
+            width: 15px;
+            height: 15px;
+        }
+
+        .info-bar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: center;
+            font-size: 0.78em;
+            color: #888;
+            letter-spacing: 0.5px;
+        }
+        .info-bar span {
+            background: rgba(255, 255, 255, 0.03);
+            padding: 4px 10px;
+            border-radius: 10px;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px 12px 12px;
+                gap: 12px;
+                border-radius: 14px;
+            }
+            .title {
+                font-size: 1.2em;
+            }
+            .controls {
+                gap: 8px;
+            }
+            .control-group {
+                padding: 7px 10px;
+                gap: 6px;
+            }
+            .control-group label {
+                font-size: 0.75em;
+                min-width: 30px;
+            }
+            input[type="range"] {
+                width: 80px;
+            }
+            .btn {
+                padding: 8px 14px;
+                font-size: 0.8em;
+            }
+            .legend {
+                gap: 8px;
+            }
+            .legend-item {
+                font-size: 0.7em;
+                gap: 4px;
+            }
+        }
+    </style>
 </head>
 <body>
-<div class="container">
-  <header>
-    <h1>🔴 碰撞实验 ⚡ 🔵</h1>
-    <p class="subtitle">—— 弹性碰撞 · 完全非弹性碰撞 | 动量守恒 ——</p>
-  </header>
+    <div class="container">
+        <div class="header">
+            <div class="title">🌊 绳波干涉 · 相向传播</div>
+            <div class="time-display">⏱ 时间：<span id="timeVal">0.00</span> s</div>
+        </div>
 
-  <!-- 画布区 -->
-  <div class="canvas-card">
-    <canvas id="mainCanvas" width="820" height="380"></canvas>
-    <p class="canvas-hint">💡 在球上拖动可改变速度 · 拖动到边界反弹 | 按 空格 暂停</p>
-  </div>
+        <div class="canvas-wrapper">
+            <canvas id="mainCanvas"></canvas>
+        </div>
 
-  <!-- 碰撞类型选择 -->
-  <div class="mode-selector">
-    <button class="mode-btn elastic-active active" id="btnElastic">🔄 弹性碰撞<small>动能守恒</small></button>
-    <button class="mode-btn" id="btnInelastic">🧲 完全非弹性碰撞<small>粘合共速</small></button>
-  </div>
+        <div class="controls">
+            <div class="control-group">
+                <label class="amp-label">📏 振幅</label>
+                <input type="range" id="ampSlider" min="10" max="60" value="32" step="1">
+                <span class="value-badge amp-badge" id="ampVal">32 px</span>
+            </div>
+            <div class="control-group">
+                <label class="speed-label">⚡ 波速</label>
+                <input type="range" id="speedSlider" min="60" max="400" value="160" step="5">
+                <span class="value-badge speed-badge" id="speedVal">160 px/s</span>
+            </div>
+            <button class="btn btn-pause" id="btnPause" title="暂停/播放">⏯ 暂停</button>
+            <button class="btn btn-reset" id="btnReset" title="重新开始">🔄 重置</button>
+        </div>
 
-  <!-- 参数调节 -->
-  <div class="controls-grid">
-    <div class="control-group">
-      <h3><span class="dot red"></span> 红球参数</h3>
-      <div class="slider-row">
-        <label>质量</label>
-        <input type="range" class="slider-red" id="sliderMassA" min="0.5" max="50.0" step="0.5" value="5.0">
-        <span class="slider-value" id="valMassA">5.0 kg</span>
-      </div>
-      <div class="slider-row">
-        <label>初速度</label>
-        <input type="range" class="slider-red" id="sliderVelA" min="-10.0" max="10.0" step="0.1" value="3.0">
-        <span class="slider-value" id="valVelA">+3.0 m/s</span>
-      </div>
+        <div class="legend">
+            <div class="legend-item"><span class="legend-dot red"></span> 左波（红）</div>
+            <div class="legend-item"><span class="legend-dot blue"></span> 右波（蓝）</div>
+            <div class="legend-item"><span class="legend-dot black"></span> 叠加区域</div>
+            <div class="legend-item"><span class="legend-dot purple"></span> 加强点（波腹）</div>
+            <div class="legend-item"><span class="legend-dot yellow"></span> 减弱点（波节）</div>
+        </div>
+        <div class="info-bar">
+            <span>左波源 ↑ 向上起振</span>
+            <span>右波源 ↓ 向下起振</span>
+            <span>波源相位差 π（反相）</span>
+            <span id="infoMeet">相遇时间：-- s</span>
+        </div>
     </div>
-    <div class="control-group">
-      <h3><span class="dot blue"></span> 蓝球参数</h3>
-      <div class="slider-row">
-        <label>质量</label>
-        <input type="range" class="slider-blue" id="sliderMassB" min="0.5" max="50.0" step="0.5" value="2.0">
-        <span class="slider-value" id="valMassB">2.0 kg</span>
-      </div>
-      <div class="slider-row">
-        <label>初速度</label>
-        <input type="range" class="slider-blue" id="sliderVelB" min="-10.0" max="10.0" step="0.1" value="-1.5">
-        <span class="slider-value" id="valVelB">−1.5 m/s</span>
-      </div>
-    </div>
-  </div>
 
-  <!-- 实时物理量 -->
-  <div class="data-panel" id="dataPanel">
-    <div class="data-item highlight">
-      <div class="data-val" id="dataTotalP">--</div>
-      <div class="data-label">总动量 (kg·m/s)</div>
-    </div>
-    <div class="data-item" id="dataKEItem">
-      <div class="data-val" id="dataTotalKE">--</div>
-      <div class="data-label">总动能 (J)</div>
-    </div>
-    <div class="data-item">
-      <div class="data-val" id="dataPA">--</div>
-      <div class="data-label">红球动量</div>
-    </div>
-    <div class="data-item">
-      <div class="data-val" id="dataPB">--</div>
-      <div class="data-label">蓝球动量</div>
-    </div>
-    <div class="data-item">
-      <div class="data-val" id="dataInitKE">--</div>
-      <div class="data-label">初始总动能</div>
-    </div>
-  </div>
+    <script>
+        (function() {
+            const canvas = document.getElementById('mainCanvas');
+            const ctx = canvas.getContext('2d');
 
-  <!-- 操作按钮 -->
-  <div class="btn-row">
-    <button class="btn primary" id="btnReset">🔄 重置场景</button>
-    <button class="btn" id="btnSwap">🔀 交换两球</button>
-    <button class="btn" id="btnPause">⏯️ 暂停/播放</button>
-  </div>
-</div>
+            // DOM elements
+            const ampSlider = document.getElementById('ampSlider');
+            const speedSlider = document.getElementById('speedSlider');
+            const ampValEl = document.getElementById('ampVal');
+            const speedValEl = document.getElementById('speedVal');
+            const timeValEl = document.getElementById('timeVal');
+            const btnPause = document.getElementById('btnPause');
+            const btnReset = document.getElementById('btnReset');
+            const infoMeet = document.getElementById('infoMeet');
 
-<script>
-  (function() {
-    // ---------- DOM ----------
-    const canvas = document.getElementById('mainCanvas');
-    const ctx = canvas.getContext('2d');
+            // Parameters
+            let amplitude = parseInt(ampSlider.value); // px
+            let waveSpeed = parseInt(speedSlider.value); // px/s
 
-    const btnElastic = document.getElementById('btnElastic');
-    const btnInelastic = document.getElementById('btnInelastic');
-    const btnReset = document.getElementById('btnReset');
-    const btnSwap = document.getElementById('btnSwap');
-    const btnPause = document.getElementById('btnPause');
+            const NUM_PARTICLES = 130;
+            const PARTICLE_RADIUS = 4.5;
+            const SOURCE_RADIUS = 7;
+            const SPECIAL_RADIUS = 6.5;
 
-    const sliderMassA = document.getElementById('sliderMassA');
-    const sliderVelA = document.getElementById('sliderVelA');
-    const sliderMassB = document.getElementById('sliderMassB');
-    const sliderVelB = document.getElementById('sliderVelB');
-    const valMassA = document.getElementById('valMassA');
-    const valVelA = document.getElementById('valVelA');
-    const valMassB = document.getElementById('valMassB');
-    const valVelB = document.getElementById('valVelB');
+            // Canvas dimensions (will be set dynamically)
+            let canvasWidth, canvasHeight;
+            let marginX = 50;
+            let marginY = 80;
+            let equilY; // equilibrium Y position
+            let totalLength; // total rope length in px
+            let dx; // spacing between particles
+            let particleX = []; // x positions of particles
 
-    const dataTotalP = document.getElementById('dataTotalP');
-    const dataTotalKE = document.getElementById('dataTotalKE');
-    const dataPA = document.getElementById('dataPA');
-    const dataPB = document.getElementById('dataPB');
-    const dataInitKE = document.getElementById('dataInitKE');
-    const dataKEItem = document.getElementById('dataKEItem');
+            // Wave parameters
+            const FREQUENCY = 0.42; // Hz (fixed)
+            let omega; // angular frequency = 2*pi*f
+            let wavenumber; // k = omega / waveSpeed
+            let wavelength; // lambda = waveSpeed / frequency
 
-    // ---------- 状态 ----------
-    let collisionMode = 'elastic'; // 'elastic' | 'inelastic'
-    let isPaused = false;
-    let isStuck = false;           // 完全非弹性碰撞后粘合状态
-    let stuckCommonV = 0;
-    let flashAlpha = 0;
-    let flashX = 0, flashY = 0;
+            // Animation state
+            let animTime = 0;
+            let paused = false;
+            let lastFrameTimestamp = null;
 
-    // 初始参数（对应滑块）
-    let initMassA = 5.0;
-    let initVelA = 3.0;
-    let initMassB = 2.0;
-    let initVelB = -1.5;
-    let initialTotalKE = 0;
+            // Particle displacement buffers
+            let yLeft = new Float32Array(NUM_PARTICLES); // displacement from left wave
+            let yRight = new Float32Array(NUM_PARTICLES); // displacement from right wave
+            let yTotal = new Float32Array(NUM_PARTICLES); // total displacement
+            let leftArrived = new Float32Array(NUM_PARTICLES); // 0 or 1
+            let rightArrived = new Float32Array(NUM_PARTICLES); // 0 or 1
 
-    // 运动小球
-    let ballA = { x: 200, vx: 3.0, mass: 5.0, color: '#ff4d6a', label: '红', radius: 24 };
-    let ballB = { x: 600, vx: -1.5, mass: 2.0, color: '#4da6ff', label: '蓝', radius: 20 };
-
-    // 轨道参数
-    const trackY = 200;
-    const leftBound = 60;
-    const rightBound = canvas.width - 60;
-
-    // 质量映射到半径（使用平方根让大小变化更平缓，0.5kg -> 14px, 50kg -> 46px）
-    function calcRadius(mass) {
-      const minMass = 0.5;
-      const maxMass = 50.0;
-      const minR = 14;
-      const maxR = 46;
-      const t = Math.sqrt((mass - minMass) / (maxMass - minMass));
-      return Math.round(minR + t * (maxR - minR));
-    }
-
-    // ---------- 物理计算 ----------
-    function totalMomentum() {
-      return ballA.mass * ballA.vx + ballB.mass * ballB.vx;
-    }
-    function totalKE() {
-      return 0.5 * ballA.mass * ballA.vx * ballA.vx + 0.5 * ballB.mass * ballB.vx * ballB.vx;
-    }
-
-    function handleElasticCollision(a, b) {
-      const m1 = a.mass, m2 = b.mass;
-      const v1 = a.vx, v2 = b.vx;
-      const v1f = ((m1 - m2) * v1 + 2 * m2 * v2) / (m1 + m2);
-      const v2f = (2 * m1 * v1 + (m2 - m1) * v2) / (m1 + m2);
-      a.vx = v1f;
-      b.vx = v2f;
-    }
-
-    function handleInelasticCollision(a, b) {
-      const vCommon = (a.mass * a.vx + b.mass * b.vx) / (a.mass + b.mass);
-      a.vx = vCommon;
-      b.vx = vCommon;
-      isStuck = true;
-      stuckCommonV = vCommon;
-    }
-
-    function separateBalls(a, b) {
-      const dx = b.x - a.x;
-      const dist = Math.abs(dx);
-      const minDist = a.radius + b.radius;
-      if (dist < minDist) {
-        const overlap = minDist - dist;
-        const sep = overlap / 2 + 0.3;
-        if (dx > 0) { a.x -= sep; b.x += sep; }
-        else { a.x += sep; b.x -= sep; }
-      }
-    }
-
-    function arrangeStuckBalls() {
-      const totalDist = ballA.radius + ballB.radius;
-      const totalMass = ballA.mass + ballB.mass;
-      const com = (ballA.x * ballA.mass + ballB.x * ballB.mass) / totalMass;
-      ballA.x = com - totalDist * (ballB.mass / totalMass);
-      ballB.x = com + totalDist * (ballA.mass / totalMass);
-      // 边界约束
-      if (ballA.x - ballA.radius < leftBound) ballA.x = leftBound + ballA.radius;
-      if (ballB.x + ballB.radius > rightBound) ballB.x = rightBound - ballB.radius;
-      if (ballB.x - ballA.x < totalDist) {
-        const mid = (ballA.x + ballB.x) / 2;
-        ballA.x = mid - totalDist / 2;
-        ballB.x = mid + totalDist / 2;
-      }
-    }
-
-    function detectAndHandleCollision() {
-      if (isStuck) return;
-      const dx = ballB.x - ballA.x;
-      const dist = Math.abs(dx);
-      const contactDist = ballA.radius + ballB.radius;
-      if (dist < contactDist) {
-        separateBalls(ballA, ballB);
-        flashX = (ballA.x + ballB.x) / 2;
-        flashY = trackY;
-        flashAlpha = 1.0;
-        if (collisionMode === 'elastic') {
-          handleElasticCollision(ballA, ballB);
-        } else {
-          handleInelasticCollision(ballA, ballB);
-        }
-      }
-    }
-
-    // ---------- 动画循环 ----------
-    function update() {
-      if (!isPaused) {
-        // 移动
-        ballA.x += ballA.vx;
-        ballB.x += ballB.vx;
-
-        // 边界反弹
-        [ballA, ballB].forEach(b => {
-          if (b.x - b.radius < leftBound) {
-            b.x = leftBound + b.radius;
-            b.vx = Math.abs(b.vx);
-            if (isStuck) {
-              stuckCommonV = ballA.vx = ballB.vx = Math.abs(ballA.vx);
-              arrangeStuckBalls();
+            function updateDerivedParams() {
+                omega = 2 * Math.PI * FREQUENCY;
+                wavelength = waveSpeed / FREQUENCY;
+                wavenumber = (2 * Math.PI) / wavelength;
             }
-          }
-          if (b.x + b.radius > rightBound) {
-            b.x = rightBound - b.radius;
-            b.vx = -Math.abs(b.vx);
-            if (isStuck) {
-              stuckCommonV = ballA.vx = ballB.vx = -Math.abs(ballA.vx);
-              arrangeStuckBalls();
+
+            function setupCanvas() {
+                const wrapper = canvas.parentElement;
+                const wrapperWidth = wrapper.clientWidth;
+                const dpr = Math.min(window.devicePixelRatio || 1, 2); // cap for performance
+
+                canvasWidth = Math.min(wrapperWidth - 4, 1150);
+                // Aspect ratio ~ 2.5:1
+                canvasHeight = Math.round(canvasWidth / 2.6);
+                canvasHeight = Math.max(canvasHeight, 280);
+                canvasHeight = Math.min(canvasHeight, 500);
+
+                canvas.width = canvasWidth * dpr;
+                canvas.height = canvasHeight * dpr;
+                canvas.style.width = canvasWidth + 'px';
+                canvas.style.height = canvasHeight + 'px';
+                ctx.setTransform(1, 0, 0, 1, 0, 0);
+                ctx.scale(dpr, dpr);
+
+                marginX = Math.round(canvasWidth * 0.045);
+                marginY = Math.round(canvasHeight * 0.18);
+                equilY = canvasHeight / 2;
+                totalLength = canvasWidth - 2 * marginX;
+                dx = totalLength / (NUM_PARTICLES - 1);
+
+                particleX = [];
+                for (let i = 0; i < NUM_PARTICLES; i++) {
+                    particleX[i] = marginX + i * dx;
+                }
+
+                updateDerivedParams();
+                updateMeetInfo();
             }
-          }
-        });
 
-        // 粘合状态保持同步
-        if (isStuck) {
-          ballA.vx = stuckCommonV;
-          ballB.vx = stuckCommonV;
-          arrangeStuckBalls();
-          // 整体边界再约束
-          const leftEdge = Math.min(ballA.x - ballA.radius, ballB.x - ballB.radius);
-          const rightEdge = Math.max(ballA.x + ballA.radius, ballB.x + ballB.radius);
-          if (leftEdge < leftBound) {
-            const shift = leftBound - leftEdge;
-            ballA.x += shift; ballB.x += shift;
-            stuckCommonV = Math.abs(stuckCommonV);
-            ballA.vx = ballB.vx = stuckCommonV;
-          }
-          if (rightEdge > rightBound) {
-            const shift = rightEdge - rightBound;
-            ballA.x -= shift; ballB.x -= shift;
-            stuckCommonV = -Math.abs(stuckCommonV);
-            ballA.vx = ballB.vx = stuckCommonV;
-          }
-        }
+            function updateMeetInfo() {
+                const meetTime = totalLength / (2 * waveSpeed);
+                infoMeet.textContent = `相遇时间：${meetTime.toFixed(2)} s（位置：中点）`;
+            }
 
-        // 碰撞检测
-        detectAndHandleCollision();
+            function resetSimulation() {
+                animTime = 0;
+                lastFrameTimestamp = null;
+                yLeft.fill(0);
+                yRight.fill(0);
+                yTotal.fill(0);
+                leftArrived.fill(0);
+                rightArrived.fill(0);
+                updateDerivedParams();
+                updateMeetInfo();
+                timeValEl.textContent = '0.00';
+            }
 
-        // 闪光衰减
-        if (flashAlpha > 0) {
-          flashAlpha = Math.max(0, flashAlpha - 0.035);
-        }
-      }
+            function computeWaveState(t) {
+                const L = totalLength;
+                const v = waveSpeed;
+                const A = amplitude;
+                const k = wavenumber;
+                const w = omega;
 
-      updateUI();
-      draw();
-      requestAnimationFrame(update);
-    }
+                const leftFront = v * t; // left wave front position from x=0
+                const rightFront = L - v * t; // right wave front position from x=L
 
-    function updateUI() {
-      const pA = ballA.mass * ballA.vx;
-      const pB = ballB.mass * ballB.vx;
-      const pTotal = pA + pB;
-      const keTotal = totalKE();
+                for (let i = 0; i < NUM_PARTICLES; i++) {
+                    const x = particleX[i] - marginX; // x relative to left end (0 to L)
+                    const xFromRight = L - x; // distance from right end
 
-      dataTotalP.textContent = pTotal.toFixed(2);
-      dataTotalKE.textContent = keTotal.toFixed(2);
-      dataPA.textContent = pA.toFixed(2);
-      dataPB.textContent = pB.toFixed(2);
-      dataInitKE.textContent = initialTotalKE.toFixed(2);
+                    // Left wave arrival
+                    const lArr = (x <= leftFront + 0.01) ? 1 : 0;
+                    leftArrived[i] = lArr;
+                    if (lArr && i === 0) {
+                        // Left source: forced vibration
+                        yLeft[i] = A * Math.sin(w * t);
+                    } else if (lArr) {
+                        yLeft[i] = A * Math.sin(w * t - k * x);
+                    } else {
+                        yLeft[i] = 0;
+                    }
 
-      if (collisionMode === 'inelastic' && isStuck && initialTotalKE > 0.001) {
-        const keLoss = initialTotalKE - keTotal;
-        if (keLoss > 0.01) {
-          dataKEItem.classList.add('warn');
-          dataTotalKE.style.color = '#ff9d7a';
-        }
-      } else if (collisionMode === 'elastic' && !isStuck) {
-        dataKEItem.classList.remove('warn');
-        dataTotalKE.style.color = Math.abs(keTotal - initialTotalKE) < 0.02 ? '#5ce6b0' : '#ffd166';
-      } else {
-        dataKEItem.classList.remove('warn');
-        dataTotalKE.style.color = '#ffd166';
-      }
-    }
+                    // Right wave arrival
+                    const rArr = (xFromRight <= v * t + 0.01) ? 1 : 0;
+                    rightArrived[i] = rArr;
+                    if (rArr && i === NUM_PARTICLES - 1) {
+                        // Right source: forced vibration (opposite phase)
+                        yRight[i] = -A * Math.sin(w * t);
+                    } else if (rArr) {
+                        yRight[i] = -A * Math.sin(w * t - k * xFromRight);
+                    } else {
+                        yRight[i] = 0;
+                    }
 
-    // ---------- 绘制 ----------
-    function draw() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    // Total displacement
+                    if (i === 0) {
+                        // Left source forced
+                        yTotal[i] = A * Math.sin(w * t);
+                    } else if (i === NUM_PARTICLES - 1) {
+                        // Right source forced
+                        yTotal[i] = -A * Math.sin(w * t);
+                    } else {
+                        yTotal[i] = yLeft[i] + yRight[i];
+                    }
+                }
+            }
 
-      // 网格背景
-      ctx.strokeStyle = '#14142a';
-      ctx.lineWidth = 0.5;
-      for (let y = 0; y < canvas.height; y += 30) {
-        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
-      }
-      for (let x = 0; x < canvas.width; x += 40) {
-        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
-      }
+            function drawBackground() {
+                // Clear
+                ctx.fillStyle = '#0d0d1a';
+                ctx.fillRect(0, 0, canvasWidth, canvasHeight);
 
-      // 轨道
-      ctx.beginPath();
-      ctx.moveTo(leftBound - 10, trackY);
-      ctx.lineTo(rightBound + 10, trackY);
-      ctx.strokeStyle = '#1a1a3a';
-      ctx.lineWidth = 4;
-      ctx.setLineDash([2, 6]);
-      ctx.stroke();
-      ctx.setLineDash([]);
-      ctx.beginPath();
-      ctx.moveTo(leftBound, trackY);
-      ctx.lineTo(rightBound, trackY);
-      ctx.strokeStyle = '#2a2a50';
-      ctx.lineWidth = 2;
-      ctx.stroke();
+                // Subtle grid
+                ctx.strokeStyle = 'rgba(255,255,255,0.015)';
+                ctx.lineWidth = 1;
+                const gridSpacing = 40;
+                for (let gx = marginX; gx <= canvasWidth - marginX; gx += gridSpacing) {
+                    ctx.beginPath();
+                    ctx.moveTo(gx, marginY - 10);
+                    ctx.lineTo(gx, canvasHeight - marginY + 10);
+                    ctx.stroke();
+                }
+                for (let gy = marginY; gy <= canvasHeight - marginY; gy += gridSpacing) {
+                    ctx.beginPath();
+                    ctx.moveTo(marginX - 10, gy);
+                    ctx.lineTo(canvasWidth - marginX + 10, gy);
+                    ctx.stroke();
+                }
 
-      // 边界标记
-      [leftBound, rightBound].forEach(bx => {
-        ctx.beginPath();
-        ctx.moveTo(bx, trackY - 16);
-        ctx.lineTo(bx, trackY + 16);
-        ctx.strokeStyle = '#3a3a5a';
-        ctx.lineWidth = 3;
-        ctx.stroke();
-        ctx.fillStyle = '#667';
-        ctx.font = '10px "PingFang SC","Microsoft YaHei",sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText(bx === leftBound ? '左边界' : '右边界', bx, trackY + 32);
-      });
+                // Equilibrium line
+                ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+                ctx.lineWidth = 1.5;
+                ctx.setLineDash([8, 16]);
+                ctx.beginPath();
+                ctx.moveTo(marginX - 8, equilY);
+                ctx.lineTo(canvasWidth - marginX + 8, equilY);
+                ctx.stroke();
+                ctx.setLineDash([]);
 
-      // 碰撞闪光
-      if (flashAlpha > 0.01) {
-        const glowGrad = ctx.createRadialGradient(flashX, flashY, 0, flashX, flashY, 90);
-        glowGrad.addColorStop(0, `rgba(255,255,220,${flashAlpha})`);
-        glowGrad.addColorStop(0.3, `rgba(255,200,100,${flashAlpha * 0.7})`);
-        glowGrad.addColorStop(0.7, `rgba(255,150,50,${flashAlpha * 0.25})`);
-        glowGrad.addColorStop(1, 'rgba(255,100,30,0)');
-        ctx.beginPath();
-        ctx.arc(flashX, flashY, 90, 0, Math.PI * 2);
-        ctx.fillStyle = glowGrad;
-        ctx.fill();
-        for (let i = 0; i < 14; i++) {
-          const angle = (i / 14) * Math.PI * 2;
-          const dist = 22 + flashAlpha * 50;
-          const px = flashX + Math.cos(angle) * dist;
-          const py = flashY + Math.sin(angle) * dist;
-          ctx.beginPath();
-          ctx.arc(px, py, 1.5 + flashAlpha * 5, 0, Math.PI * 2);
-          ctx.fillStyle = `rgba(255,255,200,${flashAlpha * 0.9})`;
-          ctx.fill();
-        }
-      }
+                // Labels
+                ctx.fillStyle = 'rgba(255,255,255,0.25)';
+                ctx.font = '11px "PingFang SC","Microsoft YaHei",sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('平衡位置', canvasWidth - marginX + 30, equilY + 4);
+            }
 
-      // 绘制两个球
-      [ballA, ballB].forEach(b => {
-        // 阴影
-        ctx.beginPath();
-        ctx.arc(b.x, trackY + 3, b.radius, 0, Math.PI * 2);
-        ctx.fillStyle = 'rgba(0,0,0,0.5)';
-        ctx.fill();
-        // 光晕
-        const halo = ctx.createRadialGradient(b.x, trackY, b.radius + 12, b.x, trackY, b.radius);
-        halo.addColorStop(0, b.color + '33');
-        halo.addColorStop(1, 'transparent');
-        ctx.beginPath();
-        ctx.arc(b.x, trackY, b.radius + 12, 0, Math.PI * 2);
-        ctx.fillStyle = halo;
-        ctx.fill();
-        // 主体
-        const grad = ctx.createRadialGradient(b.x - b.radius * 0.25, trackY - b.radius * 0.35, b.radius * 0.08, b.x, trackY, b.radius);
-        grad.addColorStop(0, '#ffffff');
-        grad.addColorStop(0.3, b.color);
-        grad.addColorStop(0.8, '#0a0a1a');
-        grad.addColorStop(1, '#050510');
-        ctx.beginPath();
-        ctx.arc(b.x, trackY, b.radius, 0, Math.PI * 2);
-        ctx.fillStyle = grad;
-        ctx.fill();
-        ctx.strokeStyle = 'rgba(255,255,255,0.35)';
-        ctx.lineWidth = 2.5;
-        ctx.stroke();
-        // 高光
-        ctx.beginPath();
-        ctx.arc(b.x - b.radius * 0.3, trackY - b.radius * 0.35, b.radius * 0.22, 0, Math.PI * 2);
-        ctx.fillStyle = 'rgba(255,255,255,0.75)';
-        ctx.fill();
-        // 标签
-        ctx.fillStyle = '#fff';
-        ctx.font = 'bold 13px "PingFang SC","Microsoft YaHei",sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText(b.label, b.x, trackY + 5);
-        ctx.fillStyle = '#ccd';
-        ctx.font = '10px "PingFang SC","Microsoft YaHei",sans-serif';
-        ctx.fillText(b.mass.toFixed(1) + 'kg', b.x, trackY - b.radius - 14);
-        // 速度矢量
-        const arrowBaseY = trackY - b.radius - 30;
-        const arrowLen = b.vx * 9;
-        if (Math.abs(arrowLen) > 1.5) {
-          ctx.beginPath();
-          ctx.moveTo(b.x, arrowBaseY);
-          ctx.lineTo(b.x + arrowLen, arrowBaseY);
-          ctx.strokeStyle = b.color;
-          ctx.lineWidth = 3.2;
-          ctx.shadowColor = b.color;
-          ctx.shadowBlur = 10;
-          ctx.stroke();
-          ctx.shadowBlur = 0;
-          const tipDir = Math.sign(arrowLen);
-          ctx.beginPath();
-          ctx.moveTo(b.x + arrowLen, arrowBaseY);
-          ctx.lineTo(b.x + arrowLen - tipDir * 10, arrowBaseY - 7);
-          ctx.lineTo(b.x + arrowLen - tipDir * 10, arrowBaseY + 7);
-          ctx.closePath();
-          ctx.fillStyle = b.color;
-          ctx.fill();
-          ctx.fillStyle = '#fff';
-          ctx.font = 'bold 10px "PingFang SC","Microsoft YaHei",sans-serif';
-          ctx.fillText(b.vx.toFixed(1) + ' m/s', b.x + arrowLen + tipDir * 22, arrowBaseY + 4);
-        } else {
-          ctx.fillStyle = '#889';
-          ctx.font = '10px "PingFang SC","Microsoft YaHei",sans-serif';
-          ctx.fillText('v≈0', b.x, arrowBaseY + 4);
-        }
-      });
+            function drawRopeConnections() {
+                // Draw lines connecting adjacent particles
+                ctx.lineWidth = 1.3;
+                ctx.lineCap = 'round';
 
-      // 粘合指示
-      if (isStuck && collisionMode === 'inelastic') {
-        const midX = (ballA.x + ballB.x) / 2;
-        ctx.fillStyle = '#ff9d7a';
-        ctx.font = 'bold 12px "PingFang SC","Microsoft YaHei",sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText('🔗 已粘合', midX, trackY - 65);
-        ctx.beginPath();
-        ctx.setLineDash([4, 6]);
-        ctx.moveTo(ballA.x + ballA.radius, trackY - ballA.radius - 20);
-        ctx.lineTo(ballB.x - ballB.radius, trackY - ballB.radius - 20);
-        ctx.strokeStyle = '#ff9d7a88';
-        ctx.lineWidth = 2;
-        ctx.stroke();
-        ctx.setLineDash([]);
-      }
+                for (let i = 0; i < NUM_PARTICLES - 1; i++) {
+                    const x1 = particleX[i];
+                    const y1 = equilY + yTotal[i];
+                    const x2 = particleX[i + 1];
+                    const y2 = equilY + yTotal[i + 1];
 
-      // 顶部信息
-      const modeText = collisionMode === 'elastic' ? '弹性碰撞 (动能守恒)' : '完全非弹性碰撞 (粘合共速)';
-      ctx.fillStyle = '#ffd166';
-      ctx.font = 'bold 14px "PingFang SC","Microsoft YaHei",sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText(`当前模式: ${modeText}  |  总动量 p = ${totalMomentum().toFixed(2)} kg·m/s`, canvas.width/2, 30);
-      ctx.textAlign = 'start';
-      ctx.fillStyle = '#ff4d6a';
-      ctx.font = '11px "PingFang SC","Microsoft YaHei",sans-serif';
-      ctx.fillText('● 红球', 15, canvas.height - 14);
-      ctx.fillStyle = '#4da6ff';
-      ctx.fillText('● 蓝球', 85, canvas.height - 14);
-      if (isStuck) {
-        ctx.fillStyle = '#ff9d7a';
-        ctx.fillText('🔗 粘合中', 155, canvas.height - 14);
-      }
-    }
+                    const bothLeft = leftArrived[i] > 0.5 && leftArrived[i + 1] > 0.5 && rightArrived[i] < 0.5 && rightArrived[i + 1] < 0.5;
+                    const bothRight = rightArrived[i] > 0.5 && rightArrived[i + 1] > 0.5 && leftArrived[i] < 0.5 && leftArrived[i + 1] < 0.5;
+                    const bothOverlap = leftArrived[i] > 0.5 && rightArrived[i] > 0.5 && leftArrived[i + 1] > 0.5 && rightArrived[i + 1] > 0.5;
 
-    // ---------- 拖动交互 ----------
-    let dragging = null;
-    let dragStartX = 0;
-    let dragStartVx = 0;
+                    if (bothLeft) {
+                        ctx.strokeStyle = 'rgba(255,100,100,0.5)';
+                    } else if (bothRight) {
+                        ctx.strokeStyle = 'rgba(100,160,255,0.5)';
+                    } else if (bothOverlap) {
+                        ctx.strokeStyle = 'rgba(180,180,190,0.45)';
+                    } else {
+                        ctx.strokeStyle = 'rgba(150,150,160,0.3)';
+                    }
 
-    function getCanvasPos(e) {
-      const rect = canvas.getBoundingClientRect();
-      return {
-        x: (e.clientX - rect.left) * (canvas.width / rect.width),
-        y: (e.clientY - rect.top) * (canvas.height / rect.height)
-      };
-    }
+                    ctx.beginPath();
+                    ctx.moveTo(x1, y1);
+                    ctx.lineTo(x2, y2);
+                    ctx.stroke();
+                }
+            }
 
-    canvas.addEventListener('pointerdown', (e) => {
-      const pos = getCanvasPos(e);
-      for (const b of [ballA, ballB]) {
-        if (Math.hypot(pos.x - b.x, pos.y - trackY) < b.radius + 18) {
-          dragging = b;
-          dragStartX = pos.x;
-          dragStartVx = b.vx;
-          if (isStuck) {
-            isStuck = false;
-            ballA.vx = stuckCommonV;
-            ballB.vx = stuckCommonV;
-          }
-          canvas.style.cursor = 'grabbing';
-          e.preventDefault();
-          break;
-        }
-      }
-    });
+            function getParticleColor(i) {
+                const lArr = leftArrived[i] > 0.5;
+                const rArr = rightArrived[i] > 0.5;
+                const inOverlap = lArr && rArr;
+                const isSource = (i === 0 || i === NUM_PARTICLES - 1);
 
-    canvas.addEventListener('pointermove', (e) => {
-      if (!dragging) {
-        const pos = getCanvasPos(e);
-        let hovering = false;
-        for (const b of [ballA, ballB]) {
-          if (Math.hypot(pos.x - b.x, pos.y - trackY) < b.radius + 18) {
-            hovering = true; break;
-          }
-        }
-        canvas.style.cursor = hovering ? 'grab' : 'default';
-        return;
-      }
-      const pos = getCanvasPos(e);
-      const dx = pos.x - dragStartX;
-      dragging.vx = dragStartVx + dx * 0.04;
-      dragging.vx = Math.max(-12, Math.min(12, dragging.vx));
-      if (isStuck) {
-        stuckCommonV = dragging.vx;
-        ballA.vx = ballB.vx = stuckCommonV;
-      }
-      e.preventDefault();
-    });
+                if (isSource) {
+                    if (i === 0) return 'source-left';
+                    if (i === NUM_PARTICLES - 1) return 'source-right';
+                }
 
-    canvas.addEventListener('pointerup', () => {
-      dragging = null;
-      canvas.style.cursor = 'default';
-    });
-    canvas.addEventListener('pointerleave', () => {
-      dragging = null;
-      canvas.style.cursor = 'default';
-    });
+                if (!lArr && !rArr) return 'idle'; // no wave arrived
+                if (lArr && !rArr) return 'left-only';
+                if (rArr && !lArr) return 'right-only';
 
-    // ---------- 按钮功能 ----------
-    function setMode(mode) {
-      collisionMode = mode;
-      btnElastic.classList.remove('active', 'elastic-active');
-      btnInelastic.classList.remove('active', 'inelastic-active');
-      if (mode === 'elastic') {
-        btnElastic.classList.add('active', 'elastic-active');
-      } else {
-        btnInelastic.classList.add('active', 'inelastic-active');
-      }
-      resetScene();
-    }
-    btnElastic.addEventListener('click', () => setMode('elastic'));
-    btnInelastic.addEventListener('click', () => setMode('inelastic'));
+                // Overlap region - check for special points
+                const absTotal = Math.abs(yTotal[i]);
+                const absLeft = Math.abs(yLeft[i]);
+                const absRight = Math.abs(yRight[i]);
 
-    function resetScene() {
-      initMassA = parseFloat(sliderMassA.value);
-      initVelA = parseFloat(sliderVelA.value);
-      initMassB = parseFloat(sliderMassB.value);
-      initVelB = parseFloat(sliderVelB.value);
+                // Strengthened point (antinode): total amplitude near 2A
+                if (absTotal > 1.65 * amplitude) {
+                    return 'strengthened';
+                }
+                // Weakened point (node): total near 0 but both waves have significant amplitude
+                if (absTotal < 0.28 * amplitude && absLeft > 0.3 * amplitude && absRight > 0.3 * amplitude) {
+                    return 'weakened';
+                }
 
-      ballA.mass = initMassA;
-      ballA.vx = initVelA;
-      ballA.radius = calcRadius(initMassA);
-      ballA.x = 200;
-      ballB.mass = initMassB;
-      ballB.vx = initVelB;
-      ballB.radius = calcRadius(initMassB);
-      ballB.x = 600;
+                return 'overlap';
+            }
 
-      // 保证初始不重叠
-      const neededDist = ballA.radius + ballB.radius + 8;
-      if (ballB.x - ballA.x < neededDist) {
-        ballB.x = ballA.x + neededDist;
-        if (ballB.x + ballB.radius > rightBound) {
-          ballB.x = rightBound - ballB.radius;
-          ballA.x = ballB.x - neededDist;
-          if (ballA.x - ballA.radius < leftBound) {
-            ballA.x = leftBound + ballA.radius;
-            ballB.x = ballA.x + neededDist;
-          }
-        }
-      }
+            function drawParticles() {
+                for (let i = 0; i < NUM_PARTICLES; i++) {
+                    const cx = particleX[i];
+                    const cy = equilY + yTotal[i];
+                    const colorType = getParticleColor(i);
 
-      isStuck = false;
-      stuckCommonV = 0;
-      flashAlpha = 0;
-      initialTotalKE = totalKE();
-      updateUI();
-      dataInitKE.textContent = initialTotalKE.toFixed(2);
-      dataKEItem.classList.remove('warn');
-      dataTotalKE.style.color = '#ffd166';
-    }
+                    let radius = PARTICLE_RADIUS;
+                    let fillColor, strokeColor, glowColor;
 
-    btnReset.addEventListener('click', resetScene);
-    btnSwap.addEventListener('click', () => {
-      // 交换全部属性
-      [ballA.x, ballB.x] = [ballB.x, ballA.x];
-      [ballA.vx, ballB.vx] = [ballB.vx, ballA.vx];
-      [ballA.mass, ballB.mass] = [ballB.mass, ballA.mass];
-      [ballA.radius, ballB.radius] = [ballB.radius, ballA.radius];
-      [ballA.color, ballB.color] = [ballB.color, ballA.color];
-      [ballA.label, ballB.label] = [ballB.label, ballA.label];
-      // 同步滑块
-      sliderMassA.value = ballA.mass;
-      sliderVelA.value = ballA.vx;
-      sliderMassB.value = ballB.mass;
-      sliderVelB.value = ballB.vx;
-      updateSliderLabels();
-      isStuck = false;
-      stuckCommonV = 0;
-      flashAlpha = 0;
-      initialTotalKE = totalKE();
-      updateUI();
-      dataInitKE.textContent = initialTotalKE.toFixed(2);
-    });
+                    switch (colorType) {
+                        case 'source-left':
+                            radius = SOURCE_RADIUS;
+                            fillColor = '#ff4444';
+                            strokeColor = '#ff8888';
+                            glowColor = 'rgba(255,80,80,0.7)';
+                            break;
+                        case 'source-right':
+                            radius = SOURCE_RADIUS;
+                            fillColor = '#4499ff';
+                            strokeColor = '#88bbff';
+                            glowColor = 'rgba(70,150,255,0.7)';
+                            break;
+                        case 'idle':
+                            radius = PARTICLE_RADIUS;
+                            fillColor = '#555';
+                            strokeColor = '#777';
+                            glowColor = null;
+                            break;
+                        case 'left-only':
+                            radius = PARTICLE_RADIUS;
+                            fillColor = '#ff5555';
+                            strokeColor = '#ff9999';
+                            glowColor = 'rgba(255,80,80,0.35)';
+                            break;
+                        case 'right-only':
+                            radius = PARTICLE_RADIUS;
+                            fillColor = '#5599ff';
+                            strokeColor = '#99bbff';
+                            glowColor = 'rgba(70,140,255,0.35)';
+                            break;
+                        case 'overlap':
+                            radius = PARTICLE_RADIUS;
+                            fillColor = '#2a2a2a';
+                            strokeColor = '#999';
+                            glowColor = null;
+                            break;
+                        case 'strengthened':
+                            radius = SPECIAL_RADIUS;
+                            fillColor = '#c084fc';
+                            strokeColor = '#e0b0ff';
+                            glowColor = 'rgba(190,130,255,0.85)';
+                            break;
+                        case 'weakened':
+                            radius = SPECIAL_RADIUS;
+                            fillColor = '#f0c040';
+                            strokeColor = '#f8d870';
+                            glowColor = 'rgba(240,190,60,0.85)';
+                            break;
+                        default:
+                            radius = PARTICLE_RADIUS;
+                            fillColor = '#666';
+                            strokeColor = '#888';
+                            glowColor = null;
+                    }
 
-    btnPause.addEventListener('click', () => {
-      isPaused = !isPaused;
-      btnPause.textContent = isPaused ? '▶️ 播放' : '⏯️ 暂停/播放';
-      btnPause.style.borderColor = isPaused ? '#ffd166' : '#2a2a50';
-      btnPause.style.color = isPaused ? '#ffd166' : '#ccd';
-    });
+                    // Glow effect
+                    if (glowColor) {
+                        const glowGrad = ctx.createRadialGradient(cx, cy, radius * 0.5, cx, cy, radius * 2.8);
+                        glowGrad.addColorStop(0, glowColor);
+                        glowGrad.addColorStop(0.5, glowColor.replace('0.7', '0.2').replace('0.85', '0.25').replace('0.35',
+                            '0.1'));
+                        glowGrad.addColorStop(1, 'rgba(0,0,0,0)');
+                        ctx.fillStyle = glowGrad;
+                        ctx.beginPath();
+                        ctx.arc(cx, cy, radius * 2.8, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
 
-    // ---------- 滑块更新 ----------
-    function updateSliderLabels() {
-      valMassA.textContent = parseFloat(sliderMassA.value).toFixed(1) + ' kg';
-      valVelA.textContent = (parseFloat(sliderVelA.value) >= 0 ? '+' : '') + parseFloat(sliderVelA.value).toFixed(1) + ' m/s';
-      valMassB.textContent = parseFloat(sliderMassB.value).toFixed(1) + ' kg';
-      valVelB.textContent = (parseFloat(sliderVelB.value) >= 0 ? '+' : '') + parseFloat(sliderVelB.value).toFixed(1) + ' m/s';
-    }
-    sliderMassA.addEventListener('input', () => {
-      updateSliderLabels();
-      ballA.mass = parseFloat(sliderMassA.value);
-      ballA.radius = calcRadius(ballA.mass);
-      initialTotalKE = totalKE();
-      updateUI();
-      dataInitKE.textContent = initialTotalKE.toFixed(2);
-    });
-    sliderVelA.addEventListener('input', updateSliderLabels);
-    sliderMassB.addEventListener('input', () => {
-      updateSliderLabels();
-      ballB.mass = parseFloat(sliderMassB.value);
-      ballB.radius = calcRadius(ballB.mass);
-      initialTotalKE = totalKE();
-      updateUI();
-      dataInitKE.textContent = initialTotalKE.toFixed(2);
-    });
-    sliderVelB.addEventListener('input', updateSliderLabels);
+                    // Main circle
+                    const mainGrad = ctx.createRadialGradient(cx - radius * 0.25, cy - radius * 0.3, radius * 0.1, cx, cy,
+                        radius);
+                    mainGrad.addColorStop(0, '#ffffff');
+                    mainGrad.addColorStop(0.35, fillColor);
+                    mainGrad.addColorStop(1, strokeColor);
 
-    // 键盘快捷键
-    document.addEventListener('keydown', (e) => {
-      if (e.key === ' ') {
-        e.preventDefault();
-        btnPause.click();
-      } else if (e.key.toLowerCase() === 'r') {
-        resetScene();
-      } else if (e.key.toLowerCase() === 'e') {
-        setMode('elastic');
-      } else if (e.key.toLowerCase() === 'i') {
-        setMode('inelastic');
-      } else if (e.key.toLowerCase() === 's') {
-        btnSwap.click();
-      }
-    });
+                    ctx.fillStyle = mainGrad;
+                    ctx.beginPath();
+                    ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+                    ctx.fill();
 
-    // 启动
-    updateSliderLabels();
-    setMode('elastic');
-    update();
-  })();
-</script>
+                    // Stroke
+                    ctx.strokeStyle = strokeColor;
+                    ctx.lineWidth = 1.2;
+                    ctx.stroke();
+
+                    // Small highlight dot
+                    ctx.fillStyle = 'rgba(255,255,255,0.7)';
+                    ctx.beginPath();
+                    ctx.arc(cx - radius * 0.28, cy - radius * 0.32, radius * 0.3, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+
+            function drawSourceMarkers() {
+                // Left source indicator
+                const lx = particleX[0];
+                const ly = equilY + yTotal[0];
+                ctx.fillStyle = 'rgba(255,80,80,0.9)';
+                ctx.font = 'bold 12px "PingFang SC","Microsoft YaHei",sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('波源 L', lx, ly - SOURCE_RADIUS - 14);
+                // Up arrow for left source
+                drawSmallArrow(lx, ly - SOURCE_RADIUS - 5, 'up', '#ff6666');
+
+                // Right source indicator
+                const rx = particleX[NUM_PARTICLES - 1];
+                const ry = equilY + yTotal[NUM_PARTICLES - 1];
+                ctx.fillStyle = 'rgba(100,170,255,0.9)';
+                ctx.fillText('波源 R', rx, ry - SOURCE_RADIUS - 14);
+                // Down arrow for right source
+                drawSmallArrow(rx, ry - SOURCE_RADIUS - 5, 'down', '#6699ff');
+            }
+
+            function drawSmallArrow(ax, ay, direction, color) {
+                ctx.fillStyle = color;
+                ctx.strokeStyle = color;
+                ctx.lineWidth = 1.5;
+                const size = 7;
+                ctx.beginPath();
+                if (direction === 'up') {
+                    ctx.moveTo(ax, ay - size);
+                    ctx.lineTo(ax - size * 0.7, ay + size * 0.5);
+                    ctx.lineTo(ax + size * 0.7, ay + size * 0.5);
+                } else {
+                    ctx.moveTo(ax, ay + size);
+                    ctx.lineTo(ax - size * 0.7, ay - size * 0.5);
+                    ctx.lineTo(ax + size * 0.7, ay - size * 0.5);
+                }
+                ctx.closePath();
+                ctx.fill();
+            }
+
+            function drawWaveFrontIndicators(t) {
+                const leftFront = waveSpeed * t;
+                const rightFront = totalLength - waveSpeed * t;
+                const leftFrontX = marginX + leftFront;
+                const rightFrontX = marginX + rightFront;
+
+                // Only show if fronts are within the rope
+                if (leftFront < totalLength && leftFront > 0) {
+                    ctx.strokeStyle = 'rgba(255,130,130,0.5)';
+                    ctx.lineWidth = 1;
+                    ctx.setLineDash([3, 6]);
+                    ctx.beginPath();
+                    ctx.moveTo(leftFrontX, marginY - 5);
+                    ctx.lineTo(leftFrontX, canvasHeight - marginY + 5);
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+                    ctx.fillStyle = 'rgba(255,150,150,0.8)';
+                    ctx.font = '10px "PingFang SC","Microsoft YaHei",sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('←左波波前', leftFrontX, marginY - 8);
+                }
+
+                if (rightFront > 0 && rightFront < totalLength) {
+                    ctx.strokeStyle = 'rgba(130,170,255,0.5)';
+                    ctx.lineWidth = 1;
+                    ctx.setLineDash([3, 6]);
+                    ctx.beginPath();
+                    ctx.moveTo(rightFrontX, marginY - 5);
+                    ctx.lineTo(rightFrontX, canvasHeight - marginY + 5);
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+                    ctx.fillStyle = 'rgba(150,180,255,0.8)';
+                    ctx.font = '10px "PingFang SC","Microsoft YaHei",sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('右波波前→', rightFrontX, marginY - 8);
+                }
+
+                // Meeting zone highlight
+                if (leftFront >= rightFront - 1 && leftFront < totalLength && rightFront > 0) {
+                    const meetX = marginX + totalLength / 2;
+                    ctx.fillStyle = 'rgba(255,255,200,0.08)';
+                    const zoneWidth = Math.max(Math.abs(leftFront - rightFront), 30);
+                    ctx.fillRect(meetX - zoneWidth / 2, marginY, zoneWidth, canvasHeight - 2 * marginY);
+                }
+            }
+
+            function drawPhaseMarkers() {
+                // Draw small markers at antinode and node positions in the overlap zone
+                // These are theoretical positions based on the standing wave pattern
+                const L = totalLength;
+                const k = wavenumber;
+                const overlapStart = Math.max(0, Math.min(waveSpeed * animTime, L - waveSpeed * animTime));
+                const overlapEnd = Math.min(L, Math.max(waveSpeed * animTime, L - waveSpeed * animTime));
+
+                if (overlapEnd <= overlapStart + 10) return; // no significant overlap
+
+                // Theoretical node positions: sin(k(x-L/2)) = 0 => k(x-L/2) = n*pi
+                // => x = L/2 + n*pi/k = L/2 + n*lambda/2
+                const halfLambda = wavelength / 2;
+                const centerX = L / 2;
+
+                // Find nodes within the rope
+                let nMin = Math.floor((0 - centerX) / halfLambda) - 1;
+                let nMax = Math.ceil((L - centerX) / halfLambda) + 1;
+
+                for (let n = nMin; n <= nMax; n++) {
+                    const nodeX = centerX + n * halfLambda;
+                    if (nodeX > overlapStart && nodeX < overlapEnd && nodeX > 2 && nodeX < L - 2) {
+                        const screenX = marginX + nodeX;
+                        // Small marker on equilibrium line
+                        ctx.fillStyle = 'rgba(240,190,60,0.5)';
+                        ctx.beginPath();
+                        ctx.arc(screenX, equilY, 3.5, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                    // Antinodes between nodes
+                    const antiNodeX = centerX + (n + 0.5) * halfLambda;
+                    if (antiNodeX > overlapStart && antiNodeX < overlapEnd && antiNodeX > 2 && antiNodeX < L - 2) {
+                        const screenX = marginX + antiNodeX;
+                        ctx.fillStyle = 'rgba(190,130,255,0.4)';
+                        ctx.beginPath();
+                        ctx.arc(screenX, equilY, 3, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                }
+            }
+
+            function render(t) {
+                ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+                drawBackground();
+                computeWaveState(t);
+                drawPhaseMarkers();
+                drawWaveFrontIndicators(t);
+                drawRopeConnections();
+                drawParticles();
+                drawSourceMarkers();
+
+                // Overlap zone label
+                const leftFront = waveSpeed * t;
+                const rightFront = totalLength - waveSpeed * t;
+                if (leftFront >= rightFront - 1 && leftFront < totalLength && rightFront > 0) {
+                    const midX = marginX + totalLength / 2;
+                    ctx.fillStyle = 'rgba(255,255,255,0.7)';
+                    ctx.font = 'bold 13px "PingFang SC","Microsoft YaHei",sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('干涉叠加区域', midX, canvasHeight - marginY + 28);
+                }
+            }
+
+            function animate(timestamp) {
+                if (!paused) {
+                    if (lastFrameTimestamp !== null) {
+                        const dt = (timestamp - lastFrameTimestamp) / 1000;
+                        // Clamp dt to avoid jumps
+                        const clampedDt = Math.min(dt, 0.1);
+                        animTime += clampedDt;
+                    }
+                    lastFrameTimestamp = timestamp;
+                } else {
+                    lastFrameTimestamp = null;
+                }
+
+                // Update display
+                timeValEl.textContent = animTime.toFixed(2);
+                render(animTime);
+
+                requestAnimationFrame(animate);
+            }
+
+            // Event handlers
+            ampSlider.addEventListener('input', () => {
+                amplitude = parseInt(ampSlider.value);
+                ampValEl.textContent = amplitude + ' px';
+                updateDerivedParams();
+                updateMeetInfo();
+            });
+
+            speedSlider.addEventListener('input', () => {
+                waveSpeed = parseInt(speedSlider.value);
+                speedValEl.textContent = waveSpeed + ' px/s';
+                updateDerivedParams();
+                updateMeetInfo();
+            });
+
+            btnPause.addEventListener('click', () => {
+                paused = !paused;
+                if (paused) {
+                    btnPause.textContent = '▶ 播放';
+                    btnPause.classList.add('paused');
+                } else {
+                    btnPause.textContent = '⏯ 暂停';
+                    btnPause.classList.remove('paused');
+                    lastFrameTimestamp = null;
+                }
+            });
+
+            btnReset.addEventListener('click', () => {
+                resetSimulation();
+                if (paused) {
+                    // Keep paused but render initial frame
+                    render(0);
+                }
+                updateMeetInfo();
+            });
+
+            // Handle window resize
+            let resizeTimeout;
+            window.addEventListener('resize', () => {
+                clearTimeout(resizeTimeout);
+                resizeTimeout = setTimeout(() => {
+                    const wasPaused = paused;
+                    paused = true;
+                    setupCanvas();
+                    updateDerivedParams();
+                    updateMeetInfo();
+                    render(animTime);
+                    if (!wasPaused) {
+                        paused = false;
+                        lastFrameTimestamp = null;
+                    }
+                }, 300);
+            });
+
+            // Keyboard shortcuts
+            window.addEventListener('keydown', (e) => {
+                switch (e.key.toLowerCase()) {
+                    case ' ':
+                        e.preventDefault();
+                        btnPause.click();
+                        break;
+                    case 'r':
+                        if (!e.ctrlKey && !e.metaKey) {
+                            e.preventDefault();
+                            btnReset.click();
+                        }
+                        break;
+                    case 'arrowleft':
+                        e.preventDefault();
+                        waveSpeed = Math.max(60, waveSpeed - 10);
+                        speedSlider.value = waveSpeed;
+                        speedValEl.textContent = waveSpeed + ' px/s';
+                        updateDerivedParams();
+                        updateMeetInfo();
+                        break;
+                    case 'arrowright':
+                        e.preventDefault();
+                        waveSpeed = Math.min(400, waveSpeed + 10);
+                        speedSlider.value = waveSpeed;
+                        speedValEl.textContent = waveSpeed + ' px/s';
+                        updateDerivedParams();
+                        updateMeetInfo();
+                        break;
+                    case 'arrowup':
+                        e.preventDefault();
+                        amplitude = Math.min(60, amplitude + 2);
+                        ampSlider.value = amplitude;
+                        ampValEl.textContent = amplitude + ' px';
+                        updateDerivedParams();
+                        updateMeetInfo();
+                        break;
+                    case 'arrowdown':
+                        e.preventDefault();
+                        amplitude = Math.max(10, amplitude - 2);
+                        ampSlider.value = amplitude;
+                        ampValEl.textContent = amplitude + ' px';
+                        updateDerivedParams();
+                        updateMeetInfo();
+                        break;
+                }
+            });
+
+            // Initial setup
+            setupCanvas();
+            updateDerivedParams();
+            updateMeetInfo();
+            ampValEl.textContent = amplitude + ' px';
+            speedValEl.textContent = waveSpeed + ' px/s';
+            ampSlider.value = amplitude;
+            speedSlider.value = waveSpeed;
+            render(0);
+
+            // Start animation
+            requestAnimationFrame(animate);
+
+            console.log('🌊 绳波干涉动画已就绪');
+            console.log('  - 左端波源（红色）向上起振');
+            console.log('  - 右端波源（蓝色）向下起振（相位差π）');
+            console.log('  - 紫色小球 = 振动加强点（波腹）');
+            console.log('  - 黄色小球 = 振动减弱点（波节）');
+            console.log('  - 空格键：暂停/播放');
+            console.log('  - R键：重置');
+            console.log('  - 方向键：调节参数');
+            console.log('  默认振幅：' + amplitude + 'px，波速：' + waveSpeed + 'px/s');
+            console.log('  波长：' + wavelength.toFixed(0) + 'px，频率：' + FREQUENCY + 'Hz');
+        })();
+    </script>
 </body>
 </html>
