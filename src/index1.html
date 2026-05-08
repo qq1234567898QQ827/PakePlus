@@ -1,0 +1,1035 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>匀速圆周运动的投影 - 简谐运动演示</title>
+    <style>
+        :root {
+            --bg: #f8f9fa;
+            --card-bg: #ffffff;
+            --text: #2c3e50;
+            --text-secondary: #5a6c7d;
+            --accent: #3498db;
+            --accent-dark: #2176a9;
+            --red: #e74c3c;
+            --purple: #8e44ad;
+            --border: #e0e5ec;
+            --shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            --radius: 16px;
+            --transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', 'Noto Sans SC', sans-serif;
+            background: linear-gradient(135deg, #e8ecf1 0%, #f0f3f6 30%, #eaf0f5 60%, #f5f6f8 100%);
+            background-attachment: fixed;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .container {
+            background: var(--card-bg);
+            border-radius: 20px;
+            box-shadow: var(--shadow), 0 1px 3px rgba(0, 0, 0, 0.04);
+            padding: 28px 30px 22px;
+            max-width: 960px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+            border: 1px solid var(--border);
+        }
+
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .title-group {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .icon-circle {
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 20px;
+            flex-shrink: 0;
+            box-shadow: 0 3px 10px rgba(52, 152, 219, 0.3);
+        }
+
+        h1 {
+            font-size: 1.35rem;
+            font-weight: 700;
+            color: var(--text);
+            letter-spacing: -0.01em;
+            line-height: 1.2;
+        }
+        .subtitle {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            font-weight: 400;
+            display: block;
+        }
+
+        .badge-row {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .badge {
+            font-size: 0.72rem;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-weight: 600;
+            letter-spacing: 0.02em;
+            white-space: nowrap;
+        }
+        .badge-info {
+            background: #eaf6fd;
+            color: #2176a9;
+        }
+        .badge-phase {
+            background: #fef5e7;
+            color: #b87a14;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: auto;
+            border-radius: 14px;
+            background: #fafbfc;
+            border: 1px solid var(--border);
+            cursor: default;
+            touch-action: none;
+        }
+        canvas.dragging {
+            cursor: grabbing;
+        }
+        canvas.hovering-circle {
+            cursor: grab;
+        }
+
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            align-items: flex-end;
+            justify-content: center;
+            padding-top: 4px;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            min-width: 100px;
+            flex: 1;
+            max-width: 200px;
+        }
+        .control-group.wide {
+            flex: 2;
+            max-width: 280px;
+        }
+        .control-group label {
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            letter-spacing: 0.02em;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            white-space: nowrap;
+        }
+        .control-group label .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+            flex-shrink: 0;
+        }
+        .dot-blue {
+            background: #3498db;
+        }
+        .dot-orange {
+            background: #e67e22;
+        }
+
+        input[type="range"] {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 7px;
+            border-radius: 10px;
+            background: #e0e5ec;
+            outline: none;
+            transition: var(--transition);
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            background: white;
+            border: 2.5px solid #3498db;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+            transition: var(--transition);
+        }
+        input[type="range"]::-webkit-slider-thumb:hover {
+            border-color: #2176a9;
+            box-shadow: 0 3px 14px rgba(52, 152, 219, 0.3);
+            transform: scale(1.05);
+        }
+        input[type="range"]::-webkit-slider-thumb:active {
+            transform: scale(1.1);
+            border-color: #1a5f8a;
+        }
+
+        .value-display {
+            font-size: 0.75rem;
+            color: var(--accent-dark);
+            font-weight: 700;
+            text-align: center;
+            min-width: 45px;
+            background: #f0f6fb;
+            border-radius: 6px;
+            padding: 2px 8px;
+            letter-spacing: 0.02em;
+        }
+        .value-display.phase-val {
+            background: #fef9f0;
+            color: #b87a14;
+        }
+
+        .btn-row {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            flex-shrink: 0;
+        }
+        button {
+            padding: 9px 16px;
+            border-radius: 22px;
+            border: 1.5px solid var(--border);
+            background: white;
+            cursor: pointer;
+            font-size: 0.82rem;
+            font-weight: 600;
+            color: var(--text);
+            transition: var(--transition);
+            white-space: nowrap;
+            letter-spacing: 0.02em;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        button:hover {
+            background: #f5f7fa;
+            border-color: #c0c8d2;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+        }
+        button:active {
+            background: #eef1f5;
+            transform: scale(0.97);
+        }
+        button.active-btn {
+            background: #3498db;
+            color: white;
+            border-color: #3498db;
+            box-shadow: 0 3px 12px rgba(52, 152, 219, 0.25);
+        }
+        button.active-btn:hover {
+            background: #2980b9;
+            border-color: #2980b9;
+        }
+
+        .legend-inline {
+            display: flex;
+            gap: 14px;
+            flex-wrap: wrap;
+            font-size: 0.72rem;
+            color: var(--text-secondary);
+            justify-content: center;
+            padding-top: 2px;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .legend-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+        .legend-dash {
+            width: 16px;
+            height: 0;
+            border-top: 2px dashed;
+            flex-shrink: 0;
+        }
+
+        .tip-text {
+            text-align: center;
+            font-size: 0.7rem;
+            color: #95a5a6;
+            margin-top: 2px;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 16px 12px 14px;
+                border-radius: 14px;
+                gap: 10px;
+            }
+            h1 {
+                font-size: 1.1rem;
+            }
+            .controls {
+                gap: 10px;
+            }
+            .control-group {
+                min-width: 70px;
+                flex: 1 1 80px;
+                max-width: 140px;
+            }
+            .control-group.wide {
+                flex: 2 1 120px;
+                max-width: 200px;
+            }
+            button {
+                padding: 7px 11px;
+                font-size: 0.72rem;
+            }
+            .legend-inline {
+                gap: 8px;
+                font-size: 0.65rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 头部 -->
+        <div class="header">
+            <div class="title-group">
+                <div class="icon-circle">⟳</div>
+                <h1>匀速圆周运动的投影<span class="subtitle">简谐运动 · 可调投影方向</span></h1>
+            </div>
+            <div class="badge-row">
+                <span class="badge badge-info">圆周运动</span>
+                <span class="badge badge-phase" id="phaseBadge">投影角 0°</span>
+            </div>
+        </div>
+
+        <!-- 画布 -->
+        <canvas id="mainCanvas" width="900" height="480" aria-label="圆周运动投影动画"></canvas>
+
+        <!-- 图例 -->
+        <div class="legend-inline">
+            <span class="legend-item"><span class="legend-dot" style="background:#e74c3c;"></span> 运动质点</span>
+            <span class="legend-item"><span class="legend-dot" style="background:#2980b9;"></span> 投影点</span>
+            <span class="legend-item"><span class="legend-dash" style="border-color:#3498db;"></span> 投影轴</span>
+            <span class="legend-item"><span class="legend-dash" style="border-color:#b07cd8;"></span> 垂线</span>
+            <span class="legend-item"><span style="color:#3498db;font-weight:700;">━━</span> 波形曲线</span>
+        </div>
+
+        <!-- 提示 -->
+        <p class="tip-text">💡 提示：在左侧圆周区域<strong>拖动鼠标</strong>可旋转投影轴，也可使用下方滑块调节</p>
+
+        <!-- 控制面板 -->
+        <div class="controls">
+            <div class="control-group wide">
+                <label for="angleSlider"><span class="dot dot-blue"></span> 投影方向角度 φ</label>
+                <input type="range" id="angleSlider" min="0" max="360" value="0" step="0.5">
+                <span class="value-display phase-val" id="angleValue">0°</span>
+            </div>
+            <div class="control-group">
+                <label for="speedSlider"><span class="dot dot-orange"></span> 角速度倍率</label>
+                <input type="range" id="speedSlider" min="0.3" max="3" value="1" step="0.05">
+                <span class="value-display" id="speedValue">1.0×</span>
+            </div>
+            <div class="btn-row">
+                <button id="pauseBtn" title="暂停/播放动画">⏯️ 暂停</button>
+                <button id="resetBtn" title="重置动画">↺ 重置</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            const canvas = document.getElementById('mainCanvas');
+            const ctx = canvas.getContext('2d');
+
+            // DOM元素
+            const angleSlider = document.getElementById('angleSlider');
+            const angleValue = document.getElementById('angleValue');
+            const speedSlider = document.getElementById('speedSlider');
+            const speedValue = document.getElementById('speedValue');
+            const pauseBtn = document.getElementById('pauseBtn');
+            const resetBtn = document.getElementById('resetBtn');
+            const phaseBadge = document.getElementById('phaseBadge');
+
+            // ============ 参数 ============
+            const R = 150; // 圆半径（像素）
+            const circCenterX = 200;
+            const circCenterY = 245;
+            const waveLeft = 395;
+            const waveTop = circCenterY - R;
+            const waveWidth = 470;
+            const waveHeight = 2 * R;
+            const waveZeroY = circCenterY;
+            const waveRight = waveLeft + waveWidth;
+            const bufferSize = Math.floor(waveWidth); // 约470个数据点
+
+            // 状态变量
+            let phiDeg = 0; // 投影轴角度（度）
+            let phi = 0; // 投影轴角度（弧度）
+            let speedMultiplier = 1.0;
+            let baseOmega = (2 * Math.PI) / 5; // 基础角速度：周期5秒
+            let omega = baseOmega;
+            let theta = 0; // 当前运动点角度（弧度）
+            let isPaused = false;
+            let isDragging = false;
+            let isHoveringCircle = false;
+
+            // 数据缓冲区：存储theta值
+            let thetaBuffer = [];
+
+            // 时间追踪
+            let lastTime = null;
+            const targetFPS = 60;
+            const targetDt = 1000 / targetFPS;
+
+            // ============ 初始化缓冲区 ============
+            function initBuffer() {
+                thetaBuffer = [];
+                const dThetaPerFrame = omega * (targetDt / 1000);
+                for (let i = 0; i < bufferSize; i++) {
+                    // i=0最旧, i=bufferSize-1最新(对应当前theta)
+                    const tIndex = i - (bufferSize - 1);
+                    thetaBuffer.push(theta + tIndex * dThetaPerFrame);
+                }
+            }
+
+            function resetAll() {
+                theta = 0;
+                phiDeg = 0;
+                phi = 0;
+                speedMultiplier = 1.0;
+                omega = baseOmega;
+                isPaused = false;
+                angleSlider.value = 0;
+                speedSlider.value = 1;
+                updateLabels();
+                initBuffer();
+                lastTime = null;
+                pauseBtn.textContent = '⏯️ 暂停';
+                pauseBtn.classList.remove('active-btn');
+            }
+
+            function updateLabels() {
+                angleValue.textContent = phiDeg.toFixed(1) + '°';
+                speedValue.textContent = speedMultiplier.toFixed(2) + '×';
+                phaseBadge.textContent = '投影角 ' + phiDeg.toFixed(0) + '°';
+            }
+
+            // ============ 事件监听 ============
+            angleSlider.addEventListener('input', () => {
+                phiDeg = parseFloat(angleSlider.value);
+                phi = phiDeg * Math.PI / 180;
+                updateLabels();
+            });
+
+            speedSlider.addEventListener('input', () => {
+                speedMultiplier = parseFloat(speedSlider.value);
+                omega = baseOmega * speedMultiplier;
+                updateLabels();
+                // 速度改变后需要重建缓冲区
+                rebuildBufferWithNewOmega();
+            });
+
+            function rebuildBufferWithNewOmega() {
+                if (thetaBuffer.length === 0) {
+                    initBuffer();
+                    return;
+                }
+                const currentTheta = thetaBuffer[thetaBuffer.length - 1];
+                const dThetaPerFrame = omega * (targetDt / 1000);
+                const newBuffer = [];
+                for (let i = 0; i < bufferSize; i++) {
+                    const tIndex = i - (bufferSize - 1);
+                    newBuffer.push(currentTheta + tIndex * dThetaPerFrame);
+                }
+                thetaBuffer = newBuffer;
+            }
+
+            pauseBtn.addEventListener('click', () => {
+                isPaused = !isPaused;
+                if (isPaused) {
+                    pauseBtn.textContent = '▶️ 播放';
+                    pauseBtn.classList.add('active-btn');
+                } else {
+                    pauseBtn.textContent = '⏯️ 暂停';
+                    pauseBtn.classList.remove('active-btn');
+                    lastTime = null;
+                }
+            });
+
+            resetBtn.addEventListener('click', () => {
+                resetAll();
+            });
+
+            // ============ 鼠标/触摸交互（拖动旋转投影轴） ============
+            function getCanvasPos(e) {
+                const rect = canvas.getBoundingClientRect();
+                const scaleX = canvas.width / rect.width;
+                const scaleY = canvas.height / rect.height;
+                return {
+                    x: (e.clientX - rect.left) * scaleX,
+                    y: (e.clientY - rect.top) * scaleY,
+                };
+            }
+
+            function isNearCircle(pos) {
+                const dx = pos.x - circCenterX;
+                const dy = pos.y - circCenterY;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                return dist <= R + 45 && pos.x < waveLeft - 10;
+            }
+
+            function updatePhiFromMouse(pos) {
+                const dx = pos.x - circCenterX;
+                const dy = circCenterY - pos.y; // 数学坐标y向上
+                let angle = Math.atan2(dy, dx); // 在数学坐标中的角度
+                if (angle < 0) angle += 2 * Math.PI;
+                phi = angle;
+                phiDeg = phi * 180 / Math.PI;
+                angleSlider.value = phiDeg;
+                updateLabels();
+            }
+
+            canvas.addEventListener('mousedown', (e) => {
+                const pos = getCanvasPos(e);
+                if (isNearCircle(pos)) {
+                    isDragging = true;
+                    updatePhiFromMouse(pos);
+                    canvas.classList.add('dragging');
+                    canvas.classList.remove('hovering-circle');
+                    e.preventDefault();
+                }
+            });
+
+            canvas.addEventListener('mousemove', (e) => {
+                const pos = getCanvasPos(e);
+                if (isDragging) {
+                    updatePhiFromMouse(pos);
+                } else {
+                    if (isNearCircle(pos) && !isDragging) {
+                        canvas.classList.add('hovering-circle');
+                        isHoveringCircle = true;
+                    } else {
+                        canvas.classList.remove('hovering-circle');
+                        isHoveringCircle = false;
+                    }
+                }
+            });
+
+            canvas.addEventListener('mouseup', () => {
+                isDragging = false;
+                canvas.classList.remove('dragging');
+            });
+
+            canvas.addEventListener('mouseleave', () => {
+                isDragging = false;
+                canvas.classList.remove('dragging', 'hovering-circle');
+                isHoveringCircle = false;
+            });
+
+            // 触摸事件
+            canvas.addEventListener('touchstart', (e) => {
+                if (e.touches.length === 1) {
+                    const pos = getCanvasPos(e.touches[0]);
+                    if (isNearCircle(pos)) {
+                        isDragging = true;
+                        updatePhiFromMouse(pos);
+                        canvas.classList.add('dragging');
+                        e.preventDefault();
+                    }
+                }
+            }, { passive: false });
+
+            canvas.addEventListener('touchmove', (e) => {
+                if (isDragging && e.touches.length === 1) {
+                    const pos = getCanvasPos(e.touches[0]);
+                    updatePhiFromMouse(pos);
+                    e.preventDefault();
+                }
+            }, { passive: false });
+
+            canvas.addEventListener('touchend', () => {
+                isDragging = false;
+                canvas.classList.remove('dragging');
+            });
+
+            // ============ 绘制函数 ============
+            function drawCircleView() {
+                const cx = circCenterX;
+                const cy = circCenterY;
+
+                // 投影轴（虚线，过圆心）
+                const axisLen = R + 35;
+                const cosPhi = Math.cos(phi);
+                const sinPhi = Math.sin(phi);
+                // Canvas坐标中，投影轴方向
+                const axCanvas = cosPhi;
+                const ayCanvas = -sinPhi;
+
+                ctx.save();
+                ctx.setLineDash([10, 6]);
+                ctx.strokeStyle = '#3498db';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(cx - axisLen * axCanvas, cy - axisLen * ayCanvas);
+                ctx.lineTo(cx + axisLen * axCanvas, cy + axisLen * ayCanvas);
+                ctx.stroke();
+                ctx.setLineDash([]);
+
+                // 投影轴端点小箭头标记
+                const arrowSize = 8;
+                const ex = cx + axisLen * axCanvas;
+                const ey = cy + axisLen * ayCanvas;
+                ctx.fillStyle = '#3498db';
+                ctx.beginPath();
+                ctx.arc(ex, ey, 4.5, 0, Math.PI * 2);
+                ctx.fill();
+                const ex2 = cx - axisLen * axCanvas;
+                const ey2 = cy - axisLen * ayCanvas;
+                ctx.beginPath();
+                ctx.arc(ex2, ey2, 3.5, 0, Math.PI * 2);
+                ctx.fill();
+
+                // 投影轴标签
+                ctx.fillStyle = '#2176a9';
+                ctx.font = '600 13px "PingFang SC","Microsoft YaHei","Segoe UI",sans-serif';
+                ctx.textAlign = 'center';
+                const labelX = cx + (axisLen + 20) * axCanvas;
+                const labelY = cy + (axisLen + 20) * ayCanvas;
+                ctx.fillText('投影轴', labelX, labelY - 5);
+
+                // 大圆
+                ctx.strokeStyle = '#c5cdd5';
+                ctx.lineWidth = 2.5;
+                ctx.setLineDash([]);
+                ctx.beginPath();
+                ctx.arc(cx, cy, R, 0, Math.PI * 2);
+                ctx.stroke();
+
+                // 圆心
+                ctx.fillStyle = '#5a6c7d';
+                ctx.beginPath();
+                ctx.arc(cx, cy, 5, 0, Math.PI * 2);
+                ctx.fill();
+
+                // 运动点坐标
+                const pointX = cx + R * Math.cos(theta);
+                const pointY = cy - R * Math.sin(theta);
+
+                // 投影点：运动点在投影轴上的垂足
+                const vecPx = pointX - cx;
+                const vecPy = pointY - cy;
+                const dotProd = vecPx * axCanvas + vecPy * ayCanvas;
+                const projX = cx + dotProd * axCanvas;
+                const projY = cy + dotProd * ayCanvas;
+
+                // 垂线（运动点到投影点）
+                ctx.setLineDash([5, 4]);
+                ctx.strokeStyle = '#b07cd8';
+                ctx.lineWidth = 1.8;
+                ctx.beginPath();
+                ctx.moveTo(pointX, pointY);
+                ctx.lineTo(projX, projY);
+                ctx.stroke();
+                ctx.setLineDash([]);
+
+                // 投影点光晕
+                const glowGrad = ctx.createRadialGradient(projX, projY, 2, projX, projY, 12);
+                glowGrad.addColorStop(0, 'rgba(41,128,185,0.5)');
+                glowGrad.addColorStop(1, 'rgba(41,128,185,0)');
+                ctx.fillStyle = glowGrad;
+                ctx.beginPath();
+                ctx.arc(projX, projY, 12, 0, Math.PI * 2);
+                ctx.fill();
+
+                // 投影点
+                ctx.fillStyle = '#2980b9';
+                ctx.beginPath();
+                ctx.arc(projX, projY, 7, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = 'white';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                // 运动点光晕
+                const glowGrad2 = ctx.createRadialGradient(pointX, pointY, 3, pointX, pointY, 14);
+                glowGrad2.addColorStop(0, 'rgba(231,76,60,0.55)');
+                glowGrad2.addColorStop(1, 'rgba(231,76,60,0)');
+                ctx.fillStyle = glowGrad2;
+                ctx.beginPath();
+                ctx.arc(pointX, pointY, 14, 0, Math.PI * 2);
+                ctx.fill();
+
+                // 运动点
+                ctx.fillStyle = '#e74c3c';
+                ctx.beginPath();
+                ctx.arc(pointX, pointY, 8.5, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = 'white';
+                ctx.lineWidth = 2.5;
+                ctx.stroke();
+
+                // 角度弧线（从水平到运动点）
+                ctx.strokeStyle = 'rgba(231,76,60,0.45)';
+                ctx.lineWidth = 1.8;
+                ctx.setLineDash([3, 4]);
+                const arcR = 35;
+                ctx.beginPath();
+                if (Math.sin(theta) >= 0) {
+                    ctx.arc(cx, cy, arcR, -theta, 0);
+                } else {
+                    ctx.arc(cx, cy, arcR, 0, -theta, true);
+                }
+                ctx.stroke();
+                ctx.setLineDash([]);
+
+                // 角度标签θ
+                const midAngle = -theta / 2;
+                const labelArcX = cx + (arcR + 18) * Math.cos(midAngle);
+                const labelArcY = cy + (arcR + 18) * Math.sin(midAngle);
+                ctx.fillStyle = '#c0392b';
+                ctx.font = 'italic 12px "PingFang SC","Microsoft YaHei","Segoe UI",sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('θ', labelArcX, labelArcY);
+
+                // 返回投影点坐标用于连接线
+                return { projX, projY, pointX, pointY };
+            }
+
+            function drawWaveView() {
+                // 波形图背景
+                ctx.fillStyle = '#fdfdfe';
+                ctx.fillRect(waveLeft, waveTop, waveWidth, waveHeight);
+
+                // 边框
+                ctx.strokeStyle = '#e0e5ec';
+                ctx.lineWidth = 1;
+                ctx.setLineDash([]);
+                ctx.strokeRect(waveLeft, waveTop, waveWidth, waveHeight);
+
+                // 网格线
+                ctx.setLineDash([3, 7]);
+                ctx.strokeStyle = '#e8ecf0';
+                ctx.lineWidth = 0.8;
+                // 水平网格线
+                const gridSpacingY = R / 4; // 每37.5px一条
+                for (let gy = waveZeroY - R; gy <= waveZeroY + R; gy += gridSpacingY) {
+                    if (Math.abs(gy - waveZeroY) < 0.5) continue;
+                    ctx.beginPath();
+                    ctx.moveTo(waveLeft, gy);
+                    ctx.lineTo(waveRight, gy);
+                    ctx.stroke();
+                }
+                // 垂直网格线
+                const gridSpacingX = waveWidth / 8;
+                for (let gx = waveLeft; gx <= waveRight; gx += gridSpacingX) {
+                    ctx.beginPath();
+                    ctx.moveTo(gx, waveTop);
+                    ctx.lineTo(gx, waveTop + waveHeight);
+                    ctx.stroke();
+                }
+                ctx.setLineDash([]);
+
+                // 零位移线（水平实线）
+                ctx.strokeStyle = '#bcc3cc';
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.moveTo(waveLeft, waveZeroY);
+                ctx.lineTo(waveRight, waveZeroY);
+                ctx.stroke();
+
+                // 坐标轴标签
+                ctx.fillStyle = '#7d8b98';
+                ctx.font = '11px "PingFang SC","Microsoft YaHei","Segoe UI",sans-serif';
+                ctx.textAlign = 'right';
+                ctx.fillText('+R', waveLeft - 8, waveZeroY - R + 4);
+                ctx.fillText('−R', waveLeft - 8, waveZeroY + R + 4);
+                ctx.fillText('0', waveLeft - 8, waveZeroY + 4);
+                ctx.textAlign = 'center';
+                ctx.fillText('时间 →', waveLeft + waveWidth / 2, waveTop + waveHeight + 18);
+                ctx.fillText('位移', waveLeft - 22, waveZeroY);
+
+                // 绘制波形曲线
+                if (thetaBuffer.length < 2) return;
+
+                ctx.strokeStyle = '#3498db';
+                ctx.lineWidth = 2.8;
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+                ctx.shadowColor = 'rgba(52,152,219,0.3)';
+                ctx.shadowBlur = 4;
+                ctx.beginPath();
+
+                const n = thetaBuffer.length;
+                let firstPoint = true;
+                for (let i = 0; i < n; i++) {
+                    const thetaVal = thetaBuffer[i];
+                    const displacement = R * Math.cos(thetaVal - phi);
+                    const sx = waveLeft + (i / (n - 1)) * waveWidth;
+                    const sy = waveZeroY - displacement;
+                    // 裁剪到波形图区域内
+                    const clampedSY = Math.max(waveTop, Math.min(waveTop + waveHeight, sy));
+                    if (firstPoint) {
+                        ctx.moveTo(sx, clampedSY);
+                        firstPoint = false;
+                    } else {
+                        ctx.lineTo(sx, clampedSY);
+                    }
+                }
+                ctx.stroke();
+                ctx.shadowColor = 'transparent';
+                ctx.shadowBlur = 0;
+
+                // 当前值标记（波形图右边缘）
+                const currentDisplacement = R * Math.cos(theta - phi);
+                const currentSY = waveZeroY - currentDisplacement;
+                const clampedCurrentSY = Math.max(waveTop, Math.min(waveTop + waveHeight, currentSY));
+
+                // 当前值水平指示线（虚线）
+                ctx.setLineDash([4, 5]);
+                ctx.strokeStyle = 'rgba(231,76,60,0.5)';
+                ctx.lineWidth = 1.2;
+                ctx.beginPath();
+                ctx.moveTo(waveLeft, clampedCurrentSY);
+                ctx.lineTo(waveRight, clampedCurrentSY);
+                ctx.stroke();
+                ctx.setLineDash([]);
+
+                // 当前值圆点
+                ctx.fillStyle = '#e74c3c';
+                ctx.beginPath();
+                ctx.arc(waveRight, clampedCurrentSY, 6.5, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = 'white';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                return { currentSY: clampedCurrentSY };
+            }
+
+            function drawConnection(projInfo, waveInfo) {
+                if (!projInfo || !waveInfo) return;
+                // 从投影点水平延伸到波形图左边界
+                const projY = projInfo.projY;
+                const waveSY = waveInfo.currentSY;
+
+                // 水平虚线连接
+                ctx.setLineDash([4, 5]);
+                ctx.strokeStyle = 'rgba(149,165,180,0.6)';
+                ctx.lineWidth = 1.3;
+                ctx.beginPath();
+                ctx.moveTo(projInfo.projX, projY);
+                ctx.lineTo(waveLeft, waveSY);
+                ctx.stroke();
+                ctx.setLineDash([]);
+
+                // 小连接点
+                ctx.fillStyle = '#95a5b6';
+                ctx.beginPath();
+                ctx.arc(waveLeft, waveSY, 3.5, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            function drawLabels(projInfo) {
+                if (!projInfo) return;
+                // 位移数值标签
+                const displacement = R * Math.cos(theta - phi);
+                const dispLabel = '位移 = ' + (displacement / R).toFixed(3) + ' R';
+                ctx.fillStyle = '#2c3e50';
+                ctx.font = '600 12px "PingFang SC","Microsoft YaHei","Segoe UI",sans-serif';
+                ctx.textAlign = 'left';
+                const labelX = circCenterX + R + 40;
+                const labelY = circCenterY - R + 25;
+                ctx.fillText(dispLabel, labelX, labelY);
+
+                // 角度信息
+                const thetaDeg = ((theta % (2 * Math.PI)) * 180 / Math.PI).toFixed(1);
+                const thetaDegNorm = ((theta % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI) * 180 / Math.PI).toFixed(
+                1);
+                ctx.fillText('θ = ' + thetaDegNorm + '°', labelX, labelY + 22);
+                ctx.fillText('φ = ' + phiDeg.toFixed(1) + '°', labelX, labelY + 42);
+            }
+
+            // ============ 主动画循环 ============
+            function animate(timestamp) {
+                if (!isPaused) {
+                    if (lastTime === null) {
+                        lastTime = timestamp;
+                    }
+                    let elapsed = timestamp - lastTime;
+                    // 限制最大步长防止跳帧
+                    if (elapsed > 100) elapsed = 100;
+                    const dTheta = omega * (elapsed / 1000);
+                    theta += dTheta;
+                    // 保持theta在合理范围
+                    if (theta > 1e6) theta -= 2 * Math.PI * Math.floor(theta / (2 * Math.PI));
+
+                    // 更新缓冲区
+                    thetaBuffer.push(theta);
+                    while (thetaBuffer.length > bufferSize) {
+                        thetaBuffer.shift();
+                    }
+                    lastTime = timestamp;
+                } else {
+                    lastTime = null;
+                }
+
+                // 清空画布
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                // 背景微妙的渐变
+                const bgGrad = ctx.createLinearGradient(0, 0, canvas.width, 0);
+                bgGrad.addColorStop(0, '#fdfdfe');
+                bgGrad.addColorStop(0.45, '#fdfdfe');
+                bgGrad.addColorStop(0.46, '#fafbfc');
+                bgGrad.addColorStop(1, '#fafbfc');
+                ctx.fillStyle = bgGrad;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                // 分隔线
+                ctx.setLineDash([]);
+                ctx.strokeStyle = '#e8ecf0';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(waveLeft - 8, waveTop - 5);
+                ctx.lineTo(waveLeft - 8, waveTop + waveHeight + 5);
+                ctx.stroke();
+
+                // 区域标签
+                ctx.fillStyle = '#95a5a6';
+                ctx.font = '600 11px "PingFang SC","Microsoft YaHei","Segoe UI",sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('圆周运动视图', circCenterX, circCenterY - R - 18);
+                ctx.fillText('简谐运动波形图', waveLeft + waveWidth / 2, waveTop - 12);
+
+                // 绘制
+                const projInfo = drawCircleView();
+                const waveInfo = drawWaveView();
+                drawConnection(projInfo, waveInfo);
+                drawLabels(projInfo);
+
+                requestAnimationFrame(animate);
+            }
+
+            // ============ 启动 ============
+            function start() {
+                initBuffer();
+                updateLabels();
+                lastTime = null;
+                requestAnimationFrame(animate);
+            }
+
+            // 处理窗口大小变化时Canvas的显示
+            function handleResize() {
+                // Canvas内部分辨率保持不变，CSS处理缩放
+                // 无需额外操作
+            }
+            window.addEventListener('resize', handleResize);
+
+            // 键盘快捷键
+            window.addEventListener('keydown', (e) => {
+                switch (e.key.toLowerCase()) {
+                    case ' ':
+                        e.preventDefault();
+                        isPaused = !isPaused;
+                        if (isPaused) {
+                            pauseBtn.textContent = '▶️ 播放';
+                            pauseBtn.classList.add('active-btn');
+                        } else {
+                            pauseBtn.textContent = '⏯️ 暂停';
+                            pauseBtn.classList.remove('active-btn');
+                            lastTime = null;
+                        }
+                        break;
+                    case 'r':
+                        if (!e.ctrlKey && !e.metaKey) {
+                            e.preventDefault();
+                            resetAll();
+                        }
+                        break;
+                    case 'arrowleft':
+                        e.preventDefault();
+                        phiDeg = Math.max(0, phiDeg - 5);
+                        phi = phiDeg * Math.PI / 180;
+                        angleSlider.value = phiDeg;
+                        updateLabels();
+                        break;
+                    case 'arrowright':
+                        e.preventDefault();
+                        phiDeg = Math.min(360, phiDeg + 5);
+                        phi = phiDeg * Math.PI / 180;
+                        angleSlider.value = phiDeg;
+                        updateLabels();
+                        break;
+                    case 'arrowup':
+                        e.preventDefault();
+                        speedMultiplier = Math.min(3, speedMultiplier + 0.1);
+                        omega = baseOmega * speedMultiplier;
+                        speedSlider.value = speedMultiplier;
+                        updateLabels();
+                        rebuildBufferWithNewOmega();
+                        break;
+                    case 'arrowdown':
+                        e.preventDefault();
+                        speedMultiplier = Math.max(0.3, speedMultiplier - 0.1);
+                        omega = baseOmega * speedMultiplier;
+                        speedSlider.value = speedMultiplier;
+                        updateLabels();
+                        rebuildBufferWithNewOmega();
+                        break;
+                }
+            });
+
+            start();
+            console.log('✅ 匀速圆周运动投影演示已就绪');
+            console.log('   🖱️  在圆周视图拖动鼠标可旋转投影轴');
+            console.log('   ⌨️  空格键暂停/播放，方向键调节参数');
+            console.log('   📐 投影轴角度 φ = ' + phiDeg.toFixed(1) + '°');
+        })();
+    </script>
+</body>
+</html>
