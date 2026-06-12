@@ -1,0 +1,938 @@
+<!DOCTYPE html>
+
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta charset="utf-8"/>
+<meta charset="utf-8"/>
+<meta charset="utf-8"/>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, user-scalable=no" name="viewport"/>
+<title>简谐横波干涉 · 路程差与加强/减弱</title>
+<style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      font-family: 'Segoe UI', 'Courier New', monospace;
+      background-color: #050a14;
+    }
+    #info {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      color: #b0e0ff;
+      background: rgba(8, 18, 33, 0.8);
+      padding: 15px 25px;
+      border-radius: 12px;
+      border: 1px solid rgba(0, 180, 255, 0.4);
+      backdrop-filter: blur(12px);
+      pointer-events: none;
+      box-shadow: 0 0 25px rgba(0, 150, 255, 0.3);
+      line-height: 1.6;
+    }
+    #info h2 {
+      margin: 0 0 8px 0;
+      font-weight: 300;
+      letter-spacing: 2px;
+      color: #7ef0ff;
+      text-shadow: 0 0 15px #00b4d8;
+    }
+    #controls {
+      position: absolute;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(8, 18, 33, 0.75);
+      backdrop-filter: blur(16px);
+      border-radius: 18px;
+      padding: 18px 28px;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      align-items: center;
+      gap: 25px;
+      border: 1px solid rgba(0, 200, 255, 0.45);
+      box-shadow: 0 8px 32px rgba(0, 140, 255, 0.3);
+      color: #ccf0ff;
+    }
+    .control-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+    .control-label {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: #a0c8f0;
+    }
+    .control-value {
+      font-size: 1.1rem;
+      font-weight: bold;
+      color: #ffffff;
+      text-shadow: 0 0 12px #2ad4ff;
+      min-width: 70px;
+      text-align: center;
+    }
+    input[type="range"] {
+      width: 110px;
+      background: transparent;
+      cursor: pointer;
+      accent-color: #00ccff;
+    }
+    .status-badge {
+      font-size: 1.2rem;
+      font-weight: bold;
+      padding: 4px 14px;
+      border-radius: 20px;
+      background: rgba(0, 255, 200, 0.15);
+      border: 1px solid #00ffaa;
+      color: #aaffdd;
+      text-shadow: 0 0 10px #00ffaa;
+      letter-spacing: 1px;
+    }
+    .status-badge.weak {
+      background: rgba(255, 80, 100, 0.15);
+      border-color: #ff6b7c;
+      color: #ffb3b9;
+      text-shadow: 0 0 10px #ff5064;
+    }
+    button {
+      background: rgba(0, 160, 255, 0.15);
+      border: 1px solid #00a6ff;
+      color: #e0f0ff;
+      padding: 8px 16px;
+      border-radius: 20px;
+      cursor: pointer;
+      font-weight: bold;
+      backdrop-filter: blur(8px);
+      transition: all 0.2s;
+    }
+    button:hover {
+      background: rgba(0, 200, 255, 0.35);
+      box-shadow: 0 0 18px #0099ff;
+    }
+    #hint {
+      position: absolute;
+      bottom: 120px;
+      left: 50%;
+      transform: translateX(-50%);
+      color: #6a8fa0;
+      font-size: 0.8rem;
+      background: rgba(0,0,0,0.5);
+      padding: 4px 18px;
+      border-radius: 14px;
+      pointer-events: none;
+      white-space: nowrap;
+    }
+    @media (max-width: 750px) {
+      #controls {
+        flex-direction: column;
+        gap: 12px;
+        padding: 15px;
+      }
+      #info {
+        top: 10px;
+        padding: 10px 18px;
+        font-size: 0.8rem;
+      }
+    }
+  </style>
+</head>
+<body>
+<div id="backButton" onclick="window.location.href='index.html';" style="position: fixed; top: 20px; left: 20px; z-index: 9999; background: rgba(136, 187, 255, 0.2); color: white; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-family: Arial, sans-serif; font-size: 14px; border: 1px solid rgba(136, 187, 255, 0.5); transition: all 0.3s;">
+    ← 返回 (ESC)
+</div>
+<script>
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        window.location.href='index.html';
+    }
+});
+</script>
+
+<div id="info">
+<h2>⚡ 简谐横波干涉 ⚡</h2>
+<div>🔴 波源 S₁ (红色)      🔵 波源 S₂ (蓝色)</div>
+<div>🟡 交点 P 可拖动   |   起振方向: <b>−Z</b> (垂直屏幕向下)</div>
+<div>路程差 Δx = |PS₁ − PS₂|   ⇒   <span style="color:#7ef0ff;">加强/减弱</span></div>
+</div>
+<div id="hint">🖱️ 鼠标拖动金色球移动P点  |  右键旋转视角  |  滚轮缩放</div>
+<div id="controls">
+<div class="control-item">
+<span class="control-label">🌊 波速 (m/s)</span>
+<input id="speedSlider" max="4.0" min="0.8" step="0.05" type="range" value="2.0"/>
+<span class="control-value" id="speedValue">2.00</span>
+</div>
+<div class="control-item">
+<span class="control-label">📏 波长 λ</span>
+<span class="control-value" id="lambdaValue">2.00</span>
+</div>
+<div class="control-item">
+<span class="control-label">📐 路程差 Δx</span>
+<span class="control-value" id="deltaXValue">0.00</span>
+</div>
+<div class="control-item">
+<span class="control-label">⚖️ P点合位移</span>
+<span class="control-value" id="dispValue">0.000</span>
+</div>
+<div class="control-item">
+<span class="control-label">✨ 干涉状态</span>
+<span class="status-badge" id="stateBadge">加强</span>
+</div>
+<button id="resetBtn">↺ 重置位置</button>
+</div>
+<script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+      }
+    }
+  </script>
+<script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+    // ---------- 初始化场景 ----------
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x050a14);
+    scene.fog = new THREE.Fog(0x050a14, 8, 28);
+
+    const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.5, 50);
+    camera.position.set(6, -3.2, 7.5);
+    camera.lookAt(0, 0.5, 0);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.1;
+    document.body.appendChild(renderer.domElement);
+
+    // OrbitControls：右键旋转，左键用于拖动P点，中键缩放
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.target.set(0, 0.3, 0);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.08;
+    controls.minDistance = 4;
+    controls.maxDistance = 18;
+    controls.maxPolarAngle = Math.PI * 0.75;
+    controls.mouseButtons = {
+      LEFT: null,
+      MIDDLE: THREE.MOUSE.DOLLY,
+      RIGHT: THREE.MOUSE.ROTATE
+    };
+    controls.touches = {
+      ONE: THREE.TOUCH.ROTATE,
+      TWO: THREE.TOUCH.DOLLY_PAN
+    };
+    controls.update();
+
+    // ---------- 灯光 ----------
+    const ambient = new THREE.AmbientLight(0x1c2b45, 2.0);
+    scene.add(ambient);
+    const dirLight = new THREE.DirectionalLight(0xd0e8ff, 2.2);
+    dirLight.position.set(5, 10, 7);
+    dirLight.castShadow = true;
+    dirLight.receiveShadow = true;
+    dirLight.shadow.mapSize.width = 1024;
+    dirLight.shadow.mapSize.height = 1024;
+    dirLight.shadow.camera.near = 0.5;
+    dirLight.shadow.camera.far = 40;
+    dirLight.shadow.camera.left = -12;
+    dirLight.shadow.camera.right = 12;
+    dirLight.shadow.camera.top = 12;
+    dirLight.shadow.camera.bottom = -8;
+    scene.add(dirLight);
+    
+    const backLight = new THREE.PointLight(0x335577, 15, 12);
+    backLight.position.set(-2, 2, -2);
+    scene.add(backLight);
+
+    // 点光源对应波源
+    const lightS1 = new THREE.PointLight(0xff4050, 25, 6);
+    lightS1.position.set(-2.8, -1.2, 0);
+    scene.add(lightS1);
+    const lightS2 = new THREE.PointLight(0x3060ff, 25, 6);
+    lightS2.position.set(2.8, -1.2, 0);
+    scene.add(lightS2);
+    const lightP = new THREE.PointLight(0xffaa20, 30, 7);
+    lightP.position.set(0, 2.0, 0);
+    scene.add(lightP);
+
+    // ---------- 科技感背景元素 ----------
+    // 星空粒子
+    const starsGeometry = new THREE.BufferGeometry();
+    const starsCount = 700;
+    const starsPositions = new Float32Array(starsCount * 3);
+    for (let i = 0; i < starsCount * 3; i += 3) {
+      starsPositions[i] = (Math.random() - 0.5) * 22;
+      starsPositions[i+1] = (Math.random() - 0.5) * 15;
+      starsPositions[i+2] = (Math.random() - 0.5) * 12;
+    }
+    starsGeometry.setAttribute('position', new THREE.BufferAttribute(starsPositions, 3));
+    const starsMaterial = new THREE.PointsMaterial({
+      color: 0x88aacc,
+      size: 0.04,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+      transparent: true,
+      opacity: 0.7
+    });
+    const stars = new THREE.Points(starsGeometry, starsMaterial);
+    scene.add(stars);
+
+    // 网格线 (xy平面)
+    const gridHelper = new THREE.PolarGridHelper(6.5, 40, 32, 256, 0x1a3355, 0x1a3355);
+    scene.add(gridHelper);
+    
+    // 额外矩形网格
+    const gridPlaneGeometry = new THREE.PlaneGeometry(13, 13);
+    const gridPlaneMaterial = new THREE.ShaderMaterial({
+      transparent: true,
+      depthWrite: false,
+      uniforms: {
+        uColor: { value: new THREE.Color(0x0b2540) },
+        uBg: { value: new THREE.Color(0x020814) }
+      },
+      vertexShader: `varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`,
+      fragmentShader: `varying vec2 vUv; uniform vec3 uColor; uniform vec3 uBg; void main() {
+        vec2 grid = abs(fract(vUv * 30.0 - 0.5) - 0.5);
+        float line = min(grid.x, grid.y);
+        float alpha = exp(-line * 70.0) * 0.25 + exp(-line * 180.0) * 0.15;
+        gl_FragColor = vec4(mix(uBg, uColor, alpha), alpha * 0.6);
+      }`
+    });
+    const gridPlane = new THREE.Mesh(gridPlaneGeometry, gridPlaneMaterial);
+    gridPlane.rotation.x = 0;
+    gridPlane.position.z = -0.02;
+    scene.add(gridPlane);
+
+    // 坐标轴小指示器
+    function makeAxisArrow(color, direction, length = 4.0) {
+      const group = new THREE.Group();
+      const shaftGeo = new THREE.CylinderGeometry(0.04, 0.04, length, 6);
+      const mat = new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 0.6, roughness: 0.4 });
+      const shaft = new THREE.Mesh(shaftGeo, mat);
+      shaft.position.y = length/2;
+      group.add(shaft);
+      const headGeo = new THREE.ConeGeometry(0.12, 0.3, 8);
+      const head = new THREE.Mesh(headGeo, mat);
+      head.position.y = length;
+      group.add(head);
+      if (direction === 'x') group.rotation.z = -Math.PI/2;
+      if (direction === 'z') group.rotation.x = Math.PI/2;
+      return group;
+    }
+    const axisGroup = new THREE.Group();
+    axisGroup.add(makeAxisArrow(0xff6666, 'x'));
+    axisGroup.add(makeAxisArrow(0x66ff66, 'y'));
+    axisGroup.add(makeAxisArrow(0x66aaff, 'z'));
+    axisGroup.position.set(-4.8, -2.6, -0.05);
+    scene.add(axisGroup);
+
+    // ---------- 物理参数 ----------
+    const freq = 1.0;            // Hz
+    const amplitude = 0.38;
+    let waveSpeed = 2.0;        // 可调
+    
+    // 波源位置 (xy平面内)
+    const S1_pos = new THREE.Vector3(-2.8, -1.2, 0);
+    const S2_pos = new THREE.Vector3(2.8, -1.2, 0);
+    
+    // P点初始位置
+    let P_pos = new THREE.Vector3(0.0, 2.4, 0);
+    
+    // 绳子末端延伸长度
+    const tailLength = 2.3;
+    
+    // ---------- 创建可视化对象 ----------
+    function createGlowTexture(innerColor) {
+      const canvas = document.createElement('canvas');
+      canvas.width = 128;
+      canvas.height = 128;
+      const ctx = canvas.getContext('2d');
+      const gradient = ctx.createRadialGradient(64,64,0,64,64,64);
+      gradient.addColorStop(0, innerColor);
+      gradient.addColorStop(0.35, innerColor);
+      gradient.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0,0,128,128);
+      return new THREE.CanvasTexture(canvas);
+    }
+    
+    function createGlowSprite(texture, scale=1.5, opacity=0.65) {
+      const mat = new THREE.SpriteMaterial({ map: texture, blending: THREE.AdditiveBlending, depthTest: false, depthWrite: false, transparent: true, opacity });
+      const sprite = new THREE.Sprite(mat);
+      sprite.scale.set(scale, scale, 1);
+      return sprite;
+    }
+    
+    // 波源 S1 (红色)
+    const s1Sphere = new THREE.Mesh(new THREE.SphereGeometry(0.24, 32, 32), 
+      new THREE.MeshStandardMaterial({ color: 0xff3344, emissive: 0xcc1122, emissiveIntensity: 2, roughness: 0.25 }));
+    s1Sphere.position.copy(S1_pos);
+    s1Sphere.castShadow = true;
+    scene.add(s1Sphere);
+    s1Sphere.add(createGlowSprite(createGlowTexture('rgba(255,60,70,1)'), 1.7, 0.7));
+    
+    // 波源 S2 (蓝色)
+    const s2Sphere = new THREE.Mesh(new THREE.SphereGeometry(0.24, 32, 32),
+      new THREE.MeshStandardMaterial({ color: 0x3366ff, emissive: 0x1133cc, emissiveIntensity: 2, roughness: 0.25 }));
+    s2Sphere.position.copy(S2_pos);
+    s2Sphere.castShadow = true;
+    scene.add(s2Sphere);
+    s2Sphere.add(createGlowSprite(createGlowTexture('rgba(60,100,255,1)'), 1.7, 0.7));
+    
+    // 交点 P (金色)
+    const pSphere = new THREE.Mesh(new THREE.SphereGeometry(0.28, 40, 40),
+      new THREE.MeshStandardMaterial({ color: 0xffaa20, emissive: 0xff8800, emissiveIntensity: 2.2, roughness: 0.2 }));
+    pSphere.position.copy(P_pos);
+    pSphere.castShadow = true;
+    pSphere.name = 'pPoint';
+    scene.add(pSphere);
+    const pGlowSprite = createGlowSprite(createGlowTexture('rgba(255,170,30,1)'), 2.1, 0.75);
+    pSphere.add(pGlowSprite);
+    
+    // P点光环
+    const ringGeo = new THREE.TorusGeometry(0.4, 0.05, 16, 48);
+    const ringMat = new THREE.MeshStandardMaterial({ color: 0xffaa20, emissive: 0xff8800, emissiveIntensity: 1.5, roughness: 0.3 });
+    const ring = new THREE.Mesh(ringGeo, ringMat);
+    ring.rotation.x = Math.PI/2;
+    ring.position.copy(P_pos);
+    ring.name = 'pRing';
+    scene.add(ring);
+    
+    // ---------- 绳子系统 ----------
+    const ROPE_SEGMENTS = 200;
+    const ropeRadius = 0.06;
+    
+    function createRopeMesh(color, emissive) {
+      const curve = new THREE.CatmullRomCurve3([new THREE.Vector3(0,0,0), new THREE.Vector3(0,1,0), new THREE.Vector3(1,1,0)]);
+      const geo = new THREE.TubeGeometry(curve, ROPE_SEGMENTS, ropeRadius, 8, false);
+      const mat = new THREE.MeshStandardMaterial({ color, emissive, emissiveIntensity: 1.3, roughness: 0.35, metalness: 0.1 });
+      const mesh = new THREE.Mesh(geo, mat);
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+      return mesh;
+    }
+    
+    const redRope = createRopeMesh(0xff4455, 0x881122);
+    const blueRope = createRopeMesh(0x4466ff, 0x112288);
+    scene.add(redRope);
+    scene.add(blueRope);
+    
+    // 绳子上的发光粒子
+    function createRopeParticles(color, count=65) {
+      const geo = new THREE.BufferGeometry();
+      const positions = new Float32Array(count * 3);
+      geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+      const mat = new THREE.PointsMaterial({ color, size: 0.09, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, opacity: 0.5 });
+      return { points: new THREE.Points(geo, mat), positions };
+    }
+    const redParticles = createRopeParticles(0xff8090);
+    const blueParticles = createRopeParticles(0x8099ff);
+    scene.add(redParticles.points);
+    scene.add(blueParticles.points);
+    
+    // 虚线 PS1, PS2
+    function createDashedLine(color) {
+      const geo = new THREE.BufferGeometry();
+      const arr = new Float32Array(60);
+      geo.setAttribute('position', new THREE.BufferAttribute(arr, 3));
+      const mat = new THREE.LineDashedMaterial({ color, dashSize: 0.4, gapSize: 0.25, transparent: true, opacity: 0.5 });
+      const line = new THREE.Line(geo, mat);
+      line.computeLineDistances();
+      return { line, arr };
+    }
+    const dashRed = createDashedLine(0xff7788);
+    const dashBlue = createDashedLine(0x7799ff);
+    scene.add(dashRed.line);
+    scene.add(dashBlue.line);
+    
+    // ---------- 工具函数：更新绳子形状及粒子 ----------
+    function getExtendedEnd(P, S) {
+      const dir = new THREE.Vector3().subVectors(P, S);
+      const len = dir.length();
+      if (len < 0.001) return P.clone().add(new THREE.Vector3(0, tailLength, 0));
+      return P.clone().add(dir.normalize().multiplyScalar(tailLength));
+    }
+    
+    function updateRopeGeometry(mesh, start, mid, end, waveSource, time) {
+      const points = [];
+      const total = ROPE_SEGMENTS;
+      const seg1 = Math.floor(total * 0.55);
+      const len1 = start.distanceTo(mid);
+      const len2 = mid.distanceTo(end);
+      
+      for (let i = 0; i <= total; i++) {
+        let pt;
+        let dist;
+        if (i <= seg1) {
+          const t = i / seg1;
+          pt = new THREE.Vector3().lerpVectors(start, mid, t);
+          dist = (i / seg1) * len1;
+        } else {
+          const t = (i - seg1) / (total - seg1);
+          pt = new THREE.Vector3().lerpVectors(mid, end, t);
+          dist = len1 + t * len2;
+        }
+        const omega = 2 * Math.PI * freq;
+        const lambda = Math.max(waveSpeed / freq, 0.01);
+        const k = 2 * Math.PI / lambda;
+        const z = -amplitude * Math.sin(omega * time - k * dist);
+        points.push(new THREE.Vector3(pt.x, pt.y, z));
+      }
+      const curve = new THREE.CatmullRomCurve3(points);
+      mesh.geometry.dispose();
+      mesh.geometry = new THREE.TubeGeometry(curve, total, ropeRadius, 8, false);
+    }
+    
+    function updateParticles(particleData, start, mid, end, time) {
+      const { positions, points } = particleData;
+      const count = positions.length / 3;
+      const len1 = start.distanceTo(mid);
+      const len2 = mid.distanceTo(end);
+      const totalDist = len1 + len2;
+      const ratio = len1 / Math.max(totalDist, 0.001);
+      
+      for (let i = 0; i < count; i++) {
+        const t = i / (count - 1);
+        let pt, dist;
+        if (t <= ratio) {
+          const lt = t / Math.max(ratio, 0.001);
+          pt = new THREE.Vector3().lerpVectors(start, mid, Math.min(lt,1));
+          dist = t * totalDist;
+        } else {
+          const lt = (t - ratio) / Math.max(1 - ratio, 0.001);
+          pt = new THREE.Vector3().lerpVectors(mid, end, Math.min(lt,1));
+          dist = t * totalDist;
+        }
+        const omega = 2 * Math.PI * freq;
+        const lambda = Math.max(waveSpeed / freq, 0.01);
+        const k = 2 * Math.PI / lambda;
+        const z = -amplitude * Math.sin(omega * time - k * dist);
+        positions[i*3] = pt.x;
+        positions[i*3+1] = pt.y;
+        positions[i*3+2] = z;
+      }
+      points.geometry.attributes.position.needsUpdate = true;
+    }
+    
+    function updateDashed(dashData, from, to) {
+      const arr = dashData.arr;
+      const steps = 20;
+      for (let i = 0; i < steps; i++) {
+        const t = i / (steps - 1);
+        arr[i*3] = from.x + t * (to.x - from.x);
+        arr[i*3+1] = from.y + t * (to.y - from.y);
+        arr[i*3+2] = 0.03;
+      }
+      dashData.line.geometry.attributes.position.needsUpdate = true;
+      dashData.line.computeLineDistances();
+    }
+    
+    // ---------- P点拖动交互 ----------
+    const raycaster = new THREE.Raycaster();
+    raycaster.params.Points.threshold = 0.4;
+    const mouse = new THREE.Vector2();
+    const dragPlane = new THREE.Plane(new THREE.Vector3(0,0,1), 0);
+    let isDragging = false;
+    
+    function getIntersection(event) {
+      mouse.x = (event.clientX / renderer.domElement.clientWidth) * 2 - 1;
+      mouse.y = -(event.clientY / renderer.domElement.clientHeight) * 2 + 1;
+      raycaster.setFromCamera(mouse, camera);
+      const target = new THREE.Vector3();
+      if (raycaster.ray.intersectPlane(dragPlane, target)) {
+        return target;
+      }
+      return null;
+    }
+    
+    function isPicked(event) {
+      mouse.x = (event.clientX / renderer.domElement.clientWidth) * 2 - 1;
+      mouse.y = -(event.clientY / renderer.domElement.clientHeight) * 2 + 1;
+      raycaster.setFromCamera(mouse, camera);
+      const intersects = raycaster.intersectObjects([pSphere, ring]);
+      return intersects.length > 0;
+    }
+    
+    renderer.domElement.addEventListener('pointerdown', (e) => {
+      if (e.button === 0 && isPicked(e)) {
+        isDragging = true;
+        controls.enabled = false;
+        renderer.domElement.style.cursor = 'grabbing';
+        e.stopPropagation();
+      }
+    });
+    
+    window.addEventListener('pointermove', (e) => {
+      if (isDragging) {
+        const pt = getIntersection(e);
+        if (pt) {
+          P_pos.x = THREE.MathUtils.clamp(pt.x, -5.5, 5.5);
+          P_pos.y = THREE.MathUtils.clamp(pt.y, -3.2, 4.6);
+          pSphere.position.copy(P_pos);
+          ring.position.copy(P_pos);
+        }
+      } else {
+        renderer.domElement.style.cursor = isPicked(e) ? 'grab' : 'default';
+      }
+    });
+    
+    window.addEventListener('pointerup', () => {
+      if (isDragging) {
+        isDragging = false;
+        controls.enabled = true;
+        renderer.domElement.style.cursor = 'default';
+      }
+    });
+    
+    // 触摸支持
+    renderer.domElement.addEventListener('touchstart', (e) => {
+      if (e.touches.length === 1 && isPicked(e.touches[0])) {
+        isDragging = true;
+        controls.enabled = false;
+        e.preventDefault();
+      }
+    }, { passive: false });
+    window.addEventListener('touchmove', (e) => {
+      if (isDragging && e.touches.length === 1) {
+        const pt = getIntersection(e.touches[0]);
+        if (pt) {
+          P_pos.x = THREE.MathUtils.clamp(pt.x, -5.5, 5.5);
+          P_pos.y = THREE.MathUtils.clamp(pt.y, -3.2, 4.6);
+          pSphere.position.copy(P_pos);
+          ring.position.copy(P_pos);
+        }
+        e.preventDefault();
+      }
+    }, { passive: false });
+    window.addEventListener('touchend', () => {
+      if (isDragging) { isDragging = false; controls.enabled = true; }
+    });
+    
+    // ---------- UI 更新 ----------
+    document.getElementById('speedSlider').addEventListener('input', (e) => {
+      waveSpeed = parseFloat(e.target.value);
+      document.getElementById('speedValue').textContent = waveSpeed.toFixed(2);
+    });
+    document.getElementById('resetBtn').addEventListener('click', () => {
+      P_pos.set(0.0, 2.4, 0);
+      pSphere.position.copy(P_pos);
+      ring.position.copy(P_pos);
+      waveSpeed = 2.0;
+      document.getElementById('speedSlider').value = 2.0;
+      document.getElementById('speedValue').textContent = '2.00';
+    });
+    
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+    
+    // ---------- 动画循环 ----------
+    const clock = new THREE.Clock();
+    
+    function animate() {
+      requestAnimationFrame(animate);
+      const delta = clock.getDelta();
+      const time = performance.now() * 0.001; // 秒为单位
+      
+      controls.update();
+      
+      // 计算延伸端点
+      const E1 = getExtendedEnd(P_pos, S1_pos);
+      const E2 = getExtendedEnd(P_pos, S2_pos);
+      
+      // 更新绳子
+      updateRopeGeometry(redRope, S1_pos, P_pos, E1, S1_pos, time);
+      updateRopeGeometry(blueRope, S2_pos, P_pos, E2, S2_pos, time);
+      updateParticles(redParticles, S1_pos, P_pos, E1, time);
+      updateParticles(blueParticles, S2_pos, P_pos, E2, time);
+      
+      // 虚线
+      updateDashed(dashRed, S1_pos, P_pos);
+      updateDashed(dashBlue, S2_pos, P_pos);
+      
+      // 波源振动 (起振方向 -Z)
+      const omega = 2 * Math.PI * freq;
+      const zS = -amplitude * Math.sin(omega * time);
+      s1Sphere.position.z = zS;
+      s2Sphere.position.z = zS;
+      lightS1.position.z = zS + 0.4;
+      lightS2.position.z = zS + 0.4;
+      
+      // P点位移
+      const d1 = S1_pos.distanceTo(P_pos);
+      const d2 = S2_pos.distanceTo(P_pos);
+      const lambda = Math.max(waveSpeed / freq, 0.01);
+      const k = 2 * Math.PI / lambda;
+      const z1 = -amplitude * Math.sin(omega * time - k * d1);
+      const z2 = -amplitude * Math.sin(omega * time - k * d2);
+      const zP = z1 + z2;
+      
+      pSphere.position.z = zP;
+      ring.position.z = 0.03;
+      lightP.position.copy(new THREE.Vector3(P_pos.x, P_pos.y, zP));
+      
+      // 路程差与状态
+      const deltaX = Math.abs(d1 - d2);
+      const ratio = deltaX / lambda;
+      const remainder = ratio % 1;
+      const nearInt = Math.min(remainder, 1 - remainder);
+      const nearHalf = Math.abs(remainder - 0.5);
+      
+      let stateText, stateClass;
+      if (nearInt < 0.08) { stateText = '加强 ✦'; stateClass = ''; }
+      else if (nearHalf < 0.08) { stateText = '减弱 ✖'; stateClass = 'weak'; }
+      else { stateText = remainder < 0.5 ? '部分加强' : '部分减弱'; stateClass = remainder < 0.5 ? '' : 'weak'; }
+      
+      // 更新UI
+      document.getElementById('lambdaValue').textContent = lambda.toFixed(3);
+      document.getElementById('deltaXValue').textContent = deltaX.toFixed(3);
+      document.getElementById('dispValue').textContent = zP.toFixed(4);
+      const badge = document.getElementById('stateBadge');
+      badge.textContent = stateText;
+      badge.className = 'status-badge ' + stateClass;
+      
+      // P点光晕随合振幅变化
+      const ampEnv = Math.abs(2 * amplitude * Math.cos(k * deltaX / 2));
+      const glowFactor = 0.4 + ampEnv / (2 * amplitude) * 0.6;
+      pGlowSprite.material.opacity = glowFactor;
+      pGlowSprite.scale.setScalar(1.2 + ampEnv / (2 * amplitude) * 1.8);
+      lightP.intensity = 15 + ampEnv / (2 * amplitude) * 25;
+      
+      // 星空旋转
+      stars.rotation.z += delta * 0.02;
+      
+      renderer.render(scene, camera);
+    }
+    
+    animate();
+    
+    console.log('✨ 简谐横波干涉动画已启动 | 拖动金色P点观察干涉变化');
+  </script>
+<style>
+.back-btn {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    padding: 10px 20px;
+    background: rgba(0, 150, 200, 0.3);
+    border: 1px solid #00ffff;
+    color: white;
+    font-size: 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    z-index: 9999;
+    transition: 0.3s;
+    backdrop-filter: blur(5px);
+}
+.back-btn:hover {
+    background: rgba(0, 150, 200, 0.6);
+    box-shadow: 0 0 15px #00ffff;
+}
+</style>
+<button class="back-btn" onclick="goBack()">⬅️ 返回</button>
+<script>
+function goBack() {
+    history.back();
+}
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        goBack();
+    }
+});
+</script>
+<div class="watermark">齐老师动画</div>
+<style>
+.watermark {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    font-size: 14px;
+    color: rgba(0, 255, 255, 0.3);
+    z-index: 9998;
+    pointer-events: none;
+    user-select: none;
+}
+</style>
+<script>
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+});
+</script>
+<style>
+.back-btn {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    padding: 10px 20px;
+    background: rgba(0, 150, 200, 0.3);
+    border: 1px solid #00ffff;
+    color: white;
+    font-size: 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    z-index: 9999;
+    transition: 0.3s;
+    backdrop-filter: blur(5px);
+}
+.back-btn:hover {
+    background: rgba(0, 150, 200, 0.6);
+    box-shadow: 0 0 15px #00ffff;
+}
+</style>
+<button class="back-btn" onclick="goBack()">⬅️ 返回</button>
+<script>
+function goBack() {
+    history.back();
+}
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        goBack();
+    }
+});
+</script>
+<div class="watermark">齐老师动画</div>
+<style>
+.watermark {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    font-size: 14px;
+    color: rgba(0, 255, 255, 0.3);
+    z-index: 9998;
+    pointer-events: none;
+    user-select: none;
+}
+</style>
+<script>
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+});
+</script>
+<style>
+.back-btn {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    padding: 10px 20px;
+    background: rgba(0, 150, 200, 0.3);
+    border: 1px solid #00ffff;
+    color: white;
+    font-size: 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    z-index: 9999;
+    transition: 0.3s;
+    backdrop-filter: blur(5px);
+}
+.back-btn:hover {
+    background: rgba(0, 150, 200, 0.6);
+    box-shadow: 0 0 15px #00ffff;
+}
+</style>
+<button class="back-btn" onclick="goBack()">⬅️ 返回</button>
+<script>
+function goBack() {
+    history.back();
+}
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        goBack();
+    }
+});
+</script>
+<div class="watermark">齐老师动画</div>
+<style>
+.watermark {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    font-size: 14px;
+    color: rgba(0, 255, 255, 0.3);
+    z-index: 9998;
+    pointer-events: none;
+    user-select: none;
+}
+</style>
+<script>
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+});
+</script>
+<style>
+.back-btn {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    padding: 10px 20px;
+    background: rgba(0, 150, 200, 0.3);
+    border: 1px solid #00ffff;
+    color: white;
+    font-size: 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    z-index: 9999;
+    transition: 0.3s;
+    backdrop-filter: blur(5px);
+}
+.back-btn:hover {
+    background: rgba(0, 150, 200, 0.6);
+    box-shadow: 0 0 15px #00ffff;
+}
+</style>
+<button class="back-btn" onclick="goBack()">⬅️ 返回</button>
+<script>
+function goBack() {
+    history.back();
+}
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        goBack();
+    }
+});
+</script>
+<div class="watermark">齐老师动画</div>
+<style>
+.watermark {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    font-size: 14px;
+    color: rgba(0, 255, 255, 0.3);
+    z-index: 9998;
+    pointer-events: none;
+    user-select: none;
+}
+</style>
+<script>
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+});
+</script>
+
+<div style="position: fixed; bottom: 10px; right: 10px; z-index: 9998; color: rgba(255, 255, 255, 0.3); font-family: Arial, sans-serif; font-size: 12px; pointer-events: none;">
+    齐老师动画
+</div>
+
+<script>
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+});
+</script>
+</body>
+</html>
