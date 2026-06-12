@@ -1,0 +1,891 @@
+<!DOCTYPE html>
+
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, user-scalable=no" name="viewport"/>
+<title>第一宇宙速度 · 蓝色球体+地心发光字样</title>
+<style>
+        :root {
+            --bg: #000010;
+            --panel-bg: rgba(10, 18, 30, 0.88);
+            --text: #e0e8f0;
+            --accent: #4da6ff;
+            --border: rgba(255, 255, 255, 0.18);
+        }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            background: #000008;
+            font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', system-ui, sans-serif;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+        }
+        canvas {
+            display: block;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        .control-panel {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10;
+            background: var(--panel-bg);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid var(--border);
+            border-radius: 22px;
+            padding: 18px 28px 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            width: min(520px, 94vw);
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.7), 0 0 100px rgba(40, 100, 200, 0.15);
+        }
+        .panel-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        .title-group {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--accent);
+            box-shadow: 0 0 14px var(--accent), 0 0 30px var(--accent);
+            animation: pulse 2.2s ease-in-out infinite;
+        }
+        @keyframes pulse {
+            0%,
+            100% {
+                box-shadow: 0 0 10px var(--accent), 0 0 22px var(--accent);
+            }
+            50% {
+                box-shadow: 0 0 20px var(--accent), 0 0 45px var(--accent);
+            }
+        }
+        .orbit-badge {
+            font-size: 0.8rem;
+            font-weight: 600;
+            padding: 5px 14px;
+            border-radius: 20px;
+            letter-spacing: 0.04em;
+            white-space: nowrap;
+            border: 1px solid transparent;
+            transition: all 0.35s ease;
+        }
+        .badge-fall {
+            background: rgba(255, 90, 50, 0.2);
+            color: #ff9f80;
+            border-color: rgba(255, 90, 50, 0.4);
+        }
+        .badge-circle {
+            background: rgba(60, 220, 120, 0.2);
+            color: #6eeea0;
+            border-color: rgba(60, 220, 120, 0.4);
+        }
+        .badge-ellipse {
+            background: rgba(60, 150, 255, 0.2);
+            color: #7ab8ff;
+            border-color: rgba(60, 150, 255, 0.4);
+        }
+        .badge-escape {
+            background: rgba(170, 110, 255, 0.2);
+            color: #c89aff;
+            border-color: rgba(170, 110, 255, 0.4);
+        }
+
+        .slider-group {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex: 1;
+            min-width: 200px;
+        }
+        .slider-label {
+            font-size: 0.8rem;
+            color: #b0c0d8;
+            white-space: nowrap;
+        }
+        .slider-value {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: #fff;
+            min-width: 58px;
+            text-align: right;
+            font-family: 'SF Mono', 'JetBrains Mono', 'Consolas', monospace;
+        }
+        input[type="range"] {
+            -webkit-appearance: none;
+            flex: 1;
+            height: 8px;
+            border-radius: 4px;
+            background: rgba(255, 255, 255, 0.12);
+            outline: none;
+            cursor: pointer;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: #fff;
+            border: 3px solid var(--accent);
+            cursor: grab;
+            box-shadow: 0 0 24px rgba(70, 140, 255, 0.6), 0 4px 12px rgba(0, 0, 0, 0.5);
+            transition: 0.2s;
+        }
+        .height-display {
+            font-size: 0.75rem;
+            color: #aac0e0;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .height-value {
+            color: #fff;
+            font-weight: 600;
+        }
+        .btn-reset {
+            padding: 9px 20px;
+            border-radius: 25px;
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            background: rgba(255, 255, 255, 0.06);
+            color: #d0d8e8;
+            cursor: pointer;
+            font-size: 0.8rem;
+            font-weight: 600;
+            letter-spacing: 0.04em;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            white-space: nowrap;
+        }
+        .btn-reset:hover {
+            background: rgba(255, 255, 255, 0.16);
+            border-color: rgba(255, 255, 255, 0.5);
+            color: #fff;
+            box-shadow: 0 0 30px rgba(70, 130, 255, 0.35);
+        }
+        .markers-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.7rem;
+            color: #8899b8;
+            padding: 0 5px;
+        }
+        .marker-v1 {
+            color: #6eeea0;
+            font-weight: 600;
+        }
+        .marker-v2 {
+            color: #c89aff;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+<div id="backButton" onclick="window.location.href='index.html';" style="position: fixed; top: 20px; left: 20px; z-index: 9999; background: rgba(30, 60, 114, 0.8); color: white; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-family: Arial, sans-serif; font-size: 14px; border: 1px solid rgba(100, 150, 255, 0.5); transition: all 0.3s;">
+    ← 返回 (ESC)
+</div>
+<script>
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        window.location.href='index.html';
+    }
+});
+</script>
+
+<canvas id="mainCanvas"></canvas>
+<div class="control-panel">
+<div class="panel-row">
+<div class="title-group">
+<span class="status-dot"></span>
+<span style="font-weight:700;color:#e0e8f0;">轨道模拟</span>
+<span class="orbit-badge badge-circle" id="orbitBadge">圆形轨道</span>
+</div>
+<div class="height-display">
+                🛰️ 高度 <span class="height-value" id="heightDisplay">380 km</span>
+</div>
+<button class="btn-reset" id="btnReset">⟳ 重置</button>
+</div>
+<div class="slider-group">
+<span class="slider-label">初速度</span>
+<input id="speedSlider" max="165" min="12" step="0.5" type="range" value="78"/>
+<span class="slider-value" id="speedValue">7.9 km/s</span>
+</div>
+<div class="markers-row">
+<span>慢</span>
+<span class="marker-v1">● 第一宇宙速度</span>
+<span class="marker-v2">● 第二宇宙速度</span>
+<span>快</span>
+</div>
+</div>
+<script>
+        (function() {
+            const canvas = document.getElementById('mainCanvas');
+            const ctx = canvas.getContext('2d');
+
+            const speedSlider = document.getElementById('speedSlider');
+            const speedValueEl = document.getElementById('speedValue');
+            const orbitBadge = document.getElementById('orbitBadge');
+            const btnReset = document.getElementById('btnReset');
+            const heightDisplay = document.getElementById('heightDisplay');
+
+            let W, H, dpr;
+            let earthX, earthY, earthR;
+            let surfaceGravity, circularSpeed, escapeSpeed;
+            const INITIAL_ALTITUDE_FACTOR = 0.1;
+            let initialAltitude;
+
+            function resizeCanvas() {
+                dpr = Math.min(window.devicePixelRatio || 1, 2);
+                W = window.innerWidth;
+                H = window.innerHeight;
+                canvas.width = W * dpr;
+                canvas.height = H * dpr;
+                canvas.style.width = W + 'px';
+                canvas.style.height = H + 'px';
+                ctx.setTransform(1, 0, 0, 1, 0, 0);
+                ctx.scale(dpr, dpr);
+
+                earthR = Math.min(W, H) * 0.18;
+                earthR = Math.max(earthR, 55);
+                earthR = Math.min(earthR, 210);
+                earthX = W * 0.5;
+                earthY = H * 0.43;
+                initialAltitude = earthR * INITIAL_ALTITUDE_FACTOR;
+
+                const targetPeriod = 3.1;
+                const r = earthR + initialAltitude;
+                surfaceGravity = earthR / Math.pow(targetPeriod / (2 * Math.PI), 2);
+                circularSpeed = Math.sqrt(surfaceGravity * earthR * earthR / r);
+                escapeSpeed = Math.sqrt(2) * circularSpeed;
+
+                updateSliderRange();
+            }
+
+            function sliderToSpeed(val) {
+                const min = circularSpeed * 0.16;
+                const max = circularSpeed * 1.58;
+                return min + (val - 12) / (165 - 12) * (max - min);
+            }
+
+            function speedToSlider(speed) {
+                const min = circularSpeed * 0.16;
+                const max = circularSpeed * 1.58;
+                return 12 + (speed - min) / (max - min) * (165 - 12);
+            }
+
+            function updateSliderRange() {
+                const speed = sliderToSpeed(parseFloat(speedSlider.value));
+                updateSpeedDisplay(speed);
+            }
+
+            function updateSpeedDisplay(speedPx) {
+                const ratio = speedPx / circularSpeed;
+                speedValueEl.textContent = (ratio * 7.9).toFixed(1) + ' km/s';
+                orbitBadge.classList.remove('badge-fall', 'badge-circle', 'badge-ellipse', 'badge-escape');
+                if (ratio < 0.97) {
+                    orbitBadge.textContent = '亚轨道 · 坠落';
+                    orbitBadge.classList.add('badge-fall');
+                } else if (ratio < 1.03) {
+                    orbitBadge.textContent = '圆形轨道';
+                    orbitBadge.classList.add('badge-circle');
+                } else if (ratio < 1.40) {
+                    orbitBadge.textContent = '椭圆轨道';
+                    orbitBadge.classList.add('badge-ellipse');
+                } else {
+                    orbitBadge.textContent = '逃逸轨道';
+                    orbitBadge.classList.add('badge-escape');
+                }
+            }
+
+            function updateHeightDisplay() {
+                const dx = satX - earthX;
+                const dy = satY - earthY;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                const altPx = Math.max(0, dist - earthR);
+                const km = Math.round(altPx * (6371 / earthR));
+                heightDisplay.textContent = km + ' km';
+            }
+
+            // 星空背景
+            let stars = [],
+                nebulae = [];
+
+            function generateStars() {
+                stars = [];
+                const count = Math.floor((W * H) / 260);
+                for (let i = 0; i < count; i++) stars.push({
+                    x: Math.random() * W,
+                    y: Math.random() * H,
+                    r: Math.random() * 1.6 + 0.2,
+                    brightness: Math.random(),
+                    speed: Math.random() * 0.02 + 0.004,
+                    offset: Math.random() * Math.PI * 2
+                });
+                for (let i = 0; i < count * 0.12; i++) stars.push({
+                    x: Math.random() * W,
+                    y: Math.random() * H,
+                    r: Math.random() * 2.2 + 1.2,
+                    brightness: 0.7 + Math.random() * 0.3,
+                    speed: Math.random() * 0.025 + 0.008,
+                    offset: Math.random() * Math.PI * 2,
+                    isBright: true
+                });
+            }
+
+            function generateNebulae() {
+                nebulae = [];
+                const count = 2 + Math.floor(Math.random() * 3);
+                for (let i = 0; i < count; i++) nebulae.push({
+                    x: Math.random() * W,
+                    y: Math.random() * H,
+                    r: Math.random() * W * 0.4 + W * 0.1,
+                    hue: [220, 260, 340, 180, 30][Math.floor(Math.random() * 5)],
+                    alpha: Math.random() * 0.022 + 0.006
+                });
+            }
+
+            function drawBackground(time) {
+                ctx.fillStyle = '#000008';
+                ctx.fillRect(0, 0, W, H);
+                nebulae.forEach(n => {
+                    const g = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, n.r);
+                    g.addColorStop(0, `hsla(${n.hue},50%,25%,${n.alpha*1.4})`);
+                    g.addColorStop(0.6, `hsla(${n.hue},40%,12%,${n.alpha})`);
+                    g.addColorStop(1, 'transparent');
+                    ctx.fillStyle = g;
+                    ctx.fillRect(n.x - n.r, n.y - n.r, n.r * 2, n.r * 2);
+                });
+                stars.forEach(s => {
+                    const t = 0.5 + 0.5 * Math.sin(time * s.speed + s.offset);
+                    const a = s.brightness * (0.5 + 0.5 * t);
+                    ctx.fillStyle = `rgba(255,255,245,${a})`;
+                    ctx.beginPath();
+                    ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+                    ctx.fill();
+                    if (s.isBright && t > 0.7) {
+                        ctx.strokeStyle = `rgba(210,225,255,${a*0.5})`;
+                        ctx.lineWidth = 0.5;
+                        ctx.beginPath();
+                        const cl = s.r * 3;
+                        ctx.moveTo(s.x - cl, s.y);
+                        ctx.lineTo(s.x + cl, s.y);
+                        ctx.moveTo(s.x, s.y - cl);
+                        ctx.lineTo(s.x, s.y + cl);
+                        ctx.stroke();
+                    }
+                });
+            }
+
+            function roundRect(x, y, w, h, r) {
+                ctx.beginPath();
+                ctx.moveTo(x + r, y);
+                ctx.lineTo(x + w - r, y);
+                ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+                ctx.lineTo(x + w, y + h - r);
+                ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+                ctx.lineTo(x + r, y + h);
+                ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+                ctx.lineTo(x, y + r);
+                ctx.quadraticCurveTo(x, y, x + r, y);
+                ctx.closePath();
+            }
+
+            // 绘制地心位置的发光机械感文字
+            function drawCenterLabel(time) {
+                const fontSize = Math.max(22, earthR * 0.6);
+                const pulse = 0.85 + 0.15 * Math.sin(time * 3);
+                // 地心位置
+                const centerY = earthY;
+
+                ctx.save();
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+
+                const textWidth = fontSize * 2.6;
+                const textHeight = fontSize * 1.2;
+                // 底板以地心为中心
+                const boxX = earthX;
+                const boxY = centerY;
+
+                // 发光底板
+                const plateGrad = ctx.createLinearGradient(earthX, boxY - textHeight / 2, earthX, boxY + textHeight / 2);
+                plateGrad.addColorStop(0, 'rgba(0,120,200,0.3)');
+                plateGrad.addColorStop(0.5, 'rgba(0,160,240,0.5)');
+                plateGrad.addColorStop(1, 'rgba(0,80,180,0.3)');
+                ctx.fillStyle = plateGrad;
+                roundRect(boxX - textWidth / 2, boxY - textHeight / 2, textWidth, textHeight, 6);
+                ctx.fill();
+
+                ctx.strokeStyle = 'rgba(100,200,255,0.75)';
+                ctx.lineWidth = 1.6;
+                ctx.shadowColor = 'rgba(60,180,255,0.9)';
+                ctx.shadowBlur = 14 * pulse;
+                roundRect(boxX - textWidth / 2, boxY - textHeight / 2, textWidth, textHeight, 6);
+                ctx.stroke();
+
+                // 齿轮小点装饰
+                const dashCount = 20;
+                for (let j = 0; j < dashCount; j++) {
+                    const angle = (j / dashCount) * Math.PI * 2 + time * 0.1;
+                    const rx = textWidth / 2 + 6;
+                    const ry = textHeight / 2 + 4;
+                    const x1 = earthX + Math.cos(angle) * (rx - 3);
+                    const y1 = boxY + Math.sin(angle) * (ry - 3);
+                    const x2 = earthX + Math.cos(angle) * rx;
+                    const y2 = boxY + Math.sin(angle) * ry;
+                    ctx.beginPath();
+                    ctx.moveTo(x1, y1);
+                    ctx.lineTo(x2, y2);
+                    ctx.strokeStyle = `rgba(120,220,255,${0.6*pulse})`;
+                    ctx.lineWidth = 0.9;
+                    ctx.stroke();
+                }
+
+                // 内圈光环
+                ctx.strokeStyle = `rgba(140,220,255,${0.35*pulse})`;
+                ctx.lineWidth = 1;
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = 'rgba(100,200,255,0.5)';
+                ctx.beginPath();
+                ctx.arc(earthX, boxY, textWidth * 0.7, 0, Math.PI * 2);
+                ctx.stroke();
+
+                // 主文字
+                const fontStr = `bold ${fontSize}px "Arial Black","Impact","PingFang SC","Microsoft YaHei",sans-serif`;
+                ctx.shadowBlur = 30 * pulse;
+                ctx.shadowColor = 'rgba(0,200,255,0.9)';
+                ctx.font = fontStr;
+                ctx.fillStyle = '#ffffff';
+                ctx.fillText('地 球', earthX, boxY);
+
+                ctx.shadowBlur = 48 * pulse;
+                ctx.shadowColor = 'rgba(0,170,255,0.7)';
+                ctx.fillStyle = 'rgba(220,245,255,0.95)';
+                ctx.fillText('地 球', earthX, boxY);
+
+                // 扫描线效果
+                ctx.shadowBlur = 0;
+                ctx.strokeStyle = 'rgba(150,230,255,0.3)';
+                ctx.lineWidth = 0.6;
+                for (let i = -textHeight / 2; i < textHeight / 2; i += 5) {
+                    ctx.beginPath();
+                    ctx.moveTo(earthX - textWidth / 2 + 4, boxY + i);
+                    ctx.lineTo(earthX + textWidth / 2 - 4, boxY + i);
+                    ctx.stroke();
+                }
+
+                ctx.restore();
+            }
+
+            function drawEarthWithLabel(time) {
+                // 底层：蓝色立体球体
+                const glowGrad = ctx.createRadialGradient(
+                    earthX - earthR * 0.3, earthY - earthR * 0.35, earthR * 0.05,
+                    earthX, earthY, earthR
+                );
+                glowGrad.addColorStop(0, '#a0d0ff');
+                glowGrad.addColorStop(0.3, '#3a8fd4');
+                glowGrad.addColorStop(0.7, '#0b3d6b');
+                glowGrad.addColorStop(1, '#021a30');
+                ctx.fillStyle = glowGrad;
+                ctx.beginPath();
+                ctx.arc(earthX, earthY, earthR, 0, Math.PI * 2);
+                ctx.fill();
+
+                // 大气光晕
+                const outerGlow = ctx.createRadialGradient(earthX, earthY, earthR * 0.92, earthX, earthY, earthR * 1.25);
+                outerGlow.addColorStop(0, 'rgba(120,180,240,0)');
+                outerGlow.addColorStop(0.5, 'rgba(100,160,230,0.15)');
+                outerGlow.addColorStop(1, 'rgba(30,60,150,0)');
+                ctx.fillStyle = outerGlow;
+                ctx.beginPath();
+                ctx.arc(earthX, earthY, earthR * 1.25, 0, Math.PI * 2);
+                ctx.fill();
+
+                // 顶层：地心发光机械感文字
+                drawCenterLabel(time);
+            }
+
+            // 粒子系统
+            let particles = [];
+
+            function spawnParticles(x, y, n, color, range) {
+                for (let i = 0; i < n; i++) {
+                    const a = Math.random() * Math.PI * 2;
+                    const s = range[0] + Math.random() * (range[1] - range[0]);
+                    particles.push({
+                        x,
+                        y,
+                        vx: Math.cos(a) * s,
+                        vy: Math.sin(a) * s,
+                        life: 0.5 + Math.random(),
+                        maxLife: 0.5 + Math.random(),
+                        color,
+                        r: 0.8 + Math.random() * 2.2
+                    });
+                }
+            }
+
+            function updateParticles(dt) {
+                for (let i = particles.length - 1; i >= 0; i--) {
+                    const p = particles[i];
+                    p.life -= dt;
+                    if (p.life <= 0) { particles.splice(i, 1); continue; }
+                    const dx = p.x - earthX,
+                        dy = p.y - earthY,
+                        dist = Math.sqrt(dx * dx + dy * dy) || 0.1;
+                    const g = surfaceGravity * earthR * earthR / (dist * dist);
+                    const nx = dx / dist,
+                        ny = dy / dist;
+                    p.vx -= nx * g * dt;
+                    p.vy -= ny * g * dt;
+                    p.x += p.vx * dt;
+                    p.y += p.vy * dt;
+                }
+            }
+
+            function drawParticles() {
+                particles.forEach(p => {
+                    const a = Math.max(0, p.life / p.maxLife);
+                    ctx.fillStyle = p.color.replace('1)', `${a})`).replace('rgb', 'rgba');
+                    ctx.shadowColor = p.color.replace('1)', `${a*0.5})`).replace('rgb', 'rgba');
+                    ctx.shadowBlur = p.r * 2;
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.r * a, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.shadowBlur = 0;
+                });
+            }
+
+            // 模拟状态
+            let satX, satY, satVx, satVy;
+            let trajectoryPoints = [];
+            let simRunning = true,
+                hasCollided = false,
+                collisionTime = -10;
+            let currentOrbitType = 'circular';
+            const MAX_TRAJ = 2200;
+
+            function getInitialState() {
+                const speed = sliderToSpeed(parseFloat(speedSlider.value));
+                const r = earthR + initialAltitude;
+                return { x: earthX, y: earthY - r, vx: speed, vy: 0 };
+            }
+
+            function resetSimulation() {
+                const init = getInitialState();
+                satX = init.x;
+                satY = init.y;
+                satVx = init.vx;
+                satVy = init.vy;
+                trajectoryPoints = [];
+                simRunning = true;
+                hasCollided = false;
+                collisionTime = -10;
+                particles = [];
+                spawnParticles(satX, satY, 22, 'rgb(255,210,80)', [18, 45]);
+                updateOrbitType();
+                updateHeightDisplay();
+            }
+
+            function updateOrbitType() {
+                const speed = Math.sqrt(satVx * satVx + satVy * satVy);
+                const ratio = speed / circularSpeed;
+                if (ratio < 0.97) currentOrbitType = 'suborbital';
+                else if (ratio < 1.03) currentOrbitType = 'circular';
+                else if (ratio < 1.40) currentOrbitType = 'elliptical';
+                else currentOrbitType = 'escape';
+            }
+
+            function getTrajectoryColor() {
+                return {
+                    suborbital: '#ff7043',
+                    circular: '#4de8a0',
+                    elliptical: '#5da8ff',
+                    escape: '#b87dff'
+                } [currentOrbitType];
+            }
+
+            function physicsStep(dt) {
+                if (!simRunning || hasCollided) return;
+                const subSteps = 8,
+                    subDt = dt / subSteps;
+                for (let s = 0; s < subSteps; s++) {
+                    const dx = satX - earthX,
+                        dy = satY - earthY,
+                        dist = Math.sqrt(dx * dx + dy * dy) || 0.1;
+                    const g = surfaceGravity * earthR * earthR / (dist * dist);
+                    satVx -= (dx / dist) * g * subDt;
+                    satVy -= (dy / dist) * g * subDt;
+                    satX += satVx * subDt;
+                    satY += satVy * subDt;
+                    const newDist = Math.sqrt((satX - earthX) ** 2 + (satY - earthY) ** 2);
+                    if (newDist <= earthR) {
+                        hasCollided = true;
+                        collisionTime = performance.now() / 1000;
+                        satVx = satVy = 0;
+                        satX = earthX + (satX - earthX) / newDist * earthR;
+                        satY = earthY + (satY - earthY) / newDist * earthR;
+                        simRunning = false;
+                        spawnParticles(satX, satY, 45, 'rgb(255,140,40)', [25, 100]);
+                        spawnParticles(satX, satY, 25, 'rgb(255,220,150)', [10, 55]);
+                        return;
+                    }
+                    if (newDist > Math.max(W, H) * 1.9) {
+                        simRunning = false;
+                        hasCollided = true;
+                        collisionTime = performance.now() / 1000;
+                        spawnParticles(satX, satY, 30, 'rgb(170,130,255)', [20, 65]);
+                        return;
+                    }
+                }
+                updateOrbitType();
+                updateHeightDisplay();
+            }
+
+            function recordTrajectory() {
+                if (!simRunning && hasCollided) return;
+                const last = trajectoryPoints[trajectoryPoints.length - 1];
+                if (!last || Math.hypot(satX - last.x, satY - last.y) > 1.8) {
+                    trajectoryPoints.push({ x: satX, y: satY });
+                    if (trajectoryPoints.length > MAX_TRAJ) trajectoryPoints.shift();
+                }
+            }
+
+            function drawTrajectory() {
+                if (trajectoryPoints.length < 2) return;
+                const color = getTrajectoryColor();
+                const total = trajectoryPoints.length;
+                for (let i = 1; i < total; i++) {
+                    const a = 0.7 * (0.3 + 0.7 * (i / total));
+                    ctx.strokeStyle = color.startsWith('#') ?
+                        `rgba(${parseInt(color.slice(1,3),16)},${parseInt(color.slice(3,5),16)},${parseInt(color.slice(5,7),16)},${a})` :
+                        color;
+                    ctx.lineWidth = 2.4;
+                    ctx.lineCap = 'round';
+                    ctx.beginPath();
+                    ctx.moveTo(trajectoryPoints[i - 1].x, trajectoryPoints[i - 1].y);
+                    ctx.lineTo(trajectoryPoints[i].x, trajectoryPoints[i].y);
+                    ctx.stroke();
+                }
+                if (total > 12) {
+                    ctx.strokeStyle = color.startsWith('#') ?
+                        `rgba(${parseInt(color.slice(1,3),16)},${parseInt(color.slice(3,5),16)},${parseInt(color.slice(5,7),16)},0.18)` :
+                        color;
+                    ctx.lineWidth = 7;
+                    ctx.shadowBlur = 10;
+                    ctx.shadowColor = color.startsWith('#') ?
+                        `rgba(${parseInt(color.slice(1,3),16)},${parseInt(color.slice(3,5),16)},${parseInt(color.slice(5,7),16)},0.35)` :
+                        color;
+                    ctx.beginPath();
+                    ctx.moveTo(trajectoryPoints[0].x, trajectoryPoints[0].y);
+                    for (let i = 1; i < total; i++) ctx.lineTo(trajectoryPoints[i].x, trajectoryPoints[i].y);
+                    ctx.stroke();
+                    ctx.shadowBlur = 0;
+                }
+            }
+
+            function drawSatellite(time) {
+                if (hasCollided && !simRunning && performance.now() / 1000 - collisionTime > 3.0) return;
+                const sx = satX,
+                    sy = satY;
+                const glow = ctx.createRadialGradient(sx, sy, 0, sx, sy, 16);
+                glow.addColorStop(0, 'rgba(255,255,255,0.9)');
+                glow.addColorStop(0.2, 'rgba(255,240,200,0.5)');
+                glow.addColorStop(1, 'rgba(255,100,30,0)');
+                ctx.fillStyle = glow;
+                ctx.beginPath();
+                ctx.arc(sx, sy, 16, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = '#fff';
+                ctx.beginPath();
+                ctx.arc(sx, sy, 4, 0, Math.PI * 2);
+                ctx.fill();
+                const flicker = 0.7 + 0.3 * Math.sin(time * 9);
+                ctx.strokeStyle = `rgba(255,255,255,${0.65*flicker})`;
+                ctx.lineWidth = 0.8;
+                ctx.beginPath();
+                const fl = 11;
+                ctx.moveTo(sx - fl, sy);
+                ctx.lineTo(sx + fl, sy);
+                ctx.moveTo(sx, sy - fl);
+                ctx.lineTo(sx, sy + fl);
+                ctx.stroke();
+            }
+
+            function drawReferenceOrbit() {
+                const r = earthR + initialAltitude;
+                ctx.setLineDash([6, 14]);
+                ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.arc(earthX, earthY, r, 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
+
+            let lastTime = performance.now() / 1000,
+                timeAccum = 0;
+
+            function animate(timestamp) {
+                const currentTime = timestamp / 1000;
+                let dt = currentTime - lastTime;
+                lastTime = currentTime;
+                if (dt > 0.1) dt = 0.1;
+                if (dt <= 0) dt = 0.016;
+                timeAccum += dt;
+
+                physicsStep(dt);
+                if (simRunning && !hasCollided) recordTrajectory();
+                updateParticles(dt);
+
+                ctx.clearRect(0, 0, W, H);
+                drawBackground(timeAccum);
+                drawReferenceOrbit();
+                drawTrajectory();
+                drawEarthWithLabel(timeAccum); // 蓝色球体 + 地心文字
+                drawSatellite(timeAccum);
+                drawParticles();
+
+                if (hasCollided && !simRunning && currentTime - collisionTime > 3.5) resetSimulation();
+                requestAnimationFrame(animate);
+            }
+
+            speedSlider.addEventListener('input', () => {
+                updateSpeedDisplay(sliderToSpeed(parseFloat(speedSlider.value)));
+                resetSimulation();
+            });
+            btnReset.addEventListener('click', resetSimulation);
+            window.addEventListener('keydown', e => {
+                if (e.code === 'Space') { e.preventDefault();
+                    resetSimulation(); } else if (e.code === 'ArrowRight') { e.preventDefault();
+                    speedSlider.value = Math.min(165, +speedSlider.value + 2);
+                    speedSlider.dispatchEvent(new Event('input')); } else if (e.code === 'ArrowLeft') { e
+                    .preventDefault();
+                    speedSlider.value = Math.max(12, +speedSlider.value - 2);
+                    speedSlider.dispatchEvent(new Event('input')); }
+            });
+            canvas.addEventListener('dblclick', resetSimulation);
+            window.addEventListener('resize', () => {
+                resizeCanvas();
+                generateStars();
+                generateNebulae();
+                resetSimulation();
+            });
+
+            function init() {
+                resizeCanvas();
+                generateStars();
+                generateNebulae();
+                const sliderInit = speedToSlider(circularSpeed);
+                speedSlider.value = Math.round(sliderInit);
+                updateSpeedDisplay(circularSpeed);
+                const initState = getInitialState();
+                satX = initState.x;
+                satY = initState.y;
+                satVx = initState.vx;
+                satVy = initState.vy;
+                trajectoryPoints = [];
+                simRunning = true;
+                hasCollided = false;
+                collisionTime = -10;
+                particles = [];
+                currentOrbitType = 'circular';
+                orbitBadge.textContent = '圆形轨道';
+                orbitBadge.classList.add('badge-circle');
+                updateHeightDisplay();
+                lastTime = performance.now() / 1000;
+                timeAccum = 0;
+                requestAnimationFrame(animate);
+                console.log('🌍 蓝色球体 + 地心发光“地球”字样 启动');
+            }
+            init();
+        })();
+    </script>
+<style>
+.back-btn {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    padding: 10px 20px;
+    background: rgba(0, 150, 200, 0.3);
+    border: 1px solid #00ffff;
+    color: white;
+    font-size: 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    z-index: 9999;
+    transition: 0.3s;
+    backdrop-filter: blur(5px);
+}
+.back-btn:hover {
+    background: rgba(0, 150, 200, 0.6);
+    box-shadow: 0 0 15px #00ffff;
+}
+</style>
+<button class="back-btn" onclick="goBack()">⬅️ 返回</button>
+<script>
+function goBack() {
+    history.back();
+}
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        goBack();
+    }
+});
+</script>
+<div class="watermark">齐老师动画</div>
+<style>
+.watermark {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    font-size: 14px;
+    color: rgba(0, 255, 255, 0.3);
+    z-index: 9998;
+    pointer-events: none;
+    user-select: none;
+}
+</style>
+<script>
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+});
+</script>
+
+<div style="position: fixed; bottom: 10px; right: 10px; z-index: 9998; color: rgba(255, 255, 255, 0.3); font-family: Arial, sans-serif; font-size: 12px; pointer-events: none;">
+    齐老师动画
+</div>
+
+<script>
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+});
+</script>
+</body>
+</html>
