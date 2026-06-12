@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta charset="utf-8"/>
+<meta charset="utf-8"/>
+<meta charset="utf-8"/>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, user-scalable=no" name="viewport"/>
+<title>杨氏双缝干涉 · 竖直条纹 水平旋转视角</title>
+<style>
+    :root {
+      --bg: #020a16;
+      --panel-bg: rgba(7, 15, 28, 0.9);
+      --text: #c8d6e5;
+      --accent: #00d4ff;
+      --accent2: #ffb840;
+      --border: rgba(0, 190, 255, 0.3);
+      --glow: 0 0 24px rgba(0, 200, 255, 0.38);
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body {
+      background: var(--bg);
+      font-family: 'Segoe UI', 'Courier New', monospace;
+      overflow: hidden; height:100vh; width:100vw;
+      user-select: none; -webkit-user-select: none;
+    }
+    #canvas-container { position:fixed; top:0; left:0; width:100%; height:100%; z-index:1; }
+
+    #title-bar {
+      position:fixed; top:14px; left:50%; transform:translateX(-50%); z-index:10;
+      background: var(--panel-bg); border:1px solid var(--border); border-radius:14px;
+      padding:10px 22px; display:flex; align-items:center; gap:12px;
+      backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+      box-shadow: var(--glow), 0 4px 28px rgba(0,0,0,0.5);
+      letter-spacing:1px; white-space:nowrap;
+    }
+    #title-bar .dot { width:9px; height:9px; border-radius:50%; animation:pulse-dot 1.5s ease-in-out infinite; }
+    #title-bar .dot.src { background:#ffdd57; box-shadow:0 0 14px #ffcc00; }
+    #title-bar .dot.slt { background:#00e5ff; box-shadow:0 0 14px #00c8ff; animation-delay:0.5s; }
+    #title-bar .dot.scr { background:#ff7eb3; box-shadow:0 0 14px #ff5588; animation-delay:1s; }
+    @keyframes pulse-dot { 0%,100%{ transform:scale(1); opacity:0.6; } 50%{ transform:scale(2.2); opacity:1; } }
+    #title-bar span { color:var(--text); font-size:12px; font-weight:500; }
+    #title-bar .sep { color:#4a5a6a; font-size:10px; }
+
+    #control-panel {
+      position:fixed; bottom:14px; left:50%; transform:translateX(-50%); z-index:10;
+      background: var(--panel-bg); border:1px solid var(--border); border-radius:16px;
+      padding:14px 18px; display:flex; flex-wrap:wrap; gap:14px; align-items:center;
+      backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+      box-shadow: 0 4px 32px rgba(0,0,0,0.5); max-width:98vw;
+    }
+    .ctrl-group { display:flex; flex-direction:column; align-items:center; gap:3px; min-width:48px; }
+    .ctrl-label { color:#7a8ba0; font-size:8px; letter-spacing:1.5px; text-transform:uppercase; white-space:nowrap; }
+    .ctrl-value { color:#ffffff; font-size:13px; font-weight:700; letter-spacing:0.5px; text-shadow:0 0 10px rgba(0,210,255,0.55); min-width:46px; text-align:center; }
+    .ctrl-value.highlight { color:#ffc850; text-shadow:0 0 10px rgba(255,180,50,0.65); }
+    #control-panel input[type="range"] {
+      -webkit-appearance:none; width:88px; height:5px; border-radius:3px;
+      background: linear-gradient(90deg, #1a3040, #00bcd4); outline:none; cursor:pointer;
+    }
+    #control-panel input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance:none; width:19px; height:19px; border-radius:50%;
+      background:#fff; border:2px solid var(--accent); cursor:pointer;
+      box-shadow:0 0 14px rgba(0,200,255,0.6); transition:box-shadow 0.2s;
+    }
+    #control-panel input[type="range"]::-webkit-slider-thumb:hover { box-shadow:0 0 24px rgba(0,230,255,0.9); }
+    .divider-v { width:1px; height:26px; background:var(--border); border-radius:1px; opacity:0.7; }
+    #intensity-chart { width:130px; height:48px; border-radius:8px; border:1px solid rgba(255,255,255,0.18); background:rgba(0,0,0,0.45); }
+    #fringe-count { color:#ffcc60; font-weight:700; font-size:12px; text-shadow:0 0 8px rgba(255,180,50,0.5); min-width:28px; text-align:center; }
+
+    #hint {
+      position:fixed; top:50%; left:50%; transform:translate(-50%,-50%) translateY(78px); z-index:8;
+      color:rgba(160,195,220,0.55); font-size:10px; letter-spacing:1px;
+      pointer-events:none; transition:opacity 2.5s; text-align:center; white-space:nowrap;
+    }
+    @media (max-width:768px) {
+      #title-bar { padding:7px 10px; gap:5px; }
+      #title-bar span { font-size:9px; }
+      #control-panel { padding:9px; gap:7px; }
+      #control-panel input[type="range"] { width:52px; }
+      .ctrl-value { font-size:10px; min-width:34px; }
+      .ctrl-label { font-size:6px; }
+      #intensity-chart { width:68px; height:30px; }
+      #hint { font-size:7px; transform:translate(-50%,-50%) translateY(38px); }
+      .divider-v { height:18px; }
+    }
+  </style>
+</head>
+<body>
+<div id="backButton" onclick="window.location.href='index.html';" style="position: fixed; top: 20px; left: 20px; z-index: 9999; background: rgba(136, 187, 255, 0.2); color: white; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-family: Arial, sans-serif; font-size: 14px; border: 1px solid rgba(136, 187, 255, 0.5); transition: all 0.3s;">
+    ← 返回 (ESC)
+</div>
+<script>
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        window.location.href='index.html';
+    }
+});
+</script>
+
+<div id="canvas-container"></div>
+<div id="title-bar">
+<div class="dot src"></div><span>光源</span>
+<span class="sep">→</span>
+<div class="dot slt"></div><span>竖直双缝 S₁ S₂</span>
+<span class="sep">→</span>
+<div class="dot scr"></div><span>观察屏</span>
+<span style="color:#6a7a8a;font-size:10px;">| 杨氏双缝干涉</span>
+<span style="color:#ffb840;font-size:10px;">竖直条纹·水平旋转</span>
+</div>
+<div id="hint">🖱 鼠标左右拖动水平旋转  |  滚轮缩放  |  ⌨ Q/E 调 d   A/D 调 L   W/S 调频率   R 重置</div>
+<div id="control-panel">
+<div class="ctrl-group">
+<span class="ctrl-label">🔆 频率 f</span>
+<input id="freq-slider" max="3.5" min="0.5" step="0.01" title="调节入射光频率" type="range" value="2.8"/>
+<span class="ctrl-value" id="freq-value">2.80</span>
+</div>
+<div class="divider-v"></div>
+<div class="ctrl-group">
+<span class="ctrl-label">📏 波长 λ</span>
+<span class="ctrl-value highlight" id="lambda-value">0.357</span>
+</div>
+<div class="divider-v"></div>
+<div class="ctrl-group">
+<span class="ctrl-label">📐 缝距 d</span>
+<input id="d-slider" max="3.2" min="0.5" step="0.01" title="双缝水平间距" type="range" value="2.6"/>
+<span class="ctrl-value" id="d-value">2.60</span>
+</div>
+<div class="divider-v"></div>
+<div class="ctrl-group">
+<span class="ctrl-label">📏 屏距 L</span>
+<input id="L-slider" max="12.0" min="3.5" step="0.1" title="屏幕距离" type="range" value="8.0"/>
+<span class="ctrl-value" id="L-value">8.00</span>
+</div>
+<div class="divider-v"></div>
+<div class="ctrl-group">
+<span class="ctrl-label">📊 条纹间距 Δx</span>
+<span class="ctrl-value highlight" id="fringe-spacing">1.099</span>
+</div>
+<div class="divider-v"></div>
+<div class="ctrl-group">
+<span class="ctrl-label">✨ 可见亮纹</span>
+<span id="fringe-count">~9</span>
+</div>
+<div class="divider-v"></div>
+<canvas id="intensity-chart" title="屏幕光强分布 I(x)"></canvas>
+</div>
+<script type="importmap">
+    { "imports": {
+      "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+    }}
+  </script>
+<script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+    // ---------- DOM 引用 ----------
+    const container = document.getElementById('canvas-container');
+    const hintEl = document.getElementById('hint');
+    const freqSlider = document.getElementById('freq-slider');
+    const dSlider = document.getElementById('d-slider');
+    const LSlider = document.getElementById('L-slider');
+    const freqValueEl = document.getElementById('freq-value');
+    const lambdaValueEl = document.getElementById('lambda-value');
+    const dValueEl = document.getElementById('d-value');
+    const LValueEl = document.getElementById('L-value');
+    const fringeSpacingEl = document.getElementById('fringe-spacing');
+    const fringeCountEl = document.getElementById('fringe-count');
+    const intensityChartCanvas = document.getElementById('intensity-chart');
+
+    // ---------- 场景初始化 ----------
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x020a16);
+    scene.fog = new THREE.Fog(0x020a16, 14, 44);
+
+    const camera = new THREE.PerspectiveCamera(42, window.innerWidth / window.innerHeight, 0.3, 55);
+    camera.position.set(8.0, 4.8, 9.5);
+    camera.lookAt(0, 0.3, 3.2);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.25;
+    container.appendChild(renderer.domElement);
+
+    // 视角控制：仅允许水平旋转（方位角），极角锁定在斜上方
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.target.set(0, 0.4, 3.0);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.08;
+    controls.minDistance = 5;
+    controls.maxDistance = 18;
+    controls.enablePan = false;
+    // 锁定极角为固定值（斜上方视角）
+    const fixedPolarAngle = 1.15; // 约66度
+    controls.minPolarAngle = fixedPolarAngle;
+    controls.maxPolarAngle = fixedPolarAngle;
+    controls.enableRotate = true;
+    // 仅鼠标左键用于旋转，中键缩放
+    controls.mouseButtons = {
+      LEFT: THREE.MOUSE.ROTATE,
+      MIDDLE: THREE.MOUSE.DOLLY,
+      RIGHT: null
+    };
+    controls.touches = {
+      ONE: THREE.TOUCH.ROTATE,
+      TWO: THREE.TOUCH.DOLLY_PAN
+    };
+    controls.update();
+
+    // ---------- 光照 ----------
+    const ambient = new THREE.AmbientLight(0x1a2a3a, 1.9);
+    scene.add(ambient);
+    const dirLight = new THREE.DirectionalLight(0xffffff, 2.8);
+    dirLight.position.set(6, 12, 5);
+    dirLight.castShadow = true;
+    dirLight.shadow.mapSize.width = 1024;
+    dirLight.shadow.mapSize.height = 1024;
+    dirLight.shadow.camera.near = 0.4;
+    dirLight.shadow.camera.far = 50;
+    dirLight.shadow.camera.left = -16; dirLight.shadow.camera.right = 16;
+    dirLight.shadow.camera.top = 16; dirLight.shadow.camera.bottom = -12;
+    scene.add(dirLight);
+    const rimLight = new THREE.DirectionalLight(0x4488bb, 0.8);
+    rimLight.position.set(-4, 2, -4);
+    scene.add(rimLight);
+
+    // ---------- 星空背景 ----------
+    const starsGeo = new THREE.BufferGeometry();
+    const starsCount = 900;
+    const starsPos = new Float32Array(starsCount * 3);
+    for (let i = 0; i < starsCount; i++) {
+      starsPos[i*3] = (Math.random()-0.5)*28;
+      starsPos[i*3+1] = (Math.random()-0.5)*20;
+      starsPos[i*3+2] = (Math.random()-0.5)*20;
+    }
+    starsGeo.setAttribute('position', new THREE.BufferAttribute(starsPos, 3));
+    const starsMat = new THREE.PointsMaterial({ color:0x7799bb, size:0.04, blending:THREE.AdditiveBlending, depthWrite:false, transparent:true, opacity:0.7 });
+    const stars = new THREE.Points(starsGeo, starsMat);
+    scene.add(stars);
+
+    // 微尘
+    const dustCount = 200;
+    const dustGeo = new THREE.BufferGeometry();
+    const dustPositions = new Float32Array(dustCount*3);
+    const dustVel = new Float32Array(dustCount*3);
+    for (let i=0;i<dustCount;i++) {
+      dustPositions[i*3]=(Math.random()-0.5)*18;
+      dustPositions[i*3+1]=(Math.random()-0.5)*12;
+      dustPositions[i*3+2]=(Math.random()-0.5)*14;
+      dustVel[i*3]=(Math.random()-0.5)*0.2;
+      dustVel[i*3+1]=(Math.random()-0.5)*0.14;
+      dustVel[i*3+2]=(Math.random()-0.5)*0.16;
+    }
+    dustGeo.setAttribute('position', new THREE.BufferAttribute(dustPositions,3));
+    const dustMat = new THREE.PointsMaterial({ color:0xaaccff, size:0.032, blending:THREE.AdditiveBlending, depthWrite:false, transparent:true, opacity:0.55 });
+    const dustPts = new THREE.Points(dustGeo, dustMat);
+    dustPts.userData = { vel: dustVel, pos: dustPositions };
+    scene.add(dustPts);
+
+    // 网格
+    const gridHelper = new THREE.PolarGridHelper(9, 50, 38, 256, 0x142838, 0x142838);
+    scene.add(gridHelper);
+    const gridPlaneGeo = new THREE.PlaneGeometry(18,18);
+    const gridPlaneMat = new THREE.ShaderMaterial({
+      uniforms: { uColor:{value:new THREE.Color(0x0a1c2e)}, uBg:{value:new THREE.Color(0x010810)}, uTime:{value:0} },
+      vertexShader: `varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
+      fragmentShader: `varying vec2 vUv; uniform vec3 uColor; uniform vec3 uBg; uniform float uTime;
+        void main(){
+          vec2 g=abs(fract(vUv*40.0-0.5)-0.5); float line=min(g.x,g.y);
+          float alpha=exp(-line*55.0)*0.32+exp(-line*155.0)*0.14;
+          float scan=smoothstep(0.42,0.58,abs(fract(vUv.y*0.75-uTime*0.025)-0.5))*0.1;
+          gl_FragColor=vec4(mix(uBg,uColor,alpha+scan),(alpha+scan)*0.5);
+        }`,
+      transparent:true, depthWrite:false, side:THREE.DoubleSide
+    });
+    const gridPlane = new THREE.Mesh(gridPlaneGeo, gridPlaneMat);
+    gridPlane.rotation.x=0; gridPlane.position.z=-0.08; gridPlane.renderOrder=-1;
+    scene.add(gridPlane);
+
+    // 坐标轴
+    function makeAxis(color, dir, len=2.6){
+      const g = new THREE.Group();
+      const s = new THREE.CylinderGeometry(0.028,0.028,len,8);
+      const m = new THREE.MeshStandardMaterial({color, emissive:color, emissiveIntensity:0.5, roughness:0.35});
+      const shaft = new THREE.Mesh(s,m); shaft.position.y=len/2; g.add(shaft);
+      const head = new THREE.Mesh(new THREE.ConeGeometry(0.07,0.22,8), m); head.position.y=len; g.add(head);
+      if(dir==='x') g.rotation.z=-Math.PI/2; if(dir==='z') g.rotation.x=Math.PI/2;
+      return g;
+    }
+    const axisGroup = new THREE.Group();
+    axisGroup.add(makeAxis(0xff5555,'x')); axisGroup.add(makeAxis(0x55ff55,'y')); axisGroup.add(makeAxis(0x55aaff,'z'));
+    axisGroup.position.set(-5.5,-3.5,-0.08);
+    scene.add(axisGroup);
+
+    // ---------- 物理参数 ----------
+    const c = 1.0;
+    let freq = 2.8;
+    let lambda = c/freq;
+    let slitD = 2.6;
+    let screenL = 8.0;
+
+    const srcPos = new THREE.Vector3(0,0,-4.2);
+    const slitZ = 0;
+    const screenW = 10.0;
+    const screenH = 5.5;
+
+    // 工具函数
+    function glowTex(innerColor){
+      const canvas = document.createElement('canvas'); canvas.width=128; canvas.height=128;
+      const ctx = canvas.getContext('2d');
+      const g = ctx.createRadialGradient(64,64,0,64,64,64);
+      g.addColorStop(0,innerColor); g.addColorStop(0.2,innerColor); g.addColorStop(1,'rgba(0,0,0,0)');
+      ctx.fillStyle=g; ctx.fillRect(0,0,128,128);
+      const tex = new THREE.CanvasTexture(canvas); tex.minFilter=THREE.LinearFilter; return tex;
+    }
+    function glowSprite(tex, scale=1.5, opacity=0.7){
+      const mat = new THREE.SpriteMaterial({map:tex, blending:THREE.AdditiveBlending, depthTest:false, depthWrite:false, transparent:true, opacity});
+      const sp = new THREE.Sprite(mat); sp.scale.set(scale,scale,1); return sp;
+    }
+    function wlToColor(wl){
+      const t = (wl-0.35)/(1.7-0.35), cl = Math.max(0,Math.min(1,t));
+      let r,g,b;
+      if(cl<0.4){ r=cl/0.4; g=0; b=1-cl/0.4; }
+      else if(cl<0.65){ r=1; g=(cl-0.4)/0.25; b=0; }
+      else{ r=Math.max(0,1-(cl-0.65)/0.35); g=1; b=0; }
+      return new THREE.Color(r,g,b);
+    }
+    function wlToCSS(wl){ const c=wlToColor(wl); return `rgb(${Math.round(c.r*255)},${Math.round(c.g*255)},${Math.round(c.b*255)})`; }
+
+    // ---------- 创建物体 ----------
+    // 光源
+    const srcGeo = new THREE.SphereGeometry(0.25,48,48);
+    const srcMat = new THREE.MeshStandardMaterial({color:0xffdd44, emissive:0xffaa00, emissiveIntensity:3.8, roughness:0.1});
+    const srcSphere = new THREE.Mesh(srcGeo, srcMat); srcSphere.position.copy(srcPos); srcSphere.castShadow=true;
+    scene.add(srcSphere);
+    const srcGlowTex = glowTex('rgba(255,200,60,1)');
+    const srcGlow = glowSprite(srcGlowTex, 3.2, 0.85); srcSphere.add(srcGlow);
+    const ptSrc = new THREE.PointLight(0xffcc44, 45, 13); ptSrc.position.copy(srcPos); scene.add(ptSrc);
+
+    // 双缝挡板
+    const boardGeo = new THREE.BoxGeometry(7.2,6.2,0.15);
+    const boardMat = new THREE.MeshStandardMaterial({color:0x1a2232, roughness:0.4, metalness:0.5});
+    const board = new THREE.Mesh(boardGeo, boardMat); board.position.set(0,0,slitZ); board.castShadow=true; board.receiveShadow=true;
+    scene.add(board);
+
+    // 竖直狭缝 (狭缝为竖直长条，水平排列)
+    function createSlitBar(){
+      const barGeo = new THREE.BoxGeometry(0.1, 0.9, 0.08);
+      const barMat = new THREE.MeshStandardMaterial({color:0x00eeff, emissive:0x00ccff, emissiveIntensity:4.0, roughness:0.1, metalness:0.1});
+      const bar = new THREE.Mesh(barGeo, barMat); bar.castShadow=true;
+      return bar;
+    }
+    const slitBar1 = createSlitBar(); const slitBar2 = createSlitBar();
+    slitBar1.position.set(slitD/2, 0, slitZ+0.08); slitBar2.position.set(-slitD/2, 0, slitZ+0.08);
+    scene.add(slitBar1); scene.add(slitBar2);
+    // 狭缝光点
+    const slitDotGeo = new THREE.SphereGeometry(0.08,16,16);
+    const slitDotMat = new THREE.MeshStandardMaterial({color:0xffffff, emissive:0x00ddff, emissiveIntensity:5.0, roughness:0.05});
+    const slitDot1 = new THREE.Mesh(slitDotGeo, slitDotMat); slitDot1.position.copy(slitBar1.position); scene.add(slitDot1);
+    const slitDot2 = new THREE.Mesh(slitDotGeo, slitDotMat); slitDot2.position.copy(slitBar2.position); scene.add(slitDot2);
+    const ptSlit1 = new THREE.PointLight(0x00ccff, 22, 2.8); ptSlit1.position.copy(slitBar1.position); scene.add(ptSlit1);
+    const ptSlit2 = new THREE.PointLight(0x00ccff, 22, 2.8); ptSlit2.position.copy(slitBar2.position); scene.add(ptSlit2);
+
+    // 屏幕
+    const screenCanvas = document.createElement('canvas'); screenCanvas.width=256; screenCanvas.height=128;
+    const screenCtx = screenCanvas.getContext('2d');
+    const screenTex = new THREE.CanvasTexture(screenCanvas); screenTex.minFilter=THREE.LinearFilter; screenTex.magFilter=THREE.LinearFilter;
+    const screenGeo = new THREE.PlaneGeometry(screenW, screenH);
+    const screenMat = new THREE.MeshBasicMaterial({map:screenTex, side:THREE.DoubleSide});
+    const screenMesh = new THREE.Mesh(screenGeo, screenMat); screenMesh.position.set(0,0,screenL); screenMesh.receiveShadow=true;
+    scene.add(screenMesh);
+    const screenEdge = new THREE.LineSegments(new THREE.EdgesGeometry(screenGeo), new THREE.LineBasicMaterial({color:0x335566, transparent:true, opacity:0.6}));
+    screenEdge.position.copy(screenMesh.position); scene.add(screenEdge);
+
+    // 中心虚线
+    const centerMarkGeo = new THREE.BufferGeometry();
+    const centerMarkPos = new Float32Array(6);
+    centerMarkGeo.setAttribute('position', new THREE.BufferAttribute(centerMarkPos,3));
+    const centerLine = new THREE.Line(centerMarkGeo, new THREE.LineDashedMaterial({color:0x889999, dashSize:0.35, gapSize:0.28, transparent:true, opacity:0.5}));
+    scene.add(centerLine);
+
+    // 光线组
+    const raysGroup = new THREE.Group(); scene.add(raysGroup);
+    function createRay(color, op=0.5){
+      const g = new THREE.BufferGeometry(); const p = new Float32Array(6); g.setAttribute('position',new THREE.BufferAttribute(p,3));
+      const m = new THREE.LineBasicMaterial({color, transparent:true, opacity:op, depthTest:true, depthWrite:false, blending:THREE.AdditiveBlending});
+      return {line:new THREE.Line(g,m), pos:p};
+    }
+    const raySrc1 = createRay(0xffcc66,0.6); const raySrc2 = createRay(0xffcc66,0.6);
+    raysGroup.add(raySrc1.line); raysGroup.add(raySrc2.line);
+    const rayPairs = []; const numRays = 19;
+    for(let i=0;i<numRays;i++){
+      const r1=createRay(0x66ddff,0.5), r2=createRay(0x66ddff,0.5);
+      raysGroup.add(r1.line); raysGroup.add(r2.line);
+      rayPairs.push({r1,r2});
+    }
+    function setRay(ray, from, to){
+      ray.pos[0]=from.x; ray.pos[1]=from.y; ray.pos[2]=from.z;
+      ray.pos[3]=to.x; ray.pos[4]=to.y; ray.pos[5]=to.z;
+      ray.line.geometry.attributes.position.needsUpdate=true;
+    }
+
+    // ---------- 更新函数 ----------
+    function slit1Pos(){ return new THREE.Vector3(slitD/2, 0, slitZ); }
+    function slit2Pos(){ return new THREE.Vector3(-slitD/2, 0, slitZ); }
+
+    function updateSlits(){
+      slitBar1.position.x=slitD/2; slitBar2.position.x=-slitD/2;
+      slitDot1.position.x=slitD/2; slitDot2.position.x=-slitD/2;
+      ptSlit1.position.x=slitD/2; ptSlit2.position.x=-slitD/2;
+    }
+    function updateScreen(){ screenMesh.position.z=screenL; screenEdge.position.z=screenL; }
+    function updateRays(){
+      const s1=slit1Pos(), s2=slit2Pos();
+      setRay(raySrc1, srcPos, s1); setRay(raySrc2, srcPos, s2);
+      const xRange=screenW*0.92;
+      for(let i=0;i<numRays;i++){
+        const t=i/(numRays-1), xt=(t-0.5)*xRange;
+        setRay(rayPairs[i].r1, s1, new THREE.Vector3(xt,0,screenL));
+        setRay(rayPairs[i].r2, s2, new THREE.Vector3(xt,0,screenL));
+      }
+      const topY=screenH/2, botY=-screenH/2;
+      centerMarkPos[0]=0; centerMarkPos[1]=topY; centerMarkPos[2]=screenL;
+      centerMarkPos[3]=0; centerMarkPos[4]=botY; centerMarkPos[5]=screenL;
+      centerLine.geometry.attributes.position.needsUpdate=true; centerLine.computeLineDistances();
+    }
+    function updateSourceColor(){
+      const col = wlToColor(lambda);
+      srcMat.color.set(col); srcMat.emissive.set(col).multiplyScalar(0.6); ptSrc.color.set(col);
+      const r=Math.round(col.r*255), g=Math.round(col.g*255), b=Math.round(col.b*255);
+      const tex = glowTex(`rgba(${r},${g},${b},1)`);
+      srcGlow.material.map=tex; srcGlow.material.needsUpdate=true;
+    }
+    function updateScreenTex(){
+      const ctx=screenCtx; const w=screenCanvas.width, h=screenCanvas.height;
+      const col=wlToColor(lambda); const lr=Math.round(col.r*255), lg=Math.round(col.g*255), lb=Math.round(col.b*255);
+      const img=ctx.createImageData(w,h);
+      const effLambda=Math.max(lambda,0.001), effL=Math.max(screenL,0.01), effD=Math.max(slitD,0.001);
+      for(let colIdx=0;colIdx<w;colIdx++){
+        const xScreen = (colIdx/(w-1)-0.5)*screenW;
+        const phase = Math.PI*effD*xScreen/(effLambda*effL);
+        const intens = Math.cos(phase)**2;
+        const bright = 0.06 + intens*0.94;
+        const rr=Math.round(lr*bright), gg=Math.round(lg*bright), bb=Math.round(lb*bright);
+        for(let row=0;row<h;row++){
+          const idx=(row*w+colIdx)*4;
+          img.data[idx]=rr; img.data[idx+1]=gg; img.data[idx+2]=bb; img.data[idx+3]=255;
+        }
+      }
+      ctx.putImageData(img,0,0); screenTex.needsUpdate=true;
+    }
+    function updateChart(){
+      const cv=intensityChartCanvas; cv.width=130; cv.height=48;
+      const ctx=cv.getContext('2d'); const w=cv.width, h=cv.height;
+      ctx.clearRect(0,0,w,h); ctx.fillStyle='rgba(0,0,0,0.5)'; ctx.fillRect(0,0,w,h);
+      const css=wlToCSS(lambda); const xRange=screenW*0.92;
+      ctx.beginPath();
+      for(let px=0;px<w;px++){
+        const xScreen = (px/(w-1)-0.5)*xRange;
+        const phase = Math.PI*slitD*xScreen/(Math.max(lambda,0.001)*Math.max(screenL,0.01));
+        const intens = Math.cos(phase)**2;
+        const yPx = h - (intens*(h-5)+2.5);
+        if(px===0) ctx.moveTo(px,yPx); else ctx.lineTo(px,yPx);
+      }
+      ctx.strokeStyle=css; ctx.lineWidth=1.6; ctx.shadowColor=css; ctx.shadowBlur=6; ctx.stroke(); ctx.shadowBlur=0;
+      ctx.strokeStyle='rgba(255,255,255,0.25)'; ctx.lineWidth=0.5; ctx.setLineDash([3,4]);
+      ctx.beginPath(); ctx.moveTo(w/2,0); ctx.lineTo(w/2,h); ctx.stroke(); ctx.setLineDash([]);
+    }
+    function updateUI(){
+      const dx = lambda*screenL/Math.max(slitD,0.001);
+      const vis = Math.round(screenW/Math.max(dx,0.001));
+      freqValueEl.textContent = freq.toFixed(2);
+      lambdaValueEl.textContent = lambda.toFixed(3);
+      dValueEl.textContent = slitD.toFixed(2);
+      LValueEl.textContent = screenL.toFixed(2);
+      fringeSpacingEl.textContent = dx.toFixed(2);
+      fringeCountEl.textContent = '~'+vis;
+    }
+    function refreshAll(){
+      updateSlits(); updateScreen(); updateRays(); updateSourceColor(); updateScreenTex(); updateChart(); updateUI();
+    }
+
+    // ---------- 事件 ----------
+    freqSlider.addEventListener('input',()=>{ freq=+freqSlider.value; lambda=c/freq; refreshAll(); });
+    dSlider.addEventListener('input',()=>{ slitD=+dSlider.value; refreshAll(); });
+    LSlider.addEventListener('input',()=>{ screenL=+LSlider.value; refreshAll(); });
+    window.addEventListener('resize',()=>{ camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth,innerHeight); });
+    window.addEventListener('keydown',(e)=>{
+      let ch=false;
+      switch(e.key.toLowerCase()){
+        case 'q': slitD=Math.max(0.5,slitD-0.05); ch=true; break;
+        case 'e': slitD=Math.min(3.2,slitD+0.05); ch=true; break;
+        case 'a': screenL=Math.max(3.5,screenL-0.3); ch=true; break;
+        case 'd': screenL=Math.min(12.0,screenL+0.3); ch=true; break;
+        case 'w': freq=Math.min(3.5,freq+0.05); ch=true; break;
+        case 's': freq=Math.max(0.5,freq-0.05); ch=true; break;
+        case 'r': freq=2.8; slitD=2.6; screenL=8.0; ch=true; break;
+      }
+      if(ch){ lambda=c/freq; freqSlider.value=freq; dSlider.value=slitD; LSlider.value=screenL; refreshAll(); }
+    });
+
+    // ---------- 动画循环 ----------
+    const clock = new THREE.Clock();
+    function animate(ts){
+      requestAnimationFrame(animate);
+      const dt = Math.min(clock.getDelta(),0.12);
+      controls.update();
+      stars.rotation.z += dt*0.02;
+      gridPlaneMat.uniforms.uTime.value = ts*0.001;
+      const d = dustPts.userData, dp = d.pos, dv = d.vel;
+      for(let i=0;i<dustCount;i++){
+        dp[i*3]+=dv[i*3]*dt; dp[i*3+1]+=dv[i*3+1]*dt; dp[i*3+2]+=dv[i*3+2]*dt;
+        if(Math.abs(dp[i*3])>9) dv[i*3]*=-1;
+        if(Math.abs(dp[i*3+1])>6) dv[i*3+1]*=-1;
+        if(Math.abs(dp[i*3+2])>7) dv[i*3+2]*=-1;
+      }
+      dustPts.geometry.attributes.position.needsUpdate=true;
+      const pulse=1+Math.sin(ts*0.005)*0.22;
+      slitDotMat.emissiveIntensity=4.5+pulse*1.8;
+      ptSlit1.intensity=20+pulse*10; ptSlit2.intensity=20+pulse*10;
+      const srcPulse=1+Math.sin(ts*0.004+1.5)*0.15;
+      ptSrc.intensity=40+srcPulse*12;
+      renderer.render(scene, camera);
+      if(ts>9000 && hintEl.style.opacity!=='0'){ hintEl.style.transition='opacity 3s'; hintEl.style.opacity='0.12'; }
+    }
+
+    // 启动
+    refreshAll();
+    freqSlider.value=freq; dSlider.value=slitD; LSlider.value=screenL;
+    requestAnimationFrame(animate);
+    console.log('🔬 杨氏双缝干涉 (竖直条纹·水平旋转) 已启动');
+  </script>
+<style>
+.back-btn {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    padding: 10px 20px;
+    background: rgba(0, 150, 200, 0.3);
+    border: 1px solid #00ffff;
+    color: white;
+    font-size: 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    z-index: 9999;
+    transition: 0.3s;
+    backdrop-filter: blur(5px);
+}
+.back-btn:hover {
+    background: rgba(0, 150, 200, 0.6);
+    box-shadow: 0 0 15px #00ffff;
+}
+</style>
+<button class="back-btn" onclick="goBack()">⬅️ 返回</button>
+<script>
+function goBack() {
+    history.back();
+}
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        goBack();
+    }
+});
+</script>
+<div class="watermark">齐老师动画</div>
+<style>
+.watermark {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    font-size: 14px;
+    color: rgba(0, 255, 255, 0.3);
+    z-index: 9998;
+    pointer-events: none;
+    user-select: none;
+}
+</style>
+<script>
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+});
+</script>
+<style>
+.back-btn {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    padding: 10px 20px;
+    background: rgba(0, 150, 200, 0.3);
+    border: 1px solid #00ffff;
+    color: white;
+    font-size: 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    z-index: 9999;
+    transition: 0.3s;
+    backdrop-filter: blur(5px);
+}
+.back-btn:hover {
+    background: rgba(0, 150, 200, 0.6);
+    box-shadow: 0 0 15px #00ffff;
+}
+</style>
+<button class="back-btn" onclick="goBack()">⬅️ 返回</button>
+<script>
+function goBack() {
+    history.back();
+}
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        goBack();
+    }
+});
+</script>
+<div class="watermark">齐老师动画</div>
+<style>
+.watermark {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    font-size: 14px;
+    color: rgba(0, 255, 255, 0.3);
+    z-index: 9998;
+    pointer-events: none;
+    user-select: none;
+}
+</style>
+<script>
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+});
+</script>
+<style>
+.back-btn {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    padding: 10px 20px;
+    background: rgba(0, 150, 200, 0.3);
+    border: 1px solid #00ffff;
+    color: white;
+    font-size: 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    z-index: 9999;
+    transition: 0.3s;
+    backdrop-filter: blur(5px);
+}
+.back-btn:hover {
+    background: rgba(0, 150, 200, 0.6);
+    box-shadow: 0 0 15px #00ffff;
+}
+</style>
+<button class="back-btn" onclick="goBack()">⬅️ 返回</button>
+<script>
+function goBack() {
+    history.back();
+}
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        goBack();
+    }
+});
+</script>
+<div class="watermark">齐老师动画</div>
+<style>
+.watermark {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    font-size: 14px;
+    color: rgba(0, 255, 255, 0.3);
+    z-index: 9998;
+    pointer-events: none;
+    user-select: none;
+}
+</style>
+<script>
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+});
+</script>
+<style>
+.back-btn {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    padding: 10px 20px;
+    background: rgba(0, 150, 200, 0.3);
+    border: 1px solid #00ffff;
+    color: white;
+    font-size: 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    z-index: 9999;
+    transition: 0.3s;
+    backdrop-filter: blur(5px);
+}
+.back-btn:hover {
+    background: rgba(0, 150, 200, 0.6);
+    box-shadow: 0 0 15px #00ffff;
+}
+</style>
+<button class="back-btn" onclick="goBack()">⬅️ 返回</button>
+<script>
+function goBack() {
+    history.back();
+}
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        goBack();
+    }
+});
+</script>
+<div class="watermark">齐老师动画</div>
+<style>
+.watermark {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    font-size: 14px;
+    color: rgba(0, 255, 255, 0.3);
+    z-index: 9998;
+    pointer-events: none;
+    user-select: none;
+}
+</style>
+<script>
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+});
+</script>
+
+<div style="position: fixed; bottom: 10px; right: 10px; z-index: 9998; color: rgba(255, 255, 255, 0.3); font-family: Arial, sans-serif; font-size: 12px; pointer-events: none;">
+    齐老师动画
+</div>
+
+<script>
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+});
+</script>
+</body>
+</html>
