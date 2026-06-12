@@ -1,0 +1,255 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>力学动画 - 齐老师动画</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #0a0e27 0%, #1a1a2e 100%);
+            font-family: 'Arial', sans-serif;
+            color: white;
+            padding: 20px;
+            padding-top: 80px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 40px;
+            color: #88bbff;
+            text-shadow: 0 0 10px rgba(136, 187, 255, 0.5), 0 0 20px rgba(136, 187, 255, 0.3);
+            font-size: 2.5em;
+        }
+        .buttons-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 20px;
+        }
+        .btn {
+            background: rgba(136, 187, 255, 0.15);
+            border: 1px solid rgba(136, 187, 255, 0.4);
+            box-shadow: 0 0 10px rgba(136, 187, 255, 0.1);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 10px;
+            text-decoration: none;
+            text-align: center;
+            transition: all 0.3s ease;
+            font-size: 16px;
+        }
+        .btn:hover {
+            background: rgba(136, 187, 255, 0.25);
+            border-color: rgba(136, 187, 255, 0.8);
+            box-shadow: 0 0 15px rgba(136, 187, 255, 0.4);
+            transform: translateY(-3px);
+        }
+        #backButton {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 9999;
+            background: rgba(136, 187, 255, 0.2);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: Arial, sans-serif;
+            font-size: 14px;
+            border: 1px solid rgba(136, 187, 255, 0.5);
+            transition: all 0.3s;
+            text-decoration: none;
+        }
+        #backButton:hover {
+            background: rgba(136, 187, 255, 0.3);
+            box-shadow: 0 0 10px rgba(136, 187, 255, 0.5);
+        }
+    </style>
+</head>
+<body>
+    <a href="index.html" id="backButton">← 返回主页 (ESC)</a>
+    <div class="container">
+        <h1>力学动画</h1>
+        <div class="buttons-grid">
+            
+        <a href="宇宙速度.html" class="btn">宇宙速度</a>
+        
+        <a href="圆锥摆.html" class="btn">圆锥摆</a>
+        
+        <a href="匀圆投影简谐.html" class="btn">匀圆投影简谐</a>
+        
+        <a href="追及相遇孙悟空 .html" class="btn">追及相遇孙悟空 </a>
+        
+        <a href="自由落体+简谐运动.html" class="btn">自由落体+简谐运动</a>
+        
+        <a href="板块.html" class="btn">板块</a>
+        
+        <a href="不同高度人造卫星.html" class="btn">不同高度人造卫星</a>
+        
+        <a href="传送带.html" class="btn">传送带</a>
+        
+        <a href="地球隧道.html" class="btn">地球隧道</a>
+        
+        <a href="飞机投弹.html" class="btn">飞机投弹</a>
+        
+        <a href="开普勒第二定律.html" class="btn">开普勒第二定律</a>
+        
+        <a href="拉格朗日点.html" class="btn">拉格朗日点</a>
+        
+        <a href="晾衣架可调.html" class="btn">晾衣架可调</a>
+        
+        <a href="摩擦角全反力.html" class="btn">摩擦角全反力</a>
+        
+        <a href="碰撞弹簧模型.html" class="btn">碰撞弹簧模型</a>
+        
+        <a href="碰撞调质量速度.html" class="btn">碰撞调质量速度</a>
+        
+        <a href="人船模型调速度质量.html" class="btn">人船模型调速度质量</a>
+        
+        <a href="三角形四边形定则.html" class="btn">三角形四边形定则</a>
+        
+        <a href="三维传送带.html" class="btn">三维传送带</a>
+        
+        <a href="竖直面圆周运动速度可调.html" class="btn">竖直面圆周运动速度可调</a>
+        
+        <a href="双弹簧振子相位差终版.html" class="btn">双弹簧振子相位差终版</a>
+        
+        <a href="双星三星四星.html" class="btn">双星三星四星</a>
+        
+        <a href="双星质量可以调节.html" class="btn">双星质量可以调节</a>
+        
+        <a href="小球半圆凹槽动量.html" class="btn">小球半圆凹槽动量</a>
+        
+        <a href="小球冲凹槽.html" class="btn">小球冲凹槽</a>
+        
+        <a href="斜上抛调节初速度.html" class="btn">斜上抛调节初速度</a>
+        
+        <a href="斜上抛与挡板，可调速度.html" class="btn">斜上抛与挡板，可调速度</a>
+        
+        <a href="一定高度斜上抛.html" class="btn">一定高度斜上抛</a>
+        
+        <a href="1动态三角形.html" class="btn">动态三角形</a>
+        
+        <a href="1小船过河.html" class="btn">小船过河</a>
+        
+        <a href="1辅助圆定大小.html" class="btn">辅助圆定大小</a>
+        
+        <a href="1辅助圆.html" class="btn">辅助圆</a>
+        
+        </div>
+    </div>
+    
+    
+<script>
+const canvas = document.createElement('canvas');
+const ctx = canvas.getContext('2d');
+document.body.insertBefore(canvas, document.body.firstChild);
+
+canvas.style.position = 'fixed';
+canvas.style.top = '0';
+canvas.style.left = '0';
+canvas.style.width = '100%';
+canvas.style.height = '100%';
+canvas.style.zIndex = '-1';
+
+let particles = [];
+const particleCount = 80;
+
+function resize() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+}
+
+function initParticles() {
+    particles = [];
+    for (let i = 0; i < particleCount; i++) {
+        particles.push({
+            x: Math.random() * canvas.width,
+            y: Math.random() * canvas.height,
+            vx: (Math.random() - 0.5) * 0.5,
+            vy: (Math.random() - 0.5) * 0.5,
+            radius: Math.random() * 1.5 + 0.5
+        });
+    }
+}
+
+function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    // 绘制粒子
+    for (let i = 0; i < particles.length; i++) {
+        let p = particles[i];
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(136, 187, 255, 0.8)';
+        ctx.fill();
+        
+        // 连线
+        for (let j = i + 1; j < particles.length; j++) {
+            let p2 = particles[j];
+            let dx = p.x - p2.x;
+            let dy = p.y - p2.y;
+            let dist = Math.sqrt(dx*dx + dy*dy);
+            if (dist < 100) {
+                ctx.beginPath();
+                ctx.moveTo(p.x, p.y);
+                ctx.lineTo(p2.x, p2.y);
+                ctx.strokeStyle = `rgba(136, 187, 255, ${0.2 * (1 - dist / 100)})`;
+                ctx.stroke();
+            }
+        }
+        
+        // 更新位置
+        p.x += p.vx;
+        p.y += p.vy;
+        
+        if (p.x < 0) p.x = canvas.width;
+        if (p.x > canvas.width) p.x = 0;
+        if (p.y < 0) p.y = canvas.height;
+        if (p.y > canvas.height) p.y = 0;
+    }
+    
+    requestAnimationFrame(draw);
+}
+
+window.addEventListener('resize', () => {
+    resize();
+    initParticles();
+});
+
+resize();
+initParticles();
+draw();
+</script>
+
+    
+<div style="position: fixed; bottom: 10px; right: 10px; z-index: 9998; color: rgba(255, 255, 255, 0.3); font-family: Arial, sans-serif; font-size: 12px; pointer-events: none;">
+    齐老师动画
+</div>
+<script>
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+});
+</script>
+
+    
+    <script>
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            window.location.href='index.html';
+        }
+    });
+    </script>
+</body>
+</html>
+    
