@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+
+<html lang="zh">
+<head>
+<meta charset="utf-8"/>
+<meta charset="utf-8"/>
+<meta charset="utf-8"/>
+<meta charset="utf-8"/>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>高中物理：可调质量双星系统动画</title>
+<style>
+        * {
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+        }
+        body {
+            background: linear-gradient(145deg, #0a101f 0%, #131e30 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0;
+            padding: 16px;
+        }
+        .card {
+            max-width: 700px;
+            width: 100%;
+            background: #1a2639;
+            border-radius: 40px;
+            padding: 28px 24px 32px;
+            box-shadow: 0 25px 45px rgba(0, 0, 0, 0.8), inset 0 1px 2px rgba(255, 255, 255, 0.08);
+            border: 1px solid #31445e;
+        }
+        h2 {
+            text-align: center;
+            margin: 0 0 8px 0;
+            font-weight: 400;
+            color: #c6dbff;
+            font-size: 2rem;
+            letter-spacing: 2px;
+            text-shadow: 0 0 10px #3f6ab0;
+        }
+        .sub {
+            text-align: center;
+            color: #8ba0c0;
+            margin-top: -5px;
+            margin-bottom: 24px;
+            font-size: 1rem;
+            border-bottom: 1px dashed #314e6e;
+            padding-bottom: 12px;
+        }
+        .canvas-wrapper {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        canvas {
+            display: block;
+            width: 100%;
+            max-width: 400px;
+            aspect-ratio: 1/1;
+            border-radius: 50%;
+            background: #0c1322;
+            box-shadow: 0 0 0 2px #27384e, 0 18px 35px black;
+        }
+        .control-panel {
+            background: #101a2b;
+            border-radius: 40px;
+            padding: 20px 20px 16px;
+            border: 1px solid #2b405b;
+            margin-top: 12px;
+        }
+        .slider-group {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 12px 8px;
+            margin-bottom: 18px;
+        }
+        .slider-label {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            width: 200px;
+            color: #b6caea;
+            font-weight: 500;
+        }
+        .slider-label span {
+            min-width: 45px;
+            text-align: right;
+            color: #ffd966;
+        }
+        input[type=range] {
+            flex: 1;
+            min-width: 200px;
+            height: 6px;
+            background: #283950;
+            border-radius: 10px;
+            -webkit-appearance: none;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            background: #ffb36b;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 0 15px #f90;
+            border: 2px solid #ffe3b0;
+        }
+        .value-badge {
+            background: #1e3148;
+            border-radius: 30px;
+            padding: 8px 18px;
+            color: #d2e5ff;
+            font-size: 0.95rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .stats {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            gap: 10px;
+            background: #0d1a2a;
+            border-radius: 38px;
+            padding: 16px 18px;
+            margin: 18px 0 5px;
+            border: 1px solid #314f70;
+        }
+        .stat-item {
+            background: #1d3148;
+            border-radius: 30px;
+            padding: 6px 16px;
+            color: #bdd3ff;
+            font-size: 0.9rem;
+            box-shadow: inset 0 2px 5px #0a121f;
+        }
+        .stat-item strong {
+            color: #ffb570;
+            font-weight: 500;
+            margin-right: 6px;
+        }
+        .foot-note {
+            text-align: center;
+            color: #6a7f9e;
+            font-size: 0.85rem;
+            margin-top: 18px;
+            border-top: 1px dashed #26374b;
+            padding-top: 16px;
+        }
+        .reset-btn {
+            background: #3a4e6e;
+            border: none;
+            color: white;
+            padding: 8px 22px;
+            border-radius: 40px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: 0.2s;
+            border: 1px solid #6d8bb0;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
+        }
+        .reset-btn:hover {
+            background: #4d6790;
+            border-color: #aac2ff;
+        }
+        .flex-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+    </style>
+</head>
+<body>
+<div id="backButton" onclick="window.location.href='index.html';" style="position: fixed; top: 20px; left: 20px; z-index: 9999; background: rgba(30, 60, 114, 0.8); color: white; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-family: Arial, sans-serif; font-size: 14px; border: 1px solid rgba(100, 150, 255, 0.5); transition: all 0.3s;">
+    ← 返回 (ESC)
+</div>
+<script>
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        window.location.href='index.html';
+    }
+});
+</script>
+
+<div class="card">
+<h2>⚖️ 双星 · 质量可调</h2>
+<div class="sub">r₁ / r₂ = m₂ / m₁ · 绕质心匀速圆周运动</div>
+<div class="canvas-wrapper">
+<canvas height="400" id="binaryCanvas" width="400"></canvas>
+</div>
+<div class="control-panel">
+<!-- 滑块组 -->
+<div class="slider-group">
+<div class="slider-label">
+<span style="color:#ff8a8a;">🌟 m₁</span>
+<span id="m1Value">2.0</span>
+</div>
+<input id="m1Slider" max="10.0" min="0.6" step="0.1" type="range" value="2.0"/>
+</div>
+<div class="slider-group">
+<div class="slider-label">
+<span style="color:#6ba6ff;">🌟 m₂</span>
+<span id="m2Value">1.0</span>
+</div>
+<input id="m2Slider" max="10.0" min="0.6" step="0.1" type="range" value="1.0"/>
+</div>
+<!-- 实时统计数据 -->
+<div class="stats">
+<div class="stat-item"><strong>r₁</strong> <span id="r1Display">58.8</span> px</div>
+<div class="stat-item"><strong>r₂</strong> <span id="r2Display">111.2</span> px</div>
+<div class="stat-item"><strong>ω</strong> <span id="omegaDisplay">0.62</span> rad/s</div>
+<div class="stat-item"><strong>周期</strong> <span id="periodDisplay">10.1</span> s</div>
+</div>
+<!-- 重置和说明 -->
+<div class="flex-row">
+<div class="value-badge">
+<span>m₁/m₂ = <span id="ratioDisplay">2.00</span></span>
+<span style="color:#aaccff;">|</span>
+<span>总质量 <span id="totalMassDisplay">3.0</span></span>
+</div>
+<button class="reset-btn" id="resetBtn">⟲ 重置 (m₁=2, m₂=1)</button>
+</div>
+<div class="foot-note">
+            ⚫ 中心白点：质心 ｜ 灰色虚线圆：两星各自的轨道 (半径 r₁, r₂) <br/>
+<span style="color:#ffb36b;">滑块调节质量，轨道半径与角速度实时更新</span>
+</div>
+</div>
+</div>
+<script>
+    (function() {
+        // ------ 获取元素 ------
+        const canvas = document.getElementById('binaryCanvas');
+        const ctx = canvas.getContext('2d');
+        const m1Slider = document.getElementById('m1Slider');
+        const m2Slider = document.getElementById('m2Slider');
+        const m1Span = document.getElementById('m1Value');
+        const m2Span = document.getElementById('m2Value');
+        const r1Span = document.getElementById('r1Display');
+        const r2Span = document.getElementById('r2Display');
+        const omegaSpan = document.getElementById('omegaDisplay');
+        const periodSpan = document.getElementById('periodDisplay');
+        const ratioSpan = document.getElementById('ratioDisplay');
+        const totalMassSpan = document.getElementById('totalMassDisplay');
+        const resetBtn = document.getElementById('resetBtn');
+
+        // ------ 固定参数 ------
+        const cx = 200, cy = 200;          // 画布中心 (质心固定在中心)
+        const d = 170;                      // 两星之间的总距离 (像素)  r1 + r2 = d
+        // 角速度比例因子:  ω = baseFactor * sqrt(m1 + m2)  当总质量=2时 ω≈0.636 (取0.64)
+        const baseFactor = 0.45;             // 调节动画速度
+
+        // ------ 可变状态 ------
+        let m1 = 2.0;                         // 默认
+        let m2 = 1.0;
+        let r1 = d * m2 / (m1 + m2);          // 初始化计算
+        let r2 = d * m1 / (m1 + m2);
+        let omega = baseFactor * Math.sqrt(m1 + m2);
+
+        // 角度累积 (随时间增加)
+        let angle = 0;                         // 用于第一颗星的角度 (rad)
+
+        // 上次时间戳 (用于计算时间差)
+        let lastTimestamp = null;
+
+        // 滑块事件监听
+        function updateFromSliders() {
+            m1 = parseFloat(m1Slider.value);
+            m2 = parseFloat(m2Slider.value);
+
+            // 更新显示
+            m1Span.textContent = m1.toFixed(1);
+            m2Span.textContent = m2.toFixed(1);
+
+            // 重新计算半径和角速度
+            const sumM = m1 + m2;
+            r1 = d * m2 / sumM;
+            r2 = d * m1 / sumM;
+            omega = baseFactor * Math.sqrt(sumM);
+
+            // 更新统计显示
+            r1Span.textContent = r1.toFixed(1);
+            r2Span.textContent = r2.toFixed(1);
+            omegaSpan.textContent = omega.toFixed(2);
+            const period = (2 * Math.PI / omega).toFixed(1);
+            periodSpan.textContent = period;
+            ratioSpan.textContent = (m1 / m2).toFixed(2);
+            totalMassSpan.textContent = sumM.toFixed(1);
+        }
+
+        // 初始化显示
+        updateFromSliders();
+
+        // 监听滑块事件
+        m1Slider.addEventListener('input', updateFromSliders);
+        m2Slider.addEventListener('input', updateFromSliders);
+
+        // 重置按钮
+        resetBtn.addEventListener('click', () => {
+            m1Slider.value = '2.0';
+            m2Slider.value = '1.0';
+            updateFromSliders();
+            // 也可以重置角度 (可选) 保持连续性更好
+            // 不重置角度，让它继续
+        });
+
+        // ------ 动画绘制 ------
+        function drawSystem(now) {
+            if (!lastTimestamp) {
+                lastTimestamp = now;
+                requestAnimationFrame(drawSystem);
+                return;
+            }
+
+            // 计算时间差 (秒) 限制最大步长避免突变
+            let deltaSec = (now - lastTimestamp) / 1000;
+            if (deltaSec > 0.1) deltaSec = 0.03;  // 防止标签页切换后步长过大
+            lastTimestamp = now;
+
+            // 更新角度 (基于当前omega)
+            angle += omega * deltaSec;
+            // 避免过大
+            if (angle > 2 * Math.PI) angle -= 2 * Math.PI;
+
+            // 获取最新的半径 (可能在滑块回调中已经更新)
+            const currentR1 = r1;
+            const currentR2 = r2;
+
+            // 绘制画布
+            ctx.clearRect(0, 0, 400, 400);
+
+            // ---- 背景星点 (固定) ----
+            drawStarfield(ctx);
+
+            // ---- 绘制轨道 (两个虚线圆) ----
+            ctx.setLineDash([5, 6]);
+            ctx.lineWidth = 1.5;
+            ctx.strokeStyle = '#5f7a9f';
+            // 轨道1 (半径 r1)
+            ctx.beginPath();
+            ctx.arc(cx, cy, currentR1, 0, 2 * Math.PI);
+            ctx.stroke();
+            // 轨道2 (半径 r2)
+            ctx.beginPath();
+            ctx.arc(cx, cy, currentR2, 0, 2 * Math.PI);
+            ctx.stroke();
+            ctx.setLineDash([]); // 恢复实线
+
+            // ---- 绘制中心质心 (白点) ----
+            ctx.shadowColor = '#ffffff';
+            ctx.shadowBlur = 16;
+            ctx.beginPath();
+            ctx.arc(cx, cy, 4, 0, 2 * Math.PI);
+            ctx.fillStyle = '#ffffff';
+            ctx.fill();
+            // 小十字增加辨识度
+            ctx.shadowBlur = 8;
+            ctx.beginPath();
+            ctx.moveTo(cx - 8, cy);
+            ctx.lineTo(cx + 8, cy);
+            ctx.moveTo(cx, cy - 8);
+            ctx.lineTo(cx, cy + 8);
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+
+            // 计算两星位置 (第一颗星相位 angle, 第二颗星相位 angle+PI)
+            const x1 = cx + currentR1 * Math.cos(angle);
+            const y1 = cy + currentR1 * Math.sin(angle);
+            const x2 = cx + currentR2 * Math.cos(angle + Math.PI);
+            const y2 = cy + currentR2 * Math.sin(angle + Math.PI);
+
+            // ---- 绘制星星1 (红色) ----
+            ctx.shadowColor = '#ff6b6b';
+            ctx.shadowBlur = 26;
+            ctx.beginPath();
+            ctx.arc(x1, y1, 10, 0, 2 * Math.PI);
+            ctx.fillStyle = '#ff6b6b';
+            ctx.fill();
+            ctx.shadowBlur = 14;
+            ctx.beginPath();
+            ctx.arc(x1, y1, 5, 0, 2 * Math.PI);
+            ctx.fillStyle = '#fff5e6';
+            ctx.fill();
+
+            // ---- 绘制星星2 (蓝色) ----
+            ctx.shadowColor = '#6ba6ff';
+            ctx.shadowBlur = 26;
+            ctx.beginPath();
+            ctx.arc(x2, y2, 10, 0, 2 * Math.PI);
+            ctx.fillStyle = '#6ba6ff';
+            ctx.fill();
+            ctx.shadowBlur = 14;
+            ctx.beginPath();
+            ctx.arc(x2, y2, 5, 0, 2 * Math.PI);
+            ctx.fillStyle = '#fff5e6';
+            ctx.fill();
+
+            // 关闭阴影
+            ctx.shadowBlur = 0;
+            ctx.shadowColor = 'transparent';
+
+            // ---- 在星星旁边标注质量 (小数字) ----
+            ctx.font = 'bold 14px "Segoe UI", "Helvetica"';
+            ctx.fillStyle = '#f0f4ff';
+            ctx.shadowColor = '#000';
+            ctx.shadowBlur = 6;
+            ctx.fillText('m₁', x1 + 14, y1 - 10);
+            ctx.fillText('m₂', x2 + 14, y2 - 10);
+            ctx.shadowBlur = 0;
+
+            // 可选显示半径比例文字
+            ctx.font = '12px "Segoe UI"';
+            ctx.fillStyle = '#b3caf5';
+            ctx.fillText('r₁', cx + currentR1 * 0.7 - 10, cy - 10);
+            ctx.fillText('r₂', cx + currentR2 * 0.7 - 10, cy + 20);
+
+            requestAnimationFrame(drawSystem);
+        }
+
+        // 辅助：绘制固定星空背景
+        function drawStarfield(ctx) {
+            for (let i = 0; i < 70; i++) {
+                const x = (i * 79) % 380 + 10;
+                const y = (i * 127) % 380 + 10;
+                const rad = 1 + (i % 3) * 0.6;
+                ctx.fillStyle = `rgba(255, 250, 210, ${0.2 + (i % 4) * 0.1})`;
+                ctx.beginPath();
+                ctx.arc(x, y, rad, 0, 2 * Math.PI);
+                ctx.fill();
+            }
+        }
+
+        // 启动动画
+        requestAnimationFrame(drawSystem);
+    })();
+</script>
+<style>
+.back-btn {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    padding: 10px 20px;
+    background: rgba(0, 150, 200, 0.3);
+    border: 1px solid #00ffff;
+    color: white;
+    font-size: 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    z-index: 9999;
+    transition: 0.3s;
+    backdrop-filter: blur(5px);
+}
+.back-btn:hover {
+    background: rgba(0, 150, 200, 0.6);
+    box-shadow: 0 0 15px #00ffff;
+}
+</style>
+<button class="back-btn" onclick="goBack()">⬅️ 返回</button>
+<script>
+function goBack() {
+    history.back();
+}
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        goBack();
+    }
+});
+</script>
+<div class="watermark">齐老师动画</div>
+<style>
+.watermark {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    font-size: 14px;
+    color: rgba(0, 255, 255, 0.3);
+    z-index: 9998;
+    pointer-events: none;
+    user-select: none;
+}
+</style>
+<script>
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+});
+</script>
+<style>
+.back-btn {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    padding: 10px 20px;
+    background: rgba(0, 150, 200, 0.3);
+    border: 1px solid #00ffff;
+    color: white;
+    font-size: 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    z-index: 9999;
+    transition: 0.3s;
+    backdrop-filter: blur(5px);
+}
+.back-btn:hover {
+    background: rgba(0, 150, 200, 0.6);
+    box-shadow: 0 0 15px #00ffff;
+}
+</style>
+<button class="back-btn" onclick="goBack()">⬅️ 返回</button>
+<script>
+function goBack() {
+    history.back();
+}
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        goBack();
+    }
+});
+</script>
+<div class="watermark">齐老师动画</div>
+<style>
+.watermark {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    font-size: 14px;
+    color: rgba(0, 255, 255, 0.3);
+    z-index: 9998;
+    pointer-events: none;
+    user-select: none;
+}
+</style>
+<script>
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+});
+</script>
+<style>
+.back-btn {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    padding: 10px 20px;
+    background: rgba(0, 150, 200, 0.3);
+    border: 1px solid #00ffff;
+    color: white;
+    font-size: 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    z-index: 9999;
+    transition: 0.3s;
+    backdrop-filter: blur(5px);
+}
+.back-btn:hover {
+    background: rgba(0, 150, 200, 0.6);
+    box-shadow: 0 0 15px #00ffff;
+}
+</style>
+<button class="back-btn" onclick="goBack()">⬅️ 返回</button>
+<script>
+function goBack() {
+    history.back();
+}
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        goBack();
+    }
+});
+</script>
+<div class="watermark">齐老师动画</div>
+<style>
+.watermark {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    font-size: 14px;
+    color: rgba(0, 255, 255, 0.3);
+    z-index: 9998;
+    pointer-events: none;
+    user-select: none;
+}
+</style>
+<script>
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+});
+</script>
+<style>
+.back-btn {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    padding: 10px 20px;
+    background: rgba(0, 150, 200, 0.3);
+    border: 1px solid #00ffff;
+    color: white;
+    font-size: 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    z-index: 9999;
+    transition: 0.3s;
+    backdrop-filter: blur(5px);
+}
+.back-btn:hover {
+    background: rgba(0, 150, 200, 0.6);
+    box-shadow: 0 0 15px #00ffff;
+}
+</style>
+<button class="back-btn" onclick="goBack()">⬅️ 返回</button>
+<script>
+function goBack() {
+    history.back();
+}
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        goBack();
+    }
+});
+</script>
+<div class="watermark">齐老师动画</div>
+<style>
+.watermark {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    font-size: 14px;
+    color: rgba(0, 255, 255, 0.3);
+    z-index: 9998;
+    pointer-events: none;
+    user-select: none;
+}
+</style>
+<script>
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+});
+</script>
+
+<div style="position: fixed; bottom: 10px; right: 10px; z-index: 9998; color: rgba(255, 255, 255, 0.3); font-family: Arial, sans-serif; font-size: 12px; pointer-events: none;">
+    齐老师动画
+</div>
+
+<script>
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+});
+</script>
+</body>
+</html>
