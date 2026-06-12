@@ -1,0 +1,925 @@
+<!DOCTYPE html>
+
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>激光通过平行玻璃砖 · 科技感折射模拟</title>
+<style>
+        :root {
+            --bg: #0a0c10;
+            --card-bg: #13161d;
+            --text: #e0e4ec;
+            --text-secondary: #a0aab8;
+            --accent: #4da6ff;
+            --accent-light: #7cc0ff;
+            --glass: rgba(70, 150, 220, 0.25);
+            --glass-border: #3d7eb3;
+            --slider-track: #2a2e38;
+            --slider-fill: #4da6ff;
+            --shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+            --shadow-lg: 0 12px 48px rgba(0, 0, 0, 0.7);
+            --radius: 20px;
+            --transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'PingFang SC', 'Microsoft YaHei', 'Helvetica Neue', sans-serif;
+            background: radial-gradient(ellipse at 30% 20%, #1a1f2b 0%, #0a0c10 70%),
+                        radial-gradient(ellipse at 70% 80%, #16202e 0%, #0a0c10 60%);
+            background-attachment: fixed;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 24px;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .container {
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow-lg);
+            padding: 28px 32px 24px;
+            max-width: 940px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 22px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            backdrop-filter: blur(2px);
+        }
+
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 14px;
+        }
+
+        .title-group {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .icon-laser {
+            width: 48px;
+            height: 48px;
+            border-radius: 14px;
+            background: linear-gradient(135deg, #4da6ff, #1d5fa8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: #fff;
+            box-shadow: 0 4px 18px rgba(77, 166, 255, 0.4);
+        }
+
+        .title {
+            font-size: 1.45rem;
+            font-weight: 700;
+            color: #ffffff;
+            letter-spacing: 0.03em;
+            line-height: 1.3;
+            /* 淡淡的蓝色发光 */
+            text-shadow: 0 0 18px rgba(77, 166, 255, 0.7), 0 0 6px rgba(77, 166, 255, 0.5);
+        }
+        .subtitle {
+            font-size: 0.82rem;
+            color: var(--text-secondary);
+            font-weight: 400;
+            letter-spacing: 0.04em;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(77, 166, 255, 0.08);
+            border: 1px solid rgba(77, 166, 255, 0.3);
+            border-radius: 20px;
+            padding: 7px 16px;
+            font-size: 0.8rem;
+            color: #b3d9ff;
+            font-weight: 500;
+            white-space: nowrap;
+            letter-spacing: 0.03em;
+        }
+        .badge .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #4da6ff;
+            display: inline-block;
+            box-shadow: 0 0 8px #4da6ff;
+        }
+
+        .canvas-wrapper {
+            position: relative;
+            background: #0f1219;
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            overflow: hidden;
+            cursor: default;
+            box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.5);
+            transition: var(--transition);
+        }
+        .canvas-wrapper:active {
+            cursor: grabbing;
+        }
+        .canvas-wrapper.dragging {
+            cursor: grabbing;
+        }
+        .canvas-wrapper .hint-drag {
+            position: absolute;
+            top: 16px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.7);
+            pointer-events: none;
+            letter-spacing: 0.05em;
+            transition: opacity 0.5s;
+            background: rgba(10, 12, 16, 0.8);
+            padding: 5px 16px;
+            border-radius: 20px;
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            z-index: 5;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: auto;
+            touch-action: none;
+        }
+
+        .controls {
+            display: flex;
+            align-items: center;
+            gap: 18px;
+            flex-wrap: wrap;
+            justify-content: center;
+            padding: 4px 0;
+        }
+
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 14px;
+            padding: 11px 18px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            transition: var(--transition);
+        }
+        .control-group:hover {
+            border-color: rgba(77, 166, 255, 0.4);
+            background: rgba(77, 166, 255, 0.04);
+        }
+
+        .control-label {
+            font-size: 0.84rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+            white-space: nowrap;
+            letter-spacing: 0.04em;
+            min-width: 50px;
+        }
+
+        .slider-container {
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        input[type="range"] {
+            -webkit-appearance: none;
+            width: 210px;
+            height: 8px;
+            border-radius: 4px;
+            background: var(--slider-track);
+            outline: none;
+            transition: var(--transition);
+            cursor: pointer;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            background: #1a1e28;
+            border: 3px solid var(--accent);
+            cursor: pointer;
+            box-shadow: 0 0 20px rgba(77, 166, 255, 0.5), 0 2px 10px rgba(0,0,0,0.5);
+            transition: var(--transition);
+        }
+        input[type="range"]::-webkit-slider-thumb:hover {
+            border-color: var(--accent-light);
+            box-shadow: 0 0 28px rgba(77, 166, 255, 0.7), 0 4px 16px rgba(0,0,0,0.6);
+            transform: scale(1.06);
+        }
+
+        .angle-value {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 56px;
+            height: 36px;
+            background: rgba(77, 166, 255, 0.08);
+            border: 1px solid rgba(77, 166, 255, 0.4);
+            border-radius: 10px;
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: #9cc9ff;
+            letter-spacing: 0.03em;
+            padding: 0 8px;
+            transition: var(--transition);
+        }
+
+        .quick-btns {
+            display: flex;
+            gap: 7px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .quick-btn {
+            padding: 8px 15px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            background: rgba(255, 255, 255, 0.02);
+            cursor: pointer;
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: #bcc5d0;
+            transition: var(--transition);
+            letter-spacing: 0.04em;
+            white-space: nowrap;
+            backdrop-filter: blur(4px);
+        }
+        .quick-btn:hover {
+            background: rgba(77, 166, 255, 0.1);
+            border-color: rgba(77, 166, 255, 0.5);
+            color: #d0e2ff;
+        }
+        .quick-btn.active {
+            background: rgba(77, 166, 255, 0.18);
+            border-color: #4da6ff;
+            color: #ffffff;
+            font-weight: 600;
+            box-shadow: 0 0 14px rgba(77, 166, 255, 0.4);
+        }
+
+        @media (max-width: 700px) {
+            .container {
+                padding: 16px 12px 14px;
+                border-radius: 16px;
+                gap: 16px;
+            }
+            .title {
+                font-size: 1.2rem;
+            }
+            input[type="range"] {
+                width: 140px;
+            }
+            .control-group {
+                padding: 8px 10px;
+                gap: 8px;
+            }
+            .angle-value {
+                min-width: 44px;
+                height: 30px;
+                font-size: 0.8rem;
+            }
+            .quick-btn {
+                padding: 6px 10px;
+                font-size: 0.72rem;
+            }
+        }
+    </style>
+</head>
+<body>
+<div id="backButton" onclick="window.location.href='index.html';" style="position: fixed; top: 20px; left: 20px; z-index: 9999; background: rgba(136, 187, 255, 0.2); color: white; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-family: Arial, sans-serif; font-size: 14px; border: 1px solid rgba(136, 187, 255, 0.5); transition: all 0.3s;">
+    ← 返回 (ESC)
+</div>
+<script>
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        window.location.href='index.html';
+    }
+});
+</script>
+
+<div class="container">
+<!-- 标题 -->
+<div class="header">
+<div class="title-group">
+<div class="icon-laser">⚡</div>
+<div>
+<div class="title">激光通过平行玻璃砖</div>
+<div class="subtitle">光的折射</div>
+</div>
+</div>
+<div class="badge">
+<span class="dot"></span> n<sub>玻璃</sub> = 1.50
+            </div>
+</div>
+<!-- Canvas -->
+<div class="canvas-wrapper" id="canvasWrapper">
+<canvas id="mainCanvas"></canvas>
+<div class="hint-drag" id="hintDrag">💡 拖拽光束顶端调节入射角</div>
+</div>
+<!-- 控制区 -->
+<div class="controls">
+<div class="control-group">
+<span class="control-label">入射角 i</span>
+<div class="slider-container">
+<input id="angleSlider" max="82" min="0" step="0.5" type="range" value="45"/>
+<span class="angle-value" id="angleDisplay">45.0°</span>
+</div>
+</div>
+<div class="quick-btns" id="quickBtns">
+<button class="quick-btn" data-angle="0">0°</button>
+<button class="quick-btn" data-angle="15">15°</button>
+<button class="quick-btn active" data-angle="45">45°</button>
+<button class="quick-btn" data-angle="60">60°</button>
+<button class="quick-btn" data-angle="75">75°</button>
+</div>
+</div>
+</div>
+<script>
+        (function() {
+            // ==================== DOM元素 ====================
+            const canvas = document.getElementById('mainCanvas');
+            const ctx = canvas.getContext('2d');
+            const canvasWrapper = document.getElementById('canvasWrapper');
+            const angleSlider = document.getElementById('angleSlider');
+            const angleDisplay = document.getElementById('angleDisplay');
+            const hintDrag = document.getElementById('hintDrag');
+            const quickBtns = document.getElementById('quickBtns');
+
+            // ==================== 物理参数 ====================
+            const n_air = 1.0;
+            const n_glass = 1.50;
+            let incidentAngleDeg = 45;
+
+            // ==================== Canvas 设置 ====================
+            const DESIGN_WIDTH = 900;
+            const DESIGN_HEIGHT = 540;
+            const DPR = Math.min(window.devicePixelRatio || 1, 2);
+
+            function resizeCanvas() {
+                const wrapperWidth = canvasWrapper.clientWidth;
+                const scale = wrapperWidth / DESIGN_WIDTH;
+                canvas.style.width = wrapperWidth + 'px';
+                canvas.style.height = (DESIGN_HEIGHT * scale) + 'px';
+                canvas.width = DESIGN_WIDTH * DPR;
+                canvas.height = DESIGN_HEIGHT * DPR;
+                ctx.setTransform(1, 0, 0, 1, 0, 0);
+                ctx.scale(DPR, DPR);
+            }
+
+            window.addEventListener('resize', () => {
+                resizeCanvas();
+                draw();
+            });
+
+            // ==================== 玻璃砖几何参数 ====================
+            const glassTop = 185;
+            const glassBottom = 395;
+            const glassThickness = glassBottom - glassTop;
+            const glassLeft = 70;
+            const glassRight = 830;
+            const glassWidth = glassRight - glassLeft;
+            const incidentPointX = 370;
+            const incidentPointY = glassTop;
+
+            // ==================== 计算函数 ====================
+            function getRefractionAngle(incidentDeg) {
+                const incidentRad = incidentDeg * Math.PI / 180;
+                const sinR = Math.sin(incidentRad) * n_air / n_glass;
+                if (sinR > 1.0) return null;
+                const rRad = Math.asin(sinR);
+                return {
+                    rad: rRad,
+                    deg: rRad * 180 / Math.PI,
+                    sin: sinR
+                };
+            }
+
+            function getEmergentPoint(incidentDeg) {
+                const refr = getRefractionAngle(incidentDeg);
+                if (!refr) return null;
+                const dx = glassThickness * Math.tan(refr.rad);
+                return {
+                    x: incidentPointX + dx,
+                    y: glassBottom,
+                    dx: dx
+                };
+            }
+
+            // ==================== 绘制函数（科技感深色主题，已删除角度弧线和数据行） ====================
+            function drawGridBackground() {
+                const grad = ctx.createLinearGradient(0, 0, 0, DESIGN_HEIGHT);
+                grad.addColorStop(0, '#0b0e14');
+                grad.addColorStop(0.5, '#111620');
+                grad.addColorStop(1, '#0a0d12');
+                ctx.fillStyle = grad;
+                ctx.fillRect(0, 0, DESIGN_WIDTH, DESIGN_HEIGHT);
+
+                ctx.strokeStyle = 'rgba(80, 120, 180, 0.08)';
+                ctx.lineWidth = 0.6;
+                const gridSpacing = 40;
+                for (let x = gridSpacing; x < DESIGN_WIDTH; x += gridSpacing) {
+                    ctx.beginPath();
+                    ctx.moveTo(x, 0);
+                    ctx.lineTo(x, DESIGN_HEIGHT);
+                    ctx.stroke();
+                }
+                for (let y = gridSpacing; y < DESIGN_HEIGHT; y += gridSpacing) {
+                    ctx.beginPath();
+                    ctx.moveTo(0, y);
+                    ctx.lineTo(DESIGN_WIDTH, y);
+                    ctx.stroke();
+                }
+
+                const cornerGlow = ctx.createRadialGradient(80, 60, 10, 80, 60, 400);
+                cornerGlow.addColorStop(0, 'rgba(40, 80, 140, 0.15)');
+                cornerGlow.addColorStop(1, 'rgba(0,0,0,0)');
+                ctx.fillStyle = cornerGlow;
+                ctx.fillRect(0, 0, DESIGN_WIDTH, DESIGN_HEIGHT);
+
+                ctx.fillStyle = 'rgba(180, 200, 230, 0.5)';
+                ctx.font = 'italic 13px "PingFang SC","Microsoft YaHei",sans-serif';
+                ctx.textAlign = 'right';
+                ctx.fillText('空气  n=1.00', DESIGN_WIDTH - 35, 42);
+                ctx.fillText('空气  n=1.00', DESIGN_WIDTH - 35, DESIGN_HEIGHT - 22);
+            }
+
+            function drawGlassBlock() {
+                ctx.save();
+                ctx.shadowColor = 'rgba(70, 150, 240, 0.35)';
+                ctx.shadowBlur = 28;
+                ctx.fillStyle = 'rgba(60, 130, 210, 0.18)';
+                ctx.fillRect(glassLeft, glassTop, glassWidth, glassThickness);
+                ctx.restore();
+
+                const glassGrad = ctx.createLinearGradient(0, glassTop, 0, glassBottom);
+                glassGrad.addColorStop(0, 'rgba(70, 140, 210, 0.28)');
+                glassGrad.addColorStop(0.2, 'rgba(100, 170, 230, 0.36)');
+                glassGrad.addColorStop(0.5, 'rgba(80, 150, 220, 0.25)');
+                glassGrad.addColorStop(0.8, 'rgba(100, 170, 230, 0.36)');
+                glassGrad.addColorStop(1, 'rgba(60, 130, 200, 0.28)');
+                ctx.fillStyle = glassGrad;
+                ctx.fillRect(glassLeft, glassTop, glassWidth, glassThickness);
+
+                ctx.shadowColor = 'rgba(100, 180, 255, 0.7)';
+                ctx.shadowBlur = 14;
+                ctx.strokeStyle = 'rgba(160, 210, 255, 0.9)';
+                ctx.lineWidth = 2.2;
+                ctx.beginPath();
+                ctx.moveTo(glassLeft, glassTop);
+                ctx.lineTo(glassRight, glassTop);
+                ctx.stroke();
+
+                ctx.shadowBlur = 10;
+                ctx.strokeStyle = 'rgba(140, 200, 255, 0.7)';
+                ctx.lineWidth = 1.8;
+                ctx.beginPath();
+                ctx.moveTo(glassLeft, glassBottom);
+                ctx.lineTo(glassRight, glassBottom);
+                ctx.stroke();
+                ctx.shadowColor = 'transparent';
+                ctx.shadowBlur = 0;
+
+                ctx.strokeStyle = 'rgba(80, 150, 210, 0.65)';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(glassLeft, glassTop, glassWidth, glassThickness);
+
+                // 玻璃内部轻微纹理（不显示任何文字）
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+                ctx.lineWidth = 0.6;
+                for (let y = glassTop + 30; y < glassBottom; y += 40) {
+                    ctx.beginPath();
+                    ctx.moveTo(glassLeft + 15, y);
+                    ctx.lineTo(glassRight - 15, y);
+                    ctx.stroke();
+                }
+            }
+
+            function drawDashedLine(x1, y1, x2, y2, color, lineWidth, dashLen = 8, gapLen = 5) {
+                ctx.save();
+                ctx.strokeStyle = color;
+                ctx.lineWidth = lineWidth;
+                ctx.setLineDash([dashLen, gapLen]);
+                ctx.beginPath();
+                ctx.moveTo(x1, y1);
+                ctx.lineTo(x2, y2);
+                ctx.stroke();
+                ctx.setLineDash([]);
+                ctx.restore();
+            }
+
+            function drawNormals(incidentDeg) {
+                const emergentPt = getEmergentPoint(incidentDeg);
+                const normalExtend = 70;
+
+                drawDashedLine(incidentPointX, incidentPointY - normalExtend,
+                    incidentPointX, incidentPointY + normalExtend,
+                    'rgba(180, 200, 230, 0.45)', 1.2, 7, 5);
+
+                if (emergentPt) {
+                    drawDashedLine(emergentPt.x, emergentPt.y - normalExtend,
+                        emergentPt.x, emergentPt.y + normalExtend,
+                        'rgba(180, 200, 230, 0.45)', 1.2, 7, 5);
+                }
+
+                ctx.fillStyle = 'rgba(200, 215, 235, 0.7)';
+                ctx.font = '11px "PingFang SC","Microsoft YaHei",sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('法线', incidentPointX + 24, incidentPointY - normalExtend + 18);
+                if (emergentPt && Math.abs(emergentPt.x - incidentPointX) > 25) {
+                    ctx.fillText('法线', emergentPt.x + 24, emergentPt.y - normalExtend + 18);
+                }
+            }
+
+            function drawRay(x1, y1, x2, y2, color, lineWidth, glowColor = null, glowSize = 0) {
+                ctx.save();
+                if (glowColor && glowSize > 0) {
+                    ctx.shadowColor = glowColor;
+                    ctx.shadowBlur = glowSize;
+                }
+                ctx.strokeStyle = color;
+                ctx.lineWidth = lineWidth;
+                ctx.lineCap = 'round';
+                ctx.beginPath();
+                ctx.moveTo(x1, y1);
+                ctx.lineTo(x2, y2);
+                ctx.stroke();
+
+                if (lineWidth >= 2.5) {
+                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+                    ctx.lineWidth = lineWidth * 0.4;
+                    ctx.beginPath();
+                    ctx.moveTo(x1, y1);
+                    ctx.lineTo(x2, y2);
+                    ctx.stroke();
+                }
+                ctx.restore();
+            }
+
+            function drawArrowhead(x, y, angle, size, color) {
+                ctx.save();
+                ctx.fillStyle = color;
+                ctx.translate(x, y);
+                ctx.rotate(angle);
+                ctx.beginPath();
+                ctx.moveTo(0, 0);
+                ctx.lineTo(-size * 0.85, -size * 0.55);
+                ctx.lineTo(-size * 0.85, size * 0.55);
+                ctx.closePath();
+                ctx.fill();
+                ctx.restore();
+            }
+
+            function drawAllRays(incidentDeg) {
+                const iRad = incidentDeg * Math.PI / 180;
+                const refr = getRefractionAngle(incidentDeg);
+                const emergentPt = getEmergentPoint(incidentDeg);
+                if (!refr || !emergentPt) return;
+
+                const incRayLength = 280;
+                const incStartX = incidentPointX - incRayLength * Math.sin(iRad);
+                const incStartY = incidentPointY - incRayLength * Math.cos(iRad);
+                let incVisStartX = incStartX, incVisStartY = incStartY;
+                if (incStartY < 8) {
+                    const t = (incidentPointY - 8) / (incidentPointY - incStartY);
+                    incVisStartX = incidentPointX - (incidentPointX - incStartX) * t;
+                    incVisStartY = 8;
+                }
+
+                const reflRayLength = 200;
+                const reflEndX = incidentPointX - reflRayLength * Math.sin(iRad);
+                const reflEndY = incidentPointY - reflRayLength * Math.cos(iRad);
+                let reflVisEndX = reflEndX, reflVisEndY = reflEndY;
+                if (reflEndY < 8) {
+                    const t = (incidentPointY - 8) / (incidentPointY - reflEndY);
+                    reflVisEndX = incidentPointX - (incidentPointX - reflEndX) * t;
+                    reflVisEndY = 8;
+                }
+
+                const refrInGlassX = emergentPt.x;
+                const refrInGlassY = emergentPt.y;
+
+                const emgRayLength = 240;
+                const emgEndX = emergentPt.x + emgRayLength * Math.sin(iRad);
+                const emgEndY = emergentPt.y + emgRayLength * Math.cos(iRad);
+                let emgVisEndX = emgEndX, emgVisEndY = emgEndY;
+                if (emgEndY > DESIGN_HEIGHT - 8) {
+                    const t = (DESIGN_HEIGHT - 8 - emergentPt.y) / (emgEndY - emergentPt.y);
+                    emgVisEndX = emergentPt.x + (emgEndX - emergentPt.x) * t;
+                    emgVisEndY = DESIGN_HEIGHT - 8;
+                }
+
+                // 反射光
+                drawRay(incidentPointX, incidentPointY, reflVisEndX, reflVisEndY,
+                    'rgba(255, 120, 120, 0.45)', 1.8, null, 0);
+                const reflMidX = (incidentPointX + reflVisEndX) / 2;
+                const reflMidY = (incidentPointY + reflVisEndY) / 2;
+                const reflAngle = Math.atan2(-(reflVisEndY - incidentPointY), -(reflVisEndX - incidentPointX));
+                drawArrowhead(reflMidX, reflMidY, reflAngle, 10, 'rgba(255, 100, 100, 0.5)');
+
+                // 入射光
+                drawRay(incVisStartX, incVisStartY, incidentPointX, incidentPointY,
+                    '#ff4d6d', 3.2, '#ff3355', 12);
+                const incMidX = (incVisStartX + incidentPointX) / 2;
+                const incMidY = (incVisStartY + incidentPointY) / 2;
+                const incDirAngle = Math.atan2(incidentPointY - incVisStartY, incidentPointX - incVisStartX);
+                drawArrowhead(incMidX, incMidY, incDirAngle, 12, '#ff4d6d');
+
+                // 玻璃内折射光
+                drawRay(incidentPointX, incidentPointY, refrInGlassX, refrInGlassY,
+                    '#ff758c', 2.8, '#ff4d6d', 9);
+                const refrMidX = (incidentPointX + refrInGlassX) / 2;
+                const refrMidY = (incidentPointY + refrInGlassY) / 2;
+                const refrDirAngle = Math.atan2(refrInGlassY - incidentPointY, refrInGlassX - incidentPointX);
+                drawArrowhead(refrMidX, refrMidY, refrDirAngle, 10, '#ff758c');
+
+                // 出射光
+                drawRay(emergentPt.x, emergentPt.y, emgVisEndX, emgVisEndY,
+                    '#ff4d6d', 3.2, '#ff3355', 12);
+                const emgMidX = (emergentPt.x + emgVisEndX) / 2;
+                const emgMidY = (emergentPt.y + emgVisEndY) / 2;
+                const emgDirAngle = Math.atan2(emgVisEndY - emergentPt.y, emgVisEndX - emergentPt.x);
+                drawArrowhead(emgMidX, emgMidY, emgDirAngle, 12, '#ff4d6d');
+
+                // 虚线延长线
+                const extX = incidentPointX + 250 * Math.sin(iRad);
+                const extY = incidentPointY + 250 * Math.cos(iRad);
+                let extVisX = extX, extVisY = extY;
+                if (extY > DESIGN_HEIGHT - 5) {
+                    const t = (DESIGN_HEIGHT - 5 - incidentPointY) / (extY - incidentPointY);
+                    extVisX = incidentPointX + (extX - incidentPointX) * t;
+                    extVisY = DESIGN_HEIGHT - 5;
+                }
+                drawDashedLine(incidentPointX, incidentPointY + 1, extVisX, extVisY,
+                    'rgba(180, 180, 200, 0.3)', 1.0, 6, 6);
+
+                // 横向偏移标注
+                if (Math.abs(emergentPt.dx) > 3) {
+                    const shiftY = glassBottom + 55;
+                    const shiftX1 = incidentPointX + (shiftY - incidentPointY) * Math.tan(iRad);
+                    const shiftX2 = emergentPt.x + (shiftY - emergentPt.y) * Math.tan(iRad);
+                    if (shiftX1 > 40 && shiftX2 < DESIGN_WIDTH - 40 && shiftY < DESIGN_HEIGHT - 20) {
+                        drawDashedLine(shiftX1, shiftY - 8, shiftX2, shiftY - 8,
+                            'rgba(160, 180, 210, 0.55)', 1.3, 3, 3);
+                        const arrowDir = shiftX2 > shiftX1 ? 1 : -1;
+                        ctx.fillStyle = 'rgba(160, 180, 210, 0.8)';
+                        ctx.beginPath();
+                        ctx.moveTo(shiftX2, shiftY - 8);
+                        ctx.lineTo(shiftX2 - arrowDir * 7, shiftY - 13);
+                        ctx.lineTo(shiftX2 - arrowDir * 7, shiftY - 3);
+                        ctx.closePath();
+                        ctx.fill();
+                        ctx.fillStyle = 'rgba(200, 215, 240, 0.85)';
+                        ctx.font = '11px "PingFang SC","Microsoft YaHei",sans-serif';
+                        ctx.textAlign = 'center';
+                        ctx.fillText('横向偏移 d', (shiftX1 + shiftX2) / 2, shiftY - 16);
+                    }
+                }
+            }
+
+            function drawIncidentPointHighlight() {
+                const grad = ctx.createRadialGradient(incidentPointX, incidentPointY, 0,
+                    incidentPointX, incidentPointY, 12);
+                grad.addColorStop(0, 'rgba(255, 255, 255, 0.95)');
+                grad.addColorStop(0.3, 'rgba(255, 180, 160, 0.7)');
+                grad.addColorStop(0.7, 'rgba(255, 80, 60, 0.25)');
+                grad.addColorStop(1, 'rgba(255, 40, 20, 0)');
+                ctx.fillStyle = grad;
+                ctx.beginPath();
+                ctx.arc(incidentPointX, incidentPointY, 12, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+                ctx.beginPath();
+                ctx.arc(incidentPointX, incidentPointY, 4, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = 'rgba(255, 80, 60, 0.7)';
+                ctx.lineWidth = 1.2;
+                ctx.stroke();
+            }
+
+            function drawEmergentPointHighlight(emergentPt) {
+                if (!emergentPt) return;
+                const grad = ctx.createRadialGradient(emergentPt.x, emergentPt.y, 0,
+                    emergentPt.x, emergentPt.y, 10);
+                grad.addColorStop(0, 'rgba(255, 255, 255, 0.9)');
+                grad.addColorStop(0.3, 'rgba(255, 180, 160, 0.65)');
+                grad.addColorStop(0.7, 'rgba(255, 80, 60, 0.2)');
+                grad.addColorStop(1, 'rgba(255, 40, 20, 0)');
+                ctx.fillStyle = grad;
+                ctx.beginPath();
+                ctx.arc(emergentPt.x, emergentPt.y, 10, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+                ctx.beginPath();
+                ctx.arc(emergentPt.x, emergentPt.y, 3.2, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            function draw() {
+                ctx.clearRect(0, 0, DESIGN_WIDTH, DESIGN_HEIGHT);
+                const incidentDeg = incidentAngleDeg;
+                const emergentPt = getEmergentPoint(incidentDeg);
+
+                drawGridBackground();
+                drawGlassBlock();
+                drawNormals(incidentDeg);
+
+                drawAllRays(incidentDeg);
+
+                drawIncidentPointHighlight();
+                if (emergentPt) drawEmergentPointHighlight(emergentPt);
+            }
+
+            function updateUI(source) {
+                angleSlider.value = incidentAngleDeg;
+                angleDisplay.textContent = incidentAngleDeg.toFixed(1) + '°';
+                const btns = quickBtns.querySelectorAll('.quick-btn');
+                btns.forEach(btn => {
+                    const btnAngle = parseFloat(btn.dataset.angle);
+                    btn.classList.toggle('active', Math.abs(btnAngle - incidentAngleDeg) < 0.3);
+                });
+                draw();
+            }
+
+            // 交互事件
+            angleSlider.addEventListener('input', () => {
+                incidentAngleDeg = parseFloat(angleSlider.value);
+                updateUI('slider');
+            });
+
+            quickBtns.addEventListener('click', (e) => {
+                const btn = e.target.closest('.quick-btn');
+                if (!btn) return;
+                const angle = parseFloat(btn.dataset.angle);
+                if (!isNaN(angle)) {
+                    incidentAngleDeg = angle;
+                    updateUI('quickbtn');
+                }
+            });
+
+            let isDragging = false;
+            function getCanvasPos(e) {
+                const rect = canvas.getBoundingClientRect();
+                const scaleX = DESIGN_WIDTH / rect.width;
+                const scaleY = DESIGN_HEIGHT / rect.height;
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                return {
+                    x: (clientX - rect.left) * scaleX,
+                    y: (clientY - rect.top) * scaleY
+                };
+            }
+
+            function isNearIncidentBeam(pos) {
+                const iRad = incidentAngleDeg * Math.PI / 180;
+                const beamTopX = incidentPointX - 280 * Math.sin(iRad);
+                const beamTopY = incidentPointY - 280 * Math.cos(iRad);
+                let visTopX = beamTopX, visTopY = beamTopY;
+                if (beamTopY < 8) {
+                    const t = (incidentPointY - 8) / (incidentPointY - beamTopY);
+                    visTopX = incidentPointX - (incidentPointX - beamTopX) * t;
+                    visTopY = 8;
+                }
+                return Math.hypot(pos.x - visTopX, pos.y - visTopY) < 38;
+            }
+
+            function getAngleFromMouse(pos) {
+                const dx = pos.x - incidentPointX;
+                const dy = incidentPointY - pos.y;
+                if (dy < 2) return incidentAngleDeg;
+                let angle = Math.atan2(Math.abs(dx), dy) * 180 / Math.PI;
+                return Math.max(0, Math.min(82, angle));
+            }
+
+            canvas.addEventListener('mousedown', (e) => {
+                const pos = getCanvasPos(e);
+                if (isNearIncidentBeam(pos) || (pos.y < glassTop - 15 && pos.x > incidentPointX - 70 && pos.x < incidentPointX + 280 && pos.y > 10)) {
+                    isDragging = true;
+                    canvasWrapper.classList.add('dragging');
+                    hintDrag.style.opacity = '0';
+                    incidentAngleDeg = getAngleFromMouse(pos);
+                    updateUI('drag');
+                    e.preventDefault();
+                }
+            });
+
+            canvas.addEventListener('mousemove', (e) => {
+                const pos = getCanvasPos(e);
+                if (isDragging) {
+                    incidentAngleDeg = getAngleFromMouse(pos);
+                    updateUI('drag');
+                } else if (isNearIncidentBeam(pos) || (pos.y < glassTop - 10 && pos.x > incidentPointX - 60 && pos.x < incidentPointX + 270 && pos.y > 5)) {
+                    canvas.style.cursor = 'grab';
+                } else {
+                    canvas.style.cursor = 'default';
+                }
+            });
+
+            canvas.addEventListener('mouseup', () => {
+                if (isDragging) {
+                    isDragging = false;
+                    canvasWrapper.classList.remove('dragging');
+                    canvas.style.cursor = 'default';
+                }
+            });
+            canvas.addEventListener('mouseleave', () => {
+                if (isDragging) {
+                    isDragging = false;
+                    canvasWrapper.classList.remove('dragging');
+                    canvas.style.cursor = 'default';
+                }
+            });
+
+            canvas.addEventListener('touchstart', (e) => {
+                const pos = getCanvasPos(e);
+                if (isNearIncidentBeam(pos) || (pos.y < glassTop - 15 && pos.x > incidentPointX - 70 && pos.x < incidentPointX + 280 && pos.y > 10)) {
+                    isDragging = true;
+                    canvasWrapper.classList.add('dragging');
+                    hintDrag.style.opacity = '0';
+                    incidentAngleDeg = getAngleFromMouse(pos);
+                    updateUI('drag');
+                    e.preventDefault();
+                }
+            }, { passive: false });
+
+            canvas.addEventListener('touchmove', (e) => {
+                if (isDragging) {
+                    const pos = getCanvasPos(e);
+                    incidentAngleDeg = getAngleFromMouse(pos);
+                    updateUI('drag');
+                    e.preventDefault();
+                }
+            }, { passive: false });
+
+            canvas.addEventListener('touchend', () => {
+                if (isDragging) {
+                    isDragging = false;
+                    canvasWrapper.classList.remove('dragging');
+                }
+            });
+
+            document.addEventListener('keydown', (e) => {
+                if (e.target.tagName === 'INPUT' && e.target.type === 'range') return;
+                if (e.key === 'ArrowRight' || e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    incidentAngleDeg = Math.min(82, incidentAngleDeg + 1);
+                    updateUI('keyboard');
+                } else if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    incidentAngleDeg = Math.max(0, incidentAngleDeg - 1);
+                    updateUI('keyboard');
+                }
+            });
+
+            setTimeout(() => {
+                hintDrag.style.opacity = '0.8';
+                setTimeout(() => { hintDrag.style.opacity = '0'; }, 5000);
+            }, 1500);
+
+            function init() {
+                resizeCanvas();
+                incidentAngleDeg = 45;
+                updateUI('init');
+            }
+
+            init();
+        })();
+    </script>
+
+<div style="position: fixed; bottom: 10px; right: 10px; z-index: 9998; color: rgba(255, 255, 255, 0.3); font-family: Arial, sans-serif; font-size: 12px; pointer-events: none;">
+    齐老师动画
+</div>
+
+<script>
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+});
+</script>
+</body>
+</html>
