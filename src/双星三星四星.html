@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+
+<html lang="zh">
+<head>
+<meta charset="utf-8"/>
+<meta charset="utf-8"/>
+<meta charset="utf-8"/>
+<meta charset="utf-8"/>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>高中物理：双星 / 三星 / 四星系统动画</title>
+<style>
+        * {
+            box-sizing: border-box;
+            user-select: none;
+        }
+        body {
+            background: #0a0f1e;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+            margin: 0;
+            padding: 16px;
+        }
+        .container {
+            max-width: 1000px;
+            width: 100%;
+            background: #151e2d;
+            border-radius: 32px;
+            padding: 24px 20px 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+            border: 1px solid #2e3a4e;
+        }
+        h2 {
+            text-align: center;
+            margin: 0 0 10px 0;
+            font-weight: 400;
+            color: #bdd3ff;
+            letter-spacing: 2px;
+            font-size: 1.8rem;
+            text-shadow: 0 0 8px #3f5a9c;
+        }
+        .sub {
+            text-align: center;
+            color: #7f92b0;
+            margin-top: -5px;
+            margin-bottom: 25px;
+            font-style: italic;
+            font-size: 1rem;
+            border-bottom: 1px dashed #2e405b;
+            padding-bottom: 12px;
+        }
+        .canvas-panel {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 20px;
+        }
+        .card {
+            background: #0f172b;
+            border-radius: 24px;
+            padding: 16px 16px 20px;
+            box-shadow: inset 0 1px 3px rgba(255, 255, 255, 0.05), 0 8px 18px rgba(0, 0, 0, 0.7);
+            border: 1px solid #283549;
+            transition: transform 0.2s;
+        }
+        .card:hover {
+            transform: translateY(-4px);
+            border-color: #3e5670;
+        }
+        canvas {
+            display: block;
+            margin: 0 auto;
+            width: 280px;
+            height: 280px;
+            border-radius: 50%;
+            box-shadow: 0 0 0 2px #1f2b3b, 0 10px 25px black;
+            background: #030611;
+        }
+        .caption {
+            text-align: center;
+            margin-top: 14px;
+            color: #a5b9d9;
+            font-weight: 500;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .caption span {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 12px;
+            background: #5f7eb0;
+            box-shadow: 0 0 10px currentColor;
+        }
+        .legend {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 16px 30px;
+            margin-top: 25px;
+            padding: 12px 20px;
+            background: #0d1423;
+            border-radius: 60px;
+            border: 1px solid #2b3b52;
+            color: #9bb2d9;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.95rem;
+        }
+        .dot {
+            width: 16px;
+            height: 16px;
+            border-radius: 16px;
+        }
+        .dot.red { background: #ff6b6b; box-shadow: 0 0 12px #ff8a8a; }
+        .dot.blue { background: #6ba6ff; box-shadow: 0 0 12px #7cb0ff; }
+        .dot.green { background: #6bff8a; box-shadow: 0 0 12px #8affa0; }
+        .dot.orange { background: #ffb86b; box-shadow: 0 0 12px #ffcf8a; }
+        .dot.purple { background: #cb8aff; box-shadow: 0 0 12px #daa8ff; }
+        .footer-note {
+            text-align: center;
+            color: #506280;
+            font-size: 0.9rem;
+            margin-top: 20px;
+            border-top: 1px dashed #253341;
+            padding-top: 18px;
+        }
+        .footer-note b {
+            color: #7f9fcf;
+            font-weight: 400;
+        }
+    </style>
+</head>
+<body>
+<div id="backButton" onclick="window.location.href='index.html';" style="position: fixed; top: 20px; left: 20px; z-index: 9999; background: rgba(30, 60, 114, 0.8); color: white; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-family: Arial, sans-serif; font-size: 14px; border: 1px solid rgba(100, 150, 255, 0.5); transition: all 0.3s;">
+    ← 返回 (ESC)
+</div>
+<script>
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        window.location.href='index.html';
+    }
+});
+</script>
+
+<div class="container">
+<h2>🌌 多星系统 轨道运动</h2>
+<div class="sub">双星 · 三星（等边三角形）· 四星（正方形）</div>
+<div class="canvas-panel">
+<!-- 双星 canvas -->
+<div class="card">
+<canvas height="300" id="canvasBinary" width="300"></canvas>
+<div class="caption">
+<span style="background: #ff6b6b;"></span> 双星 <span style="background: #6ba6ff;"></span>
+</div>
+</div>
+<!-- 三星 canvas -->
+<div class="card">
+<canvas height="300" id="canvasTriple" width="300"></canvas>
+<div class="caption">
+<span style="background: #ff6b6b;"></span> <span style="background: #6bff8a;"></span> <span style="background: #6ba6ff;"></span> 三星
+            </div>
+</div>
+<!-- 四星 canvas -->
+<div class="card">
+<canvas height="300" id="canvasQuad" width="300"></canvas>
+<div class="caption">
+<span style="background: #ff6b6b;"></span> <span style="background: #ffb86b;"></span> <span style="background: #6bff8a;"></span> <span style="background: #cb8aff;"></span> 四星
+            </div>
+</div>
+</div>
+<!-- 图例说明 -->
+<div class="legend">
+<div class="legend-item"><span class="dot red"></span> 恒星 1</div>
+<div class="legend-item"><span class="dot orange"></span> 恒星 2 (四星)</div>
+<div class="legend-item"><span class="dot green"></span> 恒星 3</div>
+<div class="legend-item"><span class="dot blue"></span> 恒星 4 (双/三/四)</div>
+<div class="legend-item"><span class="dot purple"></span> 恒星 5 (四星)</div>
+<div class="legend-item"><span style="width:16px;height:16px;border-radius:50%;background:white;box-shadow:0 0 10px white;"></span> 质心</div>
+</div>
+<div class="footer-note">
+<b>⚫ 灰色虚线圆</b> 为各星公转轨道 · 角速度基于万有引力近似 (双星 ω₂=0.8, 三星 ω₃=1.0, 四星 ω₄=0.95 rad/s) <br/>
+        质量相等 · 等边三角形/正方形构型 · 绕共同质心匀速圆周运动
+    </div>
+</div>
+<script>
+    (function() {
+        // 获取三个 canvas 元素
+        const canvasBin = document.getElementById('canvasBinary');
+        const canvasTri = document.getElementById('canvasTriple');
+        const canvasQuad = document.getElementById('canvasQuad');
+
+        // 获取 2d 上下文
+        const ctxBin = canvasBin.getContext('2d');
+        const ctxTri = canvasTri.getContext('2d');
+        const ctxQuad = canvasQuad.getContext('2d');
+
+        // 中心点坐标 (所有画布中心都是 150,150)
+        const cx = 150, cy = 150;
+
+        // ================= 系统参数定义 =================
+        // 为了视觉清晰，统一使用合适轨道半径 (单位: px)
+        // 双星: 两星距离 120px → 轨道半径 60px
+        const binaryRadius = 60;
+        // 三星: 等边三角形边长 100px → 中心到顶点距离 = 100/√3 ≈ 57.74px (取57.8)
+        const tripleRadius = 100 / Math.sqrt(3);  // ≈57.735
+        // 四星: 正方形边长 100px → 中心到顶点距离 = 100/√2 ≈ 70.71px
+        const quadRadius = 100 / Math.sqrt(2);    // ≈70.711
+
+        // 角速度 (rad/s)  让三星稍快，双星稍慢，符合质量相等下三星引力更强周期更短的趋势
+        const omegaBin = 0.8;    // 双星
+        const omegaTri = 1.0;    // 三星
+        const omegaQuad = 0.95;  // 四星
+
+        // 星星颜色 (按顺序)
+        const colorsBin = ['#ff6b6b', '#6ba6ff'];               // 红, 蓝
+        const colorsTri = ['#ff6b6b', '#6bff8a', '#6ba6ff'];    // 红, 绿, 蓝
+        const colorsQuad = ['#ff6b6b', '#ffb86b', '#6bff8a', '#cb8aff']; // 红, 橙, 绿, 紫
+
+        // 初始相位 (弧度)  —— 让它们在t=0时处于美观位置
+        // 双星: 两星相差 PI (位于直径两端)  一颗在0°, 一颗在180°
+        const initPhasesBin = [0, Math.PI];
+        // 三星: 三等分 0, 120°, 240°
+        const initPhasesTri = [0, (2 * Math.PI) / 3, (4 * Math.PI) / 3];
+        // 四星: 从45°开始 (让正方形顶点不水平/垂直，更动态)  间隔90°
+        const initPhasesQuad = [Math.PI / 4, (3 * Math.PI) / 4, (5 * Math.PI) / 4, (7 * Math.PI) / 4];
+
+        // 记录动画开始时间 (用作全局时钟)
+        const startTime = performance.now();
+
+        // 绘制函数，每一帧根据流逝时间计算位置
+        function drawSystems() {
+            const now = performance.now();
+            const elapsedSec = (now - startTime) / 1000; // 秒
+
+            // ----- 绘制双星 (canvasBin) -----
+            ctxBin.clearRect(0, 0, 300, 300);
+            // 绘制背景星空效果 (简单的随机小点)
+            drawStarfield(ctxBin);
+            // 绘制轨道 (灰色虚线圆)
+            ctxBin.beginPath();
+            ctxBin.arc(cx, cy, binaryRadius, 0, 2 * Math.PI);
+            ctxBin.strokeStyle = '#6b7f9f';
+            ctxBin.lineWidth = 1.5;
+            ctxBin.setLineDash([5, 6]);
+            ctxBin.stroke();
+            ctxBin.setLineDash([]); // 恢复实线
+
+            // 绘制中心质心 (白点)
+            ctxBin.beginPath();
+            ctxBin.arc(cx, cy, 3, 0, 2 * Math.PI);
+            ctxBin.fillStyle = '#ffffff';
+            ctxBin.shadowColor = '#b0d0ff';
+            ctxBin.shadowBlur = 10;
+            ctxBin.fill();
+            ctxBin.shadowBlur = 0;
+
+            // 绘制双星
+            const angleBaseBin = omegaBin * elapsedSec;
+            for (let i = 0; i < 2; i++) {
+                const angle = angleBaseBin + initPhasesBin[i];
+                const x = cx + binaryRadius * Math.cos(angle);
+                const y = cy + binaryRadius * Math.sin(angle);
+
+                // 绘制光晕和星体
+                ctxBin.shadowColor = colorsBin[i];
+                ctxBin.shadowBlur = 20;
+                ctxBin.beginPath();
+                ctxBin.arc(x, y, 8, 0, 2 * Math.PI);
+                ctxBin.fillStyle = colorsBin[i];
+                ctxBin.fill();
+                // 内层高光
+                ctxBin.shadowBlur = 10;
+                ctxBin.beginPath();
+                ctxBin.arc(x, y, 4, 0, 2 * Math.PI);
+                ctxBin.fillStyle = '#fff9e6';
+                ctxBin.fill();
+            }
+            ctxBin.shadowBlur = 0;
+            ctxBin.shadowColor = 'transparent';
+
+            // ----- 绘制三星 (canvasTri) -----
+            ctxTri.clearRect(0, 0, 300, 300);
+            drawStarfield(ctxTri);
+            // 轨道
+            ctxTri.beginPath();
+            ctxTri.arc(cx, cy, tripleRadius, 0, 2 * Math.PI);
+            ctxTri.strokeStyle = '#6b7f9f';
+            ctxTri.lineWidth = 1.5;
+            ctxTri.setLineDash([5, 6]);
+            ctxTri.stroke();
+            ctxTri.setLineDash([]);
+
+            // 中心质心
+            ctxTri.beginPath();
+            ctxTri.arc(cx, cy, 3, 0, 2 * Math.PI);
+            ctxTri.fillStyle = '#ffffff';
+            ctxTri.shadowColor = '#b0d0ff';
+            ctxTri.shadowBlur = 10;
+            ctxTri.fill();
+            ctxTri.shadowBlur = 0;
+
+            const angleBaseTri = omegaTri * elapsedSec;
+            for (let i = 0; i < 3; i++) {
+                const angle = angleBaseTri + initPhasesTri[i];
+                const x = cx + tripleRadius * Math.cos(angle);
+                const y = cy + tripleRadius * Math.sin(angle);
+
+                ctxTri.shadowColor = colorsTri[i];
+                ctxTri.shadowBlur = 20;
+                ctxTri.beginPath();
+                ctxTri.arc(x, y, 8, 0, 2 * Math.PI);
+                ctxTri.fillStyle = colorsTri[i];
+                ctxTri.fill();
+
+                ctxTri.shadowBlur = 10;
+                ctxTri.beginPath();
+                ctxTri.arc(x, y, 4, 0, 2 * Math.PI);
+                ctxTri.fillStyle = '#fff9e6';
+                ctxTri.fill();
+            }
+            ctxTri.shadowBlur = 0;
+            ctxTri.shadowColor = 'transparent';
+
+            // ----- 绘制四星 (canvasQuad) -----
+            ctxQuad.clearRect(0, 0, 300, 300);
+            drawStarfield(ctxQuad);
+            // 轨道
+            ctxQuad.beginPath();
+            ctxQuad.arc(cx, cy, quadRadius, 0, 2 * Math.PI);
+            ctxQuad.strokeStyle = '#6b7f9f';
+            ctxQuad.lineWidth = 1.5;
+            ctxQuad.setLineDash([5, 6]);
+            ctxQuad.stroke();
+            ctxQuad.setLineDash([]);
+
+            // 中心质心
+            ctxQuad.beginPath();
+            ctxQuad.arc(cx, cy, 3, 0, 2 * Math.PI);
+            ctxQuad.fillStyle = '#ffffff';
+            ctxQuad.shadowColor = '#b0d0ff';
+            ctxQuad.shadowBlur = 10;
+            ctxQuad.fill();
+            ctxQuad.shadowBlur = 0;
+
+            const angleBaseQuad = omegaQuad * elapsedSec;
+            for (let i = 0; i < 4; i++) {
+                const angle = angleBaseQuad + initPhasesQuad[i];
+                const x = cx + quadRadius * Math.cos(angle);
+                const y = cy + quadRadius * Math.sin(angle);
+
+                ctxQuad.shadowColor = colorsQuad[i];
+                ctxQuad.shadowBlur = 20;
+                ctxQuad.beginPath();
+                ctxQuad.arc(x, y, 8, 0, 2 * Math.PI);
+                ctxQuad.fillStyle = colorsQuad[i];
+                ctxQuad.fill();
+
+                ctxQuad.shadowBlur = 10;
+                ctxQuad.beginPath();
+                ctxQuad.arc(x, y, 4, 0, 2 * Math.PI);
+                ctxQuad.fillStyle = '#fff9e6';
+                ctxQuad.fill();
+            }
+            ctxQuad.shadowBlur = 0;
+            ctxQuad.shadowColor = 'transparent';
+
+            // 继续请求下一帧
+            requestAnimationFrame(drawSystems);
+        }
+
+        // 辅助函数：绘制一些背景星星 (增加深邃感)
+        function drawStarfield(ctx) {
+            // 固定随机种子，保证每帧星星位置不变
+            const stars = 50;
+            for (let i = 0; i < stars; i++) {
+                // 使用伪随机位置，但基于坐标固定 (让背景静态)
+                const x = (i * 131) % 280 + 10;
+                const y = (i * 237) % 280 + 10;
+                const r = 1 + (i % 3) * 0.5;
+                ctx.fillStyle = `rgba(255, 240, 200, ${0.3 + (i % 3) * 0.2})`;
+                ctx.beginPath();
+                ctx.arc(x, y, r, 0, 2 * Math.PI);
+                ctx.fill();
+            }
+        }
+
+        // 启动动画循环
+        requestAnimationFrame(drawSystems);
+    })();
+</script>
+<style>
+.back-btn {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    padding: 10px 20px;
+    background: rgba(0, 150, 200, 0.3);
+    border: 1px solid #00ffff;
+    color: white;
+    font-size: 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    z-index: 9999;
+    transition: 0.3s;
+    backdrop-filter: blur(5px);
+}
+.back-btn:hover {
+    background: rgba(0, 150, 200, 0.6);
+    box-shadow: 0 0 15px #00ffff;
+}
+</style>
+<button class="back-btn" onclick="goBack()">⬅️ 返回</button>
+<script>
+function goBack() {
+    history.back();
+}
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        goBack();
+    }
+});
+</script>
+<div class="watermark">齐老师动画</div>
+<style>
+.watermark {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    font-size: 14px;
+    color: rgba(0, 255, 255, 0.3);
+    z-index: 9998;
+    pointer-events: none;
+    user-select: none;
+}
+</style>
+<script>
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+});
+</script>
+<style>
+.back-btn {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    padding: 10px 20px;
+    background: rgba(0, 150, 200, 0.3);
+    border: 1px solid #00ffff;
+    color: white;
+    font-size: 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    z-index: 9999;
+    transition: 0.3s;
+    backdrop-filter: blur(5px);
+}
+.back-btn:hover {
+    background: rgba(0, 150, 200, 0.6);
+    box-shadow: 0 0 15px #00ffff;
+}
+</style>
+<button class="back-btn" onclick="goBack()">⬅️ 返回</button>
+<script>
+function goBack() {
+    history.back();
+}
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        goBack();
+    }
+});
+</script>
+<div class="watermark">齐老师动画</div>
+<style>
+.watermark {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    font-size: 14px;
+    color: rgba(0, 255, 255, 0.3);
+    z-index: 9998;
+    pointer-events: none;
+    user-select: none;
+}
+</style>
+<script>
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+});
+</script>
+<style>
+.back-btn {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    padding: 10px 20px;
+    background: rgba(0, 150, 200, 0.3);
+    border: 1px solid #00ffff;
+    color: white;
+    font-size: 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    z-index: 9999;
+    transition: 0.3s;
+    backdrop-filter: blur(5px);
+}
+.back-btn:hover {
+    background: rgba(0, 150, 200, 0.6);
+    box-shadow: 0 0 15px #00ffff;
+}
+</style>
+<button class="back-btn" onclick="goBack()">⬅️ 返回</button>
+<script>
+function goBack() {
+    history.back();
+}
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        goBack();
+    }
+});
+</script>
+<div class="watermark">齐老师动画</div>
+<style>
+.watermark {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    font-size: 14px;
+    color: rgba(0, 255, 255, 0.3);
+    z-index: 9998;
+    pointer-events: none;
+    user-select: none;
+}
+</style>
+<script>
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+});
+</script>
+<style>
+.back-btn {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    padding: 10px 20px;
+    background: rgba(0, 150, 200, 0.3);
+    border: 1px solid #00ffff;
+    color: white;
+    font-size: 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    z-index: 9999;
+    transition: 0.3s;
+    backdrop-filter: blur(5px);
+}
+.back-btn:hover {
+    background: rgba(0, 150, 200, 0.6);
+    box-shadow: 0 0 15px #00ffff;
+}
+</style>
+<button class="back-btn" onclick="goBack()">⬅️ 返回</button>
+<script>
+function goBack() {
+    history.back();
+}
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        goBack();
+    }
+});
+</script>
+<div class="watermark">齐老师动画</div>
+<style>
+.watermark {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    font-size: 14px;
+    color: rgba(0, 255, 255, 0.3);
+    z-index: 9998;
+    pointer-events: none;
+    user-select: none;
+}
+</style>
+<script>
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+});
+</script>
+
+<div style="position: fixed; bottom: 10px; right: 10px; z-index: 9998; color: rgba(255, 255, 255, 0.3); font-family: Arial, sans-serif; font-size: 12px; pointer-events: none;">
+    齐老师动画
+</div>
+
+<script>
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+});
+</script>
+</body>
+</html>
