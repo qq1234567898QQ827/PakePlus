@@ -1,0 +1,955 @@
+<!DOCTYPE html>
+
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta charset="utf-8"/>
+<meta charset="utf-8"/>
+<meta charset="utf-8"/>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, user-scalable=no" name="viewport"/>
+<title>挖穿地球 · 可调隧道位置 | 简谐运动 (均匀地球模型)</title>
+<style>
+        * {
+            user-select: none;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(145deg, #0a1022 0%, #03070f 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Segoe UI', 'Roboto', 'Poppins', system-ui, sans-serif;
+            padding: 20px;
+            margin: 0;
+        }
+
+        .card {
+            background: rgba(10, 20, 35, 0.75);
+            backdrop-filter: blur(6px);
+            border-radius: 2.5rem;
+            padding: 1.2rem 1.8rem 1.5rem 1.8rem;
+            box-shadow: 0 25px 40px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(72, 187, 255, 0.35);
+            transition: all 0.2s;
+        }
+
+        canvas {
+            display: block;
+            margin: 0 auto;
+            border-radius: 28px;
+            box-shadow: 0 12px 28px rgba(0, 0, 0, 0.5);
+            cursor: pointer;
+            background: radial-gradient(ellipse at 30% 25%, #101c30, #03070f);
+        }
+
+        #earthCanvas {
+            width: 100%;
+            height: auto;
+        }
+
+        .title-section {
+            text-align: center;
+            margin-bottom: 0.6rem;
+        }
+
+        .title-main {
+            font-size: 1.55rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #ffe0a3, #7bc5ff);
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .sub {
+            font-size: 0.75rem;
+            color: #aaccee;
+            border-top: 1px dashed #3a7799;
+            display: inline-block;
+            padding-top: 5px;
+            margin-top: 4px;
+        }
+
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 1rem;
+            align-items: center;
+            margin: 1rem 0 0.8rem 0;
+            background: #07121ece;
+            padding: 0.5rem 1.3rem;
+            border-radius: 48px;
+            backdrop-filter: blur(8px);
+        }
+
+        button {
+            background: #1f4058;
+            border: none;
+            font-weight: 600;
+            font-size: 0.85rem;
+            padding: 0.4rem 1.2rem;
+            border-radius: 40px;
+            color: #f0f9ff;
+            cursor: pointer;
+            transition: 0.2s;
+            font-family: inherit;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+            border: 1px solid #4682b0;
+        }
+
+        button:hover {
+            background: #2e6a8a;
+            transform: scale(1.02);
+            border-color: #7ac7ff;
+        }
+
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: #0a1a28aa;
+            padding: 0.2rem 1rem;
+            border-radius: 40px;
+            font-size: 0.8rem;
+            color: #c2e2ff;
+        }
+
+        input[type="range"] {
+            width: 170px;
+            cursor: pointer;
+            background: #2c5a70;
+            height: 3px;
+            border-radius: 10px;
+        }
+
+        .stats {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 1.5rem;
+            background: #040e18aa;
+            border-radius: 48px;
+            padding: 0.4rem 1.2rem;
+            margin-top: 8px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+        }
+
+        .stat {
+            color: #bbdef5;
+        }
+
+        .stat span {
+            color: #f5c542;
+            font-weight: bold;
+            background: #00000066;
+            padding: 0.1rem 0.5rem;
+            border-radius: 28px;
+            margin-left: 6px;
+        }
+
+        .legend {
+            display: flex;
+            justify-content: center;
+            gap: 1.5rem;
+            margin-top: 8px;
+            font-size: 0.7rem;
+            flex-wrap: wrap;
+        }
+
+        .legend span {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .color-badge {
+            width: 18px;
+            height: 3px;
+            border-radius: 4px;
+            display: inline-block;
+        }
+
+        .formula-note {
+            background: #030d15b3;
+            border-radius: 18px;
+            padding: 5px 14px;
+            text-align: center;
+            font-size: 0.7rem;
+            color: #bbdef5;
+            margin-top: 12px;
+            border: 1px solid #2a6f8f;
+        }
+
+        footer {
+            font-size: 0.65rem;
+            color: #6b8faa;
+            text-align: center;
+            margin-top: 8px;
+        }
+
+        @media (max-width: 680px) {
+            .controls { gap: 0.6rem; padding: 0.5rem 1rem; }
+            .slider-container { gap: 6px; }
+            input[type="range"] { width: 120px; }
+        }
+    </style>
+</head>
+<body>
+<div id="backButton" onclick="window.location.href='index.html';" style="position: fixed; top: 20px; left: 20px; z-index: 9999; background: rgba(30, 60, 114, 0.8); color: white; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-family: Arial, sans-serif; font-size: 14px; border: 1px solid rgba(100, 150, 255, 0.5); transition: all 0.3s;">
+    ← 返回 (ESC)
+</div>
+<script>
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        window.location.href='index.html';
+    }
+});
+</script>
+
+<div>
+<div class="card">
+<div class="title-section">
+<div class="title-main">
+                🌍 挖穿地球隧道 · 简谐运动 🌌
+            </div>
+<div class="sub">均匀地球模型 | 隧道可水平偏移 (不过地心) | 不计阻力 | 周期恒定 T ≈ 2π√(R/g₀)</div>
+</div>
+<canvas height="700" id="earthCanvas" style="width:100%; height:auto; max-width:700px; aspect-ratio:700/700" width="700"></canvas>
+<div class="controls">
+<button id="playPauseBtn">⏸️ 暂停</button>
+<button id="resetBtn">🔄 重新释放</button>
+<div class="slider-container">
+<span>📌 隧道偏移量 Δx = </span>
+<input id="offsetSlider" max="185" min="-185" step="1" type="range" value="0"/>
+<span id="offsetValue">0 px</span>
+</div>
+</div>
+<div class="stats">
+<div class="stat">📍 实时位移: <span id="dispLabel">—</span></div>
+<div class="stat">⚡ 速率: <span id="speedLabel">—</span> px/s</div>
+<div class="stat">📏 隧道半长 L = <span id="halfLenLabel">—</span> px</div>
+<div class="stat">🕒 简谐周期 T = <span id="periodVal">4.00</span> s</div>
+</div>
+<div class="legend">
+<span><div class="color-badge" style="background: #ffaa44; box-shadow:0 0 4px #ffaa66;"></div> 合位移 (简谐运动)</span>
+<span><div class="color-badge" style="background: #3ea5ff; width:12px; height:12px; border-radius:10px;"></div> 隧道 (理想深井)</span>
+<span><div class="color-badge" style="background: #6effa8; width:12px; height:12px; border-radius:10px;"></div> 平衡位置 (距地心最近点)</span>
+<span><span style="color:#ffbb88">⚡ 偏移量≠0 → 隧道不过地心，运动仍为简谐 | ω = √(g₀/R) 恒定</span></span>
+</div>
+<div class="formula-note">
+            🧪 均匀地球内部引力 F = - (mg₀/R)·r → 隧道内恢复力 F_parallel = - (mg₀/R)·s → 简谐运动周期 T = 2π√(R/g₀) ≈ 84 min (真实物理)<br/>
+            🎮 动画缩放周期 T = 4.00 s | 小球从井口释放 → 沿隧道运动 → 振幅 = 隧道半长 L = √(R² − Δx²)
+        </div>
+<footer>※ 隧道为竖直方向，水平偏移量 Δx 可调 (绝对值 &lt; 地球半径) | 小球始终沿隧道做简谐运动，平衡点位于隧道中心 (地心投影点)</footer>
+</div>
+</div>
+<script>
+    (function(){
+        // ---------- 画布与地球参数 ----------
+        const canvas = document.getElementById('earthCanvas');
+        const ctx = canvas.getContext('2d');
+        const size = 700;            // 700x700
+        canvas.width = size;
+        canvas.height = size;
+        
+        // 地球几何
+        const centerX = size / 2;    // 350
+        const centerY = size / 2;    // 350
+        const R = 200;               // 地球半径 (px)  视觉清晰
+        
+        // 物理常数: 为了让动画周期美观且恒定 T = 4.00 秒 (独立于偏移量)
+        const T = 4.0;               // 简谐运动周期 (秒)
+        const omega = (2 * Math.PI) / T;   // 角频率 rad/s
+        
+        // 隧道参数: 竖直隧道，水平偏移量 offsetX (相对于地心水平偏移，单位px)
+        let offsetX = 0;             // 范围 (-R+5 , R-5) 实际滑块限制 ±185 (R=200, 限幅)
+        let halfLen = R;             // 隧道半长 L = sqrt(R^2 - offsetX^2)
+        let tunnelTopY = 0, tunnelBottomY = 0;   // 隧道两端Y坐标 (实际canvas坐标)
+        let equilibriumX = centerX;  // 隧道竖直线的X坐标
+        let equilibriumY = centerY;   // 平衡点的Y坐标 (地心投影点)
+        
+        // 运动状态
+        let animationId = null;
+        let isPlaying = true;
+        let animationStartTime = null;   // performance时间基点(秒)
+        let pausedElapsed = 0;            // 暂停时已经历的时间(秒)
+        
+        // UI元素
+        const playPauseBtn = document.getElementById('playPauseBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const offsetSlider = document.getElementById('offsetSlider');
+        const offsetValueSpan = document.getElementById('offsetValue');
+        const dispLabel = document.getElementById('dispLabel');
+        const speedLabel = document.getElementById('speedLabel');
+        const halfLenLabel = document.getElementById('halfLenLabel');
+        const periodValSpan = document.getElementById('periodVal');
+        periodValSpan.innerText = T.toFixed(2);
+        
+        // ---------- 辅助函数：根据偏移更新隧道几何 ----------
+        function updateTunnelGeometry() {
+            // 限幅：偏移绝对值必须小于地球半径
+            let rawOffset = offsetX;
+            if (Math.abs(rawOffset) >= R) {
+                rawOffset = (rawOffset > 0) ? R - 0.5 : -R + 0.5;
+                offsetX = rawOffset;
+                offsetSlider.value = offsetX;
+                offsetValueSpan.innerText = offsetX.toFixed(0) + ' px';
+            }
+            // 计算半长 L = sqrt(R^2 - offsetX^2)
+            halfLen = Math.sqrt(Math.max(0, R * R - offsetX * offsetX));
+            // 隧道竖直线 x 坐标
+            equilibriumX = centerX + offsetX;
+            // 隧道两端 Y 坐标 (相对圆心偏移 ± halfLen)
+            tunnelTopY = centerY - halfLen;
+            tunnelBottomY = centerY + halfLen;
+            
+            // 更新UI显示半长
+            halfLenLabel.innerText = halfLen.toFixed(1) + ' px';
+        }
+        
+        // 根据当前偏移量，获取隧道端点 (用于绘图和碰撞边界)
+        function getTunnelEndpoints() {
+            return {
+                x: equilibriumX,
+                yTop: tunnelTopY,
+                yBottom: tunnelBottomY
+            };
+        }
+        
+        // 根据时间 elapsed 计算小球沿隧道的位置 (位移s，从平衡位置算起，向上为负，向下为正)
+        // 简谐运动方程: 从顶部释放 (初始位置 s = -halfLen) -> s(t) = -halfLen * cos(ω t)
+        function getDisplacementFromTime(elapsed) {
+            const phase = omega * elapsed;
+            const s = -halfLen * Math.cos(phase);
+            // 确保数值精度边界
+            if (s > halfLen) return halfLen;
+            if (s < -halfLen) return -halfLen;
+            return s;
+        }
+        
+        // 获取当前速率 (沿着隧道方向的速度大小, px/s)
+        function getSpeedFromTime(elapsed) {
+            const phase = omega * elapsed;
+            const v = halfLen * omega * Math.abs(Math.sin(phase));
+            return v;
+        }
+        
+        // 根据位移s (相对平衡点) 计算小球canvas坐标 (隧道是竖直线)
+        function getBallPosition(s) {
+            const ballX = equilibriumX;
+            const ballY = equilibriumY + s;   // s: 向上为负, 向下为正
+            return { x: ballX, y: ballY };
+        }
+        
+        // ---------- 绘制地球, 隧道, 小球 ----------
+        function drawEarthAndWell() {
+            ctx.save();
+            ctx.shadowBlur = 0;
+            // 地球外圈光晕
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, R + 3, 0, Math.PI * 2);
+            ctx.fillStyle = "#0a2540aa";
+            ctx.fill();
+            // 主地球球体 (渐变色)
+            const grad = ctx.createLinearGradient(centerX - R*0.3, centerY - R*0.3, centerX + R*0.4, centerY + R*0.5);
+            grad.addColorStop(0, '#2f7fa0');
+            grad.addColorStop(0.5, '#1a4b6e');
+            grad.addColorStop(1, '#0a2a44');
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, R, 0, Math.PI * 2);
+            ctx.fillStyle = grad;
+            ctx.fill();
+            ctx.strokeStyle = '#7fc9ff';
+            ctx.lineWidth = 1.8;
+            ctx.stroke();
+            
+            // 绘制内部网格 (均匀密度示意)
+            ctx.beginPath();
+            ctx.setLineDash([5, 7]);
+            ctx.lineWidth = 0.8;
+            ctx.strokeStyle = "#3c98c780";
+            for(let ang = 0; ang < 360; ang += 45) {
+                let rad = ang * Math.PI/180;
+                let dx = Math.cos(rad) * R;
+                let dy = Math.sin(rad) * R;
+                ctx.beginPath();
+                ctx.moveTo(centerX, centerY);
+                ctx.lineTo(centerX + dx, centerY + dy);
+                ctx.stroke();
+            }
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, R*0.5, 0, Math.PI*2);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, R*0.25, 0, Math.PI*2);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            
+            // 地心标记 (若偏移不为0时，地心仍在中心，但隧道不过地心)
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, 7, 0, 2 * Math.PI);
+            ctx.fillStyle = "#ffaa44dd";
+            ctx.shadowBlur = 10;
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, 3, 0, 2 * Math.PI);
+            ctx.fillStyle = "#ff7700";
+            ctx.fill();
+            ctx.shadowBlur = 0;
+            
+            // 绘制隧道 (发光竖直深井)
+            const endpoints = getTunnelEndpoints();
+            ctx.beginPath();
+            ctx.moveTo(endpoints.x - 5, endpoints.yTop);
+            ctx.lineTo(endpoints.x + 5, endpoints.yTop);
+            ctx.lineTo(endpoints.x + 5, endpoints.yBottom);
+            ctx.lineTo(endpoints.x - 5, endpoints.yBottom);
+            ctx.fillStyle = "#9bc9ff20";
+            ctx.fill();
+            ctx.beginPath();
+            ctx.moveTo(endpoints.x - 5, endpoints.yTop);
+            ctx.lineTo(endpoints.x + 5, endpoints.yTop);
+            ctx.lineTo(endpoints.x + 5, endpoints.yBottom);
+            ctx.lineTo(endpoints.x - 5, endpoints.yBottom);
+            ctx.strokeStyle = "#8ccbffbb";
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            // 隧道内壁高光线
+            ctx.beginPath();
+            ctx.moveTo(endpoints.x - 3, endpoints.yTop);
+            ctx.lineTo(endpoints.x - 3, endpoints.yBottom);
+            ctx.strokeStyle = "#c3eaff";
+            ctx.lineWidth = 1;
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(endpoints.x + 3, endpoints.yTop);
+            ctx.lineTo(endpoints.x + 3, endpoints.yBottom);
+            ctx.stroke();
+            
+            // 标记平衡位置 (隧道中心小光晕)
+            ctx.beginPath();
+            ctx.arc(endpoints.x, equilibriumY, 6, 0, 2 * Math.PI);
+            ctx.fillStyle = "#6effa8aa";
+            ctx.shadowBlur = 6;
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(endpoints.x, equilibriumY, 3, 0, 2 * Math.PI);
+            ctx.fillStyle = "#ffffff";
+            ctx.fill();
+            ctx.shadowBlur = 0;
+            
+            // 井口文字说明
+            ctx.font = "bold 11px 'Segoe UI'";
+            ctx.fillStyle = "#bbddff";
+            ctx.fillText("⚡ 释放点 (井口)", endpoints.x + 10, endpoints.yTop - 5);
+            ctx.fillText("⚡ 对侧井口", endpoints.x + 10, endpoints.yBottom + 12);
+            ctx.fillStyle = "#f5bc70";
+            ctx.font = "italic 10px monospace";
+            if (Math.abs(offsetX) > 1) {
+                ctx.fillText(`隧道偏移地心 ${Math.abs(offsetX).toFixed(0)} px`, endpoints.x - 50, equilibriumY - 15);
+            } else {
+                ctx.fillText("隧道穿过地心", endpoints.x - 40, equilibriumY - 15);
+            }
+            
+            // 绘制地心到隧道的垂线(示意)
+            if (Math.abs(offsetX) > 2) {
+                ctx.beginPath();
+                ctx.setLineDash([4, 6]);
+                ctx.moveTo(centerX, centerY);
+                ctx.lineTo(endpoints.x, equilibriumY);
+                ctx.strokeStyle = "#ffbb88aa";
+                ctx.lineWidth = 1;
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
+            
+            // 外部星光点缀
+            for(let i=0;i<80;i++) {
+                let starX = (i*131)%size, starY = (i*253)%size;
+                if(Math.hypot(starX-centerX, starY-centerY) > R-6) {
+                    ctx.fillStyle = `rgba(255,240,200,${0.2+Math.sin(Date.now()*0.002+i)*0.15})`;
+                    ctx.beginPath();
+                    ctx.arc(starX, starY, 1.2, 0, Math.PI*2);
+                    ctx.fill();
+                }
+            }
+            ctx.restore();
+        }
+        
+        // 绘制小球 (根据偏移后的位置)
+        function drawBall(ballX, ballY) {
+            ctx.save();
+            ctx.shadowBlur = 14;
+            ctx.shadowColor = "#f0a030";
+            ctx.beginPath();
+            ctx.arc(ballX, ballY, 9, 0, 2 * Math.PI);
+            const gradBall = ctx.createRadialGradient(ballX-3, ballY-3, 2, ballX, ballY, 12);
+            gradBall.addColorStop(0, '#ffe5a3');
+            gradBall.addColorStop(0.7, '#e08030');
+            gradBall.addColorStop(1, '#b04510');
+            ctx.fillStyle = gradBall;
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(ballX, ballY, 6, 0, 2 * Math.PI);
+            ctx.fillStyle = "#ffc285";
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(ballX-2, ballY-2, 2.5, 0, 2*Math.PI);
+            ctx.fillStyle = "#fff9e0";
+            ctx.fill();
+            ctx.shadowBlur = 0;
+            // 运动轨迹残留粒子
+            for(let i=0;i<3;i++) {
+                let off = (Date.now()*0.01 + i) % (Math.PI*2);
+                let trailX = ballX + Math.sin(off)*6;
+                let trailY = ballY + Math.cos(off*1.2)*5;
+                ctx.beginPath();
+                ctx.arc(trailX, trailY, 2, 0, Math.PI*2);
+                ctx.fillStyle = `rgba(255, 180, 80, 0.6)`;
+                ctx.fill();
+            }
+            ctx.restore();
+        }
+        
+        // 绘制位移时间曲线（简谐运动实时监控）
+        function drawMiniCurve(elapsed) {
+            const curveW = 500;
+            const curveH = 70;
+            // 创建离屏或直接在右下角画小曲线区域: 取画布右下区域
+            ctx.save();
+            ctx.shadowBlur = 0;
+            ctx.font = "9px monospace";
+            ctx.fillStyle = "#bce0ff";
+            ctx.fillText("📈 位移-时间曲线 (简谐 x = -L·cos ωt)", centerX + 100, centerY + R + 18);
+            const startX = centerX - 150;
+            const startY = centerY + R + 32;
+            const endX = startX + curveW;
+            const endY = startY + curveH;
+            ctx.fillStyle = "#030f1acc";
+            ctx.fillRect(startX-2, startY-2, curveW+4, curveH+4);
+            ctx.fillStyle = "#04121e";
+            ctx.fillRect(startX, startY, curveW, curveH);
+            
+            // 坐标轴
+            ctx.beginPath();
+            ctx.strokeStyle = "#5a9bc0";
+            ctx.lineWidth = 1;
+            ctx.moveTo(startX, startY + curveH/2);
+            ctx.lineTo(endX, startY + curveH/2);
+            ctx.moveTo(startX, startY + 6);
+            ctx.lineTo(startX, startY + curveH-6);
+            ctx.stroke();
+            
+            // 横轴时间映射 0~T
+            const tStart = 0, tEnd = T;
+            const x0 = startX;
+            const xRange = curveW;
+            const yMid = startY + curveH/2;
+            const yAmp = (curveH/2) * 0.8;
+            // 绘制理论曲线
+            ctx.beginPath();
+            ctx.strokeStyle = "#7fe0ff";
+            ctx.lineWidth = 1.5;
+            let step = 3;
+            for (let px = 0; px <= curveW; px += step) {
+                let t_ratio = px / curveW;  // 0..1
+                let t_sec = tStart + t_ratio * T;
+                let s_val = -halfLen * Math.cos(omega * t_sec);
+                let norm = s_val / halfLen;   // -1..1
+                let y = yMid - norm * yAmp;
+                if (px === 0) ctx.moveTo(startX + px, y);
+                else ctx.lineTo(startX + px, y);
+            }
+            ctx.stroke();
+            
+            // 当前时刻光标
+            let curElapsedMod = elapsed % T;
+            let cursorX = startX + (curElapsedMod / T) * curveW;
+            let curS = getDisplacementFromTime(elapsed);
+            let normCur = curS / halfLen;
+            let cursorY = yMid - normCur * yAmp;
+            ctx.beginPath();
+            ctx.setLineDash([4, 5]);
+            ctx.moveTo(cursorX, startY + 4);
+            ctx.lineTo(cursorX, startY + curveH - 4);
+            ctx.strokeStyle = "#f5b642";
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.arc(cursorX, cursorY, 3, 0, 2*Math.PI);
+            ctx.fillStyle = "#ffbc5e";
+            ctx.fill();
+            ctx.setLineDash([]);
+            ctx.fillStyle = "#99c2e0";
+            ctx.fillText("位移", startX+5, yMid-8);
+            ctx.fillText("时间", endX-25, startY+curveH-6);
+            ctx.restore();
+        }
+        
+        // 刷新UI统计 (位移,速率)
+        function updateStats(offsetY_m, speedVal) {
+            // offsetY_m 是相对平衡点的位移 (像素)
+            let ratio = (offsetY_m / halfLen) * 100;
+            let side = offsetY_m < 0 ? "井口侧 (上半段)" : (offsetY_m > 0 ? "对侧 (下半段)" : "平衡点");
+            dispLabel.innerHTML = `${side}  | 偏移平衡点 ${Math.abs(offsetY_m).toFixed(1)} px (${Math.abs(ratio).toFixed(1)}%半长)`;
+            speedLabel.innerHTML = `${speedVal.toFixed(1)} px/s  |  ${(speedVal / (halfLen * omega) * 100).toFixed(0)}% 最大速率`;
+        }
+        
+        // 主渲染：基于当前物理时间elapsed
+        function renderFrame(elapsed) {
+            if (!canvas.isConnected) return;
+            const s = getDisplacementFromTime(elapsed);   // 相对平衡点的位移
+            const speed = getSpeedFromTime(elapsed);
+            const ballPos = getBallPosition(s);
+            
+            // 绘图
+            ctx.clearRect(0, 0, size, size);
+            drawEarthAndWell();
+            drawBall(ballPos.x, ballPos.y);
+            drawMiniCurve(elapsed);
+            
+            // 额外物理公式标注
+            ctx.font = "500 10px 'Segoe UI'";
+            ctx.fillStyle = "#cce6ff";
+            ctx.fillText(`简谐运动 | ω = ${omega.toFixed(2)} rad/s | 周期恒定 T = ${T.toFixed(2)} s`, 20, 45);
+            ctx.fillStyle = "#ffcf9a";
+            ctx.fillText(`当前偏移量 Δx = ${offsetX.toFixed(1)} px  | 隧道半长 L = ${halfLen.toFixed(1)} px`, 20, 70);
+            
+            updateStats(s, speed);
+        }
+        
+        // ---------- 动画时间控制 ----------
+        function getCurrentElapsed() {
+            if (!isPlaying) return pausedElapsed;
+            if (animationStartTime === null) return 0;
+            const now = performance.now() / 1000;
+            return now - animationStartTime;
+        }
+        
+        function startAnimationLoop() {
+            if (animationId) cancelAnimationFrame(animationId);
+            let lastTimestamp = null;
+            function animateFrame(nowMs) {
+                if (!isPlaying) {
+                    animationId = null;
+                    return;
+                }
+                if (animationStartTime === null) {
+                    const nowSec = performance.now() / 1000;
+                    animationStartTime = nowSec - pausedElapsed;
+                }
+                const elapsed = getCurrentElapsed();
+                renderFrame(elapsed);
+                animationId = requestAnimationFrame(animateFrame);
+            }
+            animationId = requestAnimationFrame(animateFrame);
+        }
+        
+        function pauseMotion() {
+            if (!isPlaying) return;
+            if (animationStartTime !== null) {
+                const nowSec = performance.now() / 1000;
+                pausedElapsed = nowSec - animationStartTime;
+            } else {
+                pausedElapsed = 0;
+            }
+            isPlaying = false;
+            if (animationId) cancelAnimationFrame(animationId);
+            animationId = null;
+            renderFrame(pausedElapsed);
+            playPauseBtn.innerHTML = "▶️ 启动";
+        }
+        
+        function resumeMotion() {
+            if (isPlaying) return;
+            isPlaying = true;
+            const nowSec = performance.now() / 1000;
+            animationStartTime = nowSec - pausedElapsed;
+            startAnimationLoop();
+            playPauseBtn.innerHTML = "⏸️ 暂停";
+        }
+        
+        function togglePlayPause() {
+            if (isPlaying) pauseMotion();
+            else resumeMotion();
+        }
+        
+        // 重置运动 (从井口释放，即时间归零)
+        function resetMotion() {
+            pausedElapsed = 0;
+            if (isPlaying) {
+                const nowSec = performance.now() / 1000;
+                animationStartTime = nowSec;
+                if (animationId) cancelAnimationFrame(animationId);
+                startAnimationLoop();
+            } else {
+                animationStartTime = null;
+                renderFrame(0);
+            }
+        }
+        
+        // 偏移量改变 -> 更新几何，并重置运动 (让小球从新隧道井口释放)
+        function onOffsetChange() {
+            let newOffset = parseFloat(offsetSlider.value);
+            if (Math.abs(newOffset) >= R) {
+                newOffset = (newOffset > 0) ? R - 0.5 : -R + 0.5;
+                offsetSlider.value = newOffset;
+            }
+            offsetX = newOffset;
+            offsetValueSpan.innerText = offsetX.toFixed(0) + ' px';
+            updateTunnelGeometry();
+            // 重置运动状态，避免位置错位，重新从井口释放
+            resetMotion();
+        }
+        
+        // ---------- 事件绑定 & 初始化 ----------
+        playPauseBtn.addEventListener('click', togglePlayPause);
+        resetBtn.addEventListener('click', resetMotion);
+        offsetSlider.addEventListener('input', (e) => {
+            offsetX = parseFloat(e.target.value);
+            offsetValueSpan.innerText = offsetX.toFixed(0) + ' px';
+            updateTunnelGeometry();
+            resetMotion();
+        });
+        
+        // 初始化几何与隧道
+        function init() {
+            offsetX = 0;
+            offsetSlider.value = 0;
+            offsetValueSpan.innerText = '0 px';
+            updateTunnelGeometry();
+            isPlaying = true;
+            pausedElapsed = 0;
+            const nowSec = performance.now() / 1000;
+            animationStartTime = nowSec;
+            startAnimationLoop();
+            playPauseBtn.innerHTML = "⏸️ 暂停";
+        }
+        
+        init();
+    })();
+</script>
+<style>
+.back-btn {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    padding: 10px 20px;
+    background: rgba(0, 150, 200, 0.3);
+    border: 1px solid #00ffff;
+    color: white;
+    font-size: 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    z-index: 9999;
+    transition: 0.3s;
+    backdrop-filter: blur(5px);
+}
+.back-btn:hover {
+    background: rgba(0, 150, 200, 0.6);
+    box-shadow: 0 0 15px #00ffff;
+}
+</style>
+<button class="back-btn" onclick="goBack()">⬅️ 返回</button>
+<script>
+function goBack() {
+    history.back();
+}
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        goBack();
+    }
+});
+</script>
+<div class="watermark">齐老师动画</div>
+<style>
+.watermark {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    font-size: 14px;
+    color: rgba(0, 255, 255, 0.3);
+    z-index: 9998;
+    pointer-events: none;
+    user-select: none;
+}
+</style>
+<script>
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+});
+</script>
+<style>
+.back-btn {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    padding: 10px 20px;
+    background: rgba(0, 150, 200, 0.3);
+    border: 1px solid #00ffff;
+    color: white;
+    font-size: 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    z-index: 9999;
+    transition: 0.3s;
+    backdrop-filter: blur(5px);
+}
+.back-btn:hover {
+    background: rgba(0, 150, 200, 0.6);
+    box-shadow: 0 0 15px #00ffff;
+}
+</style>
+<button class="back-btn" onclick="goBack()">⬅️ 返回</button>
+<script>
+function goBack() {
+    history.back();
+}
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        goBack();
+    }
+});
+</script>
+<div class="watermark">齐老师动画</div>
+<style>
+.watermark {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    font-size: 14px;
+    color: rgba(0, 255, 255, 0.3);
+    z-index: 9998;
+    pointer-events: none;
+    user-select: none;
+}
+</style>
+<script>
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+});
+</script>
+<style>
+.back-btn {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    padding: 10px 20px;
+    background: rgba(0, 150, 200, 0.3);
+    border: 1px solid #00ffff;
+    color: white;
+    font-size: 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    z-index: 9999;
+    transition: 0.3s;
+    backdrop-filter: blur(5px);
+}
+.back-btn:hover {
+    background: rgba(0, 150, 200, 0.6);
+    box-shadow: 0 0 15px #00ffff;
+}
+</style>
+<button class="back-btn" onclick="goBack()">⬅️ 返回</button>
+<script>
+function goBack() {
+    history.back();
+}
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        goBack();
+    }
+});
+</script>
+<div class="watermark">齐老师动画</div>
+<style>
+.watermark {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    font-size: 14px;
+    color: rgba(0, 255, 255, 0.3);
+    z-index: 9998;
+    pointer-events: none;
+    user-select: none;
+}
+</style>
+<script>
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+});
+</script>
+<style>
+.back-btn {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    padding: 10px 20px;
+    background: rgba(0, 150, 200, 0.3);
+    border: 1px solid #00ffff;
+    color: white;
+    font-size: 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    z-index: 9999;
+    transition: 0.3s;
+    backdrop-filter: blur(5px);
+}
+.back-btn:hover {
+    background: rgba(0, 150, 200, 0.6);
+    box-shadow: 0 0 15px #00ffff;
+}
+</style>
+<button class="back-btn" onclick="goBack()">⬅️ 返回</button>
+<script>
+function goBack() {
+    history.back();
+}
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        goBack();
+    }
+});
+</script>
+<div class="watermark">齐老师动画</div>
+<style>
+.watermark {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    font-size: 14px;
+    color: rgba(0, 255, 255, 0.3);
+    z-index: 9998;
+    pointer-events: none;
+    user-select: none;
+}
+</style>
+<script>
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+});
+</script>
+
+<div style="position: fixed; bottom: 10px; right: 10px; z-index: 9998; color: rgba(255, 255, 255, 0.3); font-family: Arial, sans-serif; font-size: 12px; pointer-events: none;">
+    齐老师动画
+</div>
+
+<script>
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+});
+</script>
+</body>
+</html>
