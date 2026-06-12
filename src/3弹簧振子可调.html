@@ -1,0 +1,929 @@
+<!DOCTYPE html>
+
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta charset="utf-8"/>
+<meta charset="utf-8"/>
+<meta charset="utf-8"/>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, user-scalable=no" name="viewport"/>
+<title>科技感弹簧振子 | 周期可调 · 简谐运动模拟器</title>
+<style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+        }
+
+        body {
+            min-height: 100vh;
+            background: radial-gradient(circle at 20% 30%, #0a0f1e, #03060c);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Segoe UI', 'Poppins', 'Orbitron', 'Share Tech Mono', monospace;
+            padding: 1.5rem;
+        }
+
+        /* 科技感外框 + 玻璃态 */
+        .sim-container {
+            background: rgba(12, 20, 35, 0.55);
+            backdrop-filter: blur(12px);
+            border-radius: 3rem;
+            padding: 1.6rem 2rem 2rem 2rem;
+            box-shadow: 0 25px 45px rgba(0, 0, 0, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(0, 255, 255, 0.25);
+            transition: all 0.2s;
+        }
+
+        /* 标题区 + 科技光效 */
+        .title-area {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-bottom: 1.2rem;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        h2 {
+            font-weight: 500;
+            font-size: 1.7rem;
+            letter-spacing: 2px;
+            background: linear-gradient(135deg, #a0f0ff, #4e7aff);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-shadow: 0 0 12px rgba(78, 122, 255, 0.3);
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .badge {
+            background: #0e1a2bb3;
+            border-radius: 40px;
+            padding: 0.2rem 1rem;
+            font-size: 0.8rem;
+            font-family: monospace;
+            color: #7df9ff;
+            border: 1px solid #2f6f9f;
+            backdrop-filter: blur(4px);
+        }
+
+        /* canvas 科技风格: 暗色底 + 光效网格 (自身绘制) */
+        canvas {
+            display: block;
+            margin: 0 auto;
+            border-radius: 1.8rem;
+            box-shadow: 0 0 0 2px rgba(0, 255, 255, 0.2), 0 20px 35px -12px black;
+            width: 100%;
+            height: auto;
+            background: #010514; /* fallback，实际背景在canvas内部绘制更统一 */
+            cursor: pointer;
+        }
+
+        /* 控制面板 现代感 */
+        .control-panel {
+            margin-top: 1.6rem;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            gap: 1.2rem;
+            background: rgba(0, 5, 15, 0.6);
+            border-radius: 2rem;
+            padding: 1rem 1.5rem;
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(0, 255, 255, 0.3);
+        }
+        .slider-group {
+            flex: 1;
+            min-width: 150px;
+        }
+        .slider-group label {
+            display: flex;
+            justify-content: space-between;
+            color: #bbf0ff;
+            font-weight: 500;
+            font-size: 0.85rem;
+            letter-spacing: 1px;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            font-family: 'Orbitron', monospace;
+        }
+        .slider-group label span:first-child i {
+            font-style: normal;
+            margin-right: 6px;
+        }
+        .value-badge {
+            background: #000c1f;
+            padding: 2px 12px;
+            border-radius: 20px;
+            color: #3effe6;
+            font-weight: bold;
+            font-family: monospace;
+            font-size: 1rem;
+            border: 1px solid #2fd0ff;
+            box-shadow: inset 0 0 6px #00a6ff30;
+        }
+        input[type=range] {
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, #00ccff, #4f6eff);
+            border-radius: 10px;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            width: 18px;
+            height: 18px;
+            background: white;
+            border-radius: 50%;
+            box-shadow: 0 0 12px #00ffff, 0 0 6px #00a6ff;
+            border: 1px solid #0ef;
+            cursor: pointer;
+            transition: 0.1s;
+        }
+        input[type=range]::-webkit-slider-thumb:hover {
+            transform: scale(1.3);
+            background: #c0ffff;
+        }
+
+        .period-card {
+            background: #021023cc;
+            border-radius: 2rem;
+            padding: 0.2rem 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border: 1px solid #0ef8;
+            backdrop-filter: blur(8px);
+        }
+        .period-label {
+            font-size: 0.9rem;
+            font-weight: 400;
+            color: #9bd7ff;
+        }
+        .period-value {
+            font-family: 'Orbitron', monospace;
+            font-size: 2.2rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #e0f0ff, #62dcff);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-shadow: 0 0 8px #0ef;
+            letter-spacing: 2px;
+        }
+        .period-unit {
+            font-size: 1rem;
+            color: #8cf;
+        }
+        .button-group {
+            display: flex;
+            gap: 14px;
+            margin-top: 4px;
+        }
+        .neon-btn {
+            background: rgba(0, 30, 50, 0.7);
+            border: 1px solid #1effbc70;
+            padding: 0.5rem 1.5rem;
+            border-radius: 40px;
+            font-weight: bold;
+            font-family: monospace;
+            font-size: 0.9rem;
+            color: #c0fffa;
+            cursor: pointer;
+            transition: 0.2s;
+            backdrop-filter: blur(5px);
+            box-shadow: 0 0 6px #0ef3;
+        }
+        .neon-btn:hover {
+            background: #1e7c9c40;
+            border-color: #0ef;
+            box-shadow: 0 0 15px #0ef;
+            color: white;
+            transform: scale(1.02);
+        }
+        .energy-bar {
+            flex: 1.2;
+            min-width: 160px;
+        }
+        .energy-stats {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            justify-content: flex-end;
+        }
+        .meter {
+            background: #021a2a;
+            border-radius: 20px;
+            height: 8px;
+            width: 100px;
+            overflow: hidden;
+            box-shadow: inset 0 0 6px #000;
+        }
+        .meter-fill {
+            width: 0%;
+            height: 100%;
+            background: linear-gradient(90deg, #00f2ff, #ff4d6d);
+            border-radius: 20px;
+            transition: width 0.08s linear;
+        }
+        .energy-text {
+            font-size: 0.7rem;
+            color: #adf0ff;
+        }
+        footer {
+            margin-top: 0.8rem;
+            font-size: 0.7rem;
+            text-align: center;
+            color: #6b9bc0;
+            font-family: monospace;
+        }
+        @media (max-width: 780px) {
+            .sim-container { padding: 1.2rem; }
+            .period-value { font-size: 1.5rem; }
+        }
+    </style>
+</head>
+<body>
+<div id="backButton" onclick="window.location.href='index.html';" style="position: fixed; top: 20px; left: 20px; z-index: 9999; background: rgba(136, 187, 255, 0.2); color: white; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-family: Arial, sans-serif; font-size: 14px; border: 1px solid rgba(136, 187, 255, 0.5); transition: all 0.3s;">
+    ← 返回 (ESC)
+</div>
+<script>
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        window.location.href='index.html';
+    }
+});
+</script>
+
+<div class="sim-container">
+<div class="title-area">
+<h2>⚡ 谐动核心 · 弹簧振子 <span class="badge">⚙️ 周期可调</span></h2>
+<div class="period-card">
+<span class="period-label">振荡周期</span>
+<span class="period-value" id="periodDisplayNum">--</span>
+<span class="period-unit">s</span>
+</div>
+</div>
+<!-- canvas 区域 宽高比 800x420 -->
+<canvas height="420" id="springCanvas" style="width:100%; height:auto; max-width:800px; aspect-ratio:800/420" width="800"></canvas>
+<div class="control-panel">
+<div class="slider-group">
+<label><span>🧲 质量 <span style="font-size:0.8rem;">m (kg)</span></span> <span class="value-badge" id="massValue">2.0</span></label>
+<input id="massSlider" max="5.0" min="0.5" step="0.01" type="range" value="2.0"/>
+</div>
+<div class="slider-group">
+<label><span>⚡ 劲度系数 <span style="font-size:0.8rem;">k (N/m)</span></span> <span class="value-badge" id="kValue">25.0</span></label>
+<input id="kSlider" max="65.0" min="5.0" step="0.2" type="range" value="25.0"/>
+</div>
+<div class="energy-bar">
+<div class="energy-stats">
+<span class="energy-text" id="energyLabel">⚡ 相对能量</span>
+<div class="meter"><div class="meter-fill" id="energyFill"></div></div>
+</div>
+</div>
+<div class="button-group">
+<button class="neon-btn" id="resetBtn">⟳ 复位拉伸</button>
+<button class="neon-btn" id="pauseBtn">⏸ 暂停</button>
+</div>
+</div>
+<footer>← 拖动滑块 | 质量 / 劲度系数 → 周期实时变化 | 基于牛顿第二定律真实模拟 →</footer>
+</div>
+<script>
+    (function() {
+        // ---------- 物理参数 ----------
+        let m = 2.0;            // kg
+        let k = 25.0;           // N/m
+        let x = 68.0;           // 位移 (像素) 从平衡点偏移, 正值向右拉伸
+        let v = 0.0;            // 速度 (像素/秒)
+
+        // 几何参数 (画布 800x420)
+        const canvas = document.getElementById('springCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // 固定墙壁点坐标 (左端)
+        const WALL_X = 90;
+        const WALL_Y = 210;
+        // 平衡位置时质量块中心坐标 (位移x=0)
+        const BALANCE_X = 460;
+        const MASS_Y = 210;
+        const MASS_W = 44;      // 方块宽度/高度
+        const MASS_HALF = MASS_W / 2;
+
+        // 动画控制
+        let running = true;
+        let lastTimestamp = null;
+        let animId = null;
+
+        // 参考最大能量用于进度条 (美观)
+        let maxTotalEnergy = 0.5 * k * (x * x) + 0.5 * m * (v * v);  // 初始参考
+        // 更新能量条时参照当前物理量
+        function updateEnergyMeter() {
+            const ke = 0.5 * m * (v * v);           // 动能 (像素单位速度可视为虚拟，但比例正确)
+            const pe = 0.5 * k * (x * x);           // 势能 (注意单位协调，因 k 是N/m, x是像素，能量数值相对恒定用于百分比)
+            const total = ke + pe;
+            // 动态更新最大能量: 复位时重置最大能量，运动过程中可能因滑块突变超过记录则更新
+            if (total > maxTotalEnergy) maxTotalEnergy = total;
+            if (maxTotalEnergy <= 1e-6) maxTotalEnergy = 1;
+            let percent = Math.min(100, (total / maxTotalEnergy) * 100);
+            const fillEl = document.getElementById('energyFill');
+            if (fillEl) fillEl.style.width = percent + '%';
+            // 动态改变颜色
+            if (percent > 85) fillEl.style.background = "linear-gradient(90deg, #ffaa44, #ff4d6d)";
+            else fillEl.style.background = "linear-gradient(90deg, #00f2ff, #7a6eff)";
+        }
+        
+        // 重置最大能量 (当复位或参数大变动时重新校准)
+        function resetMaxEnergy() {
+            const ke = 0.5 * m * (v * v);
+            const pe = 0.5 * k * (x * x);
+            maxTotalEnergy = ke + pe;
+            if (maxTotalEnergy < 1e-3) maxTotalEnergy = 0.5;
+            updateEnergyMeter();
+        }
+
+        // DOM 绑定元素
+        const massSlider = document.getElementById('massSlider');
+        const kSlider = document.getElementById('kSlider');
+        const massValSpan = document.getElementById('massValue');
+        const kValSpan = document.getElementById('kValue');
+        const periodDisplaySpan = document.getElementById('periodDisplayNum');
+        const resetBtn = document.getElementById('resetBtn');
+        const pauseBtn = document.getElementById('pauseBtn');
+
+        // 更新周期显示 (理论公式)
+        function updatePeriodUI() {
+            const T = 2 * Math.PI * Math.sqrt(m / k);
+            periodDisplaySpan.innerText = T.toFixed(2);
+        }
+
+        // 滑块事件
+        massSlider.addEventListener('input', (e) => {
+            m = parseFloat(e.target.value);
+            massValSpan.innerText = m.toFixed(2);
+            updatePeriodUI();
+            // 由于质量改变，原总能量参考可能偏离，重新微调最大能量使其平滑显示 (不强制突变)
+            // 重新校准最大能量参考以避免条状突变太大: 保留原有参考,但若当前能量超过max则自动调整，令显示合理
+            const ke = 0.5 * m * (v * v);
+            const pe = 0.5 * k * (x * x);
+            const total = ke + pe;
+            if (total > maxTotalEnergy) maxTotalEnergy = total;
+            updateEnergyMeter();
+        });
+        
+        kSlider.addEventListener('input', (e) => {
+            k = parseFloat(e.target.value);
+            kValSpan.innerText = k.toFixed(1);
+            updatePeriodUI();
+            const ke = 0.5 * m * (v * v);
+            const pe = 0.5 * k * (x * x);
+            const total = ke + pe;
+            if (total > maxTotalEnergy) maxTotalEnergy = total;
+            updateEnergyMeter();
+        });
+
+        // 复位: 拉伸到位移 +70px (向右拉伸), 速度归零
+        resetBtn.addEventListener('click', () => {
+            x = 72.0;    // 明显拉伸位置
+            v = 0.0;
+            // 重置最大能量，让能量条恢复至满量程 (拉伸状态势能最大)
+            const totalNew = 0.5 * k * (x * x);
+            maxTotalEnergy = totalNew;
+            updateEnergyMeter();
+            // 如果暂停中，也刷新画布
+            drawCanvas();
+        });
+        
+        // 暂停/启动
+        pauseBtn.addEventListener('click', () => {
+            running = !running;
+            pauseBtn.innerText = running ? "⏸ 暂停" : "▶ 启动";
+            if (!running) {
+                // 暂停时重置时间累积差，避免恢复时dt跳跃
+                lastTimestamp = null;
+                drawCanvas();   // 确保重绘
+            } else {
+                // 恢复时立即重新获取时间戳
+                lastTimestamp = null;
+            }
+        });
+        
+        // ---------- 物理积分 (半隐式欧拉) 确保能量稳定 ----------
+        function updatePhysics(dtSec) {
+            if (!running) return;
+            // 限制dt最大0.025秒，保证平滑，周期再小也不会爆炸
+            dtSec = Math.min(0.025, dtSec);
+            // 加速度计算 a = - (k/m) * x
+            const a = - (k / m) * x;
+            v += a * dtSec;
+            x += v * dtSec;
+            // 边际不限制 (让振子自然运动，不会有误差太多，用户可复位)
+            // 可选软限制极大偏移超过400px，但不用，画布依然能看到部分
+
+            // 能量条实时更新（每次物理步进后更丝滑）
+            updateEnergyMeter();
+        }
+        
+        // ---------- 炫酷科技感绘图 (带发光网格, 光晕氛围) ----------
+        function drawTechBackground() {
+            // 背景深邃星空 + 网格线
+            const grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+            grad.addColorStop(0, '#020617');
+            grad.addColorStop(1, '#030a1a');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // 科技网格 (动态扫描线)
+            ctx.strokeStyle = '#0ef22030';
+            ctx.lineWidth = 0.8;
+            for (let i = 0; i < canvas.width; i += 40) {
+                ctx.beginPath();
+                ctx.moveTo(i, 0);
+                ctx.lineTo(i, canvas.height);
+                ctx.stroke();
+            }
+            for (let i = 0; i < canvas.height; i += 40) {
+                ctx.beginPath();
+                ctx.moveTo(0, i);
+                ctx.lineTo(canvas.width, i);
+                ctx.stroke();
+            }
+            // 亮点粒子
+            ctx.fillStyle = '#ccf6ff30';
+            for (let i = 0; i < 70; i++) {
+                ctx.beginPath();
+                ctx.arc( (i*131)%canvas.width, (i*253)%canvas.height, 1.2, 0, Math.PI*2);
+                ctx.fill();
+            }
+            // 中心光晕
+            ctx.shadowBlur = 0;
+            const radGrd = ctx.createRadialGradient(BALANCE_X, MASS_Y, 15, BALANCE_X, MASS_Y, 120);
+            radGrd.addColorStop(0, '#1177ff08');
+            radGrd.addColorStop(1, '#0133aa00');
+            ctx.fillStyle = radGrd;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+        
+        // 绘制弹簧 (两端点: 墙壁点 -> 方块左侧中心点)
+        function drawSpring(fromX, fromY, toX, toY) {
+            const segments = 28;   // 丰富波浪细节科技感
+            const ampl = 8;        // 横向摆动幅度
+            const dx = toX - fromX;
+            const dy = toY - fromY;
+            const length = Math.hypot(dx, dy);
+            if (length < 5) {
+                ctx.beginPath();
+                ctx.moveTo(fromX, fromY);
+                ctx.lineTo(toX, toY);
+                ctx.strokeStyle = "#3effe6";
+                ctx.lineWidth = 2.8;
+                ctx.stroke();
+                return;
+            }
+            const dirX = dx / length;
+            const dirY = dy / length;
+            const perpX = -dirY;
+            const perpY = dirX;
+            
+            const points = [];
+            for (let i = 0; i <= segments; i++) {
+                const t = i / segments;
+                let xp = fromX + dx * t;
+                let yp = fromY + dy * t;
+                if (i > 0 && i < segments) {
+                    const envelope = 4 * t * (1 - t);
+                    const sign = (i % 2 === 0) ? 1 : -1;
+                    const offset = envelope * ampl * sign;
+                    xp += perpX * offset;
+                    yp += perpY * offset;
+                }
+                points.push({x: xp, y: yp});
+            }
+            ctx.beginPath();
+            ctx.moveTo(points[0].x, points[0].y);
+            for (let i = 1; i < points.length; i++) {
+                ctx.lineTo(points[i].x, points[i].y);
+            }
+            ctx.strokeStyle = '#0cfcff';
+            ctx.lineWidth = 2.6;
+            ctx.shadowBlur = 12;
+            ctx.shadowColor = '#00c8ff';
+            ctx.stroke();
+            // 增加内层光晕
+            ctx.beginPath();
+            ctx.moveTo(points[0].x, points[0].y);
+            for (let i = 1; i < points.length; i+=2) {
+                ctx.lineTo(points[i].x, points[i].y);
+            }
+            ctx.strokeStyle = '#ffe5a3';
+            ctx.lineWidth = 1.0;
+            ctx.shadowBlur = 4;
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+        }
+        
+        // 绘制墙壁 / 质量块 (科幻材质)
+        function drawSciFiObjects() {
+            // 固定墙壁 - 能量核心样式
+            ctx.shadowBlur = 8;
+            ctx.shadowColor = '#0efb';
+            ctx.fillStyle = '#1e2b44';
+            ctx.beginPath();
+            ctx.roundRect(WALL_X - 18, WALL_Y - 28, 32, 56, 12);
+            ctx.fill();
+            ctx.fillStyle = '#3d70b0';
+            ctx.beginPath();
+            ctx.roundRect(WALL_X - 12, WALL_Y - 22, 24, 44, 8);
+            ctx.fill();
+            // 铆钉光点
+            for (let i = -1; i <= 1; i++) {
+                ctx.beginPath();
+                ctx.arc(WALL_X - 4, WALL_Y + i*16, 4, 0, 2*Math.PI);
+                ctx.fillStyle = '#7efff0';
+                ctx.shadowBlur = 14;
+                ctx.fill();
+            }
+            // 质量块 (未来金属)
+            const massCenterX = BALANCE_X + x;
+            const massLeft = massCenterX - MASS_HALF;
+            const massTop = MASS_Y - MASS_HALF;
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = '#00a6ff99';
+            const gradMass = ctx.createLinearGradient(massLeft, massTop, massLeft+12, massTop+MASS_W);
+            gradMass.addColorStop(0, '#65b8ff');
+            gradMass.addColorStop(1, '#205e9e');
+            ctx.fillStyle = gradMass;
+            ctx.beginPath();
+            ctx.roundRect(massLeft, massTop, MASS_W, MASS_W, 12);
+            ctx.fill();
+            // 科技纹路
+            ctx.fillStyle = '#c0f3ffcc';
+            ctx.beginPath();
+            ctx.roundRect(massLeft+6, massTop+8, MASS_W-12, 8, 4);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.roundRect(massLeft+10, massTop+22, 8, 12, 3);
+            ctx.fillStyle = '#feffc0';
+            ctx.fill();
+            // 核心指示灯
+            ctx.beginPath();
+            ctx.arc(massCenterX, MASS_Y, 7, 0, 2*Math.PI);
+            ctx.fillStyle = '#ffda7e';
+            ctx.shadowBlur = 15;
+            ctx.fill();
+            ctx.fillStyle = '#ffb347';
+            ctx.beginPath();
+            ctx.arc(massCenterX, MASS_Y, 3, 0, 2*Math.PI);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+            // 位移辅助虚线 (科技平衡线)
+            ctx.setLineDash([6, 8]);
+            ctx.beginPath();
+            ctx.moveTo(BALANCE_X, MASS_Y - 50);
+            ctx.lineTo(BALANCE_X, MASS_Y + 50);
+            ctx.strokeStyle = '#2ef7ff80';
+            ctx.lineWidth = 1.2;
+            ctx.stroke();
+            ctx.setLineDash([]);
+            // 显示位移数值
+            ctx.font = "500 13px 'Share Tech Mono'";
+            ctx.fillStyle = '#9cebff';
+            ctx.shadowBlur = 0;
+            ctx.fillText(`Δx = ${x.toFixed(1)} px`, BALANCE_X + x + 20, MASS_Y - 15);
+            // 速度指示器
+            ctx.fillStyle = '#b6eaff';
+            ctx.fillText(`v = ${v.toFixed(1)} px/s`, BALANCE_X + x - 35, MASS_Y - 25);
+        }
+        
+        // 绘制动态粒子特效围绕振子
+        function drawParticlesTrail() {
+            if (!running) return;
+            const cx = BALANCE_X + x;
+            const cy = MASS_Y;
+            const speedVal = Math.abs(v);
+            const particleCount = Math.min(12, Math.floor(speedVal / 18) + 2);
+            for (let i = 0; i < particleCount; i++) {
+                const angle = Date.now() * 0.01 + i * 2.0;
+                const rad = 16 + Math.sin(angle) * 5;
+                const px = cx + Math.cos(angle + i) * rad;
+                const py = cy + Math.sin(angle * 1.5 + i) * rad * 0.6;
+                ctx.beginPath();
+                ctx.arc(px, py, 1.5, 0, Math.PI*2);
+                ctx.fillStyle = `rgba(0, 240, 255, ${0.3 + Math.sin(Date.now()*0.02 + i)*0.2})`;
+                ctx.fill();
+            }
+        }
+        
+        // 主绘图函数 (完整渲染)
+        function drawCanvas() {
+            if (!ctx) return;
+            drawTechBackground();    // 网格深空背景
+            
+            // 计算弹簧连接点: 墙壁点 (WALL_X, WALL_Y) 到 方块左侧中心 (massLeft, MASS_Y)
+            const massCenterX = BALANCE_X + x;
+            const massLeftX = massCenterX - MASS_HALF;
+            const springEndX = massLeftX;
+            const springEndY = MASS_Y;
+            
+            // 绘制弹簧
+            drawSpring(WALL_X, WALL_Y, springEndX, springEndY);
+            // 绘制墙壁和方块
+            drawSciFiObjects();
+            // 浮动粒子特效 (科技感能量流)
+            drawParticlesTrail();
+            
+            // 额外标注周期数值在画布右上角实时
+            ctx.font = "bold 14px 'Orbitron'";
+            ctx.fillStyle = "#bbf5ff";
+            ctx.shadowBlur = 0;
+            ctx.fillText(`T = ${(2 * Math.PI * Math.sqrt(m/k)).toFixed(2)} s`, canvas.width-130, 38);
+            // 动态光效扫边
+            ctx.strokeStyle = '#3effb030';
+            ctx.lineWidth = 1.5;
+            ctx.strokeRect(6, 6, canvas.width-12, canvas.height-12);
+        }
+        
+        // 动画循环 (基于 requestAnimationFrame)
+        function animationFrame(nowMs) {
+            if (!lastTimestamp && running) {
+                lastTimestamp = nowMs;
+                drawCanvas();
+                animId = requestAnimationFrame(animationFrame);
+                return;
+            }
+            if (running && lastTimestamp !== null) {
+                let dt = Math.min(0.033, (nowMs - lastTimestamp) / 1000);
+                if (dt > 0.001) {
+                    updatePhysics(dt);
+                }
+                lastTimestamp = nowMs;
+                drawCanvas();
+            } else if (!running) {
+                // 暂停时也要持续绘制，但不需要更新时间戳，避免恢复后dt错误，只需绘制当前状态
+                drawCanvas();
+            } else {
+                drawCanvas();
+            }
+            animId = requestAnimationFrame(animationFrame);
+        }
+        
+        // 初始化滑块显示和周期显示
+        function initUI() {
+            massValSpan.innerText = m.toFixed(2);
+            kValSpan.innerText = k.toFixed(1);
+            updatePeriodUI();
+            resetMaxEnergy();
+        }
+        
+        // 添加全局复位时重置最大能量对能量条友好
+        // 增强reset 已经支持max更新，额外再监听滑块重置最大能量要合理
+        window.addEventListener('load', () => {
+            initUI();
+            drawCanvas();
+            animId = requestAnimationFrame(animationFrame);
+        });
+        
+        // 清理动画
+        window.addEventListener('beforeunload', () => {
+            if (animId) cancelAnimationFrame(animId);
+        });
+        
+        // 补充 roundRect 工具
+        if (!CanvasRenderingContext2D.prototype.roundRect) {
+            CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, r) {
+                if (w < 2 * r) r = w / 2;
+                if (h < 2 * r) r = h / 2;
+                this.moveTo(x+r, y);
+                this.lineTo(x+w-r, y);
+                this.quadraticCurveTo(x+w, y, x+w, y+r);
+                this.lineTo(x+w, y+h-r);
+                this.quadraticCurveTo(x+w, y+h, x+w-r, y+h);
+                this.lineTo(x+r, y+h);
+                this.quadraticCurveTo(x, y+h, x, y+h-r);
+                this.lineTo(x, y+r);
+                this.quadraticCurveTo(x, y, x+r, y);
+                return this;
+            };
+        }
+    })();
+</script>
+<style>
+.back-btn {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    padding: 10px 20px;
+    background: rgba(0, 150, 200, 0.3);
+    border: 1px solid #00ffff;
+    color: white;
+    font-size: 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    z-index: 9999;
+    transition: 0.3s;
+    backdrop-filter: blur(5px);
+}
+.back-btn:hover {
+    background: rgba(0, 150, 200, 0.6);
+    box-shadow: 0 0 15px #00ffff;
+}
+</style>
+<button class="back-btn" onclick="goBack()">⬅️ 返回</button>
+<script>
+function goBack() {
+    history.back();
+}
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        goBack();
+    }
+});
+</script>
+<div class="watermark">齐老师动画</div>
+<style>
+.watermark {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    font-size: 14px;
+    color: rgba(0, 255, 255, 0.3);
+    z-index: 9998;
+    pointer-events: none;
+    user-select: none;
+}
+</style>
+<script>
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+});
+</script>
+<style>
+.back-btn {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    padding: 10px 20px;
+    background: rgba(0, 150, 200, 0.3);
+    border: 1px solid #00ffff;
+    color: white;
+    font-size: 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    z-index: 9999;
+    transition: 0.3s;
+    backdrop-filter: blur(5px);
+}
+.back-btn:hover {
+    background: rgba(0, 150, 200, 0.6);
+    box-shadow: 0 0 15px #00ffff;
+}
+</style>
+<button class="back-btn" onclick="goBack()">⬅️ 返回</button>
+<script>
+function goBack() {
+    history.back();
+}
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        goBack();
+    }
+});
+</script>
+<div class="watermark">齐老师动画</div>
+<style>
+.watermark {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    font-size: 14px;
+    color: rgba(0, 255, 255, 0.3);
+    z-index: 9998;
+    pointer-events: none;
+    user-select: none;
+}
+</style>
+<script>
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+});
+</script>
+<style>
+.back-btn {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    padding: 10px 20px;
+    background: rgba(0, 150, 200, 0.3);
+    border: 1px solid #00ffff;
+    color: white;
+    font-size: 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    z-index: 9999;
+    transition: 0.3s;
+    backdrop-filter: blur(5px);
+}
+.back-btn:hover {
+    background: rgba(0, 150, 200, 0.6);
+    box-shadow: 0 0 15px #00ffff;
+}
+</style>
+<button class="back-btn" onclick="goBack()">⬅️ 返回</button>
+<script>
+function goBack() {
+    history.back();
+}
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        goBack();
+    }
+});
+</script>
+<div class="watermark">齐老师动画</div>
+<style>
+.watermark {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    font-size: 14px;
+    color: rgba(0, 255, 255, 0.3);
+    z-index: 9998;
+    pointer-events: none;
+    user-select: none;
+}
+</style>
+<script>
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+});
+</script>
+<style>
+.back-btn {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    padding: 10px 20px;
+    background: rgba(0, 150, 200, 0.3);
+    border: 1px solid #00ffff;
+    color: white;
+    font-size: 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    z-index: 9999;
+    transition: 0.3s;
+    backdrop-filter: blur(5px);
+}
+.back-btn:hover {
+    background: rgba(0, 150, 200, 0.6);
+    box-shadow: 0 0 15px #00ffff;
+}
+</style>
+<button class="back-btn" onclick="goBack()">⬅️ 返回</button>
+<script>
+function goBack() {
+    history.back();
+}
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        goBack();
+    }
+});
+</script>
+<div class="watermark">齐老师动画</div>
+<style>
+.watermark {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    font-size: 14px;
+    color: rgba(0, 255, 255, 0.3);
+    z-index: 9998;
+    pointer-events: none;
+    user-select: none;
+}
+</style>
+<script>
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+});
+</script>
+
+<div style="position: fixed; bottom: 10px; right: 10px; z-index: 9998; color: rgba(255, 255, 255, 0.3); font-family: Arial, sans-serif; font-size: 12px; pointer-events: none;">
+    齐老师动画
+</div>
+
+<script>
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+});
+</script>
+</body>
+</html>
