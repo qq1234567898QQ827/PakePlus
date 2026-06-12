@@ -1,0 +1,935 @@
+<!DOCTYPE html>
+
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta charset="utf-8"/>
+<meta charset="utf-8"/>
+<meta charset="utf-8"/>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>小球自由落体 - 轻弹簧简谐运动</title>
+<style>
+        :root {
+            --bg: #1a1d28;
+            --surface: #222633;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: var(--bg);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            font-family: 'PingFang SC', 'Segoe UI', 'Microsoft YaHei', sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        .container {
+            background: var(--surface);
+            padding: 20px 20px 16px;
+            border-radius: 24px;
+            box-shadow: 0 16px 48px rgba(0, 0, 0, 0.55), 0 0 0 1.5px rgba(255, 255, 255, 0.08);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+
+        canvas {
+            display: block;
+            border-radius: 14px;
+            background: radial-gradient(ellipse at 50% 20%, #252d3a 0%, #171c26 100%);
+            box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.5), 0 8px 20px rgba(0, 0, 0, 0.4);
+            cursor: pointer;
+        }
+
+        .controls {
+            display: flex;
+            gap: 14px;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+        }
+
+        button {
+            background: #313852;
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            color: #e2e4f0;
+            padding: 9px 20px;
+            border-radius: 28px;
+            font-size: 14px;
+            cursor: pointer;
+            letter-spacing: 0.4px;
+            transition: all 0.22s;
+            font-weight: 500;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
+            white-space: nowrap;
+        }
+        button:hover {
+            background: #46527a;
+            color: #fff;
+            box-shadow: 0 6px 18px rgba(90, 130, 255, 0.25);
+            border-color: rgba(255, 255, 255, 0.35);
+        }
+        button:active {
+            transform: scale(0.96);
+            transition: 0.08s;
+        }
+        button.active-btn {
+            background: #c44b3c;
+            border-color: #e07b6e;
+            box-shadow: 0 0 16px rgba(220, 90, 60, 0.5);
+        }
+
+        .legend {
+            display: flex;
+            gap: 18px;
+            flex-wrap: wrap;
+            justify-content: center;
+            font-size: 13px;
+            color: #bcc3d8;
+        }
+        .legend span {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .dot-indicator {
+            display: inline-block;
+            width: 11px;
+            height: 11px;
+            border-radius: 50%;
+        }
+        .dot-ball {
+            background: #ff7b42;
+            box-shadow: 0 0 10px #ff7b42;
+        }
+        .dot-contact {
+            background: #ff3b3b;
+            box-shadow: 0 0 10px #ff3b3b;
+        }
+        .dot-spring {
+            background: #b0b8c8;
+            box-shadow: 0 0 8px #8890a0;
+        }
+    </style>
+</head>
+<body>
+<div id="backButton" onclick="window.location.href='index.html';" style="position: fixed; top: 20px; left: 20px; z-index: 9999; background: rgba(30, 60, 114, 0.8); color: white; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-family: Arial, sans-serif; font-size: 14px; border: 1px solid rgba(100, 150, 255, 0.5); transition: all 0.3s;">
+    ← 返回 (ESC)
+</div>
+<script>
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        window.location.href='index.html';
+    }
+});
+</script>
+
+<div class="container">
+<canvas aria-label="小球自由落体弹簧动画" height="600" id="mainCanvas" width="480"></canvas>
+<div class="legend">
+<span><span class="dot-indicator dot-ball"></span> 小球</span>
+<span><span class="dot-indicator dot-contact"></span> 接触弹簧时</span>
+<span><span class="dot-indicator dot-spring"></span> 轻弹簧（无质量）</span>
+</div>
+<div class="controls">
+<button id="btnPause" title="暂停 / 继续动画">⏯️ 暂停</button>
+<button id="btnReset" title="重置小球到初始高度">🔄 重置</button>
+<button id="btnSlower" title="减慢动画速度">🐢 减速</button>
+<button id="btnFaster" title="加快动画速度">🐇 加速</button>
+</div>
+</div>
+<script>
+        (function() {
+            // ==================== DOM 元素 ====================
+            const canvas = document.getElementById('mainCanvas');
+            const ctx = canvas.getContext('2d');
+            const width = canvas.width;
+            const height = canvas.height;
+
+            const btnPause = document.getElementById('btnPause');
+            const btnReset = document.getElementById('btnReset');
+            const btnSlower = document.getElementById('btnSlower');
+            const btnFaster = document.getElementById('btnFaster');
+
+            // ==================== 物理与几何参数 ====================
+            // 地面 y 坐标 (canvas坐标系，y向下)
+            const groundY = 535;
+            // 弹簧下端固定位置
+            const springBottomX = width / 2; // 240
+            const springBottomY = groundY;
+            // 弹簧自然长度（像素）
+            const springNaturalLength = 250;
+            // 弹簧上端自然位置（未压缩时）
+            const springNaturalTopY = springBottomY - springNaturalLength; // 285
+            // 弹簧最大压缩量（线圈完全密合，保留10px余量）
+            const maxCompression = springNaturalLength - 10; // 240
+
+            // 小球参数
+            const ballRadius = 18;
+            const ballInitialY = 95; // 球心初始位置（高处）
+
+            // 物理常数（像素单位制）
+            const g = 620; // 重力加速度 px/s² (向下为正)
+            const springK = 14.5; // 弹簧劲度系数 (任意单位)
+            const ballMass = 1.0; // 小球质量
+            // 平衡压缩量 = mg/k = 1*620/14.5 ≈ 42.8 px
+            // 角频率 ω = sqrt(k/m) ≈ 3.81 rad/s, 周期≈1.65s
+
+            // ==================== 状态变量 ====================
+            let ballY = ballInitialY; // 球心 y 坐标
+            let ballV = 0; // 球速度（向下为正）
+            let springTopY = springNaturalTopY; // 弹簧上端实际 y 坐标
+            let compression = 0; // 当前压缩量
+            let isInContact = false; // 球是否接触弹簧
+            let timeAccum = 0; // 累计物理时间
+
+            // 动画控制
+            let paused = false;
+            let speedMultiplier = 1.0;
+            let animationId = null;
+            let lastFrameTime = null;
+
+            // 轨迹记录（用于绘制尾迹）
+            const trailPositions = [];
+            const maxTrailLength = 45;
+
+            // ==================== 物理更新函数 ====================
+            function getBallBottom() {
+                return ballY + ballRadius;
+            }
+
+            function updatePhysics(dtReal) {
+                if (paused) return;
+
+                // 应用速度倍率
+                const dt = dtReal * speedMultiplier;
+                // 限制单步最大时间，防止大跳跃
+                const dtClamped = Math.min(dt, 0.04);
+                // 子步骤划分以提高精度
+                const subSteps = 6;
+                const subDt = dtClamped / subSteps;
+
+                for (let s = 0; s < subSteps; s++) {
+                    const ballBottom = getBallBottom();
+
+                    // 判断是否接触弹簧
+                    // 接触条件：球底部 >= 弹簧自然上端位置
+                    const wouldContact = ballBottom >= springNaturalTopY;
+
+                    let acceleration;
+                    if (wouldContact) {
+                        // 球接触弹簧
+                        compression = ballBottom - springNaturalTopY;
+                        // 限制最大压缩量
+                        if (compression > maxCompression) {
+                            compression = maxCompression;
+                            // 硬限制：将球底部固定在最大压缩位置
+                            // ballBottom = springNaturalTopY + maxCompression
+                            // ballY = ballBottom - ballRadius
+                            const limitedBottom = springNaturalTopY + maxCompression;
+                            ballY = limitedBottom - ballRadius;
+                            // 速度归零（碰撞硬底）
+                            if (ballV > 0) ballV = 0;
+                        }
+                        if (compression < 0) compression = 0;
+
+                        // 弹力向上（在canvas坐标中为负方向）
+                        const springForce = springK * compression; // 向上
+                        acceleration = g - springForce / ballMass;
+                        isInContact = true;
+                        springTopY = ballBottom; // 弹簧上端跟随球底部
+                    } else {
+                        // 球未接触弹簧
+                        compression = 0;
+                        acceleration = g;
+                        isInContact = false;
+                        springTopY = springNaturalTopY; // 弹簧恢复自然长度
+                    }
+
+                    // 半隐式欧拉积分
+                    ballV += acceleration * subDt;
+                    ballY += ballV * subDt;
+
+                    // 安全检测：球底部不能穿透地面
+                    const ballBottomAfter = getBallBottom();
+                    if (ballBottomAfter >= groundY) {
+                        ballY = groundY - ballRadius;
+                        if (ballV > 0) ballV = -ballV * 0.85; // 微弱能量损失（安全机制）
+                        compression = Math.min(springNaturalTopY + maxCompression - (groundY - ballRadius),
+                            maxCompression);
+                        if (compression < 0) compression = 0;
+                        springTopY = Math.min(getBallBottom(), groundY);
+                        isInContact = true;
+                    }
+
+                    // 球顶部不能超出画布顶部
+                    if (ballY - ballRadius < 8) {
+                        ballY = ballRadius + 8;
+                        if (ballV < 0) ballV = Math.abs(ballV) * 0.9;
+                    }
+
+                    // 重新同步接触状态
+                    if (!isInContact && getBallBottom() >= springNaturalTopY) {
+                        isInContact = true;
+                        springTopY = getBallBottom();
+                        compression = springTopY - springNaturalTopY;
+                    }
+                    if (isInContact && getBallBottom() < springNaturalTopY && ballV < 0) {
+                        // 球向上离开弹簧
+                        isInContact = false;
+                        compression = 0;
+                        springTopY = springNaturalTopY;
+                    }
+                }
+
+                timeAccum += dtClamped;
+
+                // 更新轨迹
+                trailPositions.push({ y: ballY, contact: isInContact });
+                while (trailPositions.length > maxTrailLength) {
+                    trailPositions.shift();
+                }
+            }
+
+            // ==================== 绘制函数 ====================
+            function drawGround() {
+                // 地面主体
+                const groundGrad = ctx.createLinearGradient(0, groundY, 0, groundY + 30);
+                groundGrad.addColorStop(0, '#8b7355');
+                groundGrad.addColorStop(0.3, '#6b5540');
+                groundGrad.addColorStop(1, '#4a3828');
+                ctx.fillStyle = groundGrad;
+                ctx.fillRect(0, groundY, width, height - groundY);
+
+                // 地面顶线
+                ctx.strokeStyle = '#c4a882';
+                ctx.lineWidth = 2.5;
+                ctx.beginPath();
+                ctx.moveTo(0, groundY);
+                ctx.lineTo(width, groundY);
+                ctx.stroke();
+
+                // 地面纹理短线
+                ctx.strokeStyle = 'rgba(180,150,120,0.45)';
+                ctx.lineWidth = 1;
+                for (let x = 8; x < width; x += 35) {
+                    ctx.beginPath();
+                    ctx.moveTo(x, groundY + 3);
+                    ctx.lineTo(x + 12, groundY + 3);
+                    ctx.stroke();
+                }
+
+                // 弹簧底座
+                const baseX = springBottomX;
+                const baseY = groundY;
+                ctx.fillStyle = '#5c4a38';
+                ctx.beginPath();
+                ctx.moveTo(baseX - 18, baseY);
+                ctx.lineTo(baseX + 18, baseY);
+                ctx.lineTo(baseX + 12, baseY - 8);
+                ctx.lineTo(baseX - 12, baseY - 8);
+                ctx.closePath();
+                ctx.fill();
+                ctx.strokeStyle = '#88755c';
+                ctx.lineWidth = 1.8;
+                ctx.stroke();
+
+                // 底座高光
+                ctx.fillStyle = 'rgba(255,220,180,0.5)';
+                ctx.beginPath();
+                ctx.arc(baseX, baseY - 3, 5, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            function drawSpring() {
+                const topY = springTopY;
+                const bottomY = springBottomY;
+                const currentLength = bottomY - topY;
+                const clampedLength = Math.max(currentLength, 8);
+
+                const nSegments = 20; // 锯齿段数（偶数，确保端点居中）
+                const segDy = clampedLength / nSegments;
+                const amplitude = 16; // 水平振幅
+
+                ctx.strokeStyle = '#c8cdd8';
+                ctx.lineWidth = 2.8;
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+                ctx.shadowColor = 'rgba(180,190,210,0.5)';
+                ctx.shadowBlur = 6;
+                ctx.beginPath();
+
+                // 从底端开始画锯齿
+                for (let i = 0; i <= nSegments; i++) {
+                    const y = bottomY - i * segDy;
+                    let xOffset = 0;
+                    if (i === 0 || i === nSegments) {
+                        xOffset = 0; // 端点居中
+                    } else if (i % 2 === 1) {
+                        xOffset = amplitude;
+                    } else {
+                        xOffset = -amplitude;
+                    }
+                    const x = springBottomX + xOffset;
+                    if (i === 0) {
+                        ctx.moveTo(x, y);
+                    } else {
+                        ctx.lineTo(x, y);
+                    }
+                }
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+
+                // 弹簧上端小平台
+                const platformWidth = 14;
+                ctx.fillStyle = '#d5dae3';
+                ctx.strokeStyle = '#999fad';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.roundRect(
+                    springBottomX - platformWidth,
+                    topY - 3,
+                    platformWidth * 2,
+                    6,
+                    3
+                );
+                ctx.fill();
+                ctx.stroke();
+
+                // 弹簧下端连接点
+                ctx.fillStyle = '#888c96';
+                ctx.beginPath();
+                ctx.arc(springBottomX, bottomY, 5, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = '#bbb';
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+            }
+
+            function drawSpringReferenceLine() {
+                // 弹簧自然长度参考虚线
+                const refY = springNaturalTopY;
+                ctx.setLineDash([6, 8]);
+                ctx.strokeStyle = 'rgba(180,190,210,0.35)';
+                ctx.lineWidth = 1.2;
+                ctx.beginPath();
+                ctx.moveTo(springBottomX - 55, refY);
+                ctx.lineTo(springBottomX + 55, refY);
+                ctx.stroke();
+                ctx.setLineDash([]);
+
+                // 小标签
+                ctx.fillStyle = 'rgba(180,190,210,0.55)';
+                ctx.font = '11px "PingFang SC","Microsoft YaHei",sans-serif';
+                ctx.textAlign = 'left';
+                ctx.fillText('自然长度', springBottomX + 60, refY + 4);
+            }
+
+            function drawBall() {
+                const ballBottom = getBallBottom();
+                const currentlyContact = ballBottom >= springNaturalTopY && compression > 0.5;
+
+                // 光晕
+                const glowRadius = ballRadius + 10;
+                const glowGrad = ctx.createRadialGradient(springBottomX, ballY, ballRadius * 0.4,
+                    springBottomX, ballY, glowRadius);
+                if (currentlyContact) {
+                    glowGrad.addColorStop(0, 'rgba(255,120,60,0.85)');
+                    glowGrad.addColorStop(0.5, 'rgba(255,70,30,0.35)');
+                    glowGrad.addColorStop(1, 'rgba(255,40,10,0)');
+                } else {
+                    glowGrad.addColorStop(0, 'rgba(255,160,100,0.7)');
+                    glowGrad.addColorStop(0.5, 'rgba(255,130,70,0.25)');
+                    glowGrad.addColorStop(1, 'rgba(255,100,40,0)');
+                }
+                ctx.fillStyle = glowGrad;
+                ctx.beginPath();
+                ctx.arc(springBottomX, ballY, glowRadius, 0, Math.PI * 2);
+                ctx.fill();
+
+                // 球体主体
+                const ballGrad = ctx.createRadialGradient(
+                    springBottomX - ballRadius * 0.3,
+                    ballY - ballRadius * 0.35,
+                    ballRadius * 0.1,
+                    springBottomX,
+                    ballY,
+                    ballRadius
+                );
+                if (currentlyContact) {
+                    ballGrad.addColorStop(0, '#ffe0c8');
+                    ballGrad.addColorStop(0.35, '#ff7b3d');
+                    ballGrad.addColorStop(0.75, '#e8451a');
+                    ballGrad.addColorStop(1, '#a02010');
+                } else {
+                    ballGrad.addColorStop(0, '#ffe8d5');
+                    ballGrad.addColorStop(0.35, '#ff9a5c');
+                    ballGrad.addColorStop(0.75, '#f06030');
+                    ballGrad.addColorStop(1, '#b83018');
+                }
+                ctx.fillStyle = ballGrad;
+                ctx.beginPath();
+                ctx.arc(springBottomX, ballY, ballRadius, 0, Math.PI * 2);
+                ctx.fill();
+
+                // 高光
+                ctx.fillStyle = 'rgba(255,255,255,0.45)';
+                ctx.beginPath();
+                ctx.arc(springBottomX - ballRadius * 0.28, ballY - ballRadius * 0.32,
+                    ballRadius * 0.32, 0, Math.PI * 2);
+                ctx.fill();
+
+                // 边缘
+                ctx.strokeStyle = 'rgba(0,0,0,0.3)';
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.arc(springBottomX, ballY, ballRadius, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+
+            function drawTrail() {
+                if (trailPositions.length < 3) return;
+                for (let i = 0; i < trailPositions.length - 1; i++) {
+                    const t = i / trailPositions.length;
+                    const alpha = t * 0.5;
+                    const size = ballRadius * (0.18 + t * 0.5);
+                    const pos = trailPositions[i];
+                    ctx.fillStyle = pos.contact ?
+                        `rgba(255,100,50,${alpha})` :
+                        `rgba(255,160,100,${alpha})`;
+                    ctx.beginPath();
+                    ctx.arc(springBottomX, pos.y, size, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+
+            function drawInfoPanel() {
+                // 半透明信息面板
+                const panelX = 12;
+                const panelY = 12;
+                const panelW = 155;
+                const panelH = 88;
+                ctx.fillStyle = 'rgba(20,24,35,0.75)';
+                ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.roundRect(panelX, panelY, panelW, panelH, 10);
+                ctx.fill();
+                ctx.stroke();
+
+                // 信息文字
+                ctx.fillStyle = '#e0e4f2';
+                ctx.font = 'bold 13px "PingFang SC","Microsoft YaHei",sans-serif';
+                ctx.textAlign = 'left';
+                ctx.fillText('📊 实时数据', panelX + 10, panelY + 20);
+
+                ctx.font = '12px "PingFang SC","Microsoft YaHei",sans-serif';
+                ctx.fillStyle = '#c8cde0';
+                const speedAbs = Math.abs(ballV);
+                const speedStr = speedAbs.toFixed(0) + ' px/s';
+                const dirStr = ballV > 0.5 ? '↓' : (ballV < -0.5 ? '↑' : '·');
+                ctx.fillText(`速度: ${speedStr} ${dirStr}`, panelX + 10, panelY + 40);
+
+                const compStr = compression > 0.5 ? compression.toFixed(1) + ' px' : '无';
+                ctx.fillText(`压缩量: ${compStr}`, panelX + 10, panelY + 58);
+
+                const stateStr = isInContact ? '🔴 接触弹簧' : '🟢 自由飞行';
+                ctx.fillStyle = isInContact ? '#ff8c6a' : '#7ecf8a';
+                ctx.fillText(`状态: ${stateStr}`, panelX + 10, panelY + 76);
+            }
+
+            function drawAll() {
+                ctx.clearRect(0, 0, width, height);
+
+                // 背景网格
+                ctx.strokeStyle = 'rgba(255,255,255,0.025)';
+                ctx.lineWidth = 1;
+                for (let gy = 40; gy < groundY; gy += 40) {
+                    ctx.beginPath();
+                    ctx.moveTo(0, gy);
+                    ctx.lineTo(width, gy);
+                    ctx.stroke();
+                }
+                for (let gx = 30; gx < width; gx += 40) {
+                    ctx.beginPath();
+                    ctx.moveTo(gx, 0);
+                    ctx.lineTo(gx, groundY);
+                    ctx.stroke();
+                }
+
+                drawSpringReferenceLine();
+                drawTrail();
+                drawGround();
+                drawSpring();
+                drawBall();
+                drawInfoPanel();
+            }
+
+            // ==================== 动画循环 ====================
+            function animationLoop(timestamp) {
+                if (lastFrameTime === null) {
+                    lastFrameTime = timestamp;
+                }
+                let dtReal = (timestamp - lastFrameTime) / 1000;
+                if (dtReal <= 0) dtReal = 0.016;
+                if (dtReal > 0.15) dtReal = 0.15; // 防止标签页切换后大跳跃
+
+                updatePhysics(dtReal);
+                drawAll();
+
+                lastFrameTime = timestamp;
+                animationId = requestAnimationFrame(animationLoop);
+            }
+
+            // ==================== 按钮事件 ====================
+            function togglePause() {
+                paused = !paused;
+                if (paused) {
+                    btnPause.textContent = '▶️ 播放';
+                    btnPause.classList.add('active-btn');
+                } else {
+                    btnPause.textContent = '⏯️ 暂停';
+                    btnPause.classList.remove('active-btn');
+                    lastFrameTime = null; // 重置时间基准
+                }
+            }
+
+            function resetSimulation() {
+                ballY = ballInitialY;
+                ballV = 0;
+                springTopY = springNaturalTopY;
+                compression = 0;
+                isInContact = false;
+                timeAccum = 0;
+                trailPositions.length = 0;
+                lastFrameTime = null;
+                if (paused) {
+                    // 如果暂停中，绘制一帧静态画面
+                    drawAll();
+                }
+            }
+
+            function changeSpeed(delta) {
+                speedMultiplier = Math.max(0.2, Math.min(3.0, speedMultiplier + delta));
+                // 更新按钮视觉反馈
+                btnSlower.style.opacity = speedMultiplier <= 0.25 ? '0.5' : '1';
+                btnFaster.style.opacity = speedMultiplier >= 2.8 ? '0.5' : '1';
+                // 短暂提示
+                showSpeedToast();
+            }
+
+            function showSpeedToast() {
+                const toast = document.createElement('div');
+                toast.textContent = `⏱ 速度 ×${speedMultiplier.toFixed(1)}`;
+                toast.style.cssText = `
+                    position: fixed;
+                    top: 20px;
+                    left: 50%;
+                    transform: translateX(-50%);
+                    background: rgba(40,45,60,0.9);
+                    color: #e0e4f2;
+                    padding: 8px 20px;
+                    border-radius: 20px;
+                    font-size: 14px;
+                    z-index: 999;
+                    pointer-events: none;
+                    animation: fadeOut 1.4s forwards;
+                    font-family: 'PingFang SC','Microsoft YaHei',sans-serif;
+                `;
+                document.body.appendChild(toast);
+                setTimeout(() => toast.remove(), 1500);
+            }
+
+            // 注入动画关键帧
+            const styleSheet = document.createElement('style');
+            styleSheet.textContent = `
+                @keyframes fadeOut {
+                    0% { opacity: 1; transform: translateX(-50%) translateY(0); }
+                    70% { opacity: 0.7; transform: translateX(-50%) translateY(-8px); }
+                    100% { opacity: 0; transform: translateX(-50%) translateY(-20px); }
+                }
+            `;
+            document.head.appendChild(styleSheet);
+
+            btnPause.addEventListener('click', togglePause);
+            btnReset.addEventListener('click', resetSimulation);
+            btnSlower.addEventListener('click', () => changeSpeed(-0.25));
+            btnFaster.addEventListener('click', () => changeSpeed(+0.25));
+
+            // 点击画布也可暂停/恢复
+            canvas.addEventListener('click', (e) => {
+                // 排除误触（如果点击的是画布边缘附近则忽略）
+                const rect = canvas.getBoundingClientRect();
+                const cx = e.clientX - rect.left;
+                const cy = e.clientY - rect.top;
+                if (cx > 15 && cx < width - 15 && cy > 15 && cy < height - 15) {
+                    togglePause();
+                }
+            });
+
+            // 键盘快捷键
+            window.addEventListener('keydown', (e) => {
+                switch (e.key.toLowerCase()) {
+                    case ' ':
+                        e.preventDefault();
+                        togglePause();
+                        break;
+                    case 'r':
+                        resetSimulation();
+                        break;
+                    case 'arrowleft':
+                        changeSpeed(-0.2);
+                        break;
+                    case 'arrowright':
+                        changeSpeed(+0.2);
+                        break;
+                    default:
+                        break;
+                }
+            });
+
+            // ==================== 启动 ====================
+            resetSimulation();
+            animationId = requestAnimationFrame(animationLoop);
+
+            // 清理
+            window.addEventListener('beforeunload', () => {
+                if (animationId) {
+                    cancelAnimationFrame(animationId);
+                }
+            });
+
+            console.log('✅ 小球自由落体弹簧动画已就绪');
+            console.log('   🖱️ 点击画布 = 暂停/播放');
+            console.log('   ⌨️ 空格键 = 暂停/播放, R = 重置, ←→ = 调速');
+            console.log('   📐 弹簧自然长度:', springNaturalLength, 'px');
+            console.log('   ⚖️ 平衡压缩量:', (ballMass * g / springK).toFixed(1), 'px');
+        })();
+    </script>
+<style>
+.back-btn {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    padding: 10px 20px;
+    background: rgba(0, 150, 200, 0.3);
+    border: 1px solid #00ffff;
+    color: white;
+    font-size: 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    z-index: 9999;
+    transition: 0.3s;
+    backdrop-filter: blur(5px);
+}
+.back-btn:hover {
+    background: rgba(0, 150, 200, 0.6);
+    box-shadow: 0 0 15px #00ffff;
+}
+</style>
+<button class="back-btn" onclick="goBack()">⬅️ 返回</button>
+<script>
+function goBack() {
+    history.back();
+}
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        goBack();
+    }
+});
+</script>
+<div class="watermark">齐老师动画</div>
+<style>
+.watermark {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    font-size: 14px;
+    color: rgba(0, 255, 255, 0.3);
+    z-index: 9998;
+    pointer-events: none;
+    user-select: none;
+}
+</style>
+<script>
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+});
+</script>
+<style>
+.back-btn {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    padding: 10px 20px;
+    background: rgba(0, 150, 200, 0.3);
+    border: 1px solid #00ffff;
+    color: white;
+    font-size: 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    z-index: 9999;
+    transition: 0.3s;
+    backdrop-filter: blur(5px);
+}
+.back-btn:hover {
+    background: rgba(0, 150, 200, 0.6);
+    box-shadow: 0 0 15px #00ffff;
+}
+</style>
+<button class="back-btn" onclick="goBack()">⬅️ 返回</button>
+<script>
+function goBack() {
+    history.back();
+}
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        goBack();
+    }
+});
+</script>
+<div class="watermark">齐老师动画</div>
+<style>
+.watermark {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    font-size: 14px;
+    color: rgba(0, 255, 255, 0.3);
+    z-index: 9998;
+    pointer-events: none;
+    user-select: none;
+}
+</style>
+<script>
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+});
+</script>
+<style>
+.back-btn {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    padding: 10px 20px;
+    background: rgba(0, 150, 200, 0.3);
+    border: 1px solid #00ffff;
+    color: white;
+    font-size: 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    z-index: 9999;
+    transition: 0.3s;
+    backdrop-filter: blur(5px);
+}
+.back-btn:hover {
+    background: rgba(0, 150, 200, 0.6);
+    box-shadow: 0 0 15px #00ffff;
+}
+</style>
+<button class="back-btn" onclick="goBack()">⬅️ 返回</button>
+<script>
+function goBack() {
+    history.back();
+}
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        goBack();
+    }
+});
+</script>
+<div class="watermark">齐老师动画</div>
+<style>
+.watermark {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    font-size: 14px;
+    color: rgba(0, 255, 255, 0.3);
+    z-index: 9998;
+    pointer-events: none;
+    user-select: none;
+}
+</style>
+<script>
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+});
+</script>
+<style>
+.back-btn {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    padding: 10px 20px;
+    background: rgba(0, 150, 200, 0.3);
+    border: 1px solid #00ffff;
+    color: white;
+    font-size: 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    z-index: 9999;
+    transition: 0.3s;
+    backdrop-filter: blur(5px);
+}
+.back-btn:hover {
+    background: rgba(0, 150, 200, 0.6);
+    box-shadow: 0 0 15px #00ffff;
+}
+</style>
+<button class="back-btn" onclick="goBack()">⬅️ 返回</button>
+<script>
+function goBack() {
+    history.back();
+}
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        goBack();
+    }
+});
+</script>
+<div class="watermark">齐老师动画</div>
+<style>
+.watermark {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    font-size: 14px;
+    color: rgba(0, 255, 255, 0.3);
+    z-index: 9998;
+    pointer-events: none;
+    user-select: none;
+}
+</style>
+<script>
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+});
+</script>
+
+<div style="position: fixed; bottom: 10px; right: 10px; z-index: 9998; color: rgba(255, 255, 255, 0.3); font-family: Arial, sans-serif; font-size: 12px; pointer-events: none;">
+    齐老师动画
+</div>
+
+<script>
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+});
+</script>
+</body>
+</html>
