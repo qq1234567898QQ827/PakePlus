@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>小球滑上正方体凹槽 · 科技感背景</title>
+<style>
+        :root {
+            --bg: #0a0f1e;
+            --panel-bg: rgba(10, 20, 40, 0.8);
+            --text: #e0e0e0;
+            --accent: #00e5ff;
+            --accent2: #ff4081;
+            --slider-track: #1a2a4a;
+            --border: #30406a;
+        }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background: radial-gradient(circle at 20% 30%, #16213e, #0a0f1e);
+            font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 10px;
+            user-select: none;
+        }
+        .container {
+            background: var(--panel-bg);
+            backdrop-filter: blur(12px);
+            border-radius: 24px;
+            padding: 20px 24px 16px;
+            box-shadow: 0 0 40px rgba(0, 229, 255, 0.15), 0 0 0 1px var(--border);
+            max-width: 880px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .header h1 {
+            font-size: 1.45rem;
+            color: #fff;
+            letter-spacing: 1px;
+        }
+        .header h1 span {
+            color: var(--accent);
+            text-shadow: 0 0 10px rgba(0, 229, 255, 0.6);
+        }
+        .phase-badge {
+            font-size: 0.85rem;
+            padding: 6px 14px;
+            border-radius: 20px;
+            background: rgba(0, 229, 255, 0.1);
+            border: 1px solid rgba(0, 229, 255, 0.3);
+            color: var(--accent);
+            white-space: nowrap;
+        }
+        .canvas-wrap {
+            position: relative;
+            background: #050a14;
+            border-radius: 16px;
+            overflow: hidden;
+            border: 1px solid rgba(0, 229, 255, 0.2);
+            box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.8);
+            aspect-ratio: 16/9;
+            min-height: 300px;
+        }
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            justify-content: center;
+        }
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            min-width: 140px;
+            flex: 1;
+            max-width: 220px;
+        }
+        .control-group label {
+            font-size: 0.8rem;
+            color: #bcc;
+            display: flex;
+            justify-content: space-between;
+            letter-spacing: 0.5px;
+        }
+        .control-group label .cur-val {
+            color: var(--accent);
+            font-weight: 700;
+        }
+        input[type="range"] {
+            width: 100%;
+            height: 8px;
+            border-radius: 4px;
+            background: var(--slider-track);
+            -webkit-appearance: none;
+            cursor: pointer;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            background: var(--accent);
+            border: 2px solid #fff;
+            box-shadow: 0 0 12px var(--accent);
+        }
+        .btn-row {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+        button {
+            font-size: 0.9rem;
+            font-weight: 600;
+            padding: 9px 20px;
+            border-radius: 25px;
+            border: none;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all 0.2s;
+            letter-spacing: 0.5px;
+        }
+        .btn-reset {
+            background: var(--accent2);
+            color: #fff;
+            box-shadow: 0 0 12px rgba(255, 64, 129, 0.5);
+        }
+        .btn-reset:hover {
+            background: #ff6090;
+            transform: translateY(-1px);
+        }
+        .btn-pause {
+            background: #3a5070;
+            color: #ddd;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .btn-pause:hover {
+            background: #4a6080;
+        }
+        .btn-pause.paused {
+            background: #00c853;
+            box-shadow: 0 0 10px rgba(0, 200, 83, 0.6);
+        }
+        .legend {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+            font-size: 0.7rem;
+            color: #999;
+            flex-wrap: wrap;
+        }
+        .legend span {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .legend .dot {
+            width: 9px;
+            height: 9px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+        @media (max-width: 600px) {
+            .container {
+                padding: 12px 8px;
+            }
+            .header h1 {
+                font-size: 1.1rem;
+            }
+            button {
+                padding: 7px 14px;
+                font-size: 0.8rem;
+            }
+        }
+    </style>
+</head>
+<body>
+<div id="backButton" onclick="window.location.href='index.html';" style="position: fixed; top: 20px; left: 20px; z-index: 9999; background: rgba(30, 60, 114, 0.8); color: white; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-family: Arial, sans-serif; font-size: 14px; border: 1px solid rgba(100, 150, 255, 0.5); transition: all 0.3s;">
+    ← 返回 (ESC)
+</div>
+<script>
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        window.location.href='index.html';
+    }
+});
+</script>
+
+<!-- 返回按钮 -->
+<a class="back-btn" href="index.html">⬅️ 返回分类 (ESC)</a>
+<div class="container">
+<div class="header">
+<h1>⚡ 小球滑上<span>正方体凹槽</span></h1>
+<span class="phase-badge" id="phaseBadge">⏳ 等待开始</span>
+</div>
+<div class="canvas-wrap">
+<canvas id="mainCanvas"></canvas>
+</div>
+<div class="controls">
+<div class="control-group">
+<label>⚽ 小球质量 <span class="cur-val" id="valMass">1.00 kg</span></label>
+<input id="sliderMass" max="5" min="0.1" step="0.05" type="range" value="1"/>
+</div>
+<div class="control-group">
+<label>🏋️ 凹槽质量 <span class="cur-val" id="valTroughMass">2.00 kg</span></label>
+<input id="sliderTroughMass" max="10" min="0.5" step="0.1" type="range" value="2"/>
+</div>
+<div class="control-group">
+<label>🚀 初速度 <span class="cur-val" id="valSpeed">5.00 m/s</span></label>
+<input id="sliderSpeed" max="10" min="1" step="0.1" type="range" value="5"/>
+</div>
+</div>
+<div class="btn-row">
+<button class="btn-reset" id="btnReset">🔄 重置模拟</button>
+<button class="btn-pause" id="btnPause">⏯️ 暂停</button>
+</div>
+<div class="legend">
+<span><span class="dot" style="background:#c0c0c0;"></span> 钢球</span>
+<span><span class="dot" style="background:#b08050;"></span> 木质正方体</span>
+<span><span class="dot" style="background:rgba(255,160,80,0.8);"></span> 运动轨迹</span>
+</div>
+</div>
+<script>
+        (function() {
+            const canvas = document.getElementById('mainCanvas');
+            const ctx = canvas.getContext('2d');
+            const phaseBadge = document.getElementById('phaseBadge');
+            const sliderMass = document.getElementById('sliderMass');
+            const sliderTroughMass = document.getElementById('sliderTroughMass');
+            const sliderSpeed = document.getElementById('sliderSpeed');
+            const valMass = document.getElementById('valMass');
+            const valTroughMass = document.getElementById('valTroughMass');
+            const valSpeed = document.getElementById('valSpeed');
+            const btnReset = document.getElementById('btnReset');
+            const btnPause = document.getElementById('btnPause');
+
+            const g = 9.8;
+            const CUBE_EDGE = 2.0;
+            const BALL_RADIUS = 0.18;
+            const EFF_RADIUS = CUBE_EDGE - BALL_RADIUS;
+            const CUBE_INIT_X = 5.5;
+            const BALL_INIT_X = 1.2;
+
+            let ballMass = 1.0,
+                troughMass = 2.0,
+                initSpeed = 5.0;
+            const PHASE = { APPROACH: 0, ON_ARC: 1, FLYING: 2, EXITED: 3 };
+            const phaseNames = ['➡️ 水平接近中', '🔄 圆弧滑动中', '🚀 抛体飞行中', '↩️ 已离开凹槽'];
+            let phase = PHASE.APPROACH,
+                paused = false;
+
+            let ballX = BALL_INIT_X,
+                ballY = BALL_RADIUS;
+            let ballVx = initSpeed,
+                ballVy = 0;
+            let cubeLeftX = CUBE_INIT_X,
+                cubeVx = 0;
+            let theta = -Math.PI / 2,
+                thetaDot = 0;
+            let trailPoints = [];
+            const MAX_TRAIL = 800;
+            let totalMomentum = ballMass * initSpeed;
+
+            const PIXEL_SCALE = 52,
+                GROUND_Y_RATIO = 0.72;
+            let displayW, displayH, groundYPx;
+            let stars = [];
+
+            function updateDimensions() {
+                const rect = canvas.parentElement.getBoundingClientRect();
+                displayW = rect.width || 800;
+                displayH = rect.height || 450;
+                const dpr = Math.min(window.devicePixelRatio || 1, 2);
+                canvas.width = displayW * dpr;
+                canvas.height = displayH * dpr;
+                canvas.style.width = displayW + 'px';
+                canvas.style.height = displayH + 'px';
+                ctx.setTransform(1, 0, 0, 1, 0, 0);
+                ctx.scale(dpr, dpr);
+                groundYPx = displayH * GROUND_Y_RATIO;
+                if (stars.length === 0) initStars();
+            }
+
+            function initStars() {
+                stars = [];
+                for (let i = 0; i < 80; i++) {
+                    stars.push({
+                        x: Math.random() * displayW,
+                        y: Math.random() * groundYPx,
+                        r: Math.random() * 1.5 + 0.5,
+                        alpha: Math.random() * 0.6 + 0.2,
+                        speed: Math.random() * 0.2 + 0.05,
+                    });
+                }
+            }
+
+            function toPxX(x) { return x * PIXEL_SCALE + (displayW - 14 * PIXEL_SCALE) / 2; }
+            function toPxY(y) { return groundYPx - y * PIXEL_SCALE; }
+
+            function resetSim() {
+                ballX = BALL_INIT_X;
+                ballY = BALL_RADIUS;
+                ballVx = initSpeed;
+                ballVy = 0;
+                cubeLeftX = CUBE_INIT_X;
+                cubeVx = 0;
+                phase = PHASE.APPROACH;
+                theta = -Math.PI / 2;
+                thetaDot = 0;
+                trailPoints = [];
+                totalMomentum = ballMass * initSpeed;
+                updateBadge();
+            }
+
+            function updateBadge() {
+                phaseBadge.textContent = phaseNames[phase];
+                phaseBadge.className = 'phase-badge';
+            }
+
+            function arcDerivatives(th, thDot) {
+                const sinT = Math.sin(th),
+                    cosT = Math.cos(th);
+                const M = troughMass,
+                    m = ballMass,
+                    R = EFF_RADIUS;
+                const denom = M + m + m * sinT * sinT;
+                const thDDot = (m * sinT * cosT * thDot * thDot - g * cosT * (M + m) / R) / denom;
+                const XDot = (totalMomentum + m * R * sinT * thDot) / (M + m);
+                return { thDDot, XDot };
+            }
+
+            function rk4Arc(dt) {
+                const y0 = { th: theta, thD: thetaDot, X: cubeLeftX };
+                const d1 = arcDerivatives(y0.th, y0.thD);
+                const k1 = { th: y0.thD, thD: d1.thDDot, X: d1.XDot };
+                const d2 = arcDerivatives(y0.th + 0.5 * dt * k1.th, y0.thD + 0.5 * dt * k1.thD);
+                const k2 = { th: y0.thD + 0.5 * dt * k1.thD, thD: d2.thDDot, X: d2.XDot };
+                const d3 = arcDerivatives(y0.th + 0.5 * dt * k2.th, y0.thD + 0.5 * dt * k2.thD);
+                const k3 = { th: y0.thD + 0.5 * dt * k2.thD, thD: d3.thDDot, X: d3.XDot };
+                const d4 = arcDerivatives(y0.th + dt * k3.th, y0.thD + dt * k3.thD);
+                const k4 = { th: y0.thD + dt * k3.thD, thD: d4.thDDot, X: d4.XDot };
+                return {
+                    theta: y0.th + dt / 6 * (k1.th + 2 * k2.th + 2 * k3.th + k4.th),
+                    thetaDot: y0.thD + dt / 6 * (k1.thD + 2 * k2.thD + 2 * k3.thD + k4.thD),
+                    X: y0.X + dt / 6 * (k1.X + 2 * k2.X + 2 * k3.X + k4.X)
+                };
+            }
+
+            function findArcContact(dt) {
+                const relX = ballX - cubeLeftX;
+                const relY = ballY - CUBE_EDGE;
+                const relVx = ballVx - cubeVx;
+                const relVy = ballVy;
+                const a = relVx * relVx + relVy * relVy;
+                const b = 2 * (relX * relVx + relY * relVy);
+                const c = relX * relX + relY * relY - EFF_RADIUS * EFF_RADIUS;
+                if (a < 1e-12) return -1;
+                const disc = b * b - 4 * a * c;
+                if (disc < 0) return -1;
+                const sqrtDisc = Math.sqrt(disc);
+                const t1 = (-b - sqrtDisc) / (2 * a);
+                const t2 = (-b + sqrtDisc) / (2 * a);
+                for (const t of [t1, t2]) {
+                    if (t > 1e-9 && t <= dt) {
+                        const xc = relX + relVx * t;
+                        const yc = relY + relVy * t - 0.5 * g * t * t;
+                        const ang = Math.atan2(yc, xc);
+                        if (ang >= -Math.PI / 2 && ang <= 0) return t;
+                    }
+                }
+                return -1;
+            }
+
+            function applyArcCapture(contactAng) {
+                const m = ballMass,
+                    M = troughMass,
+                    R = EFF_RADIUS;
+                const sinT = Math.sin(contactAng),
+                    cosT = Math.cos(contactAng);
+                const P = m * ballVx + M * cubeVx;
+                const S = m * R * sinT;
+                const totalMass = m + M;
+                const KE0 = 0.5 * m * (ballVx * ballVx + ballVy * ballVy) + 0.5 * M * cubeVx * cubeVx;
+                const PE0 = m * g * ballY;
+                const PEf = m * g * (CUBE_EDGE + R * Math.sin(contactAng));
+                const E_avail = KE0 + PE0 - PEf;
+                const KE_min = 0.5 * P * P / totalMass;
+                let rem = E_avail - KE_min;
+                if (rem < 0) rem = 0;
+                const denom = 0.5 * (m * R * R - S * S / totalMass);
+                const omegaAbs = Math.sqrt(rem / denom);
+                const vRelX = ballVx - cubeVx;
+                const vTan = -sinT * vRelX + cosT * ballVy;
+                let omega = vTan >= 0 ? omegaAbs : -omegaAbs;
+                cubeVx = (P + S * omega) / totalMass;
+                thetaDot = omega;
+                totalMomentum = P;
+                theta = contactAng;
+                ballX = cubeLeftX + R * cosT;
+                ballY = CUBE_EDGE + R * sinT;
+                phase = PHASE.ON_ARC;
+                updateBadge();
+            }
+
+            function step(dt) {
+                if (phase === PHASE.APPROACH) {
+                    ballX += ballVx * dt;
+                    if (ballX >= cubeLeftX && ballVx > 0) {
+                        ballX = cubeLeftX;
+                        ballY = BALL_RADIUS;
+                        phase = PHASE.ON_ARC;
+                        theta = -Math.PI / 2;
+                        thetaDot = ballVx / EFF_RADIUS;
+                        cubeVx = 0;
+                        totalMomentum = ballMass * initSpeed;
+                        updateBadge();
+                    }
+                } else if (phase === PHASE.ON_ARC) {
+                    const res = rk4Arc(dt);
+                    theta = res.theta;
+                    thetaDot = res.thetaDot;
+                    cubeLeftX = res.X;
+                    cubeVx = (totalMomentum + ballMass * EFF_RADIUS * Math.sin(theta) * thetaDot) / (ballMass + troughMass);
+                    ballX = cubeLeftX + EFF_RADIUS * Math.cos(theta);
+                    ballY = CUBE_EDGE + EFF_RADIUS * Math.sin(theta);
+                    if (theta >= 0 && thetaDot > 1e-8) {
+                        ballVx = cubeVx;
+                        ballVy = EFF_RADIUS * thetaDot;
+                        phase = PHASE.FLYING;
+                        updateBadge();
+                    } else if (theta <= -Math.PI / 2 && thetaDot < -1e-8) {
+                        ballVx = cubeVx + EFF_RADIUS * thetaDot;
+                        ballVy = 0;
+                        ballY = BALL_RADIUS;
+                        phase = PHASE.EXITED;
+                        updateBadge();
+                    }
+                } else if (phase === PHASE.FLYING) {
+                    const contactTime = findArcContact(dt);
+                    if (contactTime >= 0) {
+                        ballX += ballVx * contactTime;
+                        ballY += ballVy * contactTime - 0.5 * g * contactTime * contactTime;
+                        ballVy -= g * contactTime;
+                        cubeLeftX += cubeVx * contactTime;
+                        const dx = ballX - cubeLeftX,
+                            dy = ballY - CUBE_EDGE;
+                        let ang = Math.atan2(dy, dx);
+                        ang = Math.max(-Math.PI / 2, Math.min(0, ang));
+                        applyArcCapture(ang);
+                        const remainingDt = dt - contactTime;
+                        if (remainingDt > 1e-9) step(remainingDt);
+                        return;
+                    }
+                    ballX += ballVx * dt;
+                    ballY += ballVy * dt - 0.5 * g * dt * dt;
+                    ballVy -= g * dt;
+                    cubeLeftX += cubeVx * dt;
+                    if (ballY <= BALL_RADIUS) {
+                        ballY = BALL_RADIUS;
+                        ballVy = 0;
+                        phase = PHASE.EXITED;
+                        updateBadge();
+                    }
+                } else if (phase === PHASE.EXITED) {
+                    ballX += ballVx * dt;
+                    cubeLeftX += cubeVx * dt;
+                }
+            }
+
+            function physicsUpdate(rawDt) {
+                if (paused) return;
+                const dt = rawDt;
+                const maxSubDt = 0.001;
+                const steps = Math.ceil(dt / maxSubDt);
+                const subDt = dt / steps;
+                for (let i = 0; i < steps; i++) step(subDt);
+            }
+
+            function renderBackground() {
+                const bgGrad = ctx.createLinearGradient(0, 0, 0, displayH);
+                bgGrad.addColorStop(0, '#0a1020');
+                bgGrad.addColorStop(0.6, '#050d1a');
+                bgGrad.addColorStop(1, '#020810');
+                ctx.fillStyle = bgGrad;
+                ctx.fillRect(0, 0, displayW, displayH);
+
+                ctx.strokeStyle = 'rgba(0, 229, 255, 0.08)';
+                ctx.lineWidth = 0.5;
+                const gridSize = 40;
+                for (let x = 0; x < displayW; x += gridSize) {
+                    ctx.beginPath();
+                    ctx.moveTo(x, 0);
+                    ctx.lineTo(x, groundYPx);
+                    ctx.stroke();
+                }
+                for (let y = 0; y < groundYPx; y += gridSize) {
+                    ctx.beginPath();
+                    ctx.moveTo(0, y);
+                    ctx.lineTo(displayW, y);
+                    ctx.stroke();
+                }
+
+                for (let s of stars) {
+                    ctx.fillStyle = `rgba(255, 255, 255, ${s.alpha})`;
+                    ctx.beginPath();
+                    ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+                    ctx.fill();
+                    s.alpha += s.speed * 0.01;
+                    if (s.alpha > 0.8 || s.alpha < 0.1) s.speed *= -1;
+                }
+
+                const groundGrad = ctx.createLinearGradient(0, groundYPx, 0, displayH);
+                groundGrad.addColorStop(0, '#0a2a4a');
+                groundGrad.addColorStop(0.3, '#051a30');
+                groundGrad.addColorStop(1, '#020d1a');
+                ctx.fillStyle = groundGrad;
+                ctx.fillRect(0, groundYPx, displayW, displayH - groundYPx);
+
+                ctx.strokeStyle = 'rgba(0, 229, 255, 0.2)';
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.moveTo(0, groundYPx);
+                ctx.lineTo(displayW, groundYPx);
+                ctx.stroke();
+                ctx.strokeStyle = 'rgba(0, 229, 255, 0.05)';
+                ctx.lineWidth = 0.5;
+                for (let x = 0; x < displayW; x += gridSize) {
+                    ctx.beginPath();
+                    ctx.moveTo(x, groundYPx);
+                    ctx.lineTo(x, displayH);
+                    ctx.stroke();
+                }
+            }
+
+            function renderCube() {
+                const L = CUBE_EDGE;
+                const leftPx = toPxX(cubeLeftX);
+                const rightPx = toPxX(cubeLeftX + L);
+                const bottomPx = toPxY(0);
+                const topPx = toPxY(L);
+                const cxPx = toPxX(cubeLeftX);
+                const cyPx = toPxY(L);
+                const rPx = L * PIXEL_SCALE;
+
+                ctx.save();
+                ctx.beginPath();
+                ctx.moveTo(leftPx, bottomPx);
+                ctx.lineTo(rightPx, bottomPx);
+                ctx.lineTo(rightPx, topPx);
+                ctx.arc(cxPx, cyPx, rPx, 0, -Math.PI / 2, false);
+                ctx.closePath();
+                ctx.clip();
+
+                const woodGrad = ctx.createLinearGradient(leftPx, 0, rightPx, 0);
+                woodGrad.addColorStop(0, '#b08050');
+                woodGrad.addColorStop(0.3, '#d4a870');
+                woodGrad.addColorStop(0.7, '#a07040');
+                woodGrad.addColorStop(1, '#8b6030');
+                ctx.fillStyle = woodGrad;
+                ctx.fillRect(leftPx, topPx, rightPx - leftPx, bottomPx - topPx);
+
+                ctx.strokeStyle = 'rgba(0,0,0,0.15)';
+                ctx.lineWidth = 0.8;
+                for (let i = 0; i < 14; i++) {
+                    const y = topPx + (i + 0.5) * (bottomPx - topPx) / 14;
+                    ctx.beginPath();
+                    ctx.moveTo(leftPx, y);
+                    for (let x = leftPx; x <= rightPx; x += 3) {
+                        ctx.lineTo(x, y + Math.sin(x * 0.02 + i) * 1.5);
+                    }
+                    ctx.stroke();
+                }
+                ctx.strokeStyle = 'rgba(80,40,20,0.2)';
+                ctx.lineWidth = 1.2;
+                for (let i = 0; i < 6; i++) {
+                    const y = topPx + (i * 2 + 0.7) * (bottomPx - topPx) / 12;
+                    ctx.beginPath();
+                    ctx.moveTo(leftPx, y);
+                    ctx.lineTo(rightPx, y);
+                    ctx.stroke();
+                }
+                ctx.restore();
+            }
+
+            function renderBall() {
+                const bx = toPxX(ballX),
+                    by = toPxY(ballY),
+                    br = BALL_RADIUS * PIXEL_SCALE;
+                const glow = ctx.createRadialGradient(bx, by, br * 0.5, bx, by, br * 2.2);
+                glow.addColorStop(0, 'rgba(220,220,230,0.5)');
+                glow.addColorStop(1, 'rgba(100,100,110,0)');
+                ctx.fillStyle = glow;
+                ctx.beginPath();
+                ctx.arc(bx, by, br * 2.2, 0, 2 * Math.PI);
+                ctx.fill();
+
+                const ballGrad = ctx.createRadialGradient(bx - br * 0.3, by - br * 0.4, br * 0.1, bx, by, br);
+                ballGrad.addColorStop(0, '#f5f5f5');
+                ballGrad.addColorStop(0.3, '#d0d0d0');
+                ballGrad.addColorStop(0.7, '#808080');
+                ballGrad.addColorStop(1, '#3a3a3a');
+                ctx.fillStyle = ballGrad;
+                ctx.beginPath();
+                ctx.arc(bx, by, br, 0, 2 * Math.PI);
+                ctx.fill();
+
+                ctx.fillStyle = 'rgba(255,255,255,0.8)';
+                ctx.beginPath();
+                ctx.arc(bx - br * 0.3, by - br * 0.35, br * 0.25, 0, 2 * Math.PI);
+                ctx.fill();
+            }
+
+            function render() {
+                updateDimensions();
+                ctx.clearRect(0, 0, displayW, displayH);
+                renderBackground();
+
+                if (trailPoints.length > 1) {
+                    ctx.strokeStyle = 'rgba(0, 229, 255, 0.6)';
+                    ctx.lineWidth = 2;
+                    ctx.setLineDash([6, 4]);
+                    ctx.beginPath();
+                    ctx.moveTo(toPxX(trailPoints[0].x), toPxY(trailPoints[0].y));
+                    for (let i = 1; i < trailPoints.length; i++) {
+                        ctx.lineTo(toPxX(trailPoints[i].x), toPxY(trailPoints[i].y));
+                    }
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+                }
+
+                renderCube();
+                renderBall();
+
+                ctx.fillStyle = 'rgba(0, 229, 255, 0.5)';
+                ctx.beginPath();
+                ctx.arc(toPxX(BALL_INIT_X), toPxY(BALL_RADIUS), 4, 0, 2 * Math.PI);
+                ctx.fill();
+            }
+
+            let lastTime = null,
+                trailTimer = 0;
+
+            function animate(ts) {
+                if (lastTime === null) lastTime = ts;
+                let dt = (ts - lastTime) / 1000;
+                lastTime = ts;
+                if (dt > 0.1) dt = 0.016;
+                physicsUpdate(dt);
+                if (!paused) {
+                    trailTimer += dt;
+                    if (trailTimer >= 0.012) {
+                        trailTimer = 0;
+                        if (trailPoints.length === 0 || Math.hypot(ballX - trailPoints[trailPoints.length - 1].x, ballY -
+                                trailPoints[trailPoints.length - 1].y) > 0.003) {
+                            trailPoints.push({ x: ballX, y: ballY });
+                            if (trailPoints.length > MAX_TRAIL) trailPoints.shift();
+                        }
+                    }
+                }
+                render();
+                requestAnimationFrame(animate);
+            }
+
+            sliderMass.oninput = () => { ballMass = +sliderMass.value; valMass.textContent = ballMass.toFixed(2) + ' kg'; resetSim(); };
+            sliderTroughMass.oninput = () => { troughMass = +sliderTroughMass.value; valTroughMass.textContent = troughMass.toFixed(2) + ' kg'; resetSim(); };
+            sliderSpeed.oninput = () => { initSpeed = +sliderSpeed.value; valSpeed.textContent = initSpeed.toFixed(2) + ' m/s'; resetSim(); };
+            btnReset.onclick = () => { resetSim(); lastTime = null; paused = false; btnPause.textContent = '⏯️ 暂停'; btnPause.classList.remove('paused'); };
+            btnPause.onclick = () => { paused = !paused; btnPause.textContent = paused ? '▶️ 播放' : '⏯️ 暂停'; btnPause.classList.toggle('paused', paused); if (!paused) lastTime = null; };
+            document.addEventListener('keydown', e => { if (e.code === 'Space') { e.preventDefault(); btnPause.click(); } if (e.code === 'KeyR') btnReset.click(); });
+            window.addEventListener('resize', () => { updateDimensions(); initStars(); render(); });
+
+            updateDimensions();
+            initStars();
+            resetSim();
+            valMass.textContent = ballMass.toFixed(2) + ' kg';
+            valTroughMass.textContent = troughMass.toFixed(2) + ' kg';
+            valSpeed.textContent = initSpeed.toFixed(2) + ' m/s';
+            requestAnimationFrame(animate);
+        })();
+    </script>
+<!-- 水印 -->
+<div class="watermark">齐老师动画</div>
+<script>
+// 禁用右键
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+});
+
+// ESC返回功能
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        history.back();
+    }
+});
+</script>
+
+<div style="position: fixed; bottom: 10px; right: 10px; z-index: 9998; color: rgba(255, 255, 255, 0.3); font-family: Arial, sans-serif; font-size: 12px; pointer-events: none;">
+    齐老师动画
+</div>
+
+<script>
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+});
+</script>
+</body>
+</html>
