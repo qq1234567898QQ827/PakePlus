@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta charset="utf-8"/>
+<meta charset="utf-8"/>
+<meta charset="utf-8"/>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, user-scalable=no" name="viewport"/>
+<title>不同轨道半径卫星绕地球匀速圆周运动 - Three.js动画</title>
+<style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: 'Microsoft YaHei', 'PingFang SC', 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif;
+        }
+        #info {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 100;
+            background: rgba(0,0,0,0.7);
+            backdrop-filter: blur(5px);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            pointer-events: none;
+            border-left: 4px solid #00aaff;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+            font-size: 14px;
+        }
+        #info h1 {
+            margin: 0 0 5px;
+            font-size: 18px;
+        }
+        #info p {
+            margin: 0;
+            font-size: 12px;
+            opacity: 0.8;
+        }
+        #controls-note {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            z-index: 100;
+            background: rgba(0,0,0,0.5);
+            color: #ccc;
+            padding: 5px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            pointer-events: none;
+            font-family: monospace;
+        }
+        @media (max-width: 600px) {
+            #info { font-size: 10px; padding: 8px 12px; }
+            #info h1 { font-size: 14px; }
+        }
+    </style>
+</head>
+<body>
+<div id="backButton" onclick="window.location.href='index.html';" style="position: fixed; top: 20px; left: 20px; z-index: 9999; background: rgba(30, 60, 114, 0.8); color: white; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-family: Arial, sans-serif; font-size: 14px; border: 1px solid rgba(100, 150, 255, 0.5); transition: all 0.3s;">
+    ← 返回 (ESC)
+</div>
+<script>
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        window.location.href='index.html';
+    }
+});
+</script>
+
+<div id="info">
+<h1>🌍 不同轨道半径卫星 · 匀速圆周运动</h1>
+<p>低轨卫星(内圈) | 中轨卫星 | 高轨卫星(外圈) | 半径越大 → 速度越慢 (符合开普勒定律)</p>
+</div>
+<div id="controls-note">
+        🖱️ 鼠标拖拽旋转视角 | 右键平移 | 滚动缩放
+    </div>
+<!-- 引入Three.js核心库以及扩展组件 -->
+<script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.128.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.128.0/examples/jsm/"
+            }
+        }
+    </script>
+<script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+
+        // --- 初始化场景、相机、渲染器 ---
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x050b1a); // 深邃星空蓝黑背景
+        scene.fog = new THREE.FogExp2(0x050b1a, 0.003); // 轻微雾效增强景深
+
+        // 透视相机 (视角, 宽高比, 近平面, 远平面)
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(6, 5, 12);
+        camera.lookAt(0, 0, 0);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true; // 开启阴影映射，增强立体感
+        renderer.setPixelRatio(window.devicePixelRatio);
+        document.body.appendChild(renderer.domElement);
+
+        // CSS2渲染文字标签 (始终面向相机)
+        const labelRenderer = new CSS2DRenderer();
+        labelRenderer.setSize(window.innerWidth, window.innerHeight);
+        labelRenderer.domElement.style.position = 'absolute';
+        labelRenderer.domElement.style.top = '0px';
+        labelRenderer.domElement.style.left = '0px';
+        labelRenderer.domElement.style.pointerEvents = 'none';
+        document.body.appendChild(labelRenderer.domElement);
+
+        // --- 轨道控制器，允许用户交互 ---
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;          // 惯性效果
+        controls.dampingFactor = 0.05;
+        controls.rotateSpeed = 1.0;
+        controls.zoomSpeed = 1.2;
+        controls.panSpeed = 0.8;
+        controls.enableZoom = true;
+        controls.enablePan = true;
+        controls.autoRotate = false;
+        controls.target.set(0, 0, 0);
+
+        // --- 辅助增强: 星空背景粒子系统 (简单的点精灵，增强沉浸感) ---
+        const starGeometry = new THREE.BufferGeometry();
+        const starCount = 1500;
+        const starPositions = new Float32Array(starCount * 3);
+        for (let i = 0; i < starCount; i++) {
+            // 分布在较大范围内
+            starPositions[i*3] = (Math.random() - 0.5) * 200;
+            starPositions[i*3+1] = (Math.random() - 0.5) * 100;
+            starPositions[i*3+2] = (Math.random() - 0.5) * 150 - 50;
+        }
+        starGeometry.setAttribute('position', new THREE.BufferAttribute(starPositions, 3));
+        const starMaterial = new THREE.PointsMaterial({ color: 0xffffff, size: 0.15, transparent: true, opacity: 0.7 });
+        const stars = new THREE.Points(starGeometry, starMaterial);
+        scene.add(stars);
+        
+        // 再添加一层更远的小星星 (闪烁感)
+        const starGeometry2 = new THREE.BufferGeometry();
+        const starCount2 = 800;
+        const starPositions2 = new Float32Array(starCount2 * 3);
+        for (let i = 0; i < starCount2; i++) {
+            starPositions2[i*3] = (Math.random() - 0.5) * 400;
+            starPositions2[i*3+1] = (Math.random() - 0.5) * 200;
+            starPositions2[i*3+2] = (Math.random() - 0.5) * 200 - 100;
+        }
+        starGeometry2.setAttribute('position', new THREE.BufferAttribute(starPositions2, 3));
+        const starMaterial2 = new THREE.PointsMaterial({ color: 0xaaccff, size: 0.08, transparent: true, opacity: 0.6 });
+        const stars2 = new THREE.Points(starGeometry2, starMaterial2);
+        scene.add(stars2);
+
+        // --- 光照系统: 营造立体感 ---
+        // 环境光
+        const ambientLight = new THREE.AmbientLight(0x404060);
+        scene.add(ambientLight);
+        // 主光源方向光 (模拟太阳)
+        const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
+        dirLight.position.set(5, 10, 7);
+        dirLight.castShadow = true;
+        dirLight.receiveShadow = false;
+        dirLight.shadow.mapSize.width = 1024;
+        dirLight.shadow.mapSize.height = 1024;
+        scene.add(dirLight);
+        // 辅助背光暖色填充
+        const backLight = new THREE.PointLight(0xcc9966, 0.4);
+        backLight.position.set(-3, 1, -5);
+        scene.add(backLight);
+        // 冷色填充光从底部
+        const fillLight = new THREE.PointLight(0x6688aa, 0.3);
+        fillLight.position.set(2, -3, 4);
+        scene.add(fillLight);
+        
+        // 可选: 轻微全局光晕效果 (简单模拟，不加后处理，仅通过光照)
+        
+        // --- 地球模型 (带精致材质) ---
+        // 创建地球几何体
+        const earthGeometry = new THREE.SphereGeometry(1.0, 128, 128);
+        // 使用程序化纹理绘制简单的地球外观 (避免外部图片，确保完全离线可用)
+        const canvas = document.createElement('canvas');
+        canvas.width = 1024;
+        canvas.height = 1024;
+        const ctx = canvas.getContext('2d');
+        // 绘制基础颜色 (海洋蓝绿渐变)
+        ctx.fillStyle = '#2a6f8f';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        // 绘制大陆风格简单纹理 (抽象化，增加视觉趣味)
+        ctx.globalCompositeOperation = 'source-over';
+        // 随机绿色/棕色斑点模拟大陆
+        ctx.fillStyle = '#7cb518';
+        // 绘制几个大的不规则形状
+        function drawContinent(x, y, radius, angle, stretchX, stretchY) {
+            ctx.beginPath();
+            ctx.ellipse(x * canvas.width, y * canvas.height, radius * canvas.width * stretchX, radius * canvas.height * stretchY, angle, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        ctx.fillStyle = '#6a994e';
+        drawContinent(0.25, 0.6, 0.12, 0.3, 1.2, 0.9);
+        drawContinent(0.7, 0.45, 0.1, -0.2, 1.3, 0.8);
+        drawContinent(0.55, 0.75, 0.09, 0.5, 1.1, 0.7);
+        drawContinent(0.4, 0.25, 0.11, 0.1, 1.4, 0.9);
+        drawContinent(0.85, 0.8, 0.08, 0.7, 1.0, 0.8);
+        drawContinent(0.15, 0.85, 0.07, 0.9, 1.1, 0.7);
+        drawContinent(0.5, 0.5, 0.13, 0.0, 1.0, 1.2);
+        // 添加白色极地区域
+        ctx.fillStyle = '#e0eef7';
+        ctx.beginPath();
+        ctx.ellipse(canvas.width * 0.5, canvas.height * 0.12, canvas.width * 0.18, canvas.height * 0.12, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.ellipse(canvas.width * 0.5, canvas.height * 0.88, canvas.width * 0.18, canvas.height * 0.12, 0, 0, Math.PI * 2);
+        ctx.fill();
+        // 添加云层效果的白色半透明斑点
+        ctx.fillStyle = '#ffffff80';
+        for (let i = 0; i < 200; i++) {
+            ctx.beginPath();
+            ctx.arc(Math.random() * canvas.width, Math.random() * canvas.height, Math.random() * 6 + 2, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        const earthTexture = new THREE.CanvasTexture(canvas);
+        earthTexture.wrapS = THREE.RepeatWrapping;
+        earthTexture.wrapT = THREE.RepeatWrapping;
+        
+        const earthMaterial = new THREE.MeshStandardMaterial({
+            map: earthTexture,
+            roughness: 0.5,
+            metalness: 0.1,
+            emissive: new THREE.Color(0x112233),
+            emissiveIntensity: 0.15
+        });
+        const earth = new THREE.Mesh(earthGeometry, earthMaterial);
+        earth.castShadow = true;
+        earth.receiveShadow = false;
+        scene.add(earth);
+        
+        // 添加地球外围微弱大气层光晕 (透明外壳)
+        const atmosGeometry = new THREE.SphereGeometry(1.02, 64, 64);
+        const atmosMaterial = new THREE.MeshPhongMaterial({
+            color: 0x88aaff,
+            transparent: true,
+            opacity: 0.12,
+            side: THREE.BackSide
+        });
+        const atmosphere = new THREE.Mesh(atmosGeometry, atmosMaterial);
+        scene.add(atmosphere);
+        
+        // --- 卫星参数配置: 半径, 颜色, 角速度(rad/s), 卫星大小, 轨道线颜色 ---
+        // 根据开普勒第三定律: 角速度 ω ∝ r^(-3/2)，低轨快高轨慢
+        // 设定地球半径 = 1，轨道半径分别为 1.8, 2.8, 3.9 (视觉间距舒适)
+        // 参考基准: 半径1.8的角速度约为 0.95 rad/s 使得运动明显但不眩晕，比例严格遵循物理
+        // 实际计算: ω1 / ω2 = (r2/r1)^(3/2)
+        const satellitesData = [
+            {
+                name: 'Luna-1',
+                radius: 1.85,      // 轨道半径
+                color: 0xffaa66,    // 暖金色
+                size: 0.12,
+                lineColor: 0xffaa66,
+                lineOpacity: 0.6,
+                // 基于半径1.85为基准，设定角速度 0.95 rad/s (视觉舒服)
+                angularSpeed: 0.95,
+                initAngle: 0.0
+            },
+            {
+                name: 'Orion-7',
+                radius: 2.65,
+                color: 0x66ccff,    // 冰蓝色
+                size: 0.13,
+                lineColor: 0x66ccff,
+                lineOpacity: 0.55,
+                // 根据物理 ω ∝ r^(-3/2) => ω2 = ω1 * (r1/r2)^(3/2)
+                angularSpeed: 0.95 * Math.pow(1.85 / 2.65, 1.5),
+                initAngle: 1.8
+            },
+            {
+                name: 'Voyager-X',
+                radius: 3.75,
+                color: 0xdd88ff,    // 淡紫色
+                size: 0.14,
+                lineColor: 0xdd88ff,
+                lineOpacity: 0.55,
+                angularSpeed: 0.95 * Math.pow(1.85 / 3.75, 1.5),
+                initAngle: 3.2
+            }
+        ];
+        
+        // 存储卫星对象和轨道对象以便动画更新
+        const satellites = [];
+        
+        // --- 创建轨道线 (LineLoop) 和 卫星模型，以及CSS2D标签---
+        satellitesData.forEach((data, idx) => {
+            // 1. 绘制圆形轨道线
+            const points = [];
+            const segments = 128;
+            const radius = data.radius;
+            const angleStep = (Math.PI * 2) / segments;
+            for (let i = 0; i <= segments; i++) {
+                const angle = i * angleStep;
+                const x = radius * Math.cos(angle);
+                const z = radius * Math.sin(angle);
+                points.push(new THREE.Vector3(x, 0, z));
+            }
+            const geometry = new THREE.BufferGeometry().setFromPoints(points);
+            const material = new THREE.LineBasicMaterial({ color: data.lineColor, transparent: true, opacity: data.lineOpacity });
+            const orbit = new THREE.LineLoop(geometry, material);
+            scene.add(orbit);
+            
+            // 2. 创建卫星模型 (带光晕材质的小球体)
+            const satGeometry = new THREE.SphereGeometry(data.size, 32, 32);
+            const satMaterial = new THREE.MeshStandardMaterial({
+                color: data.color,
+                metalness: 0.7,
+                roughness: 0.3,
+                emissive: new THREE.Color(data.color),
+                emissiveIntensity: 0.35
+            });
+            const satellite = new THREE.Mesh(satGeometry, satMaterial);
+            satellite.castShadow = true;
+            satellite.userData = {
+                radius: data.radius,
+                angularSpeed: data.angularSpeed,
+                angle: data.initAngle,
+                name: data.name
+            };
+            // 初始位置
+            const initX = data.radius * Math.cos(data.initAngle);
+            const initZ = data.radius * Math.sin(data.initAngle);
+            satellite.position.set(initX, 0, initZ);
+            scene.add(satellite);
+            
+            // 给卫星添加一个小光晕的点光源跟随 (可选，增强视觉效果)
+            const glowLight = new THREE.PointLight(data.color, 0.5, 3);
+            satellite.add(glowLight);
+            
+            // 存储卫星数据以便动画更新
+            satellites.push({
+                mesh: satellite,
+                radius: data.radius,
+                angularSpeed: data.angularSpeed,
+                angle: data.initAngle,
+                name: data.name,
+                color: data.color
+            });
+            
+            // 3. 添加CSS2D文本标签: 显示轨道半径和卫星名称，放置在轨道平面外侧偏移 (静态位置，在X轴正方向轨道半径外延)
+            const labelDiv = document.createElement('div');
+            labelDiv.textContent = `🛰️ ${data.name}  |  R = ${data.radius.toFixed(2)}  (地心距)`;
+            labelDiv.style.color = `#${data.lineColor.toString(16).padStart(6,'0')}`;
+            labelDiv.style.fontSize = '14px';
+            labelDiv.style.fontWeight = 'bold';
+            labelDiv.style.textShadow = '1px 1px 0px black';
+            labelDiv.style.backgroundColor = 'rgba(0,0,0,0.6)';
+            labelDiv.style.padding = '4px 10px';
+            labelDiv.style.borderRadius = '20px';
+            labelDiv.style.borderLeft = `3px solid #${data.lineColor.toString(16).padStart(6,'0')}`;
+            labelDiv.style.fontFamily = 'monospace';
+            labelDiv.style.backdropFilter = 'blur(4px)';
+            labelDiv.style.whiteSpace = 'nowrap';
+            
+            // 标签位置：放在轨道半径外侧 +0.2 处，并稍微抬高Y轴 (Y=0.35) 避免与轨道重叠
+            const labelPosX = (data.radius + 0.28) * Math.cos(0.5); // 角度偏移一点更自然
+            const labelPosZ = (data.radius + 0.28) * Math.sin(0.5);
+            const labelObj = new CSS2DObject(labelDiv);
+            labelObj.position.set(labelPosX, 0.45, labelPosZ);
+            scene.add(labelObj);
+            
+            // 额外在轨道上方添加半径数值小标签 (环绕一个在0角度方向)
+            const radiusLabelDiv = document.createElement('div');
+            radiusLabelDiv.textContent = `📡 ${data.radius.toFixed(2)}`;
+            radiusLabelDiv.style.color = '#ccccdd';
+            radiusLabelDiv.style.fontSize = '11px';
+            radiusLabelDiv.style.backgroundColor = 'rgba(20,20,40,0.7)';
+            radiusLabelDiv.style.padding = '2px 6px';
+            radiusLabelDiv.style.borderRadius = '12px';
+            radiusLabelDiv.style.border = `1px solid #${data.lineColor.toString(16).padStart(6,'0')}`;
+            const radiusTag = new CSS2DObject(radiusLabelDiv);
+            radiusTag.position.set(data.radius + 0.15, 0.2, 0);
+            scene.add(radiusTag);
+        });
+        
+        // --- 额外添加一个小星群围绕地球 (装饰粒子环，展示动感) ---
+        const dustParticleCount = 800;
+        const dustGeometry = new THREE.BufferGeometry();
+        const dustPositions = new Float32Array(dustParticleCount * 3);
+        for (let i = 0; i < dustParticleCount; i++) {
+            const r = 1.2 + Math.random() * 0.8;
+            const theta = Math.random() * Math.PI * 2;
+            const phi = Math.acos(2 * Math.random() - 1);
+            dustPositions[i*3] = r * Math.sin(phi) * Math.cos(theta);
+            dustPositions[i*3+1] = r * Math.sin(phi) * Math.sin(theta) * 0.5; // 压扁一点形成星尘环
+            dustPositions[i*3+2] = r * Math.cos(phi);
+        }
+        dustGeometry.setAttribute('position', new THREE.BufferAttribute(dustPositions, 3));
+        const dustMaterial = new THREE.PointsMaterial({ color: 0x88aaff, size: 0.02, transparent: true, opacity: 0.4 });
+        const dustRing = new THREE.Points(dustGeometry, dustMaterial);
+        scene.add(dustRing);
+        
+        // 再添加一个极简的光晕辉光效果: 在地球周围加一个淡淡的发光圈 (后处理简单模拟)
+        const glowGeometry = new THREE.SphereGeometry(1.12, 32, 32);
+        const glowMaterial = new THREE.MeshBasicMaterial({
+            color: 0x2266aa,
+            transparent: true,
+            opacity: 0.08,
+            side: THREE.BackSide
+        });
+        const glowHalo = new THREE.Mesh(glowGeometry, glowMaterial);
+        scene.add(glowHalo);
+        
+        // 可选: 为每个轨道添加微弱的透明圆环平面增加视觉效果 (可选，不必须，但提升科技感)
+        const orbitPlanes = [];
+        satellitesData.forEach(data => {
+            const ringPlaneGeometry = new THREE.RingGeometry(data.radius - 0.02, data.radius + 0.02, 64);
+            const ringPlaneMaterial = new THREE.MeshBasicMaterial({
+                color: data.lineColor,
+                side: THREE.DoubleSide,
+                transparent: true,
+                opacity: 0.07,
+                depthWrite: false
+            });
+            const ringPlane = new THREE.Mesh(ringPlaneGeometry, ringPlaneMaterial);
+            ringPlane.rotation.x = -Math.PI / 2;
+            scene.add(ringPlane);
+        });
+        
+        // --- 辅助视觉: 添加一个淡淡的网格地板 (位于地球下方较远，增加空间参考) ---
+        const gridHelper = new THREE.GridHelper(20, 20, 0x88aaff, 0x335588);
+        gridHelper.position.y = -1.8;
+        gridHelper.material.transparent = true;
+        gridHelper.material.opacity = 0.2;
+        scene.add(gridHelper);
+        
+        // 简单轴线辅助 (很淡)
+        const axesHelper = new THREE.AxesHelper(5);
+        axesHelper.material.transparent = true;
+        axesHelper.material.opacity = 0.08;
+        scene.add(axesHelper);
+        
+        // --- 动画循环相关变量: 时间差控制 ---
+        let lastTime = performance.now();
+        
+        // 让星星粒子缓慢自转，增加动态感
+        function animateStars() {
+            stars.rotation.y += 0.0005;
+            stars.rotation.x += 0.0003;
+            stars2.rotation.y -= 0.0002;
+        }
+        
+        // 地球自转
+        let earthRotationY = 0;
+        
+        // 动画主循环
+        function animate() {
+            const now = performance.now();
+            let delta = Math.min(0.033, (now - lastTime) / 1000); // 限制最大delta 0.033秒
+            lastTime = now;
+            if (delta <= 0) delta = 0.016;
+            
+            // 1. 更新卫星位置 (匀速圆周运动)
+            satellites.forEach(sat => {
+                // 增加角度
+                sat.angle += sat.angularSpeed * delta;
+                // 规范化角度范围 (可选)
+                if (sat.angle > Math.PI * 2) sat.angle -= Math.PI * 2;
+                // 计算新位置
+                const x = sat.radius * Math.cos(sat.angle);
+                const z = sat.radius * Math.sin(sat.angle);
+                sat.mesh.position.set(x, 0, z);
+                // 让卫星自身稍微自转 (可选，增加生动性)
+                sat.mesh.rotation.y += 0.02;
+                sat.mesh.rotation.x += 0.01;
+            });
+            
+            // 2. 地球自转 (缓慢)
+            earthRotationY += 0.002;
+            earth.rotation.y = earthRotationY;
+            atmosphere.rotation.y = earthRotationY * 0.8;
+            glowHalo.rotation.y = earthRotationY * 0.5;
+            
+            // 3. 动态粒子星尘环旋转
+            dustRing.rotation.y += 0.003;
+            dustRing.rotation.x += 0.001;
+            
+            // 4. 星空背景缓慢旋转
+            animateStars();
+            
+            // 5. 更新轨道控制器 (如果用户没有交互，稍微可自动慢速旋转? 为了不干扰用户，不自动旋转)
+            controls.update(); // 仅更新如果阻尼启用
+            
+            // 6. 根据轨道半径动态调整辉光强度? 可选简单脉冲 (利用正弦波轻微改变地球大气透明度)
+            const pulse = Math.sin(Date.now() * 0.001) * 0.02;
+            atmosMaterial.opacity = 0.12 + pulse * 0.03;
+            
+            // 7. 渲染场景
+            renderer.render(scene, camera);
+            labelRenderer.render(scene, camera);
+            
+            requestAnimationFrame(animate);
+        }
+        
+        // 启动动画
+        animate();
+        
+        // 窗口适配
+        window.addEventListener('resize', onWindowResize, false);
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            labelRenderer.setSize(window.innerWidth, window.innerHeight);
+        }
+        
+        // 控制台输出信息
+        console.log('动画已启动 | 卫星轨道半径: 1.85, 2.65, 3.75 | 角速度比例遵循开普勒第三定律');
+        
+        // 增加一个小辅助功能：悬浮提示卫星速度比例 (动态显示信息可以在控制台)
+        // 为了方便调试，在控制台打印卫星角速度
+        satellites.forEach(sat => {
+            console.log(`卫星 ${sat.name}: 半径=${sat.radius}, 角速度=${sat.angularSpeed.toFixed(4)} rad/s, 周期≈${(2*Math.PI/sat.angularSpeed).toFixed(1)}秒`);
+        });
+    </script>
+<style>
+.back-btn {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    padding: 10px 20px;
+    background: rgba(0, 150, 200, 0.3);
+    border: 1px solid #00ffff;
+    color: white;
+    font-size: 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    z-index: 9999;
+    transition: 0.3s;
+    backdrop-filter: blur(5px);
+}
+.back-btn:hover {
+    background: rgba(0, 150, 200, 0.6);
+    box-shadow: 0 0 15px #00ffff;
+}
+</style>
+<button class="back-btn" onclick="goBack()">⬅️ 返回</button>
+<script>
+function goBack() {
+    history.back();
+}
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        goBack();
+    }
+});
+</script>
+<div class="watermark">齐老师动画</div>
+<style>
+.watermark {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    font-size: 14px;
+    color: rgba(0, 255, 255, 0.3);
+    z-index: 9998;
+    pointer-events: none;
+    user-select: none;
+}
+</style>
+<script>
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+});
+</script>
+<style>
+.back-btn {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    padding: 10px 20px;
+    background: rgba(0, 150, 200, 0.3);
+    border: 1px solid #00ffff;
+    color: white;
+    font-size: 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    z-index: 9999;
+    transition: 0.3s;
+    backdrop-filter: blur(5px);
+}
+.back-btn:hover {
+    background: rgba(0, 150, 200, 0.6);
+    box-shadow: 0 0 15px #00ffff;
+}
+</style>
+<button class="back-btn" onclick="goBack()">⬅️ 返回</button>
+<script>
+function goBack() {
+    history.back();
+}
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        goBack();
+    }
+});
+</script>
+<div class="watermark">齐老师动画</div>
+<style>
+.watermark {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    font-size: 14px;
+    color: rgba(0, 255, 255, 0.3);
+    z-index: 9998;
+    pointer-events: none;
+    user-select: none;
+}
+</style>
+<script>
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+});
+</script>
+<style>
+.back-btn {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    padding: 10px 20px;
+    background: rgba(0, 150, 200, 0.3);
+    border: 1px solid #00ffff;
+    color: white;
+    font-size: 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    z-index: 9999;
+    transition: 0.3s;
+    backdrop-filter: blur(5px);
+}
+.back-btn:hover {
+    background: rgba(0, 150, 200, 0.6);
+    box-shadow: 0 0 15px #00ffff;
+}
+</style>
+<button class="back-btn" onclick="goBack()">⬅️ 返回</button>
+<script>
+function goBack() {
+    history.back();
+}
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        goBack();
+    }
+});
+</script>
+<div class="watermark">齐老师动画</div>
+<style>
+.watermark {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    font-size: 14px;
+    color: rgba(0, 255, 255, 0.3);
+    z-index: 9998;
+    pointer-events: none;
+    user-select: none;
+}
+</style>
+<script>
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+});
+</script>
+<style>
+.back-btn {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    padding: 10px 20px;
+    background: rgba(0, 150, 200, 0.3);
+    border: 1px solid #00ffff;
+    color: white;
+    font-size: 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    z-index: 9999;
+    transition: 0.3s;
+    backdrop-filter: blur(5px);
+}
+.back-btn:hover {
+    background: rgba(0, 150, 200, 0.6);
+    box-shadow: 0 0 15px #00ffff;
+}
+</style>
+<button class="back-btn" onclick="goBack()">⬅️ 返回</button>
+<script>
+function goBack() {
+    history.back();
+}
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        goBack();
+    }
+});
+</script>
+<div class="watermark">齐老师动画</div>
+<style>
+.watermark {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    font-size: 14px;
+    color: rgba(0, 255, 255, 0.3);
+    z-index: 9998;
+    pointer-events: none;
+    user-select: none;
+}
+</style>
+<script>
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+});
+</script>
+
+<div style="position: fixed; bottom: 10px; right: 10px; z-index: 9998; color: rgba(255, 255, 255, 0.3); font-family: Arial, sans-serif; font-size: 12px; pointer-events: none;">
+    齐老师动画
+</div>
+
+<script>
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+});
+</script>
+</body>
+</html>
