@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta charset="utf-8"/>
+<meta charset="utf-8"/>
+<meta charset="utf-8"/>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, user-scalable=no" name="viewport"/>
+<title>绳波干涉动画 | 质点小球模型 | 红蓝相向传播 + 叠加黑色干涉</title>
+<style>
+        * {
+            box-sizing: border-box;
+            user-select: none;
+        }
+
+        body {
+            background: linear-gradient(145deg, #eef2f7 0%, #d9e0e8 100%);
+            font-family: 'Segoe UI', 'Roboto', 'Noto Sans', system-ui, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .sim-container {
+            background: rgba(255, 255, 255, 0.94);
+            backdrop-filter: blur(2px);
+            border-radius: 2rem;
+            box-shadow: 0 25px 40px -14px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.5);
+            padding: 1.2rem 1.8rem 1.8rem 1.8rem;
+            transition: all 0.2s;
+        }
+
+        canvas {
+            display: block;
+            margin: 0 auto;
+            border-radius: 28px;
+            background: #fefef7;
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.12);
+            cursor: pointer;
+            width: 100%;
+            height: auto;
+        }
+
+        .controls {
+            margin-top: 1.6rem;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1.2rem;
+            justify-content: center;
+            align-items: flex-end;
+        }
+
+        .ctrl-panel {
+            background: #f4f7fc;
+            padding: 0.6rem 1.3rem;
+            border-radius: 2rem;
+            box-shadow: inset 0 1px 2px #ffffffc0, 0 3px 6px rgba(0, 0, 0, 0.05);
+            min-width: 170px;
+        }
+
+        .ctrl-panel label {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            letter-spacing: 0.3px;
+        }
+
+        .red-label { color: #c92a2a; }
+        .blue-label { color: #1e6f9f; }
+        .speed-label { color: #2b5e2b; }
+
+        input[type="range"] {
+            flex: 1;
+            height: 4px;
+            -webkit-appearance: none;
+            background: #cbdde9;
+            border-radius: 10px;
+            outline: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #2c3e66;
+            cursor: pointer;
+            border: 2px solid white;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+        }
+        .red-slider::-webkit-slider-thumb { background: #c92a2a; }
+        .blue-slider::-webkit-slider-thumb { background: #1e6f9f; }
+        .speed-slider::-webkit-slider-thumb { background: #2e7d32; }
+
+        .value-badge {
+            background: #1e2a3a;
+            color: white;
+            padding: 2px 10px;
+            border-radius: 40px;
+            font-size: 0.75rem;
+            font-family: monospace;
+            font-weight: 600;
+            min-width: 52px;
+            text-align: center;
+        }
+
+        .info-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 1rem;
+            padding-top: 0.7rem;
+            border-top: 1px solid #cbd5e1;
+            flex-wrap: wrap;
+            gap: 10px;
+            font-size: 0.73rem;
+        }
+
+        .legend {
+            display: flex;
+            gap: 20px;
+            background: #eef2f6;
+            padding: 5px 18px;
+            border-radius: 40px;
+        }
+        .legend span {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+        }
+        .badge-red { width: 20px; height: 20px; background: #e34234; border-radius: 50%; box-shadow: 0 0 0 1px white; }
+        .badge-blue { width: 20px; height: 20px; background: #3a86ff; border-radius: 50%; }
+        .badge-black { width: 20px; height: 20px; background: #1f2937; border-radius: 50%; }
+        .badge-gray { width: 20px; height: 20px; background: #9ca3af; border-radius: 50%; }
+
+        button {
+            background: #2c3e66;
+            border: none;
+            color: white;
+            padding: 6px 22px;
+            border-radius: 2rem;
+            font-weight: 500;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: 0.1s;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        button:hover {
+            background: #1f2c4b;
+            transform: scale(0.97);
+        }
+        .note {
+            font-size: 0.68rem;
+            text-align: center;
+            margin-top: 0.7rem;
+            opacity: 0.7;
+        }
+        @media (max-width: 740px) {
+            .sim-container { padding: 1rem; }
+            .ctrl-panel { padding: 0.4rem 1rem; min-width: 140px; }
+        }
+    </style>
+</head>
+<body>
+<div id="backButton" onclick="window.location.href='index.html';" style="position: fixed; top: 20px; left: 20px; z-index: 9999; background: rgba(136, 187, 255, 0.2); color: white; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-family: Arial, sans-serif; font-size: 14px; border: 1px solid rgba(136, 187, 255, 0.5); transition: all 0.3s;">
+    ← 返回 (ESC)
+</div>
+<script>
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        window.location.href='index.html';
+    }
+});
+</script>
+
+<div>
+<div class="sim-container">
+<canvas height="480" id="waveCanvas" style="width:100%; height:auto; max-width:1000px; aspect-ratio:1000/480" width="1000"></canvas>
+<div class="controls">
+<div class="ctrl-panel">
+<label class="red-label">
+                    🔴 红色波振幅
+                    <input class="red-slider" id="ampRed" max="1.0" min="0" step="0.005" type="range" value="0.72"/>
+<span class="value-badge" id="redVal">0.72</span>
+</label>
+</div>
+<div class="ctrl-panel">
+<label class="blue-label">
+                    🔵 蓝色波振幅
+                    <input class="blue-slider" id="ampBlue" max="1.0" min="0" step="0.005" type="range" value="0.68"/>
+<span class="value-badge" id="blueVal">0.68</span>
+</label>
+</div>
+<div class="ctrl-panel">
+<label class="speed-label">
+                    ⚡ 波速 (px/s)
+                    <input class="speed-slider" id="waveSpeed" max="580" min="130" step="5" type="range" value="290"/>
+<span class="value-badge" id="speedVal">290</span>
+</label>
+</div>
+<button id="resetBtn">⟳ 重新开始</button>
+</div>
+<div class="info-footer">
+<div class="legend">
+<span><i class="badge-red"></i> 红波主导</span>
+<span><i class="badge-blue"></i> 蓝波主导</span>
+<span><i class="badge-black"></i> 干涉叠加区(黑)</span>
+<span><i class="badge-gray"></i> 静止/未扰动</span>
+</div>
+<div>🌊 两波源同时起振 → 相向传播 → 相遇区红+蓝=黑色质点</div>
+</div>
+<div class="note">
+            ※ 小球代表绳上质点 | 左端红色波源 | 右端蓝色波源 | 叠加区黑色为干涉相长/相消综合效果 | 可任意调节振幅和波速，动画自动循环演示从起振到分离全过程
+        </div>
+</div>
+</div>
+<script>
+    (function(){
+        // ----- 画布与固定参数 -----
+        const canvas = document.getElementById('waveCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        const width = 1000;
+        const height = 480;
+        canvas.width = width;
+        canvas.height = height;
+        
+        // 绳子区域: 左右留白让波源小球明显
+        const leftMargin = 70;
+        const rightMargin = 70;
+        const ropeLen = width - leftMargin - rightMargin;   // 绳子实际长度 (px)
+        const baseY = height / 2 + 8;    // 基线位置 (稍微偏下)
+        
+        // 离散质点数量 (小球表示相邻质点)
+        const particleCount = 92;            // 足够密集，视觉平滑
+        const stepX = ropeLen / (particleCount - 1);
+        
+        // 预存储每个质点的X坐标 (固定)
+        const posX = [];
+        for (let i = 0; i < particleCount; i++) {
+            posX.push(leftMargin + i * stepX);
+        }
+        
+        // 波动参数
+        let waveSpeed = 290;                // 像素/秒 (可调)
+        const wavelength = 170;             // 固定波长(px) 显示美观
+        const k = 2 * Math.PI / wavelength; // 波数
+        
+        // 振幅比例因子 (最大像素偏移)
+        const maxAmpPx = 44;                // 最大偏移44px，视觉明显且不超出边界
+        let ampRed = 0.72;
+        let ampBlue = 0.68;
+        
+        // 模拟时间 (秒) 与动画控制
+        let simTime = 0.0;
+        let lastTimestamp = null;
+        let animFrameId = null;
+        let isAnimating = true;
+        
+        // 边界时间: 波从一端传到另一端所需时间 + 额外0.9秒 (展示相遇后分离再重置)
+        let travelTime = ropeLen / waveSpeed;
+        let maxSimDuration = travelTime + 0.95;
+        
+        // DOM 元素绑定
+        const ampRedSlider = document.getElementById('ampRed');
+        const ampBlueSlider = document.getElementById('ampBlue');
+        const speedSlider = document.getElementById('waveSpeed');
+        const redValSpan = document.getElementById('redVal');
+        const blueValSpan = document.getElementById('blueVal');
+        const speedValSpan = document.getElementById('speedVal');
+        const resetBtn = document.getElementById('resetBtn');
+        
+        // ----- 行波函数 -----
+        // 左波(红色) : 从 x=0 向右传播
+        function getRedDisplacement(x_phys, t, A) {
+            if (t < 0) return 0;
+            const arrival = x_phys / waveSpeed;
+            if (t < arrival) return 0;
+            // 相位: k*(x - v*t)
+            let phase = k * (x_phys - waveSpeed * t);
+            return A * Math.sin(phase);
+        }
+        
+        // 右波(蓝色) : 从 x=ropeLen 向左传播
+        function getBlueDisplacement(x_phys, t, A) {
+            if (t < 0) return 0;
+            const distFromRight = ropeLen - x_phys;
+            const arrival = distFromRight / waveSpeed;
+            if (t < arrival) return 0;
+            let phase = k * (distFromRight - waveSpeed * t);
+            return A * Math.sin(phase);
+        }
+        
+        // 获取总像素偏移 (正值向上，负值向下)
+        function getTotalPixelOffset(x_phys, t) {
+            const yR = getRedDisplacement(x_phys, t, ampRed);
+            const yB = getBlueDisplacement(x_phys, t, ampBlue);
+            const total = yR + yB;
+            return total * maxAmpPx;
+        }
+        
+        // 获取质点颜色 (基于红蓝贡献的绝对值阈值)
+        // 阈值设定: 红蓝位移绝对值 > 0.035 认为显著波动，两者同时显著 → 黑色(干涉)
+        function getParticleColor(x_phys, t) {
+            const yR = getRedDisplacement(x_phys, t, ampRed);
+            const yB = getBlueDisplacement(x_phys, t, ampBlue);
+            const thresh = 0.032;   // 振幅比例阈值，避免背景过早染色，确保干涉区显著
+            
+            const redActive = Math.abs(yR) > thresh;
+            const blueActive = Math.abs(yB) > thresh;
+            
+            if (redActive && blueActive) {
+                return 'black';      // 干涉叠加核心区 → 黑色
+            } else if (redActive) {
+                return 'red';
+            } else if (blueActive) {
+                return 'blue';
+            } else {
+                return 'gray';      // 静止或极微弱振动
+            }
+        }
+        
+        // ----- 绘制整个场景 (连线 + 小球)-----
+        function drawScene() {
+            if (!ctx) return;
+            ctx.clearRect(0, 0, width, height);
+            ctx.save();
+            
+            // 1. 绘制浅色网格 + 基线
+            ctx.beginPath();
+            ctx.strokeStyle = "#e2e8f0";
+            ctx.lineWidth = 0.8;
+            for (let yOff = -45; yOff <= 45; yOff += 45) {
+                let yLine = baseY + yOff;
+                if (yLine > 25 && yLine < height - 25) {
+                    ctx.beginPath();
+                    ctx.moveTo(leftMargin - 8, yLine);
+                    ctx.lineTo(leftMargin + ropeLen + 8, yLine);
+                    ctx.stroke();
+                }
+            }
+            // 基线 (粗线)
+            ctx.beginPath();
+            ctx.moveTo(leftMargin - 12, baseY);
+            ctx.lineTo(leftMargin + ropeLen + 12, baseY);
+            ctx.strokeStyle = "#8ea0b5";
+            ctx.lineWidth = 1.8;
+            ctx.stroke();
+            
+            // 2. 标注波源位置
+            ctx.font = "500 12px 'Segoe UI'";
+            ctx.fillStyle = "#c2413c";
+            ctx.fillText("🔴 红波源 (左端)", leftMargin - 28, baseY - 12);
+            ctx.fillStyle = "#1e6f9f";
+            ctx.fillText("🔵 蓝波源 (右端)", leftMargin + ropeLen + 8, baseY - 12);
+            // 端点装饰小球
+            ctx.beginPath();
+            ctx.fillStyle = "#e34234";
+            ctx.arc(leftMargin, baseY, 7, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.fillStyle = "#3a86ff";
+            ctx.arc(leftMargin + ropeLen, baseY, 7, 0, 2 * Math.PI);
+            ctx.fill();
+            
+            // 3. 预先计算每个质点的偏移量、颜色
+            const particles = [];
+            for (let i = 0; i < particleCount; i++) {
+                const x_px = posX[i];
+                const x_phys = x_px - leftMargin;   // 物理坐标 [0, ropeLen]
+                const offsetPx = getTotalPixelOffset(x_phys, simTime);
+                const yPos = baseY - offsetPx;
+                const colorType = getParticleColor(x_phys, simTime);
+                particles.push({
+                    x: x_px,
+                    y: yPos,
+                    color: colorType
+                });
+            }
+            
+            // 4. 绘制绳子连线 (半透明连接线)
+            ctx.beginPath();
+            ctx.strokeStyle = "#6c7e94";
+            ctx.lineWidth = 2.0;
+            ctx.globalAlpha = 0.55;
+            for (let i = 0; i < particleCount - 1; i++) {
+                ctx.beginPath();
+                ctx.moveTo(particles[i].x, particles[i].y);
+                ctx.lineTo(particles[i+1].x, particles[i+1].y);
+                ctx.stroke();
+            }
+            ctx.globalAlpha = 1.0;
+            
+            // 5. 绘制所有小球 (带轻微高光)
+            for (let p of particles) {
+                let fillColor = "#adb7c4";
+                switch(p.color) {
+                    case 'red': fillColor = "#e34234"; break;
+                    case 'blue': fillColor = "#3a86ff"; break;
+                    case 'black': fillColor = "#1e293b"; break;
+                    case 'gray': fillColor = "#9ca4b3"; break;
+                    default: fillColor = "#9ca4b3";
+                }
+                ctx.beginPath();
+                ctx.shadowBlur = 3;
+                ctx.shadowColor = "rgba(0,0,0,0.2)";
+                ctx.fillStyle = fillColor;
+                ctx.arc(p.x, p.y, 5.2, 0, 2 * Math.PI);
+                ctx.fill();
+                // 高光
+                ctx.beginPath();
+                ctx.fillStyle = "#ffffffc0";
+                ctx.arc(p.x-1.5, p.y-1.5, 1.6, 0, 2*Math.PI);
+                ctx.fill();
+                // 黑色小球边缘金色微光强调干涉
+                if(p.color === 'black') {
+                    ctx.beginPath();
+                    ctx.strokeStyle = "#ffcd7e";
+                    ctx.lineWidth = 1.5;
+                    ctx.arc(p.x, p.y, 5.8, 0, 2*Math.PI);
+                    ctx.stroke();
+                }
+            }
+            ctx.shadowBlur = 0;
+            
+            // 6. 文本信息: 时间、振幅、波速
+            ctx.font = "12px 'JetBrains Mono', monospace";
+            ctx.fillStyle = "#1f3a4b";
+            ctx.fillText(`⏱️ t = ${simTime.toFixed(2)} s`, leftMargin + ropeLen - 110, baseY - 32);
+            ctx.fillStyle = "#c2413c";
+            ctx.fillText(`Aᵣ = ${ampRed.toFixed(3)}`, leftMargin + 12, baseY - 28);
+            ctx.fillStyle = "#1e6f9f";
+            ctx.fillText(`A_b = ${ampBlue.toFixed(3)}`, leftMargin + 12, baseY - 14);
+            ctx.fillStyle = "#2b5e2b";
+            ctx.fillText(`v = ${Math.round(waveSpeed)} px/s`, leftMargin + ropeLen - 110, baseY - 16);
+            
+            // 干涉区域额外文字标识 (在相遇时段)
+            if (simTime > 0.3 && simTime < travelTime + 0.45) {
+                ctx.font = "500 11px 'Segoe UI'";
+                ctx.fillStyle = "#2d3748cc";
+                ctx.fillText("⚡ 干涉相长/相消 → 黑色质点", leftMargin + ropeLen/2 - 115, baseY - 52);
+            }
+            ctx.restore();
+        }
+        
+        // ----- 辅助: 根据波速重新计算最大时长并重置时间 -----
+        function updateDurationsAndReset() {
+            travelTime = ropeLen / waveSpeed;
+            maxSimDuration = travelTime + 0.95;
+            resetSimulation();
+        }
+        
+        function resetSimulation() {
+            simTime = 0.0;
+            lastTimestamp = null;
+            drawScene();
+        }
+        
+        // 波速变化处理
+        function onWaveSpeedChange() {
+            waveSpeed = parseFloat(speedSlider.value);
+            speedValSpan.innerText = Math.round(waveSpeed);
+            updateDurationsAndReset();
+        }
+        
+        // 振幅变化 (实时刷新画面)
+        function onAmplitudeChange() {
+            ampRed = parseFloat(ampRedSlider.value);
+            ampBlue = parseFloat(ampBlueSlider.value);
+            redValSpan.innerText = ampRed.toFixed(3);
+            blueValSpan.innerText = ampBlue.toFixed(3);
+            drawScene();
+        }
+        
+        // 绑定事件
+        ampRedSlider.addEventListener('input', onAmplitudeChange);
+        ampBlueSlider.addEventListener('input', onAmplitudeChange);
+        speedSlider.addEventListener('input', onWaveSpeedChange);
+        resetBtn.addEventListener('click', () => {
+            resetSimulation();
+        });
+        
+        // 初始调用更新显示数值和时长
+        function initValues() {
+            ampRed = parseFloat(ampRedSlider.value);
+            ampBlue = parseFloat(ampBlueSlider.value);
+            waveSpeed = parseFloat(speedSlider.value);
+            redValSpan.innerText = ampRed.toFixed(3);
+            blueValSpan.innerText = ampBlue.toFixed(3);
+            speedValSpan.innerText = Math.round(waveSpeed);
+            travelTime = ropeLen / waveSpeed;
+            maxSimDuration = travelTime + 0.95;
+        }
+        initValues();
+        
+        // ----- 动画循环(基于真实时间增量，自动重置循环)-----
+        let lastFrameTime = null;
+        
+        function animationLoop(nowMs) {
+            if (!isAnimating) return;
+            
+            if (lastTimestamp === null) {
+                lastTimestamp = nowMs;
+                requestAnimationFrame(animationLoop);
+                drawScene();
+                return;
+            }
+            
+            let deltaMs = Math.min(100, nowMs - lastTimestamp);
+            if (deltaMs < 0) deltaMs = 0;
+            let deltaSec = deltaMs / 1000.0;
+            if (deltaSec > 0.035) deltaSec = 0.035; // 限制最大步长
+            
+            simTime += deltaSec;
+            
+            // 自动重置: 超过最大仿真时长则回到0，重新演示 (完美循环)
+            if (simTime >= maxSimDuration) {
+                simTime = 0.0;
+                lastTimestamp = nowMs;   // 避免重置后delta跳变
+                drawScene();
+                requestAnimationFrame(animationLoop);
+                return;
+            }
+            
+            lastTimestamp = nowMs;
+            drawScene();
+            
+            requestAnimationFrame(animationLoop);
+        }
+        
+        // 启动动画之前绑定好最后一次时间戳重置
+        lastTimestamp = null;
+        isAnimating = true;
+        animFrameId = requestAnimationFrame(animationLoop);
+        
+        // 页面关闭时取消动画
+        window.addEventListener('beforeunload', () => {
+            if (animFrameId) cancelAnimationFrame(animFrameId);
+            isAnimating = false;
+        });
+        
+        // 增加滑块拖动时额外实时重绘 (保证振幅滑动时画面即时刷新)
+        // 已在onAmplitudeChange中包含drawScene，完美
+        
+        // 波速滑动时重置会调用resetSimulation，同时drawScene，不需要额外操作
+        
+        // 适应窗口大小如果调整画布css可能会导致坐标偏移，但是canvas尺寸固定无影响
+        // 手动再确保一次初始绘图
+        drawScene();
+    })();
+</script>
+<style>
+.back-btn {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    padding: 10px 20px;
+    background: rgba(0, 150, 200, 0.3);
+    border: 1px solid #00ffff;
+    color: white;
+    font-size: 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    z-index: 9999;
+    transition: 0.3s;
+    backdrop-filter: blur(5px);
+}
+.back-btn:hover {
+    background: rgba(0, 150, 200, 0.6);
+    box-shadow: 0 0 15px #00ffff;
+}
+</style>
+<button class="back-btn" onclick="goBack()">⬅️ 返回</button>
+<script>
+function goBack() {
+    history.back();
+}
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        goBack();
+    }
+});
+</script>
+<div class="watermark">齐老师动画</div>
+<style>
+.watermark {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    font-size: 14px;
+    color: rgba(0, 255, 255, 0.3);
+    z-index: 9998;
+    pointer-events: none;
+    user-select: none;
+}
+</style>
+<script>
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+});
+</script>
+<style>
+.back-btn {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    padding: 10px 20px;
+    background: rgba(0, 150, 200, 0.3);
+    border: 1px solid #00ffff;
+    color: white;
+    font-size: 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    z-index: 9999;
+    transition: 0.3s;
+    backdrop-filter: blur(5px);
+}
+.back-btn:hover {
+    background: rgba(0, 150, 200, 0.6);
+    box-shadow: 0 0 15px #00ffff;
+}
+</style>
+<button class="back-btn" onclick="goBack()">⬅️ 返回</button>
+<script>
+function goBack() {
+    history.back();
+}
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        goBack();
+    }
+});
+</script>
+<div class="watermark">齐老师动画</div>
+<style>
+.watermark {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    font-size: 14px;
+    color: rgba(0, 255, 255, 0.3);
+    z-index: 9998;
+    pointer-events: none;
+    user-select: none;
+}
+</style>
+<script>
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+});
+</script>
+<style>
+.back-btn {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    padding: 10px 20px;
+    background: rgba(0, 150, 200, 0.3);
+    border: 1px solid #00ffff;
+    color: white;
+    font-size: 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    z-index: 9999;
+    transition: 0.3s;
+    backdrop-filter: blur(5px);
+}
+.back-btn:hover {
+    background: rgba(0, 150, 200, 0.6);
+    box-shadow: 0 0 15px #00ffff;
+}
+</style>
+<button class="back-btn" onclick="goBack()">⬅️ 返回</button>
+<script>
+function goBack() {
+    history.back();
+}
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        goBack();
+    }
+});
+</script>
+<div class="watermark">齐老师动画</div>
+<style>
+.watermark {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    font-size: 14px;
+    color: rgba(0, 255, 255, 0.3);
+    z-index: 9998;
+    pointer-events: none;
+    user-select: none;
+}
+</style>
+<script>
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+});
+</script>
+<style>
+.back-btn {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    padding: 10px 20px;
+    background: rgba(0, 150, 200, 0.3);
+    border: 1px solid #00ffff;
+    color: white;
+    font-size: 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    z-index: 9999;
+    transition: 0.3s;
+    backdrop-filter: blur(5px);
+}
+.back-btn:hover {
+    background: rgba(0, 150, 200, 0.6);
+    box-shadow: 0 0 15px #00ffff;
+}
+</style>
+<button class="back-btn" onclick="goBack()">⬅️ 返回</button>
+<script>
+function goBack() {
+    history.back();
+}
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        goBack();
+    }
+});
+</script>
+<div class="watermark">齐老师动画</div>
+<style>
+.watermark {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    font-size: 14px;
+    color: rgba(0, 255, 255, 0.3);
+    z-index: 9998;
+    pointer-events: none;
+    user-select: none;
+}
+</style>
+<script>
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+});
+</script>
+
+<div style="position: fixed; bottom: 10px; right: 10px; z-index: 9998; color: rgba(255, 255, 255, 0.3); font-family: Arial, sans-serif; font-size: 12px; pointer-events: none;">
+    齐老师动画
+</div>
+
+<script>
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+});
+</script>
+</body>
+</html>
