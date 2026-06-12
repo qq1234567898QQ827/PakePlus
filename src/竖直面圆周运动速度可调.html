@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta charset="utf-8"/>
+<meta charset="utf-8"/>
+<meta charset="utf-8"/>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>可调线速度 · 竖直面轻绳圆周运动</title>
+<style>
+        * {
+            margin: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background: linear-gradient(145deg, #1e2b3a 0%, #0f1a24 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+        }
+        .container {
+            background: rgba(18, 28, 40, 0.8);
+            backdrop-filter: blur(8px);
+            border-radius: 2.8rem;
+            padding: 2rem 2rem 2rem 2rem;
+            box-shadow: 0 30px 45px rgba(0, 0, 0, 0.7), inset 0 1px 1px rgba(255, 255, 255, 0.08);
+            border: 1px solid #364d6b;
+            width: fit-content;
+        }
+        canvas {
+            display: block;
+            margin: 0 auto;
+            border-radius: 32px;
+            background: #0b1420;
+            box-shadow: 0 0 0 2px #293847, 0 20px 30px -8px black;
+            cursor: pointer;
+        }
+        .dashboard {
+            margin-top: 1.8rem;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: center;
+            gap: 2rem;
+            color: #e2ecf5;
+        }
+        .readouts {
+            background: #1f2f41;
+            padding: 0.5rem 1.8rem;
+            border-radius: 60px;
+            display: flex;
+            gap: 2.4rem;
+            box-shadow: inset 0 2px 6px #0f1a28, 0 8px 10px #03080e;
+            border: 1px solid #3b506e;
+        }
+        .readout-item {
+            display: flex;
+            align-items: baseline;
+            gap: 0.4rem;
+        }
+        .readout-item .label {
+            color: #8aa2c5;
+            font-size: 0.9rem;
+            letter-spacing: 0.3px;
+        }
+        .readout-item .value {
+            color: #d1e6ff;
+            font-size: 1.4rem;
+            font-weight: 600;
+            min-width: 5rem;
+            text-align: right;
+            font-family: 'JetBrains Mono', 'Fira Code', monospace;
+        }
+        .slider-panel {
+            background: #1b293b;
+            padding: 0.5rem 1.8rem;
+            border-radius: 60px;
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            border: 1px solid #3b5475;
+            box-shadow: inset 0 2px 5px #0f1a2a;
+        }
+        .slider-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #b3cef0;
+            font-weight: 500;
+        }
+        .slider-label span {
+            font-size: 1rem;
+        }
+        input[type=range] {
+            width: 240px;
+            height: 6px;
+            background: #25415c;
+            border-radius: 10px;
+            -webkit-appearance: none;
+            appearance: none;
+            outline: none;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 22px;
+            height: 22px;
+            background: #b3d9ff;
+            border-radius: 50%;
+            cursor: grab;
+            box-shadow: 0 2px 10px #6aa0ff, 0 0 0 2px #1e3349;
+            border: 2px solid white;
+            transition: 0.05s;
+        }
+        input[type=range]::-webkit-slider-thumb:hover {
+            background: #ddf0ff;
+            transform: scale(1.12);
+        }
+        .action-buttons {
+            display: flex;
+            gap: 0.7rem;
+        }
+        .btn {
+            background: #2e405b;
+            border: none;
+            color: white;
+            font-size: 1.3rem;
+            font-weight: 600;
+            width: 48px;
+            height: 48px;
+            border-radius: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 6px 0 #14212e, 0 8px 12px black;
+            transition: all 0.07s ease;
+            border: 1px solid #5e7da3;
+        }
+        .btn:active {
+            transform: translateY(6px);
+            box-shadow: 0 1px 0 #14212e, 0 5px 10px black;
+        }
+        .btn.reset {
+            width: auto;
+            padding: 0 1.6rem;
+            gap: 5px;
+            background: #3b4468;
+        }
+        .footnote {
+            text-align: center;
+            margin-top: 1rem;
+            color: #4e6b8a;
+            font-size: 0.8rem;
+        }
+        .tension-warning {
+            color: #ffbaba;
+            font-weight: 400;
+            margin-left: 5px;
+        }
+    </style>
+</head>
+<body>
+<div id="backButton" onclick="window.location.href='index.html';" style="position: fixed; top: 20px; left: 20px; z-index: 9999; background: rgba(30, 60, 114, 0.8); color: white; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-family: Arial, sans-serif; font-size: 14px; border: 1px solid rgba(100, 150, 255, 0.5); transition: all 0.3s;">
+    ← 返回 (ESC)
+</div>
+<script>
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        window.location.href='index.html';
+    }
+});
+</script>
+
+<div class="container">
+<canvas height="600" id="canvas" width="600"></canvas>
+<div class="dashboard">
+<div class="readouts">
+<div class="readout-item"><span class="label">线速度</span><span class="value" id="speedRead">0.00</span></div>
+<div class="readout-item"><span class="label">拉力</span><span class="value" id="tensionRead">0.00</span></div>
+<div class="readout-item"><span class="label">角度</span><span class="value" id="angleRead">0°</span></div>
+</div>
+<div class="slider-panel">
+<div class="slider-label">
+<span>⏺️ 线速度设定</span>
+</div>
+<input id="speedSlider" max="38" min="0" step="0.1" type="range" value="13.5"/>
+</div>
+<div class="action-buttons">
+<button class="btn" id="pauseBtn" title="暂停/继续">⏸️</button>
+<button class="btn reset" id="resetBtn" title="重置到最低点，使用当前滑块速度">↺ 复位</button>
+</div>
+</div>
+<div class="footnote" id="warningMsg">⚡ 拉力为负表示绳松弛 (实际物体会掉落)    拖动滑块实时改变线速度</div>
+</div>
+<script>
+    (function() {
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        // 固定参数
+        const centerX = 300, centerY = 300;
+        const radius = 200;          // 绳长 (像素)
+        const g = 0.22;               // 重力加速度 (像素/帧²) , 保持与之前一致
+
+        // 状态变量
+        let theta = 0.0;              // 角度 (0 = 最低点, 逆时针增加)
+        let omega = 0.065;            // 角速度 (弧度/帧)
+
+        // 目标线速度 (通过滑块调节) 单位：像素/帧
+        let targetLinearSpeed = 13.5;   // 与滑块默认值对应
+
+        // 时间缩放 (固定为1，因为我们直接控制速度)
+        const TIME_SCALE = 1.0;
+
+        // 暂停标志
+        let paused = false;
+
+        // DOM 元素
+        const speedRead = document.getElementById('speedRead');
+        const tensionRead = document.getElementById('tensionRead');
+        const angleRead = document.getElementById('angleRead');
+        const speedSlider = document.getElementById('speedSlider');
+        const pauseBtn = document.getElementById('pauseBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const warningMsg = document.getElementById('warningMsg');
+
+        // ---------- 工具函数 ----------
+        function formatAngle(rad) {
+            let deg = (rad * 180 / Math.PI) % 360;
+            if (deg < 0) deg += 360;
+            return Math.round(deg);
+        }
+
+        // 根据当前theta和omega计算拉力 (m=1)
+        function computeTension(currentTheta, currentOmega) {
+            const v = Math.abs(currentOmega) * radius;
+            // T = v²/r + g·cos(theta)   (m=1)
+            return (v * v) / radius + g * Math.cos(currentTheta);
+        }
+
+        // 更新UI数值
+        function updateDisplay() {
+            const v = Math.abs(omega) * radius;
+            const tension = computeTension(theta, omega);
+            speedRead.textContent = v.toFixed(2);
+            tensionRead.textContent = tension.toFixed(2);
+            angleRead.textContent = formatAngle(theta) + '°';
+
+            // 根据拉力调整警告文字
+            if (tension < 0) {
+                warningMsg.innerHTML = '⚠️ 绳松弛 (拉力为负) 当前线速度不足以维持圆周运动';
+            } else {
+                warningMsg.innerHTML = '⚡ 拉力为正 · 可拖动滑块实时改变线速度';
+            }
+        }
+
+        // ---------- 核心：调节线速度 (通过修改omega) ----------
+        function setLinearSpeed(newSpeed) {
+            // 限制最低不为负，最大40 (防止数值爆炸)
+            const safeSpeed = Math.min(40, Math.max(0, newSpeed));
+            // 根据当前角度，我们期望保持线速度大小，但方向不变 (保留符号)
+            const sign = omega >= 0 ? 1 : -1;   // 当前运动方向
+            // 新的角速度大小 = 新速度 / 半径
+            const newOmegaMag = safeSpeed / radius;
+            omega = sign * newOmegaMag;
+            // 同时更新滑块显示 (防外部修改)
+            speedSlider.value = safeSpeed.toFixed(1);
+        }
+
+        // 从滑块读取数值并应用
+        function applySliderSpeed() {
+            const val = parseFloat(speedSlider.value);
+            if (!isNaN(val)) {
+                targetLinearSpeed = val;
+                setLinearSpeed(targetLinearSpeed);
+            }
+        }
+
+        // ---------- 物理积分 (只受重力影响，切向加速度) ----------
+        function physicsStep() {
+            if (paused) return;
+
+            // 切向角加速度 α = - (g / r) * sin(theta)
+            const alpha = - (g / radius) * Math.sin(theta);
+
+            // 半隐式欧拉 (先更新omega，再更新theta)
+            omega += alpha * TIME_SCALE;
+            theta += omega * TIME_SCALE;
+
+            // 角度归一化到 [0, 2π) 方便显示
+            const twoPi = 2 * Math.PI;
+            theta = ((theta % twoPi) + twoPi) % twoPi;
+
+            // 重要：滑块调整速度时会覆写omega，但这里保留重力影响。
+            // 为了让“调节线速度”即时生效，我们不在每一步强制等于滑块值，因为滑块值是“期望速度”，
+            // 而我们希望给用户感觉：设定一个速度然后放手看变化。但为了可以动态调节，我们需要在每一步根据滑块值施加“控制”吗？
+            // 更好的交互：滑块直接设定当前瞬间的线速度大小（强制改变omega），而后重力继续改变它。
+            // 这样滑块相当于瞬间注入/减少动能。因此我们不在每一步自动同步，而是只在滑块事件中改变。
+            // 这样滑块调节后，运动自然演化，用户可随时再次调节。
+        }
+
+        // ---------- 绘图 ----------
+        function drawScene() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // 背景辅助线
+            ctx.save();
+            ctx.strokeStyle = "#253c54";
+            ctx.lineWidth = 0.6;
+            for (let i = 0; i <= canvas.width; i += 30) {
+                ctx.beginPath();
+                ctx.moveTo(i, 0);
+                ctx.lineTo(i, canvas.height);
+                ctx.strokeStyle = '#1e3145';
+                ctx.stroke();
+            }
+            for (let i = 0; i <= canvas.height; i += 30) {
+                ctx.beginPath();
+                ctx.moveTo(0, i);
+                ctx.lineTo(canvas.width, i);
+                ctx.stroke();
+            }
+
+            // 轨道 (虚线)
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+            ctx.strokeStyle = "#3f6190";
+            ctx.lineWidth = 2.2;
+            ctx.setLineDash([6, 8]);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // 圆心悬挂点
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, 7, 0, 2 * Math.PI);
+            ctx.fillStyle = "#b7d9ff";
+            ctx.shadowColor = "#aac9ff";
+            ctx.shadowBlur = 14;
+            ctx.fill();
+            ctx.shadowBlur = 0;
+
+            // 小球位置
+            const ballX = centerX + radius * Math.sin(theta);
+            const ballY = centerY + radius * Math.cos(theta);
+
+            // 轻绳
+            ctx.beginPath();
+            ctx.moveTo(centerX, centerY);
+            ctx.lineTo(ballX, ballY);
+            ctx.strokeStyle = "#ece3d2";
+            ctx.lineWidth = 3.5;
+            ctx.shadowColor = "#fff2d0";
+            ctx.shadowBlur = 10;
+            ctx.stroke();
+
+            // 小球及拉力颜色
+            const tension = computeTension(theta, omega);
+            ctx.shadowBlur = 22;
+            ctx.beginPath();
+            ctx.arc(ballX, ballY, 17, 0, 2 * Math.PI);
+            if (tension < 0) {
+                ctx.fillStyle = "#dd6b8b";
+                ctx.shadowColor = "#ff7c9c";
+            } else {
+                // 颜色根据速度大小微调
+                const v = Math.abs(omega) * radius;
+                const hue = 190 + Math.min(20, v * 0.5);
+                ctx.fillStyle = `hsl(${hue}, 80%, 62%)`;
+                ctx.shadowColor = "#7fc9ff";
+            }
+            ctx.fill();
+
+            // 高光
+            ctx.shadowBlur = 6;
+            ctx.beginPath();
+            ctx.arc(ballX-4, ballY-4, 6, 0, 2*Math.PI);
+            ctx.fillStyle = "#ffffffb0";
+            ctx.fill();
+            ctx.shadowBlur = 0;
+
+            // 最低点标记
+            ctx.beginPath();
+            ctx.arc(centerX, centerY + radius, 6, 0, 2*Math.PI);
+            ctx.fillStyle = "#2c4d7a40";
+            ctx.fill();
+            ctx.fillStyle = "#96b2d9";
+            ctx.font = "11px monospace";
+            ctx.fillText("最低点", centerX-36, centerY + radius-15);
+
+            // 额外显示当前线速度/拉力状态
+            ctx.font = "bold 18px 'Segoe UI', 'Fira Code'";
+            ctx.fillStyle = "#e9f3ff";
+            ctx.shadowColor = "#20486d";
+            ctx.shadowBlur = 8;
+            ctx.fillText(`v = ${(Math.abs(omega)*radius).toFixed(1)}`, 40, 70);
+            ctx.shadowBlur = 0;
+        }
+
+        // ---------- 动画循环 ----------
+        function animate() {
+            if (!paused) {
+                physicsStep();
+                // 但注意：滑块调整时不覆盖，但我们可以保证滑块数值与当前速度解耦。
+                // 为了直观显示当前线速度，滑块位置只由用户主动拖动改变。
+            }
+            updateDisplay();
+            drawScene();
+            requestAnimationFrame(animate);
+        }
+
+        // ---------- 事件绑定 ----------
+        // 滑块输入：实时调整线速度
+        speedSlider.addEventListener('input', function(e) {
+            const val = parseFloat(e.target.value);
+            if (!isNaN(val)) {
+                targetLinearSpeed = val;
+                setLinearSpeed(targetLinearSpeed);   // 立即修改omega，保持运动方向
+                updateDisplay(); // 即时刷新显示
+            }
+        });
+
+        // 暂停/继续
+        pauseBtn.addEventListener('click', () => {
+            paused = !paused;
+            pauseBtn.textContent = paused ? '▶️' : '⏸️';
+        });
+
+        // 复位：将小球放在最低点(theta=0)，并根据当前滑块值设定线速度（方向取逆时针为正）
+        resetBtn.addEventListener('click', () => {
+            theta = 0.0;
+            // 从滑块读取目标速度，并设置omega (正方向)
+            const targetSp = parseFloat(speedSlider.value);
+            if (!isNaN(targetSp)) {
+                targetLinearSpeed = targetSp;
+                omega = targetLinearSpeed / radius;  // 取正(逆时针)
+            } else {
+                omega = 13.5 / radius;
+            }
+            // 确保暂停标志可以为false
+            paused = false;
+            pauseBtn.textContent = '⏸️';
+            updateDisplay();
+        });
+
+        // 点击画布切换暂停
+        canvas.addEventListener('click', () => {
+            paused = !paused;
+            pauseBtn.textContent = paused ? '▶️' : '⏸️';
+        });
+
+        // 初始化显示
+        (function init() {
+            // 设置初始角度最低点，并设定omega对应滑块值
+            theta = 0.0;
+            const initSpeed = parseFloat(speedSlider.value) || 13.5;
+            omega = initSpeed / radius;   // 逆时针
+            targetLinearSpeed = initSpeed;
+            updateDisplay();
+        })();
+
+        // 启动动画
+        animate();
+
+        // 禁止右键菜单
+        canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+    })();
+</script>
+<style>
+.back-btn {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    padding: 10px 20px;
+    background: rgba(0, 150, 200, 0.3);
+    border: 1px solid #00ffff;
+    color: white;
+    font-size: 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    z-index: 9999;
+    transition: 0.3s;
+    backdrop-filter: blur(5px);
+}
+.back-btn:hover {
+    background: rgba(0, 150, 200, 0.6);
+    box-shadow: 0 0 15px #00ffff;
+}
+</style>
+<button class="back-btn" onclick="goBack()">⬅️ 返回</button>
+<script>
+function goBack() {
+    history.back();
+}
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        goBack();
+    }
+});
+</script>
+<div class="watermark">齐老师动画</div>
+<style>
+.watermark {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    font-size: 14px;
+    color: rgba(0, 255, 255, 0.3);
+    z-index: 9998;
+    pointer-events: none;
+    user-select: none;
+}
+</style>
+<script>
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+});
+</script>
+<style>
+.back-btn {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    padding: 10px 20px;
+    background: rgba(0, 150, 200, 0.3);
+    border: 1px solid #00ffff;
+    color: white;
+    font-size: 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    z-index: 9999;
+    transition: 0.3s;
+    backdrop-filter: blur(5px);
+}
+.back-btn:hover {
+    background: rgba(0, 150, 200, 0.6);
+    box-shadow: 0 0 15px #00ffff;
+}
+</style>
+<button class="back-btn" onclick="goBack()">⬅️ 返回</button>
+<script>
+function goBack() {
+    history.back();
+}
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        goBack();
+    }
+});
+</script>
+<div class="watermark">齐老师动画</div>
+<style>
+.watermark {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    font-size: 14px;
+    color: rgba(0, 255, 255, 0.3);
+    z-index: 9998;
+    pointer-events: none;
+    user-select: none;
+}
+</style>
+<script>
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+});
+</script>
+<style>
+.back-btn {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    padding: 10px 20px;
+    background: rgba(0, 150, 200, 0.3);
+    border: 1px solid #00ffff;
+    color: white;
+    font-size: 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    z-index: 9999;
+    transition: 0.3s;
+    backdrop-filter: blur(5px);
+}
+.back-btn:hover {
+    background: rgba(0, 150, 200, 0.6);
+    box-shadow: 0 0 15px #00ffff;
+}
+</style>
+<button class="back-btn" onclick="goBack()">⬅️ 返回</button>
+<script>
+function goBack() {
+    history.back();
+}
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        goBack();
+    }
+});
+</script>
+<div class="watermark">齐老师动画</div>
+<style>
+.watermark {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    font-size: 14px;
+    color: rgba(0, 255, 255, 0.3);
+    z-index: 9998;
+    pointer-events: none;
+    user-select: none;
+}
+</style>
+<script>
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+});
+</script>
+<style>
+.back-btn {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    padding: 10px 20px;
+    background: rgba(0, 150, 200, 0.3);
+    border: 1px solid #00ffff;
+    color: white;
+    font-size: 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    z-index: 9999;
+    transition: 0.3s;
+    backdrop-filter: blur(5px);
+}
+.back-btn:hover {
+    background: rgba(0, 150, 200, 0.6);
+    box-shadow: 0 0 15px #00ffff;
+}
+</style>
+<button class="back-btn" onclick="goBack()">⬅️ 返回</button>
+<script>
+function goBack() {
+    history.back();
+}
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        goBack();
+    }
+});
+</script>
+<div class="watermark">齐老师动画</div>
+<style>
+.watermark {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    font-size: 14px;
+    color: rgba(0, 255, 255, 0.3);
+    z-index: 9998;
+    pointer-events: none;
+    user-select: none;
+}
+</style>
+<script>
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+});
+</script>
+
+<div style="position: fixed; bottom: 10px; right: 10px; z-index: 9998; color: rgba(255, 255, 255, 0.3); font-family: Arial, sans-serif; font-size: 12px; pointer-events: none;">
+    齐老师动画
+</div>
+
+<script>
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+});
+</script>
+</body>
+</html>
