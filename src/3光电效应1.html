@@ -1,0 +1,694 @@
+
+<!DOCTYPE html>
+
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta charset="utf-8"/>
+<meta charset="utf-8"/>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>光电效应实验演示</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+        body {
+            font-family: 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+        }
+        .color-btn {
+            width: 50px;
+            height: 40px;
+            border: none;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            border-radius: 4px;
+        }
+        .color-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        .color-btn.active {
+            box-shadow: 0 0 0 3px #333;
+        }
+        .intensity-btn {
+            padding: 8px 20px;
+            border: 2px solid #ddd;
+            background: white;
+            cursor: pointer;
+            transition: all 0.2s;
+            border-radius: 8px;
+        }
+        .intensity-btn:hover {
+            border-color: #666;
+        }
+        .intensity-btn.active {
+            background: #4CAF50;
+            color: white;
+            border-color: #4CAF50;
+        }
+        .control-btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.2s;
+            width: 100px;
+            margin: 8px 0;
+        }
+        .pause-btn {
+            background: #2196F3;
+            color: white;
+        }
+        .pause-btn:hover {
+            background: #1976D2;
+        }
+        .reset-btn {
+            background: #f44336;
+            color: white;
+        }
+        .reset-btn:hover {
+            background: #d32f2f;
+        }
+        canvas {
+            border: 1px solid #ddd;
+            background: white;
+        }
+    </style>
+</head>
+<body>
+<div id="backButton" onclick="window.location.href='index.html';" style="position: fixed; top: 20px; left: 20px; z-index: 9999; background: rgba(136, 187, 255, 0.2); color: white; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-family: Arial, sans-serif; font-size: 14px; border: 1px solid rgba(136, 187, 255, 0.5); transition: all 0.3s;">
+    ← 返回 (ESC)
+</div>
+<script>
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        window.location.href='index.html';
+    }
+});
+</script>
+
+<div class="container mx-auto px-4 py-6">
+<h1 class="text-3xl font-bold text-center text-gray-800 mb-6">光电效应实验演示</h1>
+<div class="flex justify-center items-center gap-4">
+<div class="bg-white rounded-xl shadow-lg p-4">
+<canvas height="450" id="experimentCanvas" width="650"></canvas>
+</div>
+<div class="flex flex-col">
+<button class="control-btn pause-btn" id="pauseBtn">暂停</button>
+<button class="control-btn reset-btn" id="resetBtn">重置</button>
+</div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-4 gap-4 mt-6">
+<div class="bg-white rounded-xl shadow-lg p-4">
+<h3 class="font-bold text-gray-700 mb-3">光的频率（颜色）</h3>
+<div class="flex gap-2 justify-center">
+<button class="color-btn" id="redBtn" style="background: #ff2222;" title="红光 650nm"></button>
+<button class="color-btn" id="orangeBtn" style="background: #ff9922;" title="橙光 600nm"></button>
+<button class="color-btn" id="yellowBtn" style="background: #ffff22;" title="黄光 570nm"></button>
+<button class="color-btn" id="greenBtn" style="background: #22dd22;" title="绿光 520nm"></button>
+<button class="color-btn" id="cyanBtn" style="background: #22ffff;" title="青光 480nm"></button>
+<button class="color-btn" id="blueBtn" style="background: #2222ff;" title="蓝光 450nm"></button>
+<button class="color-btn" id="purpleBtn" style="background: #992299;" title="紫光 400nm"></button>
+</div>
+<p class="text-sm text-gray-600 mt-2 text-center" id="wavelengthDisplay">当前波长: 292 nm (紫光)</p>
+</div>
+<div class="bg-white rounded-xl shadow-lg p-4">
+<h3 class="font-bold text-gray-700 mb-3">光的强度</h3>
+<div class="flex gap-2 justify-center">
+<button class="intensity-btn" id="intensity1Btn">强度1</button>
+<button class="intensity-btn" id="intensity2Btn">强度2</button>
+<button class="intensity-btn" id="intensity3Btn">强度3</button>
+</div>
+</div>
+<div class="bg-white rounded-xl shadow-lg p-4">
+<h3 class="font-bold text-gray-700 mb-3">电压调节</h3>
+<input class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer" id="voltageSlider" max="2" min="-2" step="0.01" type="range" value="0"/>
+<div class="flex justify-between text-sm text-gray-600 mt-1">
+<span>-2V (反向)</span>
+<span class="font-bold" id="voltageValue">0.00 V</span>
+<span>+2V (正向)</span>
+</div>
+</div>
+<div class="bg-white rounded-xl shadow-lg p-4">
+<h3 class="font-bold text-gray-700 mb-3">实时统计</h3>
+<div class="text-center text-sm">
+<div class="text-gray-600">从K板出来: <span class="font-bold" id="fromKCount">0</span> 个</div>
+<div class="text-gray-600">打到A板: <span class="font-bold" id="toACount">0</span> 个</div>
+<div class="text-gray-600 mt-2">当前电压: <span class="font-bold" id="currentVoltage">0.00</span> V</div>
+<div class="text-gray-600">实时相对光电流: <span class="font-bold" id="relativeCurrent">0.00</span></div>
+</div>
+</div>
+</div>
+</div>
+<script>
+        const canvas = document.getElementById('experimentCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        let lightColor = 'purple';
+        let lightIntensity = 2;
+        let voltage = 0;
+        let showParticles = true;
+        let photoelectricEffect = true;
+        let isPaused = false;
+        
+        let totalFromK = 0;
+        let totalToA = 0;
+        
+        const windowSize = 60;
+        let fromKWindow = [];
+        let toAWindow = [];
+        
+        const wavelengths = {
+            red: 650,
+            orange: 600,
+            yellow: 570,
+            green: 520,
+            cyan: 480,
+            blue: 450,
+            purple: 292
+        };
+        
+        const colors = {
+            red: '#ff2222',
+            orange: '#ff9922',
+            yellow: '#ffff22',
+            green: '#22dd22',
+            cyan: '#22ffff',
+            blue: '#2222ff',
+            purple: '#992299'
+        };
+        
+        const colorNames = {
+            red: '红光',
+            orange: '橙光',
+            yellow: '黄光',
+            green: '绿光',
+            cyan: '青光',
+            blue: '蓝光',
+            purple: '紫光'
+        };
+        
+        const workFunction = 2.25;
+        const hc = 1240;
+        
+        let electrons = [];
+        let photons = [];
+        
+        const cathodeX = 170;
+        const anodeX = 430;
+        const plateHeight = 180;
+        const plateY = 110;
+        const kCenterX = cathodeX + 15;
+        const photonStartX = 380;
+        const photonStartY = -10;
+        const sourceY = -10;
+        const sourceX = 395;
+        const photonAngle = Math.atan2((plateY + plateHeight/2) - photonStartY, kCenterX - photonStartX);
+        
+        const voltageSlider = document.getElementById('voltageSlider');
+        const voltageValue = document.getElementById('voltageValue');
+        const wavelengthDisplay = document.getElementById('wavelengthDisplay');
+        const fromKCountDisplay = document.getElementById('fromKCount');
+        const toACountDisplay = document.getElementById('toACount');
+        const currentVoltageDisplay = document.getElementById('currentVoltage');
+        const relativeCurrentDisplay = document.getElementById('relativeCurrent');
+        const pauseBtn = document.getElementById('pauseBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        
+        function updateCountDisplay() {
+            fromKCountDisplay.textContent = totalFromK;
+            toACountDisplay.textContent = totalToA;
+        }
+        
+        function updateWindow(frameFromK, frameToA) {
+            fromKWindow.push(frameFromK);
+            toAWindow.push(frameToA);
+            
+            if (fromKWindow.length > windowSize) {
+                fromKWindow.shift();
+            }
+            if (toAWindow.length > windowSize) {
+                toAWindow.shift();
+            }
+        }
+        
+        function updateCurrentAndVoltageDisplay() {
+            currentVoltageDisplay.textContent = voltage.toFixed(2);
+            
+            const sumFromK = fromKWindow.reduce((a, b) => a + b, 0);
+            const sumToA = toAWindow.reduce((a, b) => a + b, 0);
+            
+            let relative = 0;
+            if (sumFromK > 0) {
+                relative = sumToA / sumFromK;
+            }
+            relativeCurrentDisplay.textContent = relative.toFixed(2);
+        }
+        
+        voltageSlider.addEventListener('input', (e) => {
+            voltage = parseFloat(e.target.value);
+            voltageValue.textContent = voltage.toFixed(2) + ' V';
+            updateCurrentAndVoltageDisplay();
+        });
+        
+        pauseBtn.addEventListener('click', () => {
+            isPaused = !isPaused;
+            pauseBtn.textContent = isPaused ? '继续' : '暂停';
+        });
+        
+        resetBtn.addEventListener('click', () => {
+            electrons = [];
+            photons = [];
+            totalFromK = 0;
+            totalToA = 0;
+            fromKWindow = [];
+            toAWindow = [];
+            voltage = 0;
+            voltageSlider.value = 0;
+            voltageValue.textContent = '0.00 V';
+            isPaused = false;
+            pauseBtn.textContent = '暂停';
+            updateCountDisplay();
+            updateCurrentAndVoltageDisplay();
+            setLightColor('purple');
+            setIntensity(2);
+        });
+        
+        document.getElementById('redBtn').addEventListener('click', () => setLightColor('red'));
+        document.getElementById('orangeBtn').addEventListener('click', () => setLightColor('orange'));
+        document.getElementById('yellowBtn').addEventListener('click', () => setLightColor('yellow'));
+        document.getElementById('greenBtn').addEventListener('click', () => setLightColor('green'));
+        document.getElementById('cyanBtn').addEventListener('click', () => setLightColor('cyan'));
+        document.getElementById('blueBtn').addEventListener('click', () => setLightColor('blue'));
+        document.getElementById('purpleBtn').addEventListener('click', () => setLightColor('purple'));
+        
+        document.getElementById('intensity1Btn').addEventListener('click', () => setIntensity(1));
+        document.getElementById('intensity2Btn').addEventListener('click', () => setIntensity(2));
+        document.getElementById('intensity3Btn').addEventListener('click', () => setIntensity(3));
+        
+        function setLightColor(color) {
+            lightColor = color;
+            document.querySelectorAll('.color-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(color + 'Btn').classList.add('active');
+            
+            const wavelength = wavelengths[color];
+            wavelengthDisplay.textContent = `当前波长: ${wavelength} nm (${colorNames[color]})`;
+            
+            const photonEnergy = hc / wavelength;
+            photoelectricEffect = photonEnergy > workFunction;
+        }
+        
+        function setIntensity(intensity) {
+            lightIntensity = intensity;
+            document.querySelectorAll('.intensity-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById('intensity' + intensity + 'Btn').classList.add('active');
+        }
+        
+        function generatePhotons() {
+            if (!showParticles || isPaused) return;
+            const photonRate = lightIntensity * 0.16;
+            if (Math.random() < photonRate) {
+                photons.push({
+                    x: photonStartX + Math.random() * 10,
+                    y: photonStartY + Math.random() * 10,
+                    speed: 3 + Math.random(),
+                    angle: photonAngle,
+                    size: 4 + Math.random() * 2
+                });
+            }
+        }
+        
+        let frameFromK = 0;
+        let frameToA = 0;
+        
+        function generateElectrons() {
+            if (!photoelectricEffect || !showParticles || isPaused) return;
+            const electronRate = lightIntensity * 0.12;
+            if (Math.random() < electronRate) {
+                const photonEnergy = hc / wavelengths[lightColor];
+                const maxKE = photonEnergy - workFunction;
+                const maxSpeed = Math.sqrt(maxKE * 2 * 1.6e-19 / 9.1e-31) / 1e6;
+                
+                let randomAngle;
+                if (Math.random() < 0.5) {
+                    randomAngle = 0;
+                } else {
+                    randomAngle = (Math.random() - 0.5) * Math.PI / 2;
+                }
+                
+                // 出射范围，只在板中间的3分之1区域
+                const minY = plateY + plateHeight / 3;
+                const maxY = plateY + plateHeight * 2 / 3;
+                const randomY = minY + Math.random() * (maxY - minY);
+                
+                let randomSpeed = maxSpeed * (0.2 + Math.random() * 0.8);
+                
+                if (lightColor === 'blue') {
+                    randomSpeed *= 2;
+                } else if (lightColor === 'purple') {
+                    randomSpeed *= 3;
+                }
+                
+                electrons.push({
+                    x: kCenterX,
+                    y: randomY,
+                    vx: Math.cos(randomAngle) * randomSpeed,
+                    vy: Math.sin(randomAngle) * randomSpeed,
+                    size: 3
+                });
+                
+                totalFromK++;
+                frameFromK++;
+                updateCountDisplay();
+            }
+        }
+        
+        function updatePhotons() {
+            if (isPaused) return;
+            for (let i = photons.length - 1; i >= 0; i--) {
+                const photon = photons[i];
+                photon.x += Math.cos(photon.angle) * photon.speed;
+                photon.y += Math.sin(photon.angle) * photon.speed;
+                if (photon.x < kCenterX) {
+                    photons.splice(i, 1);
+                }
+            }
+        }
+        
+        function updateElectrons() {
+            if (isPaused) return;
+            const distance = (anodeX - cathodeX) / 100;
+            const electricField = voltage / distance;
+            
+            frameToA = 0;
+            
+            for (let i = electrons.length - 1; i >= 0; i--) {
+                const electron = electrons[i];
+                const ax = electricField * 0.15;
+                electron.vx += ax;
+                
+                electron.x += electron.vx;
+                electron.y += electron.vy;
+                
+                if (electron.x <= cathodeX) {
+                    electrons.splice(i, 1);
+                } else if (electron.x >= anodeX + 15) {
+                    totalToA++;
+                    frameToA++;
+                    updateCountDisplay();
+                    electrons.splice(i, 1);
+                }
+            }
+        }
+        
+        function drawPlateCharges() {
+            const chargeCount = Math.min(Math.floor(Math.abs(voltage) * 3), 10);
+            if (chargeCount > 0) {
+                ctx.font = 'bold 14px Arial';
+                for (let i = 0; i < chargeCount; i++) {
+                    const offset = Math.floor((i + 1) / 2);
+                    let y = i % 2 === 0 ? (plateY + plateHeight/2) - offset * 16 : (plateY + plateHeight/2) + offset * 16;
+                    
+                    if (voltage > 0) {
+                        ctx.fillStyle = '#0066cc';
+                        ctx.fillText('-', cathodeX + 2, y);
+                        ctx.fillStyle = '#cc0000';
+                        ctx.fillText('+', anodeX + 2, y);
+                    } else if (voltage < 0) {
+                        ctx.fillStyle = '#cc0000';
+                        ctx.fillText('+', cathodeX + 2, y);
+                        ctx.fillStyle = '#0066cc';
+                        ctx.fillText('-', anodeX + 2, y);
+                    }
+                }
+            }
+        }
+        
+        function drawApparatus() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            ctx.fillStyle = 'rgba(200, 200, 255, 0.4)';
+            ctx.strokeStyle = '#888';
+            ctx.beginPath();
+            ctx.ellipse(cathodeX + 5, plateY + plateHeight/2, 5, 70, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+            
+            ctx.fillStyle = '#ffd700';
+            ctx.fillRect(cathodeX, plateY, 15, plateHeight);
+            ctx.strokeRect(cathodeX, plateY, 15, plateHeight);
+            
+            ctx.fillStyle = '#ffd700';
+            ctx.fillRect(anodeX, plateY, 15, plateHeight);
+            ctx.strokeRect(anodeX, plateY, 15, plateHeight);
+            
+            drawPlateCharges();
+            
+            ctx.fillStyle = '#333';
+            ctx.font = 'bold 32px Arial';
+            ctx.fillText('K', cathodeX - 40, 90);
+            ctx.fillText('A', anodeX + 20, 90);
+            
+            ctx.fillStyle = '#888';
+            ctx.save();
+            ctx.translate(sourceX, sourceY);
+            ctx.rotate(photonAngle);
+            ctx.fillRect(-10, -15, 60, 30);
+            ctx.strokeRect(-10, -15, 60, 30);
+            ctx.restore();
+            
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(cathodeX, plateY + plateHeight);
+            ctx.lineTo(cathodeX, 380);
+            ctx.lineTo((cathodeX + anodeX) / 2 - 35, 380);
+            ctx.stroke();
+            
+            ctx.beginPath();
+            ctx.moveTo(anodeX + 15, plateY + plateHeight);
+            ctx.lineTo(anodeX + 15, 380);
+            ctx.lineTo((cathodeX + anodeX) / 2 + 35, 380);
+            ctx.stroke();
+            
+            ctx.fillStyle = '#fff';
+            ctx.beginPath();
+            ctx.arc((cathodeX + anodeX) / 2, 380, 35, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+            ctx.fillStyle = '#333';
+            ctx.font = 'bold 28px Arial';
+            ctx.fillText('μA', (cathodeX + anodeX) / 2 - 20, 390);
+            
+            if (showParticles) {
+                photons.forEach(photon => {
+                    ctx.fillStyle = colors[lightColor];
+                    ctx.shadowColor = colors[lightColor];
+                    ctx.shadowBlur = 10;
+                    ctx.beginPath();
+                    ctx.arc(photon.x, photon.y, photon.size, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.shadowBlur = 0;
+                });
+                
+                electrons.forEach(electron => {
+                    ctx.fillStyle = '#333';
+                    ctx.shadowColor = '#666';
+                    ctx.shadowBlur = 5;
+                    ctx.beginPath();
+                    ctx.arc(electron.x, electron.y, electron.size, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.shadowBlur = 0;
+                });
+            }
+        }
+        
+        function animate() {
+            frameFromK = 0;
+            
+            generatePhotons();
+            generateElectrons();
+            updatePhotons();
+            updateElectrons();
+            
+            if (!isPaused) {
+                updateWindow(frameFromK, frameToA);
+            }
+            
+            drawApparatus();
+            updateCurrentAndVoltageDisplay();
+            requestAnimationFrame(animate);
+        }
+        
+        setLightColor('purple');
+        setIntensity(2);
+        animate();
+    </script>
+<style>
+.back-btn {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    padding: 10px 20px;
+    background: rgba(0, 150, 200, 0.3);
+    border: 1px solid #00ffff;
+    color: white;
+    font-size: 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    z-index: 9999;
+    transition: 0.3s;
+    backdrop-filter: blur(5px);
+}
+.back-btn:hover {
+    background: rgba(0, 150, 200, 0.6);
+    box-shadow: 0 0 15px #00ffff;
+}
+</style>
+<button class="back-btn" onclick="goBack()">⬅️ 返回</button>
+<script>
+function goBack() {
+    history.back();
+}
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        goBack();
+    }
+});
+</script>
+<div class="watermark">齐老师动画</div>
+<style>
+.watermark {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    font-size: 14px;
+    color: rgba(0, 255, 255, 0.3);
+    z-index: 9998;
+    pointer-events: none;
+    user-select: none;
+}
+</style>
+<script>
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+});
+</script>
+<style>
+.back-btn {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    padding: 10px 20px;
+    background: rgba(0, 150, 200, 0.3);
+    border: 1px solid #00ffff;
+    color: white;
+    font-size: 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    z-index: 9999;
+    transition: 0.3s;
+    backdrop-filter: blur(5px);
+}
+.back-btn:hover {
+    background: rgba(0, 150, 200, 0.6);
+    box-shadow: 0 0 15px #00ffff;
+}
+</style>
+<button class="back-btn" onclick="goBack()">⬅️ 返回</button>
+<script>
+function goBack() {
+    history.back();
+}
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        goBack();
+    }
+});
+</script>
+<div class="watermark">齐老师动画</div>
+<style>
+.watermark {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    font-size: 14px;
+    color: rgba(0, 255, 255, 0.3);
+    z-index: 9998;
+    pointer-events: none;
+    user-select: none;
+}
+</style>
+<script>
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+});
+</script>
+<style>
+.back-btn {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    padding: 10px 20px;
+    background: rgba(0, 150, 200, 0.3);
+    border: 1px solid #00ffff;
+    color: white;
+    font-size: 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    z-index: 9999;
+    transition: 0.3s;
+    backdrop-filter: blur(5px);
+}
+.back-btn:hover {
+    background: rgba(0, 150, 200, 0.6);
+    box-shadow: 0 0 15px #00ffff;
+}
+</style>
+<button class="back-btn" onclick="goBack()">⬅️ 返回</button>
+<script>
+function goBack() {
+    history.back();
+}
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        goBack();
+    }
+});
+</script>
+<div class="watermark">齐老师动画</div>
+<style>
+.watermark {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    font-size: 14px;
+    color: rgba(0, 255, 255, 0.3);
+    z-index: 9998;
+    pointer-events: none;
+    user-select: none;
+}
+</style>
+<script>
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+});
+</script>
+
+<div style="position: fixed; bottom: 10px; right: 10px; z-index: 9998; color: rgba(255, 255, 255, 0.3); font-family: Arial, sans-serif; font-size: 12px; pointer-events: none;">
+    齐老师动画
+</div>
+
+<script>
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+});
+</script>
+</body>
+</html>
