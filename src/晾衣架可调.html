@@ -1,0 +1,1084 @@
+<!DOCTYPE html>
+
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta charset="utf-8"/>
+<meta charset="utf-8"/>
+<meta charset="utf-8"/>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, user-scalable=yes" name="viewport"/>
+<title>高中物理 · 晾衣架动滑轮模型 | 受力分析</title>
+<style>
+    :root {
+      --bg: #070c1a;
+      --surface: #0f1829;
+      --border: #1e3250;
+      --accent: #00e0ff;
+      --gold: #ffc850;
+      --danger: #ff3d5c;
+      --text: #cbd5e6;
+      --label: #8b9bb5;
+      --glow: 0 0 18px rgba(0, 224, 255, 0.45);
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px;
+      background-image: radial-gradient(ellipse at 30% 25%, rgba(0,160,240,0.08) 0%, transparent 60%),
+                        radial-gradient(ellipse at 70% 65%, rgba(255,100,60,0.06) 0%, transparent 60%);
+    }
+    .container {
+      display: flex;
+      gap: 24px;
+      max-width: 1150px;
+      width: 100%;
+      align-items: flex-start;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .canvas-panel {
+      position: relative;
+      background: var(--surface);
+      border-radius: 24px;
+      border: 1px solid var(--border);
+      box-shadow: 0 20px 45px rgba(0,0,0,0.6), 0 0 40px rgba(0,180,240,0.15);
+      overflow: hidden;
+    }
+    canvas {
+      display: block;
+      border-radius: 24px;
+    }
+    .control-panel {
+      background: var(--surface);
+      border-radius: 24px;
+      border: 1px solid var(--border);
+      padding: 22px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      min-width: 280px;
+      max-width: 340px;
+      flex: 1;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+      backdrop-filter: blur(4px);
+    }
+    .panel-title {
+      color: var(--accent);
+      font-size: 1.3rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-align: center;
+      text-shadow: 0 0 12px rgba(0,224,255,0.6);
+    }
+    .control-group {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+    .control-group label {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: var(--text);
+      font-size: 0.85rem;
+      font-weight: 500;
+      letter-spacing: 0.02em;
+    }
+    .control-group .val {
+      color: var(--accent);
+      font-weight: 700;
+      min-width: 54px;
+      text-align: right;
+      text-shadow: 0 0 8px rgba(0,224,255,0.5);
+    }
+    input[type=range] {
+      -webkit-appearance: none;
+      width: 100%;
+      height: 6px;
+      border-radius: 4px;
+      background: linear-gradient(90deg, #13243a, #1f3b58);
+      outline: none;
+      cursor: pointer;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 30%, #fff, #00c0e0);
+      border: 2px solid #00e0ff;
+      box-shadow: 0 0 20px rgba(0,224,255,0.7);
+      cursor: grab;
+      transition: 0.2s;
+    }
+    input[type=range]::-webkit-slider-thumb:active { transform: scale(1.1); cursor: grabbing; }
+    .info-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px 14px;
+      background: #0a1422;
+      border-radius: 14px;
+      padding: 14px;
+      border: 1px solid var(--border);
+    }
+    .info-item {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .info-label {
+      color: var(--label);
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .info-value {
+      color: #eaf0fa;
+      font-weight: 600;
+      font-size: 1rem;
+    }
+    .tension { color: var(--gold); text-shadow: 0 0 8px rgba(255,200,80,0.5); }
+    .angle { color: #5ef0c8; text-shadow: 0 0 8px rgba(94,240,200,0.4); }
+    .gravity { color: var(--danger); text-shadow: 0 0 8px rgba(255,61,92,0.5); }
+    .btn-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: center;
+    }
+    .btn {
+      background: #0f1b2d;
+      border: 1px solid var(--border);
+      color: #cbd5e6;
+      padding: 8px 14px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: all 0.25s;
+      white-space: nowrap;
+      letter-spacing: 0.03em;
+    }
+    .btn:hover {
+      border-color: var(--accent);
+      box-shadow: 0 0 15px rgba(0,224,255,0.3);
+      color: #fff;
+    }
+    .btn.active {
+      background: rgba(0,224,255,0.12);
+      border-color: var(--accent);
+      color: var(--accent);
+      box-shadow: 0 0 14px rgba(0,224,255,0.4);
+    }
+    .legend {
+      display: flex;
+      gap: 12px;
+      font-size: 0.7rem;
+      color: #8899bb;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .legend span::before {
+      content: '●';
+      margin-right: 4px;
+      font-size: 1em;
+    }
+    @media (max-width: 850px) {
+      .container { flex-direction: column; align-items: center; }
+      .control-panel { max-width: 100%; }
+    }
+  </style>
+</head>
+<body>
+<div id="backButton" onclick="window.location.href='index.html';" style="position: fixed; top: 20px; left: 20px; z-index: 9999; background: rgba(30, 60, 114, 0.8); color: white; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-family: Arial, sans-serif; font-size: 14px; border: 1px solid rgba(100, 150, 255, 0.5); transition: all 0.3s;">
+    ← 返回 (ESC)
+</div>
+<script>
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        window.location.href='index.html';
+    }
+});
+</script>
+
+<div class="container">
+<div class="canvas-panel">
+<canvas height="600" id="mainCanvas" width="750"></canvas>
+</div>
+<div class="control-panel">
+<div class="panel-title">⚡ 动滑轮晾衣架</div>
+<div style="text-align:center;font-size:0.75rem;color:#6b80a0;">PULLEY CLOTHESLINE MODEL</div>
+<div class="control-group">
+<label>🔴 重物重力 <span class="val" id="valMg">50 N</span></label>
+<input id="sliderMg" max="120" min="10" step="1" type="range" value="50"/>
+</div>
+<div class="control-group">
+<label>📏 杆间距 <span class="val" id="valD">300 px</span></label>
+<input id="sliderD" max="480" min="150" step="1" type="range" value="300"/>
+</div>
+<div class="control-group">
+<label>📐 绳总长 <span class="val" id="valL">480 px</span></label>
+<input id="sliderL" max="680" min="200" step="1" type="range" value="480"/>
+</div>
+<div class="control-group">
+<label>⬆ 左挂点高度 <span class="val" id="valY1">100 px</span></label>
+<input id="sliderY1" max="360" min="20" step="1" type="range" value="100"/>
+</div>
+<div class="control-group">
+<label>⬆ 右挂点高度 <span class="val" id="valY2">100 px</span></label>
+<input id="sliderY2" max="360" min="20" step="1" type="range" value="100"/>
+</div>
+<div class="info-grid" id="infoGrid">
+<div class="info-item"><span class="info-label">张力 T</span><span class="info-value tension" id="infoT">--</span></div>
+<div class="info-item"><span class="info-label">夹角 θ (与竖直)</span><span class="info-value angle" id="infoAngle">--</span></div>
+<div class="info-item"><span class="info-label">重力 mg</span><span class="info-value gravity" id="infoG">50 N</span></div>
+<div class="info-item"><span class="info-label">sinθ = d/L</span><span class="info-value" id="infoSin">--</span></div>
+</div>
+<div class="legend">
+<span style="color:#00e0ff;">张力矢量</span>
+<span style="color:#ff3d5c;">重力矢量</span>
+<span style="color:#ffc850;">分量虚线</span>
+</div>
+<div class="btn-row">
+<button class="btn active" id="btnToggleForces" onclick="toggleForces()">📊 隐藏受力分析</button>
+<button class="btn" onclick="resetParams()">🔄 重置</button>
+<button class="btn" onclick="setSymmetry()">🎯 对称挂点</button>
+</div>
+<div style="font-size:0.68rem;color:#5a6e8c;text-align:center;margin-top:4px;">
+      💡 可拖拽：挂点（圆圈）、滑轮（中心）、右杆（移动间距）
+    </div>
+</div>
+</div>
+<script>
+  (function() {
+    // ---------- DOM ----------
+    const canvas = document.getElementById('mainCanvas');
+    const ctx = canvas.getContext('2d');
+    const width = canvas.width, height = canvas.height;
+
+    // 滑块
+    const sliderMg = document.getElementById('sliderMg');
+    const sliderD = document.getElementById('sliderD');
+    const sliderL = document.getElementById('sliderL');
+    const sliderY1 = document.getElementById('sliderY1');
+    const sliderY2 = document.getElementById('sliderY2');
+    const valMg = document.getElementById('valMg');
+    const valD = document.getElementById('valD');
+    const valL = document.getElementById('valL');
+    const valY1 = document.getElementById('valY1');
+    const valY2 = document.getElementById('valY2');
+    const infoT = document.getElementById('infoT');
+    const infoAngle = document.getElementById('infoAngle');
+    const infoG = document.getElementById('infoG');
+    const infoSin = document.getElementById('infoSin');
+    const btnToggleForces = document.getElementById('btnToggleForces');
+
+    // ---------- 物理参数 ----------
+    let mg = 50;            // N
+    let d = 300;            // px 杆间距
+    let L = 480;            // px 绳总长
+    let y1 = 100;           // px 左挂点距杆顶距离
+    let y2 = 100;           // px 右挂点距杆顶距离
+    let showForces = true;
+
+    // 固定几何
+    const POLE_LEFT_X = 140;
+    const POLE_TOP_Y = 70;
+    const POLE_BOTTOM_Y = 560;
+
+    // 滑轮计算值
+    let pulleyX = POLE_LEFT_X + d/2;
+    let pulleyY = POLE_TOP_Y + 200;
+    let tension = 0;
+    let thetaDeg = 0;
+    let sinTheta = 0;
+
+    // ---------- 粒子背景 ----------
+    const particles = [];
+    for (let i=0; i<60; i++) {
+      particles.push({
+        x: Math.random()*width,
+        y: Math.random()*height,
+        r: Math.random()*2.2+0.6,
+        vx: (Math.random()-0.5)*0.25,
+        vy: (Math.random()-0.5)*0.25 - 0.05,
+        alpha: Math.random()*0.5+0.3,
+        twinkle: Math.random()*0.015+0.005,
+        phase: Math.random()*Math.PI*2
+      });
+    }
+
+    // ---------- 物理计算 ----------
+    function computePhysics() {
+      // 确保绳长大于间距
+      if (L <= d + 2) {
+        L = d + 3;
+        sliderL.value = L;
+      }
+      // 经典动滑轮结论：sinθ = d/L
+      sinTheta = d / L;
+      if (sinTheta >= 1) sinTheta = 0.9999;
+      const cosTheta = Math.sqrt(1 - sinTheta * sinTheta);
+      const cotTheta = cosTheta / sinTheta;   // sqrt(L^2-d^2)/d
+
+      // 滑轮水平相对位置 (相对左杆)
+      let xRel = d/2 + (y2 - y1) / (2 * cotTheta);
+      // 钳位在[0, d]
+      xRel = Math.max(0.5, Math.min(d - 0.5, xRel));
+      // 滑轮垂直位置 (距杆顶向下)
+      let yRel = y1 + xRel * cotTheta;
+      // 确保滑轮在挂点下方
+      const minY = Math.max(y1, y2) + 10;
+      if (yRel < minY) yRel = minY;
+
+      pulleyX = POLE_LEFT_X + xRel;
+      pulleyY = POLE_TOP_Y + yRel;
+
+      // 张力 T = mg / (2 cosθ)
+      tension = mg / (2 * Math.max(0.0001, cosTheta));
+      thetaDeg = Math.asin(sinTheta) * 180 / Math.PI;
+    }
+
+    // ---------- 同步滑块与标签 ----------
+    function syncSlidersToVars() {
+      sliderMg.value = mg;
+      sliderD.value = d;
+      sliderL.value = L;
+      sliderY1.value = y1;
+      sliderY2.value = y2;
+      updateLabels();
+    }
+    function updateLabels() {
+      valMg.textContent = mg.toFixed(0) + ' N';
+      valD.textContent = d.toFixed(0) + ' px';
+      valL.textContent = L.toFixed(0) + ' px';
+      valY1.textContent = y1.toFixed(0) + ' px';
+      valY2.textContent = y2.toFixed(0) + ' px';
+      infoT.textContent = tension < 9999 ? tension.toFixed(1) + ' N' : '∞';
+      infoAngle.textContent = thetaDeg.toFixed(1) + '°';
+      infoG.textContent = mg.toFixed(0) + ' N';
+      infoSin.textContent = sinTheta.toFixed(3);
+    }
+
+    // 约束检查：高度差不能超过 sqrt(L^2-d^2)
+    function enforceHeightDiff() {
+      const maxDiff = Math.sqrt(Math.max(0, L*L - d*d)) - 2;
+      if (maxDiff < 0) return;
+      if (Math.abs(y1 - y2) > maxDiff) {
+        if (y1 > y2) y1 = y2 + maxDiff;
+        else y2 = y1 + maxDiff;
+        sliderY1.value = y1;
+        sliderY2.value = y2;
+      }
+    }
+
+    // ---------- 滑块事件 ----------
+    sliderMg.addEventListener('input', ()=>{
+      mg = parseFloat(sliderMg.value);
+      updateLabels();
+    });
+    sliderD.addEventListener('input', ()=>{
+      d = parseFloat(sliderD.value);
+      if (L <= d + 2) {
+        L = d + 5;
+        sliderL.value = L;
+      }
+      enforceHeightDiff();
+      updateLabels();
+    });
+    sliderL.addEventListener('input', ()=>{
+      L = parseFloat(sliderL.value);
+      if (L <= d + 2) {
+        L = d + 5;
+        sliderL.value = L;
+      }
+      enforceHeightDiff();
+      updateLabels();
+    });
+    sliderY1.addEventListener('input', ()=>{
+      y1 = parseFloat(sliderY1.value);
+      enforceHeightDiff();
+      updateLabels();
+    });
+    sliderY2.addEventListener('input', ()=>{
+      y2 = parseFloat(sliderY2.value);
+      enforceHeightDiff();
+      updateLabels();
+    });
+
+    // ---------- 画布拖拽交互 ----------
+    let dragTarget = null; // 'left', 'right', 'pulley', 'rightPole'
+    let dragOffset = { x:0, y:0 };
+
+    function getCanvasPos(e) {
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = width / rect.width;
+      const scaleY = height / rect.height;
+      return {
+        x: (e.clientX - rect.left) * scaleX,
+        y: (e.clientY - rect.top) * scaleY
+      };
+    }
+
+    function hitTest(cx, cy) {
+      const leftX = POLE_LEFT_X, leftY = POLE_TOP_Y + y1;
+      const rightX = POLE_LEFT_X + d, rightY = POLE_TOP_Y + y2;
+      const distLeft = Math.hypot(cx - leftX, cy - leftY);
+      const distRight = Math.hypot(cx - rightX, cy - rightY);
+      const distPulley = Math.hypot(cx - pulleyX, cy - pulleyY);
+      const hitRadius = 18;
+      if (distLeft < hitRadius) return 'left';
+      if (distRight < hitRadius) return 'right';
+      if (distPulley < hitRadius + 4) return 'pulley';
+      // 右杆区域
+      if (Math.abs(cx - (POLE_LEFT_X + d)) < 14 && cy > POLE_TOP_Y-10 && cy < POLE_BOTTOM_Y+10) return 'rightPole';
+      return null;
+    }
+
+    canvas.addEventListener('mousedown', (e) => {
+      const pos = getCanvasPos(e);
+      const target = hitTest(pos.x, pos.y);
+      if (target) {
+        dragTarget = target;
+        if (target === 'left') {
+          dragOffset.y = pos.y - (POLE_TOP_Y + y1);
+        } else if (target === 'right') {
+          dragOffset.y = pos.y - (POLE_TOP_Y + y2);
+        } else if (target === 'pulley') {
+          dragOffset.x = pos.x - pulleyX;
+          dragOffset.y = pos.y - pulleyY;
+        } else if (target === 'rightPole') {
+          dragOffset.x = pos.x - (POLE_LEFT_X + d);
+        }
+        canvas.style.cursor = 'grabbing';
+        e.preventDefault();
+      }
+    });
+
+    canvas.addEventListener('mousemove', (e) => {
+      const pos = getCanvasPos(e);
+      if (dragTarget) {
+        if (dragTarget === 'left') {
+          let newY = pos.y - dragOffset.y - POLE_TOP_Y;
+          newY = Math.max(20, Math.min(360, newY));
+          y1 = newY;
+          enforceHeightDiff();
+          syncSlidersToVars();
+        } else if (dragTarget === 'right') {
+          let newY = pos.y - dragOffset.y - POLE_TOP_Y;
+          newY = Math.max(20, Math.min(360, newY));
+          y2 = newY;
+          enforceHeightDiff();
+          syncSlidersToVars();
+        } else if (dragTarget === 'pulley') {
+          // 拖拽滑轮 → 改变绳长L
+          const newPulleyX = pos.x - dragOffset.x;
+          const newPulleyY = pos.y - dragOffset.y;
+          const leftX = POLE_LEFT_X, leftY = POLE_TOP_Y + y1;
+          const rightX = POLE_LEFT_X + d, rightY = POLE_TOP_Y + y2;
+          const L1 = Math.hypot(newPulleyX - leftX, newPulleyY - leftY);
+          const L2 = Math.hypot(rightX - newPulleyX, newPulleyY - rightY);
+          let newL = L1 + L2;
+          newL = Math.max(d + 5, Math.min(680, newL));
+          L = newL;
+          sliderL.value = L;
+          enforceHeightDiff();
+          updateLabels();
+        } else if (dragTarget === 'rightPole') {
+          let newD = pos.x - dragOffset.x - POLE_LEFT_X;
+          newD = Math.max(150, Math.min(480, newD));
+          d = newD;
+          if (L <= d + 2) {
+            L = d + 5;
+            sliderL.value = L;
+          }
+          sliderD.value = d;
+          enforceHeightDiff();
+          updateLabels();
+        }
+      } else {
+        const target = hitTest(pos.x, pos.y);
+        canvas.style.cursor = target ? 'grab' : 'default';
+      }
+    });
+
+    canvas.addEventListener('mouseup', () => {
+      dragTarget = null;
+      canvas.style.cursor = 'default';
+    });
+    canvas.addEventListener('mouseleave', () => {
+      dragTarget = null;
+      canvas.style.cursor = 'default';
+    });
+
+    // 触摸支持
+    canvas.addEventListener('touchstart', (e) => {
+      if (e.touches.length === 1) {
+        const pos = getCanvasPos(e.touches[0]);
+        const target = hitTest(pos.x, pos.y);
+        if (target) {
+          dragTarget = target;
+          if (target === 'left') dragOffset.y = pos.y - (POLE_TOP_Y + y1);
+          else if (target === 'right') dragOffset.y = pos.y - (POLE_TOP_Y + y2);
+          else if (target === 'pulley') { dragOffset.x = pos.x - pulleyX; dragOffset.y = pos.y - pulleyY; }
+          else if (target === 'rightPole') dragOffset.x = pos.x - (POLE_LEFT_X + d);
+          e.preventDefault();
+        }
+      }
+    }, { passive: false });
+    canvas.addEventListener('touchmove', (e) => {
+      if (dragTarget && e.touches.length === 1) {
+        const pos = getCanvasPos(e.touches[0]);
+        if (dragTarget === 'left') {
+          let newY = pos.y - dragOffset.y - POLE_TOP_Y;
+          newY = Math.max(20, Math.min(360, newY));
+          y1 = newY; enforceHeightDiff(); syncSlidersToVars();
+        } else if (dragTarget === 'right') {
+          let newY = pos.y - dragOffset.y - POLE_TOP_Y;
+          newY = Math.max(20, Math.min(360, newY));
+          y2 = newY; enforceHeightDiff(); syncSlidersToVars();
+        } else if (dragTarget === 'pulley') {
+          const newPulleyX = pos.x - dragOffset.x;
+          const newPulleyY = pos.y - dragOffset.y;
+          const L1 = Math.hypot(newPulleyX - POLE_LEFT_X, newPulleyY - (POLE_TOP_Y+y1));
+          const L2 = Math.hypot((POLE_LEFT_X+d) - newPulleyX, newPulleyY - (POLE_TOP_Y+y2));
+          let newL = L1 + L2;
+          newL = Math.max(d+5, Math.min(680, newL));
+          L = newL; sliderL.value = L; enforceHeightDiff(); updateLabels();
+        } else if (dragTarget === 'rightPole') {
+          let newD = pos.x - dragOffset.x - POLE_LEFT_X;
+          newD = Math.max(150, Math.min(480, newD));
+          d = newD;
+          if (L <= d+2) { L = d+5; sliderL.value = L; }
+          sliderD.value = d; enforceHeightDiff(); updateLabels();
+        }
+        e.preventDefault();
+      }
+    }, { passive: false });
+    canvas.addEventListener('touchend', () => { dragTarget = null; });
+
+    // ---------- 按钮功能 ----------
+    window.toggleForces = function() {
+      showForces = !showForces;
+      btnToggleForces.textContent = showForces ? '📊 隐藏受力分析' : '📊 显示受力分析';
+      btnToggleForces.classList.toggle('active', showForces);
+    };
+    window.resetParams = function() {
+      mg = 50; d = 300; L = 480; y1 = 100; y2 = 100;
+      sliderMg.value = mg; sliderD.value = d; sliderL.value = L;
+      sliderY1.value = y1; sliderY2.value = y2;
+      updateLabels();
+    };
+    window.setSymmetry = function() {
+      const avg = (y1 + y2) / 2;
+      y1 = avg; y2 = avg;
+      sliderY1.value = y1; sliderY2.value = y2;
+      updateLabels();
+    };
+
+    // ---------- 绘图函数 ----------
+    function drawGrid() {
+      ctx.strokeStyle = 'rgba(30, 60, 100, 0.25)';
+      ctx.lineWidth = 0.6;
+      const step = 40;
+      for (let x = step; x < width; x += step) {
+        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, height); ctx.stroke();
+      }
+      for (let y = step; y < height; y += step) {
+        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(width, y); ctx.stroke();
+      }
+    }
+
+    function drawPole(x, topY, bottomY) {
+      // 光晕
+      const glow = ctx.createLinearGradient(x-12, 0, x+12, 0);
+      glow.addColorStop(0, 'rgba(60,140,200,0)');
+      glow.addColorStop(0.5, 'rgba(60,140,200,0.12)');
+      glow.addColorStop(1, 'rgba(60,140,200,0)');
+      ctx.fillStyle = glow;
+      ctx.fillRect(x-12, topY-6, 24, bottomY-topY+12);
+      // 杆体
+      const grad = ctx.createLinearGradient(x-6, 0, x+6, 0);
+      grad.addColorStop(0, '#1e3b52');
+      grad.addColorStop(0.4, '#5680a0');
+      grad.addColorStop(0.6, '#7faac0');
+      grad.addColorStop(1, '#1a3040');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.roundRect(x-5, topY, 10, bottomY-topY, 6);
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(180,210,235,0.4)';
+      ctx.lineWidth = 1.2;
+      ctx.stroke();
+      // 顶端圆球
+      const ball = ctx.createRadialGradient(x-1, topY-3, 2, x, topY, 10);
+      ball.addColorStop(0, '#e0f0ff');
+      ball.addColorStop(0.6, '#5098c0');
+      ball.addColorStop(1, '#1f4058');
+      ctx.fillStyle = ball;
+      ctx.beginPath(); ctx.arc(x, topY, 10, 0, Math.PI*2); ctx.fill();
+      ctx.strokeStyle = '#cde6f5'; ctx.lineWidth = 1; ctx.stroke();
+    }
+
+    function drawRope(x1, y1, x2, y2, color='#00e0ff') {
+      ctx.save();
+      ctx.shadowColor = color;
+      ctx.shadowBlur = 10;
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 3;
+      ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+      ctx.shadowBlur = 0;
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 1.2;
+      ctx.globalAlpha = 0.7;
+      ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+      ctx.globalAlpha = 1;
+      ctx.restore();
+    }
+
+    function drawArrow(fromX, fromY, toX, toY, color, lineW=2.5, headSize=13) {
+      const dx = toX - fromX, dy = toY - fromY;
+      const len = Math.sqrt(dx*dx+dy*dy);
+      if (len < 1) return;
+      const ux = dx/len, uy = dy/len;
+      ctx.save();
+      ctx.shadowColor = color;
+      ctx.shadowBlur = 8;
+      ctx.strokeStyle = color;
+      ctx.lineWidth = lineW;
+      ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(fromX, fromY); ctx.lineTo(toX - ux*headSize*0.6, toY - uy*headSize*0.6); ctx.stroke();
+      ctx.shadowBlur = 0;
+      ctx.restore();
+      // 箭头
+      const perpX = -uy, perpY = ux;
+      ctx.fillStyle = color;
+      ctx.shadowColor = color;
+      ctx.shadowBlur = 6;
+      ctx.beginPath();
+      ctx.moveTo(toX, toY);
+      ctx.lineTo(toX - ux*headSize + perpX*headSize*0.45, toY - uy*headSize + perpY*headSize*0.45);
+      ctx.lineTo(toX - ux*headSize*0.6 - perpX*headSize*0.35, toY - uy*headSize*0.6 - perpY*headSize*0.35);
+      ctx.closePath();
+      ctx.fill();
+      ctx.shadowBlur = 0;
+    }
+
+    function drawDashedArrow(fromX, fromY, toX, toY, color) {
+      ctx.save();
+      ctx.setLineDash([6, 5]);
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 1.8;
+      ctx.globalAlpha = 0.8;
+      ctx.beginPath(); ctx.moveTo(fromX, fromY); ctx.lineTo(toX, toY); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.globalAlpha = 1;
+      ctx.restore();
+    }
+
+    function drawAngleArc(cx, cy, radius, startAngle, endAngle, color, label) {
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([4,3]);
+      ctx.globalAlpha = 0.8;
+      ctx.beginPath(); ctx.arc(cx, cy, radius, startAngle, endAngle); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.globalAlpha = 1;
+      const mid = (startAngle+endAngle)/2;
+      const lx = cx + (radius+18)*Math.cos(mid);
+      const ly = cy + (radius+18)*Math.sin(mid);
+      ctx.fillStyle = color;
+      ctx.font = 'bold 12px "Segoe UI","PingFang SC"';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(label, lx, ly);
+    }
+
+    function render(timestamp) {
+      ctx.clearRect(0, 0, width, height);
+      // 背景渐变
+      const bgGrad = ctx.createRadialGradient(width/2, height/3, 60, width/2, height, 800);
+      bgGrad.addColorStop(0, '#0b1a2f');
+      bgGrad.addColorStop(1, '#050a16');
+      ctx.fillStyle = bgGrad;
+      ctx.fillRect(0, 0, width, height);
+      drawGrid();
+
+      // 更新粒子
+      for (let p of particles) {
+        p.x += p.vx; p.y += p.vy;
+        if (p.x<-10) p.x=width+10; if (p.x>width+10) p.x=-10;
+        if (p.y<-10) p.y=height+10; if (p.y>height+10) p.y=-10;
+        const alpha = 0.2 + 0.5*(0.5+0.5*Math.sin(timestamp*0.002*p.twinkle + p.phase));
+        ctx.fillStyle = `rgba(140,200,240,${alpha})`;
+        ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, 2*Math.PI); ctx.fill();
+      }
+
+      // 物理更新
+      computePhysics();
+
+      // 绘制杆
+      drawPole(POLE_LEFT_X, POLE_TOP_Y, POLE_BOTTOM_Y);
+      drawPole(POLE_LEFT_X + d, POLE_TOP_Y, POLE_BOTTOM_Y);
+
+      const leftKnot = { x: POLE_LEFT_X, y: POLE_TOP_Y + y1 };
+      const rightKnot = { x: POLE_LEFT_X + d, y: POLE_TOP_Y + y2 };
+      const pulleyR = 16;
+
+      // 绳子连接到滑轮边缘（模拟绕过滑轮）
+      const angleRad = Math.asin(sinTheta);
+      const cosA = Math.cos(angleRad);
+      const sinA = sinTheta;
+      // 左绳终点：滑轮左侧上方切点
+      const leftRopeEnd = {
+        x: pulleyX - pulleyR * sinA,
+        y: pulleyY - pulleyR * cosA
+      };
+      const rightRopeEnd = {
+        x: pulleyX + pulleyR * sinA,
+        y: pulleyY - pulleyR * cosA
+      };
+
+      drawRope(leftKnot.x, leftKnot.y, leftRopeEnd.x, leftRopeEnd.y, '#00e0ff');
+      drawRope(rightKnot.x, rightKnot.y, rightRopeEnd.x, rightRopeEnd.y, '#00e0ff');
+
+      // 滑轮（动滑轮）
+      const pulleyGrad = ctx.createRadialGradient(pulleyX-3, pulleyY-4, 3, pulleyX, pulleyY, pulleyR);
+      pulleyGrad.addColorStop(0, '#e8f0ff');
+      pulleyGrad.addColorStop(0.4, '#90c8e0');
+      pulleyGrad.addColorStop(1, '#1e4860');
+      ctx.fillStyle = pulleyGrad;
+      ctx.shadowColor = 'rgba(0,200,240,0.7)';
+      ctx.shadowBlur = 16;
+      ctx.beginPath(); ctx.arc(pulleyX, pulleyY, pulleyR, 0, Math.PI*2); ctx.fill();
+      ctx.shadowBlur = 0;
+      ctx.strokeStyle = '#d0f0ff'; ctx.lineWidth = 2;
+      ctx.stroke();
+      // 滑轮中心轴
+      ctx.fillStyle = '#fff';
+      ctx.beginPath(); ctx.arc(pulleyX, pulleyY, 4, 0, 2*Math.PI); ctx.fill();
+      ctx.strokeStyle = '#aaa'; ctx.lineWidth = 1; ctx.stroke();
+
+      // 重物
+      const weightY = pulleyY + pulleyR + 22;
+      ctx.fillStyle = '#ff6d3a';
+      ctx.shadowColor = 'rgba(255,100,40,0.6)';
+      ctx.shadowBlur = 18;
+      ctx.beginPath();
+      ctx.rect(pulleyX-18, weightY-8, 36, 30);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = '#fff3e0';
+      ctx.font = 'bold 14px "Segoe UI","PingFang SC"';
+      ctx.textAlign = 'center';
+      ctx.fillText('mg='+mg.toFixed(0)+'N', pulleyX, weightY+28);
+      // 挂钩线
+      ctx.strokeStyle = '#ccc';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath(); ctx.moveTo(pulleyX, pulleyY+pulleyR); ctx.lineTo(pulleyX, weightY-8); ctx.stroke();
+
+      // 挂点标记
+      for (let knot of [leftKnot, rightKnot]) {
+        ctx.fillStyle = '#fff';
+        ctx.shadowColor = '#00e0ff';
+        ctx.shadowBlur = 12;
+        ctx.beginPath(); ctx.arc(knot.x, knot.y, 7, 0, 2*Math.PI); ctx.fill();
+        ctx.shadowBlur = 0;
+        ctx.strokeStyle = '#00e0ff'; ctx.lineWidth=2.5; ctx.stroke();
+      }
+
+      // 受力分析
+      if (showForces) {
+        // 重力
+        const gravLen = Math.min(160, mg * 2.4);
+        drawArrow(pulleyX, weightY, pulleyX, weightY+gravLen, '#ff3d5c', 3.5, 16);
+
+        // 张力矢量（从滑轮指向挂点方向）
+        const tensionScale = Math.min(130, tension * 2.6);
+        const leftDirLen = Math.hypot(leftKnot.x-pulleyX, leftKnot.y-pulleyY);
+        const rightDirLen = Math.hypot(rightKnot.x-pulleyX, rightKnot.y-pulleyY);
+        if (leftDirLen > 1) {
+          const uxL = (leftKnot.x-pulleyX)/leftDirLen;
+          const uyL = (leftKnot.y-pulleyY)/leftDirLen;
+          drawArrow(pulleyX, pulleyY, pulleyX+uxL*tensionScale, pulleyY+uyL*tensionScale, '#00e0ff', 3, 14);
+        }
+        if (rightDirLen > 1) {
+          const uxR = (rightKnot.x-pulleyX)/rightDirLen;
+          const uyR = (rightKnot.y-pulleyY)/rightDirLen;
+          drawArrow(pulleyX, pulleyY, pulleyX+uxR*tensionScale, pulleyY+uyR*tensionScale, '#00e0ff', 3, 14);
+        }
+
+        // 分量虚线（竖直 + 水平）
+        const tyScale = tensionScale * cosA;
+        const txScale = tensionScale * sinA;
+        // 左张力竖直分量
+        drawDashedArrow(pulleyX, pulleyY, pulleyX, pulleyY - tyScale, '#ffc850');
+        drawDashedArrow(pulleyX, pulleyY - tyScale, pulleyX - txScale, pulleyY - tyScale, '#ffc850');
+        // 右张力竖直分量
+        drawDashedArrow(pulleyX, pulleyY, pulleyX, pulleyY - tyScale, '#ffc850');
+        drawDashedArrow(pulleyX, pulleyY - tyScale, pulleyX + txScale, pulleyY - tyScale, '#ffc850');
+
+        // 角度标记
+        if (leftDirLen > 35 && (pulleyY - leftKnot.y) > 25) {
+          const startAngle = -Math.PI/2;
+          const endAngle = Math.atan2(leftKnot.x-pulleyX, -(leftKnot.y-pulleyY));
+          drawAngleArc(pulleyX, pulleyY, 40, startAngle, endAngle, '#5ef0c8', 'θ');
+        }
+        if (rightDirLen > 35 && (pulleyY - rightKnot.y) > 25) {
+          const startAngle = Math.atan2(rightKnot.x-pulleyX, -(rightKnot.y-pulleyY));
+          const endAngle = -Math.PI/2;
+          drawAngleArc(pulleyX, pulleyY, 48, startAngle, endAngle, '#5ef0c8', 'θ');
+        }
+      }
+
+      // 标注间距
+      const braceY = POLE_TOP_Y - 28;
+      ctx.strokeStyle = 'rgba(180,200,220,0.5)';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([4,5]);
+      ctx.beginPath(); ctx.moveTo(POLE_LEFT_X, braceY); ctx.lineTo(POLE_LEFT_X+d, braceY); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = '#bcc8d8';
+      ctx.font = '11px "Segoe UI","PingFang SC"';
+      ctx.textAlign = 'center';
+      ctx.fillText('d='+d.toFixed(0)+'px', (POLE_LEFT_X+d/2), braceY-10);
+
+      updateLabels();
+    }
+
+    // 动画循环
+    function animationLoop(ts) {
+      render(ts);
+      requestAnimationFrame(animationLoop);
+    }
+
+    // 初始化
+    syncSlidersToVars();
+    computePhysics();
+    updateLabels();
+    requestAnimationFrame(animationLoop);
+  })();
+</script>
+<style>
+.back-btn {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    padding: 10px 20px;
+    background: rgba(0, 150, 200, 0.3);
+    border: 1px solid #00ffff;
+    color: white;
+    font-size: 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    z-index: 9999;
+    transition: 0.3s;
+    backdrop-filter: blur(5px);
+}
+.back-btn:hover {
+    background: rgba(0, 150, 200, 0.6);
+    box-shadow: 0 0 15px #00ffff;
+}
+</style>
+<button class="back-btn" onclick="goBack()">⬅️ 返回</button>
+<script>
+function goBack() {
+    history.back();
+}
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        goBack();
+    }
+});
+</script>
+<div class="watermark">齐老师动画</div>
+<style>
+.watermark {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    font-size: 14px;
+    color: rgba(0, 255, 255, 0.3);
+    z-index: 9998;
+    pointer-events: none;
+    user-select: none;
+}
+</style>
+<script>
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+});
+</script>
+<style>
+.back-btn {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    padding: 10px 20px;
+    background: rgba(0, 150, 200, 0.3);
+    border: 1px solid #00ffff;
+    color: white;
+    font-size: 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    z-index: 9999;
+    transition: 0.3s;
+    backdrop-filter: blur(5px);
+}
+.back-btn:hover {
+    background: rgba(0, 150, 200, 0.6);
+    box-shadow: 0 0 15px #00ffff;
+}
+</style>
+<button class="back-btn" onclick="goBack()">⬅️ 返回</button>
+<script>
+function goBack() {
+    history.back();
+}
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        goBack();
+    }
+});
+</script>
+<div class="watermark">齐老师动画</div>
+<style>
+.watermark {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    font-size: 14px;
+    color: rgba(0, 255, 255, 0.3);
+    z-index: 9998;
+    pointer-events: none;
+    user-select: none;
+}
+</style>
+<script>
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+});
+</script>
+<style>
+.back-btn {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    padding: 10px 20px;
+    background: rgba(0, 150, 200, 0.3);
+    border: 1px solid #00ffff;
+    color: white;
+    font-size: 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    z-index: 9999;
+    transition: 0.3s;
+    backdrop-filter: blur(5px);
+}
+.back-btn:hover {
+    background: rgba(0, 150, 200, 0.6);
+    box-shadow: 0 0 15px #00ffff;
+}
+</style>
+<button class="back-btn" onclick="goBack()">⬅️ 返回</button>
+<script>
+function goBack() {
+    history.back();
+}
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        goBack();
+    }
+});
+</script>
+<div class="watermark">齐老师动画</div>
+<style>
+.watermark {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    font-size: 14px;
+    color: rgba(0, 255, 255, 0.3);
+    z-index: 9998;
+    pointer-events: none;
+    user-select: none;
+}
+</style>
+<script>
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+});
+</script>
+<style>
+.back-btn {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    padding: 10px 20px;
+    background: rgba(0, 150, 200, 0.3);
+    border: 1px solid #00ffff;
+    color: white;
+    font-size: 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    z-index: 9999;
+    transition: 0.3s;
+    backdrop-filter: blur(5px);
+}
+.back-btn:hover {
+    background: rgba(0, 150, 200, 0.6);
+    box-shadow: 0 0 15px #00ffff;
+}
+</style>
+<button class="back-btn" onclick="goBack()">⬅️ 返回</button>
+<script>
+function goBack() {
+    history.back();
+}
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        goBack();
+    }
+});
+</script>
+<div class="watermark">齐老师动画</div>
+<style>
+.watermark {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    font-size: 14px;
+    color: rgba(0, 255, 255, 0.3);
+    z-index: 9998;
+    pointer-events: none;
+    user-select: none;
+}
+</style>
+<script>
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+});
+</script>
+
+<div style="position: fixed; bottom: 10px; right: 10px; z-index: 9998; color: rgba(255, 255, 255, 0.3); font-family: Arial, sans-serif; font-size: 12px; pointer-events: none;">
+    齐老师动画
+</div>
+
+<script>
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+});
+</script>
+</body>
+</html>
