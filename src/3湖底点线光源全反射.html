@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, user-scalable=no" name="viewport"/>
+<title>多光源 · 湖底折射与全反射圆锥</title>
+<style>
+    :root {
+      --bg: #0a0f1a;
+      --panel-bg: rgba(8, 12, 24, 0.9);
+      --text: #e0e5f0;
+      --accent: #e04040;
+      --slider-track: #2a3040;
+      --border: rgba(255, 255, 255, 0.15);
+      --shadow: 0 12px 32px rgba(0, 0, 0, 0.6);
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+      overflow: hidden;
+      height: 100vh;
+      width: 100vw;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+    #canvas-container { position: fixed; inset: 0; z-index: 1; }
+    canvas { display: block; }
+
+    #panel {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 10;
+      background: var(--panel-bg);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 16px 24px 14px;
+      box-shadow: var(--shadow);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      min-width: 480px;
+      max-width: 96vw;
+    }
+    #panel .title {
+      font-size: 15px;
+      font-weight: 700;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    #panel .badge {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 5px 12px;
+      border-radius: 20px;
+      background: rgba(255,255,255,0.08);
+      color: #c8d0dc;
+      transition: all 0.3s;
+    }
+    #panel .badge.refracting { background: rgba(255,140,40,0.25); color: #ffb850; }
+    #panel .badge.total-reflect {
+      background: rgba(255,50,50,0.3);
+      color: #ff6060;
+      animation: pulse 1s infinite;
+    }
+    @keyframes pulse { 0%,100% { box-shadow: 0 0 0 rgba(255,50,50,0); } 50% { box-shadow: 0 0 18px rgba(255,50,50,0.6); } }
+    .info-row {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+      font-size: 13px;
+      color: #b0b8c8;
+    }
+    .info-row .val { color: #fff; font-weight: 700; font-family: 'SF Mono', 'Cascadia Code', monospace; }
+    .info-row .val.warn { color: #ff6060; }
+    .sliders-row {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+    }
+    .slider-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: 1;
+    }
+    .slider-group label {
+      font-size: 12px;
+      font-weight: 600;
+      color: #c8d0dc;
+      white-space: nowrap;
+      min-width: 64px;
+    }
+    .slider-group input[type="range"] {
+      -webkit-appearance: none;
+      flex: 1;
+      height: 5px;
+      border-radius: 10px;
+      background: var(--slider-track);
+      outline: none;
+      cursor: pointer;
+    }
+    .slider-group input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: #fff;
+      border: 3px solid var(--accent);
+      cursor: pointer;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+    }
+    .angle-display, .count-display {
+      font-weight: 700;
+      font-size: 14px;
+      color: #fff;
+      min-width: 40px;
+      text-align: right;
+      font-family: 'SF Mono', monospace;
+    }
+    .tick-marks { 
+      position: relative; 
+      height: 6px; 
+      margin-top: -4px; 
+      pointer-events: none; 
+      width: 100%; 
+    }
+    .tick-mark {
+      position: absolute;
+      top: 0;
+      width: 2px;
+      height: 8px;
+      background: #ff8844;
+      border-radius: 1px;
+      transform: translateX(-50%);
+      opacity: 0.7;
+    }
+    .tick-mark.critical { background: #ff4444; height: 12px; opacity: 0.95; }
+    #legend {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 9;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      font-size: 11px;
+      color: #b0b8c8;
+      pointer-events: none;
+    }
+    .leg-item { display: flex; align-items: center; gap: 8px; }
+    .leg-dot { width: 10px; height: 10px; border-radius: 50%; }
+    .leg-dot.incident { background: #ff3333; }
+    .leg-dot.reflect { background: #ff6644; }
+    .leg-dot.refract { background: #ffaa33; }
+    #hint {
+      position: fixed;
+      top: 14px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 8;
+      font-size: 12px;
+      color: rgba(255,255,255,0.6);
+      pointer-events: none;
+      text-shadow: 0 2px 6px black;
+      transition: opacity 1.2s;
+    }
+    @media (max-width: 650px) {
+      #panel { min-width: auto; width: 94vw; padding: 12px 14px; gap: 8px; }
+      .sliders-row { flex-direction: column; gap: 10px; }
+      .slider-group label { font-size: 10px; min-width: 48px; }
+    }
+  </style>
+</head>
+<body>
+<div id="backButton" onclick="window.location.href='index.html';" style="position: fixed; top: 20px; left: 20px; z-index: 9999; background: rgba(136, 187, 255, 0.2); color: white; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-family: Arial, sans-serif; font-size: 14px; border: 1px solid rgba(136, 187, 255, 0.5); transition: all 0.3s;">
+    ← 返回 (ESC)
+</div>
+<script>
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        window.location.href='index.html';
+    }
+});
+</script>
+
+<div id="canvas-container"></div>
+<div id="hint">🖱️ 鼠标拖动旋转视角 · 滚轮缩放 · 右键平移</div>
+<div id="legend">
+<div class="leg-item"><span class="leg-dot incident"></span> 入射光线</div>
+<div class="leg-item"><span class="leg-dot reflect"></span> 反射光线</div>
+<div class="leg-item"><span class="leg-dot refract"></span> 折射光线</div>
+</div>
+<div id="panel">
+<div class="title">
+<span>🔆 多光源 · 圆锥光线</span>
+<span class="badge refracting" id="status-badge">折射模式</span>
+</div>
+<div class="info-row">
+<span>入射角 <span class="val" id="val-angle">30.0°</span></span>
+<span>折射角 <span class="val" id="val-refract">41.7°</span></span>
+<span>临界角 <span class="val" id="val-critical">48.75°</span></span>
+</div>
+<div class="sliders-row">
+<div class="slider-group">
+<label for="angle-slider">🎯 入射角</label>
+<input id="angle-slider" max="60" min="2" step="0.1" type="range" value="30"/>
+<span class="angle-display" id="angle-display">30.0°</span>
+</div>
+<div class="slider-group">
+<label for="count-slider">💡 光源数</label>
+<input id="count-slider" max="5" min="1" step="1" type="range" value="1"/>
+<span class="count-display" id="count-display">1</span>
+</div>
+</div>
+<div class="tick-marks" id="tick-marks-container"></div>
+</div>
+<script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+      }
+    }
+  </script>
+<script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+    // 常量
+    const WATER_Y = 0;
+    const SOURCE_Y = -4.0;
+    const N_WATER = 1.333;
+    const N_AIR = 1.0;
+    const CRITICAL_ANGLE_DEG = Math.asin(N_AIR / N_WATER) * (180 / Math.PI);
+    const NUM_RAYS = 72;
+    const CIRCLE_TUBE_RADIUS = 0.004;
+
+    // DOM
+    const container = document.getElementById('canvas-container');
+    const angleSlider = document.getElementById('angle-slider');
+    const countSlider = document.getElementById('count-slider');
+    const angleDisplay = document.getElementById('angle-display');
+    const countDisplay = document.getElementById('count-display');
+    const valAngle = document.getElementById('val-angle');
+    const valRefract = document.getElementById('val-refract');
+    const valCritical = document.getElementById('val-critical');
+    const statusBadge = document.getElementById('status-badge');
+    const tickContainer = document.getElementById('tick-marks-container');
+    const hintEl = document.getElementById('hint');
+    valCritical.textContent = CRITICAL_ANGLE_DEG.toFixed(2) + '°';
+
+    // 临界角标记
+    (function() {
+      const min = 2, max = 60;
+      const pos = ((CRITICAL_ANGLE_DEG - min) / (max - min)) * 100;
+      const mk = document.createElement('div');
+      mk.className = 'tick-mark critical';
+      mk.style.left = pos + '%';
+      tickContainer.appendChild(mk);
+      [15,30,45].forEach(d => {
+        const p = ((d - min) / (max - min)) * 100;
+        const m = document.createElement('div');
+        m.className = 'tick-mark';
+        m.style.left = p + '%';
+        tickContainer.appendChild(m);
+      });
+    })();
+
+    // Three.js 初始化
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color('#0c1220');
+    scene.fog = new THREE.Fog('#0c1220', 22, 65);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.shadowMap.enabled = true;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.1;
+    container.appendChild(renderer.domElement);
+
+    const camera = new THREE.PerspectiveCamera(46, window.innerWidth / window.innerHeight, 0.6, 80);
+    camera.position.set(9, 5.5, 12);
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.target.set(2.2, -1.8, 0);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.08;
+    controls.minDistance = 4;
+    controls.maxDistance = 38;
+    controls.update();
+
+    // 提示
+    let hintTimeout;
+    function showHint() {
+      hintEl.style.opacity = '1';
+      clearTimeout(hintTimeout);
+      hintTimeout = setTimeout(() => hintEl.style.opacity = '0', 4000);
+    }
+    showHint();
+    controls.addEventListener('start', () => hintEl.style.opacity = '0.3');
+    controls.addEventListener('end', () => {
+      hintEl.style.opacity = '0.3';
+      clearTimeout(hintTimeout);
+      hintTimeout = setTimeout(() => hintEl.style.opacity = '0', 2500);
+    });
+
+    // 光照
+    scene.add(new THREE.AmbientLight('#334466', 2.0));
+    scene.add(new THREE.HemisphereLight('#8899cc', '#112244', 1.2));
+    const sun = new THREE.DirectionalLight('#fff8e8', 3.8);
+    sun.position.set(7, 14, 4);
+    sun.castShadow = true;
+    sun.shadow.mapSize.set(2048, 2048);
+    sun.shadow.camera.near = 0.5;
+    sun.shadow.camera.far = 55;
+    sun.shadow.camera.left = -18;
+    sun.shadow.camera.right = 18;
+    sun.shadow.camera.top = 18;
+    sun.shadow.camera.bottom = -18;
+    scene.add(sun);
+
+    // 水面
+    const waterGeom = new THREE.PlaneGeometry(20, 20);
+    const waterMat = new THREE.MeshPhysicalMaterial({
+      color: '#3a7ca5', metalness: 0.05, roughness: 0.18,
+      transparent: true, opacity: 0.4, side: THREE.DoubleSide, depthWrite: false
+    });
+    const waterPlane = new THREE.Mesh(waterGeom, waterMat);
+    waterPlane.position.y = WATER_Y;
+    waterPlane.rotation.x = -Math.PI / 2;
+    waterPlane.receiveShadow = true;
+    waterPlane.renderOrder = 1;
+    scene.add(waterPlane);
+
+    const edgeGeom = new THREE.TorusGeometry(9.8, 0.07, 16, 100);
+    const edgeMat = new THREE.MeshStandardMaterial({
+      color: '#88bbdd', roughness: 0.25, metalness: 0.2,
+      transparent: true, opacity: 0.5, depthWrite: false
+    });
+    const waterEdge = new THREE.Mesh(edgeGeom, edgeMat);
+    waterEdge.position.y = WATER_Y;
+    waterEdge.rotation.x = -Math.PI / 2;
+    waterEdge.renderOrder = 2;
+    scene.add(waterEdge);
+
+    // 湖底
+    const bed = new THREE.Mesh(
+      new THREE.PlaneGeometry(19, 19),
+      new THREE.MeshStandardMaterial({ color: '#3a3028', roughness: 0.9, side: THREE.DoubleSide })
+    );
+    bed.position.y = -5.8;
+    bed.rotation.x = -Math.PI / 2;
+    bed.receiveShadow = true;
+    scene.add(bed);
+
+    // 中心法线指示
+    const normalGroup = new THREE.Group();
+    scene.add(normalGroup);
+    function updateNormalLine(radius) {
+      while (normalGroup.children.length) normalGroup.remove(normalGroup.children[0]);
+      if (radius < 0.01) return;
+      const pts = [new THREE.Vector3(0, WATER_Y-1.8, 0), new THREE.Vector3(0, WATER_Y+2.8, 0)];
+      const geom = new THREE.BufferGeometry().setFromPoints(pts);
+      const line = new THREE.Line(geom, new THREE.LineDashedMaterial({ color: '#fff', opacity: 0.4, dashSize: 0.6, gapSize: 0.4 }));
+      line.computeLineDistances();
+      normalGroup.add(line);
+      const dot = new THREE.Mesh(new THREE.SphereGeometry(0.08,8,8), new THREE.MeshBasicMaterial({ color: '#fff', opacity:0.5 }));
+      dot.position.set(0, WATER_Y+2.8, 0);
+      normalGroup.add(dot);
+    }
+
+    // 存储所有动态光源的组
+    const sourcesContainer = new THREE.Group();
+    scene.add(sourcesContainer);
+
+    // 工具函数：创建光线线段
+    function rayLine(start, end, color, opacity) {
+      const geom = new THREE.BufferGeometry().setFromPoints([start, end]);
+      return new THREE.Line(geom, new THREE.LineBasicMaterial({ color, transparent: true, opacity, depthTest: true }));
+    }
+
+    // 创建单个光源的全部可视化
+    function createSourceVisual(sourcePos, incidentAngleDeg, totalReflection) {
+      const group = new THREE.Group();
+      const theta = incidentAngleDeg * Math.PI / 180;
+      const cosT = Math.cos(theta);
+      const sinT = Math.sin(theta);
+      const h = Math.abs(sourcePos.y);
+      const t = h / cosT;
+      const incidentRadius = h * Math.tan(theta);
+
+      // 光源核心
+      const core = new THREE.Mesh(new THREE.SphereGeometry(0.26,32,32), new THREE.MeshBasicMaterial({ color: '#ff3322' }));
+      core.position.copy(sourcePos);
+      group.add(core);
+      const glow1 = new THREE.Mesh(new THREE.SphereGeometry(0.44,32,32), new THREE.MeshBasicMaterial({ color: '#ff5544', transparent:true, opacity:0.5, depthWrite:false }));
+      glow1.position.copy(sourcePos);
+      group.add(glow1);
+      const glow2 = new THREE.Mesh(new THREE.SphereGeometry(0.8,32,32), new THREE.MeshBasicMaterial({ color: '#ff6644', transparent:true, opacity:0.18, depthWrite:false }));
+      glow2.position.copy(sourcePos);
+      group.add(glow2);
+
+      // 入射点圆周环
+      if (incidentRadius > 0.1) {
+        const circleGeom = new THREE.TorusGeometry(incidentRadius, CIRCLE_TUBE_RADIUS, 16, 120);
+        const circle = new THREE.Mesh(circleGeom, new THREE.MeshBasicMaterial({ color: '#ffaa44', transparent:true, opacity:0.9, depthTest:true }));
+        circle.rotation.x = -Math.PI / 2;
+        circle.position.y = WATER_Y;
+        circle.position.x = sourcePos.x;
+        circle.position.z = sourcePos.z;
+        group.add(circle);
+      }
+
+      // 光线
+      const sinRefract = (N_WATER / N_AIR) * sinT;
+      const isTotal = sinRefract >= 1.0;
+      let refractCos = 1, refractSin = 0;
+      if (!isTotal) {
+        refractCos = Math.sqrt(1 - sinRefract * sinRefract);
+        refractSin = sinRefract;
+      }
+
+      for (let i = 0; i < NUM_RAYS; i++) {
+        const phi = (i / NUM_RAYS) * Math.PI * 2;
+        const dx = sinT * Math.cos(phi);
+        const dz = sinT * Math.sin(phi);
+        const incDir = new THREE.Vector3(dx, cosT, dz).normalize();
+        const incPoint = new THREE.Vector3(
+          sourcePos.x + incDir.x * t,
+          WATER_Y,
+          sourcePos.z + incDir.z * t
+        );
+
+        group.add(rayLine(sourcePos, incPoint, '#ff3333', 0.8));
+
+        const refDir = new THREE.Vector3(dx, -cosT, dz).normalize();
+        const refEnd = incPoint.clone().add(refDir.clone().multiplyScalar(3.2));
+        group.add(rayLine(incPoint, refEnd, isTotal ? '#ff5555' : '#ff6644', isTotal ? 0.9 : 0.45));
+
+        if (!isTotal) {
+          const refrDir = new THREE.Vector3(refractSin*Math.cos(phi), refractCos, refractSin*Math.sin(phi)).normalize();
+          const refrEnd = incPoint.clone().add(refrDir.clone().multiplyScalar(4.8));
+          group.add(rayLine(incPoint, refrEnd, '#ffaa33', 0.7));
+        }
+
+        const dotGeom = new THREE.SphereGeometry(0.07,8,8);
+        const dot = new THREE.Mesh(dotGeom, new THREE.MeshBasicMaterial({ color: isTotal?'#ff4444':'#ff8844', transparent:true, opacity:0.9 }));
+        dot.position.copy(incPoint);
+        group.add(dot);
+      }
+
+      return group;
+    }
+
+    // 根据数量生成光源位置（沿X轴排列）
+    function getSourcePositions(count) {
+      const positions = [];
+      const spacing = 2.2;
+      if (count === 1) {
+        positions.push(new THREE.Vector3(0, SOURCE_Y, 0));
+      } else {
+        const startX = -((count - 1) * spacing) / 2;
+        for (let i = 0; i < count; i++) {
+          positions.push(new THREE.Vector3(startX + i * spacing, SOURCE_Y, 0));
+        }
+      }
+      return positions;
+    }
+
+    // 重建所有光源
+    function rebuildAll(incidentAngleDeg, sourceCount) {
+      while (sourcesContainer.children.length) {
+        const child = sourcesContainer.children[0];
+        child.traverse(c => {
+          if (c.geometry) c.geometry.dispose();
+          if (c.material) {
+            if (Array.isArray(c.material)) c.material.forEach(m => m.dispose());
+            else c.material.dispose();
+          }
+        });
+        sourcesContainer.remove(child);
+      }
+
+      const positions = getSourcePositions(sourceCount);
+      const theta = incidentAngleDeg * Math.PI / 180;
+      const sinRefract = (N_WATER / N_AIR) * Math.sin(theta);
+      const totalReflection = sinRefract >= 1.0;
+
+      positions.forEach(pos => {
+        const vis = createSourceVisual(pos, incidentAngleDeg, totalReflection);
+        sourcesContainer.add(vis);
+      });
+
+      const firstPos = positions[0];
+      const h = Math.abs(firstPos.y);
+      const radius = h * Math.tan(theta);
+      updateNormalLine(radius);
+
+      updateUI(incidentAngleDeg, totalReflection);
+    }
+
+    function updateUI(angleDeg, totalReflection) {
+      angleDisplay.textContent = angleDeg.toFixed(1) + '°';
+      valAngle.textContent = angleDeg.toFixed(1) + '°';
+      const theta = angleDeg * Math.PI / 180;
+      const sinRefract = (N_WATER / N_AIR) * Math.sin(theta);
+      if (!totalReflection) {
+        const refrAngle = Math.asin(sinRefract) * 180 / Math.PI;
+        valRefract.textContent = refrAngle.toFixed(1) + '°';
+        valRefract.classList.remove('warn');
+        statusBadge.textContent = '折射模式 ✨';
+        statusBadge.className = 'badge refracting';
+      } else {
+        valRefract.textContent = '—';
+        valRefract.classList.add('warn');
+        statusBadge.textContent = '⚡ 全反射';
+        statusBadge.className = 'badge total-reflect';
+      }
+      valAngle.classList.toggle('warn', angleDeg >= CRITICAL_ANGLE_DEG - 0.05);
+    }
+
+    // 当前状态
+    let currentAngle = 30.0;
+    let currentCount = 1;
+    rebuildAll(currentAngle, currentCount);
+
+    // 滑块事件
+    angleSlider.addEventListener('input', () => {
+      currentAngle = parseFloat(angleSlider.value);
+      rebuildAll(currentAngle, currentCount);
+      showHint();
+    });
+    countSlider.addEventListener('input', () => {
+      currentCount = parseInt(countSlider.value, 10);
+      countDisplay.textContent = currentCount;
+      rebuildAll(currentAngle, currentCount);
+      showHint();
+    });
+
+    // 动画循环
+    const clock = new THREE.Clock();
+    function animate() {
+      requestAnimationFrame(animate);
+      const t = performance.now() * 0.001;
+      controls.update();
+      waterPlane.position.y = WATER_Y + 0.04 * Math.sin(t*1.9)*Math.cos(t*0.8);
+      waterEdge.position.y = waterPlane.position.y;
+      renderer.render(scene, camera);
+    }
+    animate();
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    window.addEventListener('keydown', e => {
+      switch(e.key.toLowerCase()) {
+        case 'r': camera.position.set(9,5.5,12); controls.target.set(2.2,-1.8,0); controls.update(); showHint(); break;
+        case 't': camera.position.set(2,11,0.3); controls.target.set(2,0,0); controls.update(); showHint(); break;
+        case 'c': angleSlider.value = CRITICAL_ANGLE_DEG; currentAngle = CRITICAL_ANGLE_DEG; rebuildAll(currentAngle, currentCount); showHint(); break;
+        case 'arrowleft': currentAngle = Math.max(2, currentAngle-2); angleSlider.value = currentAngle; rebuildAll(currentAngle, currentCount); break;
+        case 'arrowright': currentAngle = Math.min(60, currentAngle+2); angleSlider.value = currentAngle; rebuildAll(currentAngle, currentCount); break;
+      }
+    });
+
+    console.log('🌊 多光源湖底折射演示已启动 (1~5个光源沿直线排列)');
+  </script>
+
+<div style="position: fixed; bottom: 10px; right: 10px; z-index: 9998; color: rgba(255, 255, 255, 0.3); font-family: Arial, sans-serif; font-size: 12px; pointer-events: none;">
+    齐老师动画
+</div>
+
+<script>
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+});
+</script>
+</body>
+</html>
