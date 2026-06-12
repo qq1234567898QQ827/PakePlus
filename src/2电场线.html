@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>两个点电荷 - 3D电场线 (更稀疏版)</title>
+<style>
+        :root {
+            --bg: #0d1117;
+            --panel-bg: rgba(22, 27, 34, 0.94);
+            --text: #e6edf3;
+            --text-secondary: #8b949e;
+            --positive: #ff3b3b;
+            --positive-glow: #ff6b6b;
+            --negative: #4d7cff;
+            --negative-glow: #7b9fff;
+            --slider-track: #30363d;
+            --border: #30363d;
+            --accent: #58a6ff;
+            --shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: var(--bg);
+            font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: pan-x pan-y pinch-zoom;
+        }
+
+        #canvas-container { position: fixed; inset: 0; z-index: 1; cursor: grab; }
+        #canvas-container:active { cursor: grabbing; }
+
+        #hint {
+            position: fixed;
+            bottom: 28px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10;
+            color: rgba(255, 255, 255, 0.55);
+            font-size: 13px;
+            letter-spacing: 0.5px;
+            pointer-events: none;
+            transition: opacity 1.2s ease;
+            text-align: center;
+            white-space: nowrap;
+        }
+
+        #panel {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 20;
+            background: var(--panel-bg);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 20px 22px 16px;
+            box-shadow: var(--shadow);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            min-width: 260px;
+            max-width: 320px;
+            transition: transform 0.25s ease, opacity 0.25s ease;
+        }
+
+        #panel.collapsed {
+            transform: translateX(calc(100% + 30px));
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        #panel-toggle {
+            position: fixed;
+            top: 24px;
+            right: 24px;
+            z-index: 21;
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            background: var(--panel-bg);
+            border: 1px solid var(--border);
+            color: var(--text);
+            cursor: pointer;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: var(--shadow);
+            backdrop-filter: blur(16px);
+            transition: all 0.25s ease;
+            opacity: 0;
+            pointer-events: none;
+        }
+        #panel-toggle.visible { opacity: 1; pointer-events: auto; }
+
+        .charge-control {
+            margin-bottom: 14px;
+            padding: 12px 14px;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid transparent;
+            transition: border-color 0.3s, background 0.3s;
+        }
+        .charge-control:hover { border-color: rgba(255,255,255,0.12); background: rgba(255,255,255,0.05); }
+
+        .charge-control .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .charge-control .label {
+            color: var(--text);
+            font-size: 13px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 7px;
+        }
+
+        .dot {
+            width: 11px;
+            height: 11px;
+            border-radius: 50%;
+            display: inline-block;
+            flex-shrink: 0;
+            box-shadow: 0 0 8px currentColor;
+        }
+        .dot.positive { background: var(--positive); box-shadow: 0 0 10px var(--positive-glow); }
+        .dot.negative { background: var(--negative); box-shadow: 0 0 10px var(--negative-glow); }
+        .dot.neutral { background: #666; }
+
+        .value-display {
+            color: var(--text-secondary);
+            font-size: 12px;
+            font-weight: 500;
+            font-family: 'SF Mono', 'Consolas', monospace;
+        }
+        .value-display.positive-val { color: #ff7b7b !important; }
+        .value-display.negative-val { color: #8aadff !important; }
+
+        input[type="range"] {
+            -webkit-appearance: none;
+            flex: 1;
+            height: 6px;
+            border-radius: 3px;
+            background: var(--slider-track);
+            outline: none;
+            cursor: pointer;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid #fff;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.35);
+            transition: all 0.2s;
+        }
+        #slider-q1::-webkit-slider-thumb { background: var(--positive); }
+        #slider-q2::-webkit-slider-thumb { background: var(--negative); }
+
+        #presets {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 14px;
+            padding-top: 10px;
+            border-top: 1px solid var(--border);
+        }
+        #presets button {
+            flex: 1;
+            min-width: 50px;
+            padding: 7px 10px;
+            font-size: 11px;
+            font-weight: 500;
+            border-radius: 7px;
+            border: 1px solid var(--border);
+            background: rgba(255,255,255,0.04);
+            color: var(--text);
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: inherit;
+        }
+        #presets button:hover { background: rgba(255,255,255,0.1); border-color: #5a5f6a; }
+        #presets button.active-preset { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+    </style>
+</head>
+<body>
+<div id="backButton" onclick="window.location.href='index.html';" style="position: fixed; top: 20px; left: 20px; z-index: 9999; background: rgba(136, 187, 255, 0.2); color: white; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-family: Arial, sans-serif; font-size: 14px; border: 1px solid rgba(136, 187, 255, 0.5); transition: all 0.3s;">
+    ← 返回 (ESC)
+</div>
+<script>
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        window.location.href='index.html';
+    }
+});
+</script>
+
+<div id="canvas-container"></div>
+<div id="panel">
+<h3 style="color:var(--text);margin-bottom:16px;">⚡ 电荷控制</h3>
+<div class="charge-control">
+<div class="header">
+<span class="label"><span class="dot positive" id="dot-q1"></span> 电荷 1</span>
+<span class="value-display" id="val-q1">+3.0</span>
+</div>
+<div style="display:flex;align-items:center;gap:8px;">
+<span style="color:#ff7b7b;font-size:11px;">−</span>
+<input id="slider-q1" max="5" min="-5" step="0.1" type="range" value="3"/>
+<span style="color:#ff7b7b;font-size:11px;">+</span>
+</div>
+</div>
+<div class="charge-control">
+<div class="header">
+<span class="label"><span class="dot negative" id="dot-q2"></span> 电荷 2</span>
+<span class="value-display" id="val-q2">−2.0</span>
+</div>
+<div style="display:flex;align-items:center;gap:8px;">
+<span style="color:#8aadff;font-size:11px;">−</span>
+<input id="slider-q2" max="5" min="-5" step="0.1" type="range" value="-2"/>
+<span style="color:#8aadff;font-size:11px;">+</span>
+</div>
+</div>
+<div id="presets">
+<button class="active-preset" data-q1="3" data-q2="-2">电偶极子</button>
+<button data-q1="3" data-q2="3">同号正</button>
+<button data-q1="-3" data-q2="-3">同号负</button>
+<button data-q1="4" data-q2="-1">不等量</button>
+<button data-q1="5" data-q2="-5">强偶极</button>
+</div>
+</div>
+<button id="panel-toggle" title="显示/隐藏面板">⚙</button>
+<div id="hint">🖱 拖拽旋转 | 滚轮缩放 | 右键平移 | 右侧面板调节电荷</div>
+<script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+<script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+        const container = document.getElementById('canvas-container');
+        const panel = document.getElementById('panel');
+        const panelToggle = document.getElementById('panel-toggle');
+        const hintEl = document.getElementById('hint');
+        const sliderQ1 = document.getElementById('slider-q1');
+        const sliderQ2 = document.getElementById('slider-q2');
+        const valQ1 = document.getElementById('val-q1');
+        const valQ2 = document.getElementById('val-q2');
+        const dotQ1 = document.getElementById('dot-q1');
+        const dotQ2 = document.getElementById('dot-q2');
+        const presetBtns = document.querySelectorAll('#presets button');
+
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color('#0d1117');
+        scene.fog = new THREE.Fog('#0d1117', 20, 50);
+
+        const camera = new THREE.PerspectiveCamera(50, container.clientWidth / container.clientHeight, 0.5, 60);
+        camera.position.set(7, 4.5, 9);
+        camera.lookAt(0, 0, 0);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+        renderer.setSize(container.clientWidth, container.clientHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.1;
+        container.appendChild(renderer.domElement);
+
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.target.set(0, 0, 0);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.12;
+        controls.minDistance = 2.5;
+        controls.maxDistance = 25;
+        controls.maxPolarAngle = Math.PI * 0.85;
+        controls.autoRotate = true;
+        controls.autoRotateSpeed = 0.25;
+        controls.update();
+
+        let autoRotateTimer;
+        const resetAutoRotate = () => {
+            controls.autoRotate = false;
+            clearTimeout(autoRotateTimer);
+            autoRotateTimer = setTimeout(() => { controls.autoRotate = true; }, 3000);
+        };
+        controls.addEventListener('start', resetAutoRotate);
+        controls.addEventListener('end', () => {
+            clearTimeout(autoRotateTimer);
+            autoRotateTimer = setTimeout(() => { controls.autoRotate = true; }, 2500);
+        });
+        controls.addEventListener('start', () => { hintEl.style.opacity = '0'; });
+        controls.addEventListener('end', () => { setTimeout(() => { hintEl.style.opacity = '1'; }, 2000); });
+
+        scene.add(new THREE.AmbientLight('#bcc8e0', 1.6));
+        scene.add(new THREE.HemisphereLight('#8899cc', '#334466', 0.7));
+        const sunLight = new THREE.DirectionalLight('#ffffff', 3.5);
+        sunLight.position.set(10, 14, 8);
+        sunLight.castShadow = true;
+        sunLight.shadow.mapSize.set(1024, 1024);
+        scene.add(sunLight);
+        const fillLight = new THREE.DirectionalLight('#8899cc', 1.2);
+        fillLight.position.set(-4, 2, -3);
+        scene.add(fillLight);
+
+        const gridHelper = new THREE.GridHelper(16, 28, '#2a3040', '#1a2030');
+        gridHelper.position.y = -0.01;
+        scene.add(gridHelper);
+        const gridHelper2 = new THREE.GridHelper(16, 56, '#1e2633', '#1e2633');
+        gridHelper2.position.y = -0.005;
+        gridHelper2.material.transparent = true;
+        gridHelper2.material.opacity = 0.5;
+        scene.add(gridHelper2);
+
+        const originDot = new THREE.Mesh(
+            new THREE.SphereGeometry(0.08, 16, 16),
+            new THREE.MeshStandardMaterial({ color: '#ffffff', emissive: '#ffffff', emissiveIntensity: 0.6, roughness: 0.3 })
+        );
+        scene.add(originDot);
+
+        const chargeGroup1 = new THREE.Group();
+        const chargeGroup2 = new THREE.Group();
+        scene.add(chargeGroup1);
+        scene.add(chargeGroup2);
+
+        const sphereMat1 = new THREE.MeshStandardMaterial({ color: '#ff2020', emissive: '#ff0000', emissiveIntensity: 0.7, roughness: 0.22 });
+        const sphere1 = new THREE.Mesh(new THREE.SphereGeometry(0.32, 48, 48), sphereMat1);
+        sphere1.castShadow = true; sphere1.receiveShadow = true;
+        chargeGroup1.add(sphere1);
+        const glowMat1 = new THREE.MeshBasicMaterial({ color: '#ff4444', transparent: true, opacity: 0.25, depthWrite: false });
+        const glow1 = new THREE.Mesh(new THREE.SphereGeometry(0.46, 32, 32), glowMat1);
+        chargeGroup1.add(glow1);
+
+        const sphereMat2 = new THREE.MeshStandardMaterial({ color: '#2040ff', emissive: '#0020ff', emissiveIntensity: 0.7, roughness: 0.22 });
+        const sphere2 = new THREE.Mesh(new THREE.SphereGeometry(0.32, 48, 48), sphereMat2);
+        sphere2.castShadow = true; sphere2.receiveShadow = true;
+        chargeGroup2.add(sphere2);
+        const glowMat2 = new THREE.MeshBasicMaterial({ color: '#4466ff', transparent: true, opacity: 0.25, depthWrite: false });
+        const glow2 = new THREE.Mesh(new THREE.SphereGeometry(0.46, 32, 32), glowMat2);
+        chargeGroup2.add(glow2);
+
+        const chargePos1 = new THREE.Vector3(-2.5, 0, 0);
+        const chargePos2 = new THREE.Vector3(2.5, 0, 0);
+        chargeGroup1.position.copy(chargePos1);
+        chargeGroup2.position.copy(chargePos2);
+
+        const fieldLinesGroup = new THREE.Group();
+        scene.add(fieldLinesGroup);
+
+        const K = 1.0;
+        const CHARGE_RADIUS = 0.35;
+        const TERMINATION_RADIUS = 0.42;
+        const STEP_SIZE = 0.06;
+        const MAX_STEPS = 420;
+        const MAX_DIST = 13;
+        const FAR_SPHERE_RADIUS = 9.8;
+
+        function electricField(pos, q1, q2) {
+            const r1 = new THREE.Vector3().subVectors(pos, chargePos1);
+            const r2 = new THREE.Vector3().subVectors(pos, chargePos2);
+            const d1 = Math.max(r1.length(), 0.15);
+            const d2 = Math.max(r2.length(), 0.15);
+            const E = new THREE.Vector3();
+            if (Math.abs(q1) > 1e-5) E.addScaledVector(r1, K * q1 / (d1 * d1 * d1));
+            if (Math.abs(q2) > 1e-5) E.addScaledVector(r2, K * q2 / (d2 * d2 * d2));
+            return E;
+        }
+
+        function fibonacciSpherePoints(n, radius) {
+            const pts = [];
+            const phi = Math.PI * (3.0 - Math.sqrt(5.0));
+            for (let i = 0; i < n; i++) {
+                const y = 1.0 - (2.0 * i + 1.0) / n;
+                const r = Math.sqrt(1.0 - y * y);
+                const theta = phi * i;
+                pts.push(new THREE.Vector3(Math.cos(theta) * r * radius, y * radius, Math.sin(theta) * r * radius));
+            }
+            return pts;
+        }
+
+        function traceFieldLine(startPos, q1, q2, forward, ignoreCharge = null) {
+            const points = [startPos.clone()];
+            let pos = startPos.clone();
+            let steps = 0;
+
+            while (steps < MAX_STEPS) {
+                const E = electricField(pos, q1, q2);
+                const len = E.length();
+                if (len < 1e-7) break;
+
+                const dir = E.normalize();
+                if (!forward) dir.negate();
+
+                pos.addScaledVector(dir, STEP_SIZE);
+                points.push(pos.clone());
+                steps++;
+
+                const d1 = pos.distanceTo(chargePos1);
+                const d2 = pos.distanceTo(chargePos2);
+
+                if (ignoreCharge !== 1 && Math.abs(q1) > 0.05 && d1 < TERMINATION_RADIUS) break;
+                if (ignoreCharge !== 2 && Math.abs(q2) > 0.05 && d2 < TERMINATION_RADIUS) break;
+
+                if (pos.length() > MAX_DIST) break;
+            }
+
+            if (points.length > 1) {
+                const last = points[points.length-1];
+                const prev = points[points.length-2];
+                let targetCharge = null;
+                if (ignoreCharge !== 1 && Math.abs(q1) > 0.05 && last.distanceTo(chargePos1) < TERMINATION_RADIUS) targetCharge = chargePos1;
+                if (ignoreCharge !== 2 && Math.abs(q2) > 0.05 && last.distanceTo(chargePos2) < TERMINATION_RADIUS) targetCharge = chargePos2;
+                if (targetCharge) {
+                    const dirToCharge = new THREE.Vector3().subVectors(targetCharge, prev).normalize();
+                    const finalPos = targetCharge.clone().addScaledVector(dirToCharge, -0.33);
+                    points[points.length-1] = finalPos;
+                }
+            }
+            return points;
+        }
+
+        function generateFieldLines(q1, q2) {
+            const lines = [];
+            const hasPos = q1 > 0.05 || q2 > 0.05;
+            const hasNeg = q1 < -0.05 || q2 < -0.05;
+            const totalQ = q1 + q2;
+            const isMixed = (q1 > 0.05 && q2 < -0.05) || (q1 < -0.05 && q2 > 0.05);
+            const equalOpposite = isMixed && Math.abs(Math.abs(q1) - Math.abs(q2)) < 0.1;
+
+            // 进一步降低密度
+            const posSampleCount = equalOpposite ? 50 : (isMixed ? 40 : 60);
+            const farSampleCount = equalOpposite ? 20 : (isMixed ? 40 : 60);
+            const posColor = isMixed ? new THREE.Color('#ffd700') : new THREE.Color('#ff5555');
+            const negColor = isMixed ? new THREE.Color('#ffd700') : new THREE.Color('#5588ff');
+
+            if (hasPos) {
+                const posCharges = [];
+                if (q1 > 0.05) posCharges.push({ pos: chargePos1, chargeId: 1 });
+                if (q2 > 0.05) posCharges.push({ pos: chargePos2, chargeId: 2 });
+
+                for (const pc of posCharges) {
+                    const dirs = fibonacciSpherePoints(posSampleCount, 1.0);
+                    for (const dir of dirs) {
+                        const start = pc.pos.clone().addScaledVector(dir, CHARGE_RADIUS);
+                        const pts = traceFieldLine(start, q1, q2, true, pc.chargeId);
+                        if (pts.length > 2) lines.push({ points: pts, color: posColor.clone() });
+                    }
+                }
+            }
+
+            if (hasNeg) {
+                const farPoints = fibonacciSpherePoints(farSampleCount, FAR_SPHERE_RADIUS);
+                for (const fp of farPoints) {
+                    const d1 = fp.distanceTo(chargePos1);
+                    const d2 = fp.distanceTo(chargePos2);
+                    if (d1 < CHARGE_RADIUS + 0.8 || d2 < CHARGE_RADIUS + 0.8) continue;
+
+                    const pts = traceFieldLine(fp, q1, q2, true, null);
+                    if (pts.length < 3) continue;
+
+                    const last = pts[pts.length - 1];
+                    const endNearNeg = (q1 < -0.05 && last.distanceTo(chargePos1) < TERMINATION_RADIUS + 0.2) ||
+                                       (q2 < -0.05 && last.distanceTo(chargePos2) < TERMINATION_RADIUS + 0.2);
+                    if (endNearNeg || (totalQ < -0.05 && hasPos)) {
+                        lines.push({ points: pts, color: negColor.clone() });
+                    }
+                }
+            }
+
+            return lines;
+        }
+
+        function clearFieldLines() {
+            while (fieldLinesGroup.children.length > 0) {
+                const child = fieldLinesGroup.children[0];
+                if (child.geometry) child.geometry.dispose();
+                if (child.material) child.material.dispose();
+                fieldLinesGroup.remove(child);
+            }
+        }
+
+        function renderFieldLines(q1, q2) {
+            clearFieldLines();
+            if (Math.abs(q1) < 0.05 && Math.abs(q2) < 0.05) return;
+
+            const allLines = generateFieldLines(q1, q2);
+            const colorGroups = {};
+            for (const line of allLines) {
+                const hex = line.color.getHexString();
+                if (!colorGroups[hex]) colorGroups[hex] = { color: line.color, lines: [] };
+                colorGroups[hex].lines.push(line.points);
+            }
+
+            for (const key in colorGroups) {
+                const group = colorGroups[key];
+                const vertices = [];
+                const indices = [];
+                let vCount = 0;
+
+                for (const pts of group.lines) {
+                    if (pts.length < 2) continue;
+                    const startIdx = vCount;
+                    for (const p of pts) {
+                        vertices.push(p.x, p.y, p.z);
+                        vCount++;
+                    }
+                    for (let i = 0; i < pts.length - 1; i++) {
+                        indices.push(startIdx + i, startIdx + i + 1);
+                    }
+                }
+
+                if (vertices.length < 6) continue;
+                const geom = new THREE.BufferGeometry();
+                geom.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+                geom.setIndex(indices);
+                const mat = new THREE.LineBasicMaterial({ color: group.color, linewidth: 1, transparent: true, opacity: 0.85, depthTest: true });
+                fieldLinesGroup.add(new THREE.LineSegments(geom, mat));
+            }
+        }
+
+        function updateChargeVisuals(q1, q2) {
+            const updateOne = (group, mat, glowMat, q, dot) => {
+                const absQ = Math.abs(q);
+                if (absQ < 0.05) {
+                    group.visible = false;
+                    dot.className = 'dot neutral';
+                } else {
+                    group.visible = true;
+                    group.scale.setScalar(0.7 + 0.18 * Math.min(absQ, 5));
+                    if (q > 0) {
+                        mat.color.set('#ff2020'); mat.emissive.set('#ff0000');
+                        glowMat.color.set('#ff4444');
+                        dot.className = 'dot positive';
+                    } else {
+                        mat.color.set('#2040ff'); mat.emissive.set('#0020ff');
+                        glowMat.color.set('#4466ff');
+                        dot.className = 'dot negative';
+                    }
+                    glowMat.opacity = 0.22 + 0.06 * (absQ / 5);
+                }
+            };
+            updateOne(chargeGroup1, sphereMat1, glowMat1, q1, dotQ1);
+            updateOne(chargeGroup2, sphereMat2, glowMat2, q2, dotQ2);
+        }
+
+        function updateDisplayValues(q1, q2) {
+            valQ1.textContent = q1.toFixed(1);
+            valQ2.textContent = q2.toFixed(1);
+            valQ1.className = 'value-display' + (q1 > 0.05 ? ' positive-val' : (q1 < -0.05 ? ' negative-val' : ''));
+            valQ2.className = 'value-display' + (q2 > 0.05 ? ' positive-val' : (q2 < -0.05 ? ' negative-val' : ''));
+        }
+
+        let currentQ1 = parseFloat(sliderQ1.value);
+        let currentQ2 = parseFloat(sliderQ2.value);
+        let needsUpdate = true;
+        let debounceTimer;
+
+        function fullUpdate() {
+            updateChargeVisuals(currentQ1, currentQ2);
+            updateDisplayValues(currentQ1, currentQ2);
+            renderFieldLines(currentQ1, currentQ2);
+            presetBtns.forEach(btn => {
+                const bq1 = parseFloat(btn.dataset.q1);
+                const bq2 = parseFloat(btn.dataset.q2);
+                btn.classList.toggle('active-preset', Math.abs(currentQ1 - bq1) < 0.06 && Math.abs(currentQ2 - bq2) < 0.06);
+            });
+            needsUpdate = false;
+        }
+
+        function scheduleUpdate() {
+            needsUpdate = true;
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(() => { if (needsUpdate) fullUpdate(); }, 50);
+        }
+
+        sliderQ1.addEventListener('input', () => {
+            currentQ1 = parseFloat(sliderQ1.value);
+            updateDisplayValues(currentQ1, currentQ2);
+            updateChargeVisuals(currentQ1, currentQ2);
+            scheduleUpdate();
+            resetAutoRotate();
+        });
+        sliderQ2.addEventListener('input', () => {
+            currentQ2 = parseFloat(sliderQ2.value);
+            updateDisplayValues(currentQ1, currentQ2);
+            updateChargeVisuals(currentQ1, currentQ2);
+            scheduleUpdate();
+            resetAutoRotate();
+        });
+
+        presetBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const q1 = parseFloat(btn.dataset.q1);
+                const q2 = parseFloat(btn.dataset.q2);
+                sliderQ1.value = q1;
+                sliderQ2.value = q2;
+                currentQ1 = q1;
+                currentQ2 = q2;
+                fullUpdate();
+                resetAutoRotate();
+            });
+        });
+
+        let panelVisible = true;
+        panelToggle.addEventListener('click', () => {
+            panelVisible = !panelVisible;
+            panel.classList.toggle('collapsed', !panelVisible);
+            panelToggle.classList.toggle('visible', !panelVisible);
+        });
+
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'h' || e.key === 'H') {
+                panelVisible = !panelVisible;
+                panel.classList.toggle('collapsed', !panelVisible);
+                panelToggle.classList.toggle('visible', !panelVisible);
+            }
+        });
+
+        window.addEventListener('resize', () => {
+            camera.aspect = container.clientWidth / container.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(container.clientWidth, container.clientHeight);
+        });
+
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            const t = performance.now() * 0.001;
+            glow1.scale.setScalar(1.0 + 0.06 * Math.sin(t * 2.5) * (Math.abs(currentQ1) > 0.05 ? 1 : 0));
+            glow2.scale.setScalar(1.0 + 0.06 * Math.sin(t * 2.5 + Math.PI) * (Math.abs(currentQ2) > 0.05 ? 1 : 0));
+            originDot.scale.setScalar(1.0 + 0.15 * Math.sin(t * 1.8));
+            renderer.render(scene, camera);
+        }
+
+        fullUpdate();
+        animate();
+        console.log('✅ 电场线密度已进一步降低 – 更清晰的电场结构');
+    </script>
+
+<div style="position: fixed; bottom: 10px; right: 10px; z-index: 9998; color: rgba(255, 255, 255, 0.3); font-family: Arial, sans-serif; font-size: 12px; pointer-events: none;">
+    齐老师动画
+</div>
+
+<script>
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+});
+</script>
+</body>
+</html>
