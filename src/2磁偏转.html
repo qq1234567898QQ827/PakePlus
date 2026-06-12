@@ -1,0 +1,1192 @@
+<!DOCTYPE html>
+
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta charset="utf-8"/>
+<meta charset="utf-8"/>
+<meta charset="utf-8"/>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>⚡ 带电粒子 · 匀强磁场圆周运动</title>
+<style>
+        :root {
+            --bg-deep: #020710;
+            --panel-bg: rgba(8, 12, 30, 0.82);
+            --text: #e0e0f5;
+            --accent-red: #ff3b4a;
+            --accent-blue: #5b9cf5;
+            --border: rgba(100, 130, 200, 0.2);
+            --btn-bg: rgba(22, 30, 55, 0.73);
+            --btn-hover: rgba(36, 48, 88, 0.83);
+            --slider-track: rgba(44, 58, 110, 0.64);
+        }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: radial-gradient(ellipse at 36% 20%, #0b0f2a 0%, #01030a 58%);
+            font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            color: var(--text);
+            padding: 10px;
+            user-select: none;
+            overflow-x: hidden;
+        }
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background:
+                radial-gradient(1.5px 1.5px at 8% 12%, rgba(255, 255, 255, 0.65), transparent),
+                radial-gradient(1.1px 1.1px at 68% 6%, rgba(255, 255, 255, 0.5), transparent),
+                radial-gradient(1.7px 1.7px at 48% 66%, rgba(255, 255, 255, 0.46), transparent),
+                radial-gradient(0.9px 0.9px at 26% 52%, rgba(255, 255, 255, 0.4), transparent),
+                radial-gradient(1.9px 1.9px at 80% 36%, rgba(255, 255, 255, 0.56), transparent),
+                radial-gradient(1.3px 1.3px at 3% 74%, rgba(255, 255, 255, 0.43), transparent),
+                radial-gradient(1.0px 1.0px at 36% 4%, rgba(255, 255, 255, 0.36), transparent),
+                radial-gradient(1.6px 1.6px at 60% 22%, rgba(255, 255, 255, 0.48), transparent),
+                radial-gradient(2.1px 2.1px at 84% 58%, rgba(255, 255, 255, 0.53), transparent),
+                radial-gradient(1.4px 1.4px at 44% 46%, rgba(255, 255, 255, 0.44), transparent),
+                radial-gradient(1.7px 1.7px at 72% 51%, rgba(255, 255, 255, 0.49), transparent),
+                radial-gradient(1.2px 1.2px at 20% 33%, rgba(255, 255, 255, 0.34), transparent);
+            background-size: 100% 100%;
+            opacity: 0.42;
+            pointer-events: none;
+            z-index: 0;
+            animation: starPulse 4.5s ease-in-out infinite alternate;
+        }
+        @keyframes starPulse {
+            0%,
+            100% {
+                opacity: 0.3;
+            }
+            50% {
+                opacity: 0.52;
+            }
+        }
+        .container {
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            max-width: 980px;
+            background: var(--panel-bg);
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+            border-radius: 22px;
+            padding: 18px 16px 12px;
+            box-shadow: 0 18px 50px rgba(0, 0, 0, 0.46), 0 0 0 1px rgba(255, 255, 255, 0.03);
+            display: flex;
+            flex-direction: column;
+            gap: 11px;
+            border: 1px solid var(--border);
+        }
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 7px;
+        }
+        .header h1 {
+            font-size: 1.26em;
+            font-weight: 700;
+            letter-spacing: 0.45px;
+            background: linear-gradient(135deg, #ff6b7b, #ffb86b, #6bb5ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            filter: drop-shadow(0 0 5px rgba(255, 115, 115, 0.26));
+        }
+        .badge {
+            background: rgba(34, 48, 90, 0.42);
+            padding: 3px 10px;
+            border-radius: 16px;
+            font-size: 0.66em;
+            color: #b0c0f0;
+            letter-spacing: 0.28px;
+            border: 1px solid rgba(104, 130, 200, 0.24);
+            backdrop-filter: blur(3px);
+        }
+        .canvas-wrapper {
+            border-radius: 11px;
+            overflow: hidden;
+            border: 1px solid rgba(104, 130, 190, 0.2);
+            box-shadow: inset 0 0 35px rgba(0, 0, 0, 0.42);
+            background: #010510;
+            position: relative;
+        }
+        canvas#mainCanvas {
+            display: block;
+            width: 100%;
+            height: auto;
+        }
+        .info-bar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 7px;
+            justify-content: center;
+            font-size: 0.68em;
+            color: #b0c0e0;
+        }
+        .info-item {
+            background: rgba(14, 20, 40, 0.62);
+            padding: 4px 10px;
+            border-radius: 15px;
+            border: 1px solid rgba(78, 100, 158, 0.24);
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            backdrop-filter: blur(3px);
+        }
+        .info-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            box-shadow: 0 0 7px currentColor;
+        }
+        .info-dot.red {
+            background: var(--accent-red);
+            box-shadow: 0 0 8px var(--accent-red);
+        }
+        .info-dot.blue {
+            background: var(--accent-blue);
+            box-shadow: 0 0 8px var(--accent-blue);
+        }
+        .info-dot.green {
+            background: #2ecc71;
+            box-shadow: 0 0 8px #2ecc71;
+        }
+        .info-dot.purple {
+            background: #c084fc;
+            box-shadow: 0 0 8px #c084fc;
+        }
+        .info-value {
+            font-weight: 700;
+            color: #f0f0ff;
+        }
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-items: center;
+            justify-content: center;
+        }
+        .ctrl-group {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            background: rgba(12, 18, 36, 0.62);
+            padding: 5px 9px;
+            border-radius: 20px;
+            border: 1px solid rgba(74, 96, 160, 0.28);
+            backdrop-filter: blur(3px);
+            transition: opacity 0.25s;
+        }
+        .ctrl-group.hidden-ctrl {
+            opacity: 0.26;
+            pointer-events: none;
+        }
+        .ctrl-group label {
+            font-size: 0.66em;
+            color: #c0c8e0;
+            white-space: nowrap;
+            font-weight: 500;
+        }
+        .ctrl-group input[type="range"] {
+            -webkit-appearance: none;
+            width: 66px;
+            height: 4px;
+            border-radius: 3px;
+            background: var(--slider-track);
+            outline: none;
+            cursor: pointer;
+        }
+        .ctrl-group input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #7aaaff;
+            cursor: pointer;
+            border: 2px solid #fff;
+            box-shadow: 0 2px 8px rgba(100, 150, 255, 0.36);
+            transition: 0.15s;
+        }
+        .ctrl-group input[type="range"]::-webkit-slider-thumb:hover {
+            background: #99bbff;
+            box-shadow: 0 3px 14px rgba(100, 150, 255, 0.52);
+            transform: scale(1.06);
+        }
+        .val-disp {
+            display: inline-block;
+            min-width: 26px;
+            text-align: center;
+            font-weight: 700;
+            color: #8ab4ff;
+            font-size: 0.72em;
+        }
+        .shape-btns {
+            display: flex;
+            gap: 3px;
+            flex-wrap: wrap;
+        }
+        .shape-btn {
+            padding: 5px 9px;
+            border-radius: 15px;
+            border: 1px solid rgba(92, 118, 185, 0.3);
+            cursor: pointer;
+            font-size: 0.66em;
+            font-weight: 600;
+            letter-spacing: 0.28px;
+            transition: all 0.2s;
+            background: rgba(18, 28, 50, 0.62);
+            color: #c0d0f0;
+            white-space: nowrap;
+        }
+        .shape-btn.active {
+            background: rgba(48, 72, 155, 0.62);
+            border-color: rgba(124, 150, 222, 0.64);
+            color: #fff;
+            box-shadow: 0 0 12px rgba(64, 110, 220, 0.28);
+        }
+        .shape-btn:hover {
+            background: rgba(36, 50, 92, 0.72);
+            border-color: rgba(114, 140, 210, 0.44);
+        }
+        button {
+            padding: 6px 14px;
+            border-radius: 18px;
+            border: none;
+            cursor: pointer;
+            font-size: 0.7em;
+            font-weight: 600;
+            letter-spacing: 0.32px;
+            transition: all 0.2s;
+            background: var(--btn-bg);
+            color: #d8e0ff;
+            border: 1px solid rgba(92, 118, 185, 0.3);
+            backdrop-filter: blur(3px);
+            white-space: nowrap;
+        }
+        button:hover {
+            background: var(--btn-hover);
+            border-color: rgba(120, 148, 215, 0.48);
+            box-shadow: 0 3px 14px rgba(44, 68, 160, 0.2);
+            transform: translateY(-1px);
+        }
+        button:active {
+            transform: scale(0.96);
+        }
+        button.primary-btn {
+            background: rgba(190, 52, 62, 0.7);
+            border-color: rgba(240, 100, 110, 0.5);
+            color: #fff;
+            font-weight: 700;
+        }
+        button.primary-btn:hover {
+            background: rgba(215, 63, 73, 0.8);
+            box-shadow: 0 4px 17px rgba(190, 52, 62, 0.34);
+        }
+        button.reset-btn {
+            background: rgba(28, 95, 56, 0.6);
+            border-color: rgba(60, 150, 95, 0.4);
+            color: #c8f0d8;
+        }
+        button.reset-btn:hover {
+            background: rgba(38, 122, 75, 0.74);
+            box-shadow: 0 3px 15px rgba(28, 125, 65, 0.3);
+        }
+        @media (max-width: 700px) {
+            .container {
+                padding: 8px 4px;
+                gap: 8px;
+                border-radius: 14px;
+            }
+            .header h1 {
+                font-size: 0.92em;
+            }
+            .ctrl-group input[type="range"] {
+                width: 38px;
+            }
+            .ctrl-group label {
+                font-size: 0.54em;
+            }
+            button {
+                padding: 4px 9px;
+                font-size: 0.6em;
+            }
+            .shape-btn {
+                padding: 3px 6px;
+                font-size: 0.58em;
+            }
+            .info-bar {
+                gap: 3px;
+                font-size: 0.56em;
+            }
+            .info-item {
+                padding: 2px 5px;
+            }
+            .val-disp {
+                min-width: 18px;
+                font-size: 0.62em;
+            }
+        }
+    </style>
+</head>
+<body>
+<div id="backButton" onclick="window.location.href='index.html';" style="position: fixed; top: 20px; left: 20px; z-index: 9999; background: rgba(136, 187, 255, 0.2); color: white; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-family: Arial, sans-serif; font-size: 14px; border: 1px solid rgba(136, 187, 255, 0.5); transition: all 0.3s;">
+    ← 返回 (ESC)
+</div>
+<script>
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        window.location.href='index.html';
+    }
+});
+</script>
+
+<div class="container">
+<div class="header">
+<h1>⚡ 带电粒子 · 匀强磁场圆周运动</h1>
+<span class="badge">洛伦兹力 · qv×B · 轨迹保留</span>
+</div>
+<div class="canvas-wrapper">
+<canvas height="500" id="mainCanvas" width="900"></canvas>
+</div>
+<div class="info-bar" id="infoBar">
+<div class="info-item"><span class="info-dot red"></span>速率 <span class="info-value" id="speedDisp">200</span> px/s</div>
+<div class="info-item"><span class="info-dot blue"></span>回转半径 <span class="info-value" id="radiusDisp">100</span> px</div>
+<div class="info-item"><span class="info-dot green"></span>状态 <span class="info-value" id="stateDisp">磁场外</span></div>
+<div class="info-item"><span class="info-dot purple"></span>形状 <span class="info-value" id="shapeDisp">圆形</span></div>
+<div class="info-item">⏱ <span class="info-value" id="timeDisp">0.00</span>s</div>
+</div>
+<div class="controls" id="controls">
+<div class="ctrl-group">
+<label for="v0Slider">🚀 初速度</label>
+<input id="v0Slider" max="460" min="40" step="5" type="range" value="200"/>
+<span class="val-disp" id="v0Val">200</span>
+</div>
+<div class="ctrl-group">
+<label for="angleSlider">🧭 入射角</label>
+<input id="angleSlider" max="68" min="-68" step="1" type="range" value="0"/>
+<span class="val-disp" id="angleVal">0°</span>
+</div>
+<div class="ctrl-group">
+<label for="bSlider">🧲 磁场B</label>
+<input id="bSlider" max="8.5" min="0.25" step="0.05" type="range" value="2.0"/>
+<span class="val-disp" id="bVal">2.00</span>
+</div>
+<div class="ctrl-group" id="sizeGroup">
+<label for="sizeSlider">📐 尺寸</label>
+<input id="sizeSlider" max="230" min="22" step="2" type="range" value="115"/>
+<span class="val-disp" id="sizeVal">115</span>
+</div>
+<div class="ctrl-group hidden-ctrl" id="aspectGroup">
+<label for="aspectSlider">📏 高宽比</label>
+<input id="aspectSlider" max="1.9" min="0.26" step="0.02" type="range" value="0.62"/>
+<span class="val-disp" id="aspectVal">0.62</span>
+</div>
+<div class="shape-btns" id="shapeBtns">
+<button class="shape-btn active" data-shape="circle">⭕ 圆形</button>
+<button class="shape-btn" data-shape="square">⬜ 正方形</button>
+<button class="shape-btn" data-shape="rectangle">📐 长方形</button>
+<button class="shape-btn" data-shape="triangle">🔺 三角形</button>
+</div>
+<button class="reset-btn" id="resetBtn">🔄 重置</button>
+<button class="primary-btn" id="pauseBtn">⏸️ 暂停</button>
+</div>
+</div>
+<script>
+        (function() {
+            const canvas = document.getElementById('mainCanvas');
+            const ctx = canvas.getContext('2d');
+            const W = canvas.width,
+                H = canvas.height;
+
+            const v0Slider = document.getElementById('v0Slider');
+            const angleSlider = document.getElementById('angleSlider');
+            const bSlider = document.getElementById('bSlider');
+            const sizeSlider = document.getElementById('sizeSlider');
+            const aspectSlider = document.getElementById('aspectSlider');
+            const v0Val = document.getElementById('v0Val');
+            const angleVal = document.getElementById('angleVal');
+            const bVal = document.getElementById('bVal');
+            const sizeVal = document.getElementById('sizeVal');
+            const aspectVal = document.getElementById('aspectVal');
+            const resetBtn = document.getElementById('resetBtn');
+            const pauseBtn = document.getElementById('pauseBtn');
+            const shapeBtns = document.getElementById('shapeBtns');
+            const aspectGroup = document.getElementById('aspectGroup');
+            const sizeLabel = sizeSlider.parentElement.querySelector('label');
+            const speedDisp = document.getElementById('speedDisp');
+            const radiusDisp = document.getElementById('radiusDisp');
+            const stateDisp = document.getElementById('stateDisp');
+            const shapeDisp = document.getElementById('shapeDisp');
+            const timeDisp = document.getElementById('timeDisp');
+
+            const m = 1,
+                q = 1;
+            let v0 = 200,
+                angleDeg = 0,
+                B = 2.0;
+            let fieldSize = 115,
+                fieldAspect = 0.62;
+            let fieldShape = 'circle';
+
+            const fieldCX = W / 2,
+                fieldCY = H / 2;
+
+            let px, py, vx, vy;
+            let simTime = 0;
+            let isPaused = false;
+            let animId = null;
+
+            const MAX_TRAIL = 4500;
+            let trailPoints = [];
+            let fieldDots = [];
+
+            const shapeNames = { circle: '圆形', square: '正方形', rectangle: '长方形', triangle: '等边三角形' };
+            const sizeLabels = { circle: '📐 半径', square: '📐 半边长', rectangle: '📐 半宽', triangle: '📐 外接圆半径' };
+
+            function isInsideField(x, y) {
+                const dx = x - fieldCX,
+                    dy = y - fieldCY;
+                const tol = 0.55;
+                switch (fieldShape) {
+                    case 'circle':
+                        return dx * dx + dy * dy <= fieldSize * fieldSize + tol;
+                    case 'square':
+                        return Math.abs(dx) <= fieldSize + tol && Math.abs(dy) <= fieldSize + tol;
+                    case 'rectangle': {
+                        const hw = fieldSize,
+                            hh = fieldSize * fieldAspect;
+                        return Math.abs(dx) <= hw + tol && Math.abs(dy) <= hh + tol;
+                    }
+                    case 'triangle': {
+                        const R = fieldSize;
+                        const topY = fieldCY - R,
+                            bottomY = fieldCY + R * 0.5;
+                        const halfBase = R * Math.sqrt(3) / 2;
+                        const Ax = fieldCX,
+                            Ay = topY;
+                        const Bx = fieldCX - halfBase,
+                            By = bottomY;
+                        const Cx = fieldCX + halfBase,
+                            Cy = bottomY;
+                        const cross1 = (Bx - Ax) * (y - Ay) - (By - Ay) * (x - Ax);
+                        const cross2 = (Cx - Bx) * (y - By) - (Cy - By) * (x - Bx);
+                        const cross3 = (Ax - Cx) * (y - Cy) - (Ay - Cy) * (x - Cx);
+                        const t = 0.45;
+                        return (cross1 >= -t && cross2 >= -t && cross3 >= -t) || (cross1 <= t && cross2 <= t && cross3 <= t);
+                    }
+                    default:
+                        return false;
+                }
+            }
+
+            function getFieldLeft() {
+                switch (fieldShape) {
+                    case 'circle':
+                        return fieldCX - fieldSize;
+                    case 'square':
+                        return fieldCX - fieldSize;
+                    case 'rectangle':
+                        return fieldCX - fieldSize;
+                    case 'triangle':
+                        return fieldCX - fieldSize * Math.sqrt(3) / 2;
+                    default:
+                        return fieldCX - fieldSize;
+                }
+            }
+
+            function getFieldRight() {
+                switch (fieldShape) {
+                    case 'circle':
+                        return fieldCX + fieldSize;
+                    case 'square':
+                        return fieldCX + fieldSize;
+                    case 'rectangle':
+                        return fieldCX + fieldSize;
+                    case 'triangle':
+                        return fieldCX + fieldSize * Math.sqrt(3) / 2;
+                    default:
+                        return fieldCX + fieldSize;
+                }
+            }
+
+            function getFieldTop() {
+                switch (fieldShape) {
+                    case 'circle':
+                        return fieldCY - fieldSize;
+                    case 'square':
+                        return fieldCY - fieldSize;
+                    case 'rectangle':
+                        return fieldCY - fieldSize * fieldAspect;
+                    case 'triangle':
+                        return fieldCY - fieldSize;
+                    default:
+                        return fieldCY - fieldSize;
+                }
+            }
+
+            function getFieldBottom() {
+                switch (fieldShape) {
+                    case 'circle':
+                        return fieldCY + fieldSize;
+                    case 'square':
+                        return fieldCY + fieldSize;
+                    case 'rectangle':
+                        return fieldCY + fieldSize * fieldAspect;
+                    case 'triangle':
+                        return fieldCY + fieldSize * 0.5;
+                    default:
+                        return fieldCY + fieldSize;
+                }
+            }
+
+            function recomputeFieldDots() {
+                fieldDots = [];
+                const spacing = 18;
+                const minX = getFieldLeft() - 15,
+                    maxX = getFieldRight() + 15;
+                const minY = getFieldTop() - 15,
+                    maxY = getFieldBottom() + 15;
+                for (let x = minX; x <= maxX; x += spacing) {
+                    for (let y = minY; y <= maxY; y += spacing) {
+                        if (isInsideField(x, y)) {
+                            const ox = x + (Math.random() - 0.5) * 6.5;
+                            const oy = y + (Math.random() - 0.5) * 6.5;
+                            if (isInsideField(ox, oy)) {
+                                fieldDots.push({ x: ox, y: oy, r: 0.45 + Math.random() * 1.2 });
+                            }
+                        }
+                    }
+                }
+                if (fieldDots.length > 950) fieldDots = fieldDots.slice(0, 950);
+            }
+
+            function initParticle() {
+                const leftBound = getFieldLeft();
+                px = leftBound - 68;
+                py = fieldCY;
+                const rad = angleDeg * Math.PI / 180;
+                vx = v0 * Math.cos(rad);
+                vy = v0 * Math.sin(rad);
+                simTime = 0;
+                trailPoints = [{ x: px, y: py, inField: isInsideField(px, py) }];
+            }
+
+            function resetAll() {
+                readParams();
+                recomputeFieldDots();
+                initParticle();
+                isPaused = false;
+                pauseBtn.textContent = '⏸️ 暂停';
+                updateInfoDisplay();
+                updateShapeUI();
+            }
+
+            function readParams() {
+                v0 = parseFloat(v0Slider.value);
+                angleDeg = parseFloat(angleSlider.value);
+                B = parseFloat(bSlider.value);
+                fieldSize = parseFloat(sizeSlider.value);
+                fieldAspect = parseFloat(aspectSlider.value);
+                v0Val.textContent = v0;
+                angleVal.textContent = angleDeg + '°';
+                bVal.textContent = B.toFixed(2);
+                sizeVal.textContent = fieldSize;
+                aspectVal.textContent = fieldAspect.toFixed(2);
+            }
+
+            function updateShapeUI() {
+                const isRect = fieldShape === 'rectangle';
+                aspectGroup.classList.toggle('hidden-ctrl', !isRect);
+                sizeLabel.textContent = sizeLabels[fieldShape] || '📐 尺寸';
+                shapeDisp.textContent = shapeNames[fieldShape] || fieldShape;
+            }
+
+            function physicsStep(dt) {
+                const inField = isInsideField(px, py);
+                let ax = 0,
+                    ay = 0;
+                if (inField) {
+                    const factor = q * B / m;
+                    ax = factor * vy;
+                    ay = -factor * vx;
+                }
+                const halfDt = dt / 2;
+                const k1vx = ax * halfDt,
+                    k1vy = ay * halfDt;
+                const k1px = vx * halfDt,
+                    k1py = vy * halfDt;
+                const midX = px + k1px,
+                    midY = py + k1py;
+                const midVx = vx + k1vx,
+                    midVy = vy + k1vy;
+                const midInField = isInsideField(midX, midY);
+                let k2ax = 0,
+                    k2ay = 0;
+                if (midInField) {
+                    const factor = q * B / m;
+                    k2ax = factor * midVy;
+                    k2ay = -factor * midVx;
+                }
+                vx += k2ax * dt;
+                vy += k2ay * dt;
+                px += midVx * dt;
+                py += midVy * dt;
+                simTime += dt;
+            }
+
+            function drawFieldBoundary() {
+                ctx.save();
+                ctx.strokeStyle = 'rgba(135, 206, 235, 0.6)'; // 浅蓝色边界
+                ctx.lineWidth = 2.5;
+                ctx.setLineDash([13, 10]);
+                ctx.shadowColor = 'rgba(100, 200, 255, 0.35)';
+                ctx.shadowBlur = 12;
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+                switch (fieldShape) {
+                    case 'circle':
+                        ctx.beginPath();
+                        ctx.arc(fieldCX, fieldCY, fieldSize, 0, Math.PI * 2);
+                        ctx.stroke();
+                        break;
+                    case 'square':
+                        ctx.beginPath();
+                        ctx.rect(fieldCX - fieldSize, fieldCY - fieldSize, fieldSize * 2, fieldSize * 2);
+                        ctx.stroke();
+                        break;
+                    case 'rectangle': {
+                        const hw = fieldSize,
+                            hh = fieldSize * fieldAspect;
+                        ctx.beginPath();
+                        ctx.rect(fieldCX - hw, fieldCY - hh, hw * 2, hh * 2);
+                        ctx.stroke();
+                        break;
+                    }
+                    case 'triangle': {
+                        const R = fieldSize;
+                        const topY = fieldCY - R,
+                            bottomY = fieldCY + R * 0.5;
+                        const halfBase = R * Math.sqrt(3) / 2;
+                        ctx.beginPath();
+                        ctx.moveTo(fieldCX, topY);
+                        ctx.lineTo(fieldCX - halfBase, bottomY);
+                        ctx.lineTo(fieldCX + halfBase, bottomY);
+                        ctx.closePath();
+                        ctx.stroke();
+                        break;
+                    }
+                }
+                ctx.setLineDash([]);
+                ctx.shadowBlur = 0;
+                ctx.restore();
+            }
+
+            function drawFieldFill() {
+                ctx.fillStyle = 'rgba(135, 206, 235, 0.12)'; // 浅蓝色半透明填充
+                switch (fieldShape) {
+                    case 'circle':
+                        ctx.beginPath();
+                        ctx.arc(fieldCX, fieldCY, fieldSize, 0, Math.PI * 2);
+                        ctx.fill();
+                        break;
+                    case 'square':
+                        ctx.fillRect(fieldCX - fieldSize, fieldCY - fieldSize, fieldSize * 2, fieldSize * 2);
+                        break;
+                    case 'rectangle': {
+                        const hw = fieldSize,
+                            hh = fieldSize * fieldAspect;
+                        ctx.fillRect(fieldCX - hw, fieldCY - hh, hw * 2, hh * 2);
+                        break;
+                    }
+                    case 'triangle': {
+                        const R = fieldSize;
+                        const topY = fieldCY - R,
+                            bottomY = fieldCY + R * 0.5;
+                        const halfBase = R * Math.sqrt(3) / 2;
+                        ctx.beginPath();
+                        ctx.moveTo(fieldCX, topY);
+                        ctx.lineTo(fieldCX - halfBase, bottomY);
+                        ctx.lineTo(fieldCX + halfBase, bottomY);
+                        ctx.closePath();
+                        ctx.fill();
+                        break;
+                    }
+                }
+            }
+
+            function drawFieldDots() {
+                for (const dot of fieldDots) {
+                    const alpha = 0.22 + Math.sin(dot.x * 0.28 + dot.y * 0.28 + simTime * 0.5) * 0.08;
+                    ctx.fillStyle = `rgba(180, 220, 245, ${Math.max(0.1, alpha)})`; // 浅蓝色点阵
+                    ctx.beginPath();
+                    ctx.arc(dot.x, dot.y, dot.r, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+
+            function drawTrail() {
+                if (trailPoints.length < 2) return;
+                const len = trailPoints.length;
+                for (let i = 1; i < len; i++) {
+                    const frac = i / len;
+                    const alpha = 0.1 + frac * 0.82;
+                    const r = Math.floor(175 + frac * 80);
+                    const g = Math.floor(20 + frac * 25);
+                    const b = Math.floor(20 + frac * 18);
+                    const lineW = 0.7 + frac * 3.6;
+                    ctx.strokeStyle = `rgba(${r},${g},${b},${alpha})`;
+                    ctx.lineWidth = lineW;
+                    ctx.lineCap = 'round';
+                    ctx.lineJoin = 'round';
+                    ctx.beginPath();
+                    ctx.moveTo(trailPoints[i - 1].x, trailPoints[i - 1].y);
+                    ctx.lineTo(trailPoints[i].x, trailPoints[i].y);
+                    ctx.stroke();
+                }
+            }
+
+            function drawParticle() {
+                const glowGrad = ctx.createRadialGradient(px, py, 1.3, px, py, 21);
+                glowGrad.addColorStop(0, 'rgba(255,72,52,0.92)');
+                glowGrad.addColorStop(0.36, 'rgba(255,46,30,0.24)');
+                glowGrad.addColorStop(1, 'rgba(255,18,5,0)');
+                ctx.fillStyle = glowGrad;
+                ctx.beginPath();
+                ctx.arc(px, py, 21, 0, Math.PI * 2);
+                ctx.fill();
+
+                const bodyGrad = ctx.createRadialGradient(px - 1.5, py - 1.9, 0.4, px, py, 7.2);
+                bodyGrad.addColorStop(0, '#ffe4e4');
+                bodyGrad.addColorStop(0.26, '#ff3b4a');
+                bodyGrad.addColorStop(1, '#85101b');
+                ctx.fillStyle = bodyGrad;
+                ctx.beginPath();
+                ctx.arc(px, py, 6.8, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = 'rgba(255,255,255,0.42)';
+                ctx.lineWidth = 1.1;
+                ctx.stroke();
+
+                ctx.fillStyle = 'rgba(255,255,255,0.64)';
+                ctx.beginPath();
+                ctx.arc(px - 1.8, py - 2.2, 1.7, 0, Math.PI * 2);
+                ctx.fill();
+
+                const spd = Math.sqrt(vx * vx + vy * vy);
+                if (spd > 1.2) {
+                    const arrowLen = Math.min(spd * 0.13, 42);
+                    const nx = vx / spd,
+                        ny = vy / spd;
+                    const tipX = px + nx * arrowLen,
+                        tipY = py + ny * arrowLen;
+                    ctx.strokeStyle = 'rgba(255,206,106,0.83)';
+                    ctx.lineWidth = 2.5;
+                    ctx.lineCap = 'round';
+                    ctx.beginPath();
+                    ctx.moveTo(px, py);
+                    ctx.lineTo(tipX, tipY);
+                    ctx.stroke();
+                    const tipSz = 8;
+                    ctx.fillStyle = 'rgba(255,206,106,0.84)';
+                    ctx.beginPath();
+                    ctx.moveTo(tipX, tipY);
+                    ctx.lineTo(tipX - nx * tipSz + ny * tipSz * 0.36, tipY - ny * tipSz - nx * tipSz * 0.36);
+                    ctx.lineTo(tipX - nx * tipSz - ny * tipSz * 0.36, tipY - ny * tipSz + nx * tipSz * 0.36);
+                    ctx.closePath();
+                    ctx.fill();
+                }
+            }
+
+            function drawLabels() {
+                ctx.fillStyle = 'rgba(196,206,236,0.42)';
+                ctx.font = '9px "Segoe UI","PingFang SC","Microsoft YaHei",sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('磁场中心', fieldCX, getFieldTop() - 15);
+                if (trailPoints.length > 0) {
+                    const fp = trailPoints[0];
+                    ctx.fillText('起始点', fp.x - 15, fp.y + 12);
+                }
+                ctx.textAlign = 'right';
+                ctx.fillText('🔴 带电粒子 (q>0)', W - 12, 19);
+                ctx.fillText('⊙ 磁场方向: 垂直向外', W - 12, 35);
+                ctx.fillText('红色渐变 = 运动轨迹', W - 12, 51);
+
+                ctx.fillStyle = 'rgba(180,220,245,0.45)';
+                ctx.font = 'italic 10px "Segoe UI","PingFang SC","Microsoft YaHei",sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText(shapeNames[fieldShape] + '磁场区域', fieldCX, getFieldBottom() + 22);
+                ctx.fillText('B = ' + B.toFixed(2) + ' (⊙)', fieldCX, fieldCY + 2);
+            }
+
+            function render() {
+                ctx.clearRect(0, 0, W, H);
+                const bgGrad = ctx.createRadialGradient(W * 0.34, H * 0.31, 22, W * 0.5, H * 0.5, W * 0.72);
+                bgGrad.addColorStop(0, '#0b102e');
+                bgGrad.addColorStop(1, '#010308');
+                ctx.fillStyle = bgGrad;
+                ctx.fillRect(0, 0, W, H);
+
+                const starSeed = 203;
+                for (let i = 0; i < 78; i++) {
+                    const sx = ((i * 223 + starSeed) % W);
+                    const sy = ((i * 379 + starSeed * 3) % H);
+                    const flicker = 0.18 + Math.sin(simTime * 2.1 + i * 1.6) * 0.14;
+                    ctx.fillStyle = `rgba(206,220,255,${Math.max(0.02, flicker)})`;
+                    ctx.beginPath();
+                    ctx.arc(sx, sy, 0.3 + (i % 3) * 0.45, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+
+                drawFieldFill();
+                drawFieldDots();
+                drawFieldBoundary();
+                drawTrail();
+                drawParticle();
+                drawLabels();
+            }
+
+            function updateInfoDisplay() {
+                const spd = Math.sqrt(vx * vx + vy * vy);
+                speedDisp.textContent = Math.round(spd);
+                const inField = isInsideField(px, py);
+                let radiusVal = '∞';
+                if (inField && B > 0.002 && spd > 0.3) {
+                    radiusVal = Math.round(spd / B);
+                }
+                radiusDisp.textContent = radiusVal;
+                stateDisp.textContent = inField ? '磁场内 ⚡' : '磁场外 ➡️';
+                stateDisp.style.color = inField ? '#ffaa44' : '#88ccff';
+                timeDisp.textContent = simTime.toFixed(2);
+                shapeDisp.textContent = shapeNames[fieldShape] || fieldShape;
+            }
+
+            const SIM_DT = 1 / 580;
+            const SUBSTEPS = 10;
+
+            function mainLoop() {
+                if (!isPaused) {
+                    const frameTime = 1 / 60;
+                    const steps = Math.max(SUBSTEPS, Math.ceil(frameTime / SIM_DT));
+                    const dt = frameTime / steps;
+                    for (let i = 0; i < steps; i++) {
+                        physicsStep(dt);
+                        if (i % 3 === 0) {
+                            const inF = isInsideField(px, py);
+                            trailPoints.push({ x: px, y: py, inField: inF });
+                            if (trailPoints.length > MAX_TRAIL) trailPoints.shift();
+                        }
+                    }
+                    const inF = isInsideField(px, py);
+                    if (trailPoints.length === 0 ||
+                        Math.abs(trailPoints[trailPoints.length - 1].x - px) > 0.06 ||
+                        Math.abs(trailPoints[trailPoints.length - 1].y - py) > 0.06) {
+                        trailPoints.push({ x: px, y: py, inField: inF });
+                        if (trailPoints.length > MAX_TRAIL) trailPoints.shift();
+                    }
+                    if (px < -140 || px > W + 140 || py < -140 || py > H + 140) {
+                        resetAll();
+                    }
+                    updateInfoDisplay();
+                }
+                render();
+                animId = requestAnimationFrame(mainLoop);
+            }
+
+            v0Slider.addEventListener('input', () => { v0Val.textContent = v0Slider.value;
+                v0 = parseFloat(v0Slider.value);
+                resetAll(); });
+            angleSlider.addEventListener('input', () => { angleVal.textContent = angleSlider.value + '°';
+                angleDeg = parseFloat(angleSlider.value);
+                resetAll(); });
+            bSlider.addEventListener('input', () => { bVal.textContent = parseFloat(bSlider.value).toFixed(2);
+                B = parseFloat(bSlider.value);
+                resetAll(); });
+            sizeSlider.addEventListener('input', () => { sizeVal.textContent = sizeSlider.value;
+                fieldSize = parseFloat(sizeSlider.value);
+                recomputeFieldDots();
+                resetAll(); });
+            aspectSlider.addEventListener('input', () => { aspectVal.textContent = parseFloat(aspectSlider.value).toFixed(
+                    2);
+                fieldAspect = parseFloat(aspectSlider.value);
+                recomputeFieldDots();
+                resetAll(); });
+
+            shapeBtns.addEventListener('click', (e) => {
+                const btn = e.target.closest('.shape-btn');
+                if (!btn) return;
+                document.querySelectorAll('.shape-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                fieldShape = btn.dataset.shape;
+                recomputeFieldDots();
+                updateShapeUI();
+                resetAll();
+            });
+
+            resetBtn.addEventListener('click', resetAll);
+            pauseBtn.addEventListener('click', () => {
+                isPaused = !isPaused;
+                pauseBtn.textContent = isPaused ? '▶️ 播放' : '⏸️ 暂停';
+            });
+
+            document.addEventListener('keydown', (e) => {
+                if (e.key === ' ') { e.preventDefault();
+                    pauseBtn.click(); }
+                if (e.key === 'r' || e.key === 'R') { e.preventDefault();
+                    resetAll(); }
+            });
+
+            function resizeCanvas() {
+                const cw = document.querySelector('.container').clientWidth - 32;
+                const mw = Math.min(cw, 900);
+                const ratio = 900 / 500;
+                canvas.style.width = mw + 'px';
+                canvas.style.height = (mw / ratio) + 'px';
+            }
+            window.addEventListener('resize', resizeCanvas);
+
+            function start() {
+                readParams();
+                recomputeFieldDots();
+                initParticle();
+                isPaused = false;
+                pauseBtn.textContent = '⏸️ 暂停';
+                updateShapeUI();
+                if (animId) cancelAnimationFrame(animId);
+                updateInfoDisplay();
+                animId = requestAnimationFrame(mainLoop);
+            }
+
+            resizeCanvas();
+            start();
+            console.log('⚡ 带电粒子磁场模拟（⊙向外）已就绪');
+            console.log('   磁场区域用浅蓝色表示，已去掉圆心标记');
+        })();
+    </script>
+<style>
+.back-btn {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    padding: 10px 20px;
+    background: rgba(0, 150, 200, 0.3);
+    border: 1px solid #00ffff;
+    color: white;
+    font-size: 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    z-index: 9999;
+    transition: 0.3s;
+    backdrop-filter: blur(5px);
+}
+.back-btn:hover {
+    background: rgba(0, 150, 200, 0.6);
+    box-shadow: 0 0 15px #00ffff;
+}
+</style>
+<button class="back-btn" onclick="goBack()">⬅️ 返回</button>
+<script>
+function goBack() {
+    history.back();
+}
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        goBack();
+    }
+});
+</script>
+<div class="watermark">齐老师动画</div>
+<style>
+.watermark {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    font-size: 14px;
+    color: rgba(0, 255, 255, 0.3);
+    z-index: 9998;
+    pointer-events: none;
+    user-select: none;
+}
+</style>
+<script>
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+});
+</script>
+<style>
+.back-btn {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    padding: 10px 20px;
+    background: rgba(0, 150, 200, 0.3);
+    border: 1px solid #00ffff;
+    color: white;
+    font-size: 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    z-index: 9999;
+    transition: 0.3s;
+    backdrop-filter: blur(5px);
+}
+.back-btn:hover {
+    background: rgba(0, 150, 200, 0.6);
+    box-shadow: 0 0 15px #00ffff;
+}
+</style>
+<button class="back-btn" onclick="goBack()">⬅️ 返回</button>
+<script>
+function goBack() {
+    history.back();
+}
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        goBack();
+    }
+});
+</script>
+<div class="watermark">齐老师动画</div>
+<style>
+.watermark {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    font-size: 14px;
+    color: rgba(0, 255, 255, 0.3);
+    z-index: 9998;
+    pointer-events: none;
+    user-select: none;
+}
+</style>
+<script>
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+});
+</script>
+<style>
+.back-btn {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    padding: 10px 20px;
+    background: rgba(0, 150, 200, 0.3);
+    border: 1px solid #00ffff;
+    color: white;
+    font-size: 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    z-index: 9999;
+    transition: 0.3s;
+    backdrop-filter: blur(5px);
+}
+.back-btn:hover {
+    background: rgba(0, 150, 200, 0.6);
+    box-shadow: 0 0 15px #00ffff;
+}
+</style>
+<button class="back-btn" onclick="goBack()">⬅️ 返回</button>
+<script>
+function goBack() {
+    history.back();
+}
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        goBack();
+    }
+});
+</script>
+<div class="watermark">齐老师动画</div>
+<style>
+.watermark {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    font-size: 14px;
+    color: rgba(0, 255, 255, 0.3);
+    z-index: 9998;
+    pointer-events: none;
+    user-select: none;
+}
+</style>
+<script>
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+});
+</script>
+<style>
+.back-btn {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    padding: 10px 20px;
+    background: rgba(0, 150, 200, 0.3);
+    border: 1px solid #00ffff;
+    color: white;
+    font-size: 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    z-index: 9999;
+    transition: 0.3s;
+    backdrop-filter: blur(5px);
+}
+.back-btn:hover {
+    background: rgba(0, 150, 200, 0.6);
+    box-shadow: 0 0 15px #00ffff;
+}
+</style>
+<button class="back-btn" onclick="goBack()">⬅️ 返回</button>
+<script>
+function goBack() {
+    history.back();
+}
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        goBack();
+    }
+});
+</script>
+<div class="watermark">齐老师动画</div>
+<style>
+.watermark {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    font-size: 14px;
+    color: rgba(0, 255, 255, 0.3);
+    z-index: 9998;
+    pointer-events: none;
+    user-select: none;
+}
+</style>
+<script>
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+});
+</script>
+
+<div style="position: fixed; bottom: 10px; right: 10px; z-index: 9998; color: rgba(255, 255, 255, 0.3); font-family: Arial, sans-serif; font-size: 12px; pointer-events: none;">
+    齐老师动画
+</div>
+
+<script>
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+});
+</script>
+</body>
+</html>
