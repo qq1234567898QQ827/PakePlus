@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, user-scalable=no" name="viewport"/>
+<title>力的合成 · 平行四边形与三角形定则</title>
+<style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+        }
+
+        body {
+            min-height: 100vh;
+            background: radial-gradient(circle at 30% 10%, #0a0f1f, #02040c);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Segoe UI', 'Poppins', monospace;
+            padding: 20px;
+            position: relative;
+            overflow: auto;
+        }
+
+        /* 科技粒子背景 */
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: radial-gradient(circle at 20% 40%, rgba(0, 255, 255, 0.08) 1px, transparent 1px);
+            background-size: 38px 38px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        body::after {
+            content: "";
+            position: fixed;
+            width: 85vw;
+            height: 85vh;
+            top: 5%;
+            left: 5%;
+            background: radial-gradient(ellipse, rgba(0, 180, 230, 0.1) 0%, rgba(0, 0, 0, 0) 70%);
+            filter: blur(80px);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .glass-container {
+            position: relative;
+            z-index: 10;
+            max-width: 1400px;
+            width: 100%;
+            background: rgba(8, 18, 32, 0.7);
+            backdrop-filter: blur(12px);
+            border-radius: 1.8rem;
+            border: 1px solid rgba(0, 210, 255, 0.4);
+            box-shadow: 0 20px 35px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(0, 255, 255, 0.1) inset;
+            padding: 1rem;
+        }
+
+        /* 双画布并排 - 宽屏扁高 */
+        .dual-canvas {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            justify-content: flex-start;
+            margin-bottom: 1rem;
+        }
+        .canvas-card {
+            flex: 1;
+            min-width: 480px;
+            background: rgba(0, 5, 18, 0.4);
+            border-radius: 1.2rem;
+            padding: 8px;
+            border: 1px solid rgba(0, 200, 255, 0.3);
+        }
+        canvas {
+            display: block;
+            margin: 0 auto;
+            border-radius: 0.8rem;
+            width: 100%;
+            height: auto;
+            background: #010613;
+            box-shadow: 0 0 0 1px rgba(0, 220, 250, 0.2), 0 4px 12px black;
+        }
+
+        /* 力的大小显示区 */
+        .force-values {
+            background: rgba(0, 12, 28, 0.8);
+            backdrop-filter: blur(5px);
+            border-radius: 1rem;
+            padding: 0.6rem 0.8rem;
+            margin: 0.6rem 0 1rem 0;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            gap: 10px;
+            border: 1px solid rgba(0, 180, 255, 0.5);
+        }
+        .force-card {
+            flex: 1;
+            min-width: 90px;
+            background: #07182e60;
+            border-radius: 0.9rem;
+            padding: 0.4rem 0.5rem;
+            text-align: center;
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(0, 210, 255, 0.4);
+        }
+        .force-card .label {
+            font-size: 0.7rem;
+            letter-spacing: 1px;
+            color: #bbd9ff;
+            margin-bottom: 4px;
+        }
+        .force-card .value {
+            font-family: monospace;
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+        .force-card.red .value { color: #ff6b6b; text-shadow: 0 0 4px #ff4d4d; }
+        .force-card.blue .value { color: #66b0ff; text-shadow: 0 0 4px #3399ff; }
+        .force-card.white .value { color: #ffffff; text-shadow: 0 0 5px #ffffff; }
+        .force-card.angle .value { color: #ffcc88; text-shadow: 0 0 3px #ffaa44; }
+
+        .control-panel {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.8rem;
+            justify-content: space-between;
+            margin-top: 0.2rem;
+        }
+        .slider-card {
+            background: rgba(12, 26, 45, 0.75);
+            backdrop-filter: blur(5px);
+            flex: 1;
+            min-width: 140px;
+            border-radius: 1rem;
+            padding: 0.6rem 0.9rem;
+            border: 1px solid rgba(0, 200, 255, 0.45);
+        }
+        .slider-header {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: #c4e6ff;
+            font-weight: 600;
+            font-size: 0.85rem;
+            margin-bottom: 8px;
+        }
+        .badge {
+            background: #0a142e;
+            padding: 2px 8px;
+            border-radius: 20px;
+            font-size: 0.65rem;
+            border: 1px solid #2cf;
+            color: #0cf;
+        }
+        input[type="range"] {
+            width: 100%;
+            height: 4px;
+            -webkit-appearance: none;
+            background: linear-gradient(90deg, #2a9eff, #6ac8ff);
+            border-radius: 4px;
+            margin: 10px 0 6px;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            background: white;
+            border-radius: 50%;
+            border: 2px solid #0cf;
+            box-shadow: 0 0 8px #0cf;
+            cursor: pointer;
+        }
+        .val-num {
+            text-align: center;
+            font-family: monospace;
+            font-size: 0.85rem;
+            background: #07152b;
+            padding: 3px;
+            border-radius: 18px;
+            color: #bbf0ff;
+            border: 1px solid #3a86b0;
+        }
+        footer {
+            text-align: center;
+            font-size: 0.65rem;
+            color: #5f8abf;
+            margin-top: 0.8rem;
+            padding-top: 0.6rem;
+            border-top: 1px dashed rgba(0, 200, 255, 0.3);
+        }
+
+        @media (max-width: 1050px) {
+            .force-card .value { font-size: 1rem; }
+            .canvas-card { min-width: 400px; }
+        }
+    </style>
+</head>
+<body>
+<div id="backButton" onclick="window.location.href='index.html';" style="position: fixed; top: 20px; left: 20px; z-index: 9999; background: rgba(30, 60, 114, 0.8); color: white; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-family: Arial, sans-serif; font-size: 14px; border: 1px solid rgba(100, 150, 255, 0.5); transition: all 0.3s;">
+    ← 返回 (ESC)
+</div>
+<script>
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        window.location.href='index.html';
+    }
+});
+</script>
+
+<!-- 返回按钮 -->
+<a class="back-btn" href="index.html">⬅️ 返回分类 (ESC)</a>
+<div class="glass-container">
+<!-- 双画布并排：平行四边形（左）与三角形（右），宽高比优化 -->
+<div class="dual-canvas">
+<div class="canvas-card">
+<canvas height="420" id="parallelogramCanvas" style="width:100%; height:auto; aspect-ratio:640/420" width="640"></canvas>
+</div>
+<div class="canvas-card">
+<canvas height="420" id="triangleCanvas" style="width:100%; height:auto; aspect-ratio:640/420" width="640"></canvas>
+</div>
+</div>
+<!-- 力的大小显示区 -->
+<div class="force-values">
+<div class="force-card red">
+<div class="label">🔴 分力 F₁</div>
+<div class="value" id="f1Display">0.00 N</div>
+</div>
+<div class="force-card blue">
+<div class="label">🔵 分力 F₂</div>
+<div class="value" id="f2Display">0.00 N</div>
+</div>
+<div class="force-card white">
+<div class="label">⚪ 合力 F_合</div>
+<div class="value" id="resultDisplay">0.00 N</div>
+</div>
+<div class="force-card angle">
+<div class="label">📐 合力方向</div>
+<div class="value" id="dirDisplay">0.0°</div>
+</div>
+</div>
+<div class="control-panel">
+<div class="slider-card">
+<div class="slider-header">🔴 F₁ 大小</div>
+<input id="f1Slider" max="7.0" min="0" step="0.05" type="range" value="5.2"/>
+<div class="val-num"><span id="f1Val">5.20</span> N</div>
+</div>
+<div class="slider-card">
+<div class="slider-header">🔵 F₂ 大小</div>
+<input id="f2Slider" max="7.0" min="0" step="0.05" type="range" value="4.5"/>
+<div class="val-num"><span id="f2Val">4.50</span> N</div>
+</div>
+<div class="slider-card">
+<div class="slider-header">🔄 夹角 θ</div>
+<input id="angleSlider" max="180" min="0" step="1" type="range" value="64"/>
+<div class="val-num"><span id="angleVal">64</span> °</div>
+</div>
+</div>
+<footer>平行四边形虚线为邻边辅助 · 三角形首尾相接 · 合力为白色</footer>
+</div>
+<script>
+    (function () {
+        // 获取画布
+        const paraCanvas = document.getElementById('parallelogramCanvas');
+        const triCanvas = document.getElementById('triangleCanvas');
+        const ctxPara = paraCanvas.getContext('2d');
+        const ctxTri = triCanvas.getContext('2d');
+        
+        const width = 640, height = 420;
+        paraCanvas.width = width; paraCanvas.height = height;
+        triCanvas.width = width; triCanvas.height = height;
+        
+        // 原点位置：水平方向向左偏移 45px，垂直居中偏下留出空间
+        const originX = width / 2 - 45;   // 320 - 45 = 275
+        const originY = height / 2 + 15;  // 210 + 15 = 225
+        
+        // 标度 1N = 21px（最大合力约14N，长度294px，在420高度内安全，且宽度充裕）
+        const scale = 21;
+        
+        // DOM 元素
+        const f1Slider = document.getElementById('f1Slider');
+        const f2Slider = document.getElementById('f2Slider');
+        const angleSlider = document.getElementById('angleSlider');
+        const f1ValSpan = document.getElementById('f1Val');
+        const f2ValSpan = document.getElementById('f2Val');
+        const angleValSpan = document.getElementById('angleVal');
+        const f1Display = document.getElementById('f1Display');
+        const f2Display = document.getElementById('f2Display');
+        const resultDisplay = document.getElementById('resultDisplay');
+        const dirDisplay = document.getElementById('dirDisplay');
+        
+        // 物理坐标 -> 画布坐标
+        function toCanvas(physX, physY) {
+            return { x: originX + physX * scale, y: originY - physY * scale };
+        }
+        
+        // 绘制带箭头的矢量
+        function drawArrow(ctx, fromX, fromY, toX, toY, color, lineWidth = 3.2, arrowSize = 13, glow = true) {
+            ctx.setLineDash([]);
+            ctx.beginPath();
+            ctx.moveTo(fromX, fromY);
+            ctx.lineTo(toX, toY);
+            ctx.strokeStyle = color;
+            ctx.lineWidth = lineWidth;
+            if (glow) {
+                ctx.shadowBlur = 6;
+                ctx.shadowColor = color;
+            } else {
+                ctx.shadowBlur = 0;
+            }
+            ctx.stroke();
+            
+            // 合力白色增加极细黑边增强对比
+            if (color === '#FFFFFF') {
+                ctx.beginPath();
+                ctx.moveTo(fromX, fromY);
+                ctx.lineTo(toX, toY);
+                ctx.strokeStyle = '#111111';
+                ctx.lineWidth = 1.2;
+                ctx.shadowBlur = 0;
+                ctx.stroke();
+                ctx.strokeStyle = '#FFFFFF';
+            }
+            
+            ctx.shadowBlur = 0;
+            
+            // 箭头
+            const angle = Math.atan2(toY - fromY, toX - fromX);
+            const arrowX = toX, arrowY = toY;
+            const wing = arrowSize;
+            const a1 = angle - Math.PI/6;
+            const a2 = angle + Math.PI/6;
+            ctx.beginPath();
+            ctx.moveTo(arrowX, arrowY);
+            ctx.lineTo(arrowX - wing * Math.cos(a1), arrowY - wing * Math.sin(a1));
+            ctx.lineTo(arrowX - wing * Math.cos(a2), arrowY - wing * Math.sin(a2));
+            ctx.fillStyle = color;
+            ctx.fill();
+            
+            if (color === '#FFFFFF') {
+                ctx.beginPath();
+                ctx.moveTo(arrowX, arrowY);
+                ctx.lineTo(arrowX - wing * Math.cos(a1), arrowY - wing * Math.sin(a1));
+                ctx.lineTo(arrowX - wing * Math.cos(a2), arrowY - wing * Math.sin(a2));
+                ctx.closePath();
+                ctx.strokeStyle = '#222';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+            }
+        }
+        
+        // 绘制虚线 (平行四边形辅助边)
+        function drawDashedLine(ctx, fromX, fromY, toX, toY, color = '#5bc0ff', lineWidth = 1.8) {
+            ctx.setLineDash([6, 6]);
+            ctx.beginPath();
+            ctx.moveTo(fromX, fromY);
+            ctx.lineTo(toX, toY);
+            ctx.strokeStyle = color;
+            ctx.lineWidth = lineWidth;
+            ctx.shadowBlur = 2;
+            ctx.shadowColor = '#6ccaff';
+            ctx.stroke();
+            ctx.setLineDash([]);
+            ctx.shadowBlur = 0;
+        }
+        
+        // 科技感背景
+        function drawBackground(ctx, w, h) {
+            const grad = ctx.createLinearGradient(0, 0, w, h);
+            grad.addColorStop(0, '#010715');
+            grad.addColorStop(0.6, '#030c1c');
+            grad.addColorStop(1, '#010511');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, w, h);
+            // 微星尘
+            ctx.fillStyle = "rgba(80, 170, 255, 0.12)";
+            for (let i = 0; i < 140; i++) {
+                const px = (i * 131) % w;
+                const py = (i * 253) % h;
+                ctx.beginPath();
+                ctx.arc(px, py, 1, 0, Math.PI*2);
+                ctx.fill();
+            }
+        }
+        
+        // 原点光晕
+        function drawOrigin(ctx, x, y) {
+            ctx.beginPath();
+            ctx.arc(x, y, 4.5, 0, 2*Math.PI);
+            ctx.fillStyle = "#80caff";
+            ctx.shadowBlur = 6;
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(x, y, 2, 0, 2*Math.PI);
+            ctx.fillStyle = "#ffffff";
+            ctx.fill();
+            ctx.shadowBlur = 0;
+        }
+        
+        // 绘制平行四边形定则
+        function drawParallelogram(F1, F2, thetaRad) {
+            const O = { x:0, y:0 };
+            const A = { x: F1, y: 0 };
+            const B = { x: F2 * Math.cos(thetaRad), y: F2 * Math.sin(thetaRad) };
+            const C = { x: F1 + F2 * Math.cos(thetaRad), y: F2 * Math.sin(thetaRad) };
+            
+            const O_c = toCanvas(O.x, O.y);
+            const A_c = toCanvas(A.x, A.y);
+            const B_c = toCanvas(B.x, B.y);
+            const C_c = toCanvas(C.x, C.y);
+            
+            drawBackground(ctxPara, width, height);
+            
+            // 虚线辅助线
+            drawDashedLine(ctxPara, A_c.x, A_c.y, C_c.x, C_c.y, "#5bc0ff", 1.8);
+            drawDashedLine(ctxPara, B_c.x, B_c.y, C_c.x, C_c.y, "#5bc0ff", 1.8);
+            
+            // 分力
+            drawArrow(ctxPara, O_c.x, O_c.y, A_c.x, A_c.y, "#ff4d4d", 3.2, 13, true);
+            drawArrow(ctxPara, O_c.x, O_c.y, B_c.x, B_c.y, "#3399ff", 3.2, 13, true);
+            // 合力
+            drawArrow(ctxPara, O_c.x, O_c.y, C_c.x, C_c.y, "#FFFFFF", 3.8, 14, true);
+            
+            drawOrigin(ctxPara, O_c.x, O_c.y);
+            
+            if (Math.hypot(C.x, C.y) > 0.3) {
+                ctxPara.beginPath();
+                ctxPara.arc(C_c.x, C_c.y, 6, 0, 2*Math.PI);
+                ctxPara.fillStyle = "rgba(255,255,255,0.2)";
+                ctxPara.shadowBlur = 6;
+                ctxPara.fill();
+                ctxPara.shadowBlur = 0;
+            }
+        }
+        
+        // 绘制三角形定则
+        function drawTriangleRule(F1, F2, thetaRad) {
+            const O = { x:0, y:0 };
+            const A = { x: F1, y: 0 };
+            const C = { x: F1 + F2 * Math.cos(thetaRad), y: F2 * Math.sin(thetaRad) };
+            
+            const O_c = toCanvas(O.x, O.y);
+            const A_c = toCanvas(A.x, A.y);
+            const C_c = toCanvas(C.x, C.y);
+            
+            drawBackground(ctxTri, width, height);
+            
+            drawArrow(ctxTri, O_c.x, O_c.y, A_c.x, A_c.y, "#ff4d4d", 3.2, 13, true);
+            drawArrow(ctxTri, A_c.x, A_c.y, C_c.x, C_c.y, "#3399ff", 3.2, 13, true);
+            drawArrow(ctxTri, O_c.x, O_c.y, C_c.x, C_c.y, "#FFFFFF", 3.8, 14, true);
+            
+            drawOrigin(ctxTri, O_c.x, O_c.y);
+            
+            if (Math.hypot(C.x, C.y) > 0.3) {
+                ctxTri.beginPath();
+                ctxTri.arc(C_c.x, C_c.y, 6, 0, 2*Math.PI);
+                ctxTri.fillStyle = "rgba(255,255,255,0.2)";
+                ctxTri.shadowBlur = 6;
+                ctxTri.fill();
+                ctxTri.shadowBlur = 0;
+            }
+        }
+        
+        // 全局更新
+        function update() {
+            let F1 = parseFloat(f1Slider.value);
+            let F2 = parseFloat(f2Slider.value);
+            let thetaDeg = parseFloat(angleSlider.value);
+            
+            f1ValSpan.innerText = F1.toFixed(2);
+            f2ValSpan.innerText = F2.toFixed(2);
+            angleValSpan.innerText = thetaDeg;
+            f1Display.innerText = F1.toFixed(2) + " N";
+            f2Display.innerText = F2.toFixed(2) + " N";
+            
+            const thetaRad = thetaDeg * Math.PI / 180;
+            const rx = F1 + F2 * Math.cos(thetaRad);
+            const ry = F2 * Math.sin(thetaRad);
+            const resultantMag = Math.hypot(rx, ry);
+            let resultantDir = Math.atan2(ry, rx) * 180 / Math.PI;
+            resultantDir = Math.round(resultantDir * 10) / 10;
+            resultDisplay.innerText = resultantMag.toFixed(2) + " N";
+            dirDisplay.innerText = resultantDir + "°";
+            
+            drawParallelogram(F1, F2, thetaRad);
+            drawTriangleRule(F1, F2, thetaRad);
+        }
+        
+        f1Slider.addEventListener('input', update);
+        f2Slider.addEventListener('input', update);
+        angleSlider.addEventListener('input', update);
+        update();
+        window.addEventListener('resize', () => update());
+    })();
+</script>
+<!-- 水印 -->
+<div class="watermark">齐老师动画</div>
+<script>
+// 禁用右键
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+});
+
+// ESC返回功能
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        history.back();
+    }
+});
+</script>
+
+<div style="position: fixed; bottom: 10px; right: 10px; z-index: 9998; color: rgba(255, 255, 255, 0.3); font-family: Arial, sans-serif; font-size: 12px; pointer-events: none;">
+    齐老师动画
+</div>
+
+<script>
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+});
+</script>
+</body>
+</html>
