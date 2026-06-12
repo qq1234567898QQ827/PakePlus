@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta charset="utf-8"/>
+<meta charset="utf-8"/>
+<meta charset="utf-8"/>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>光电效应动画 - 激光光源 (极板加倍)</title>
+<style>
+        :root {
+            --bg: #f5f7fa;
+            --panel-bg: #ffffff;
+            --text: #2c3e50;
+            --accent: #3498db;
+            --gold: #e67e22;
+            --slider-track: #dcdfe6;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: var(--bg);
+            display: flex; justify-content: center; align-items: center;
+            min-height: 100vh;
+            font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            padding: 10px; user-select: none;
+        }
+        .container {
+            background: var(--panel-bg); border-radius: 20px; padding: 20px 24px 16px;
+            box-shadow: 0 12px 30px rgba(0,0,0,0.08);
+            display: flex; flex-direction: column; align-items: center; gap: 14px;
+            max-width: 960px; width: 100%;
+        }
+        h1 {
+            color: #2c3e50; font-size: 1.5rem; font-weight: 600;
+            background: linear-gradient(135deg, #e74c3c, #e67e22);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+            margin: 0;
+        }
+        canvas {
+            border-radius: 14px; display: block; background: #f8f9fc;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.05);
+            cursor: default; width: 100%; height: auto; max-width: 920px;
+        }
+        .controls { display: flex; flex-wrap: wrap; gap: 16px; justify-content: center; width: 100%; }
+        .control-group {
+            background: #ffffff; border-radius: 14px; padding: 14px 18px;
+            display: flex; flex-direction: column; gap: 6px; min-width: 180px; flex: 1 1 200px;
+            border: 1px solid rgba(0,0,0,0.08); box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+        }
+        .control-group label { color: #4a5568; font-size: 0.85rem; font-weight: 500; display: flex; align-items: center; gap: 6px; }
+        .control-group label .val { margin-left: auto; color: #e67e22; font-weight: 600; font-size: 0.82rem; min-width: 70px; text-align: right; }
+        input[type="range"] { -webkit-appearance: none; width: 100%; height: 8px; border-radius: 4px; background: var(--slider-track); outline: none; cursor: pointer; }
+        input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 26px; height: 26px; border-radius: 50%; background: #ffffff; border: 3px solid var(--accent); cursor: pointer; box-shadow: 0 2px 10px rgba(0,0,0,0.15); }
+        #freqSlider { background: linear-gradient(90deg, #e04040, #f0a030, #f0e030, #40c040, #4080e0, #7040e0); }
+        #intensitySlider { background: linear-gradient(90deg, #d0d0d0, #f0c060, #555); }
+        .info-badge { display: inline-block; padding: 4px 10px; border-radius: 20px; font-size: 0.78rem; font-weight: 600; }
+        .badge-active { background: rgba(46,204,113,0.15); color: #27ae60; border: 1px solid rgba(46,204,113,0.4); }
+        .badge-inactive { background: rgba(231,76,60,0.1); color: #c0392b; border: 1px solid rgba(231,76,60,0.35); }
+    </style>
+</head>
+<body>
+<div id="backButton" onclick="window.location.href='index.html';" style="position: fixed; top: 20px; left: 20px; z-index: 9999; background: rgba(136, 187, 255, 0.2); color: white; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-family: Arial, sans-serif; font-size: 14px; border: 1px solid rgba(136, 187, 255, 0.5); transition: all 0.3s;">
+    ← 返回 (ESC)
+</div>
+<script>
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        window.location.href='index.html';
+    }
+});
+</script>
+
+<div class="container">
+<h1>⚡ 光电效应 · 激光光源 (极板加倍)</h1>
+<canvas height="530" id="mainCanvas" width="920"></canvas>
+<div class="controls">
+<div class="control-group">
+<label>🌈 激光频率 <span class="val" id="freqVal">6.0×10¹⁴ Hz</span></label>
+<input id="freqSlider" max="8.0" min="3.0" step="0.05" type="range" value="6.0"/>
+<div style="display:flex;justify-content:space-between;font-size:0.7rem;color:#7f8c8d;"><span>3.0</span><span>截止≈5.0</span><span>8.0</span></div>
+<div id="freqStatus" style="text-align:center;margin-top:2px;"><span class="info-badge badge-active">✓ 发生光电效应</span></div>
+</div>
+<div class="control-group">
+<label>💡 激光强度 <span class="val" id="intensityVal">强</span></label>
+<input id="intensitySlider" max="20" min="1" step="1" type="range" value="18"/>
+<div style="display:flex;justify-content:space-between;font-size:0.7rem;color:#7f8c8d;"><span>弱</span><span>中等</span><span>强</span></div>
+</div>
+<div class="control-group">
+<label>🔌 电压 U<sub>AK</sub> <span class="val" id="voltageVal">+0.00 V</span></label>
+<input id="voltageSlider" max="100" min="-100" step="1" type="range" value="30"/>
+<div style="display:flex;justify-content:space-between;font-size:0.7rem;color:#7f8c8d;"><span>反向-3V</span><span>0V</span><span>正向+3V</span></div>
+</div>
+</div>
+</div>
+<script>
+    (function() {
+        const canvas = document.getElementById('mainCanvas');
+        const ctx = canvas.getContext('2d');
+        const freqSlider = document.getElementById('freqSlider');
+        const intensitySlider = document.getElementById('intensitySlider');
+        const voltageSlider = document.getElementById('voltageSlider');
+        const freqValSpan = document.getElementById('freqVal');
+        const intensityValSpan = document.getElementById('intensityVal');
+        const voltageValSpan = document.getElementById('voltageVal');
+        const freqStatusDiv = document.getElementById('freqStatus');
+
+        const CUTOFF_FREQ = 5.0;
+        const MAX_BATTERY_V = 3.0;
+        const SATURATION_VOLTAGE = 2.0;
+        const CURRENT_SCALE = 10.0;
+        const TRAIL_LENGTH = 14;
+
+        let photonFrequency = parseFloat(freqSlider.value);
+        let lightIntensity = parseInt(intensitySlider.value);
+        let voltageAK = parseFloat(voltageSlider.value) / 100 * MAX_BATTERY_V;
+
+        // 极板长度加倍：从180px增加到320px，玻璃管相应增大
+        let tubeCX = 380, tubeCY = 220, tubeRX = 200, tubeRY = 170;
+        let plateKX = tubeCX - tubeRX + 55;
+        let plateAX = tubeCX + tubeRX - 55;
+        let plateYTop = tubeCY - 160;   // 原90 -> 160
+        let plateYBottom = tubeCY + 160; // 原90 -> 160
+        let targetY = (plateYTop + plateYBottom) / 2;
+        let lightSourceX = (plateKX + plateAX) / 2;
+        let lightSourceY = tubeCY - tubeRY - 20; // 光源位置调整
+
+        let rheoX = 730, rheoYTop = 320, rheoYBottom = 485, rheoWidth = 28;
+        let rheoMidY = (rheoYTop + rheoYBottom) / 2;
+        let sliderY = rheoMidY;
+        let isDraggingSlider = false;
+
+        let photons = [];
+        let photoelectrons = [];
+        let frameCount = 0, photonSpawnTimer = 0;
+        let electronsEmittedTotal = 0, electronsArrivedA = 0, electronsReturnedK = 0;
+        let recentArrivals = [];
+
+        const CURRENT_WINDOW = 30;
+        let arrivalHistory = new Array(CURRENT_WINDOW).fill(0);
+        let historyIndex = 0;
+        let currentDisplay = 0;
+
+        function updateSliderFromVoltage() {
+            const halfRange = (rheoYBottom - rheoYTop) / 2;
+            sliderY = rheoMidY - (voltageAK / MAX_BATTERY_V) * halfRange;
+            sliderY = Math.max(rheoYTop, Math.min(rheoYBottom, sliderY));
+        }
+        function updateVoltageFromSlider() {
+            const halfRange = (rheoYBottom - rheoYTop) / 2;
+            const frac = -(sliderY - rheoMidY) / halfRange;
+            voltageAK = Math.round(frac * MAX_BATTERY_V * 100) / 100;
+            voltageSlider.value = Math.round((voltageAK / MAX_BATTERY_V) * 100);
+            voltageValSpan.textContent = (voltageAK >= 0 ? '+' : '') + voltageAK.toFixed(2) + ' V';
+        }
+
+        function getPhotonColor(freq) {
+            const f = Math.max(3.0, Math.min(8.0, freq)), t = (f - 3.0) / 5.0;
+            let r,g,b;
+            if (t < 0.35) { const s = t/0.35; r=255; g=Math.floor(40+s*160); b=Math.floor(10+s*60); }
+            else if (t < 0.55) { const s=(t-0.35)/0.2; r=255; g=Math.floor(200+s*55); b=Math.floor(70-s*40); }
+            else if (t < 0.75) { const s=(t-0.55)/0.2; r=Math.floor(255-s*200); g=Math.floor(255-s*120); b=Math.floor(30+s*180); }
+            else { const s=(t-0.75)/0.25; r=Math.floor(55-s*30); g=Math.floor(135-s*100); b=Math.floor(210+s*45); }
+            return `rgb(${Math.max(0,Math.min(255,r))},${Math.max(0,Math.min(255,g))},${Math.max(0,Math.min(255,b))})`;
+        }
+
+        function spawnPhoton() {
+            const dx = plateKX - lightSourceX, dy = targetY - lightSourceY;
+            const dist = Math.hypot(dx, dy), speed = 4.5;
+            photons.push({
+                x: lightSourceX, y: lightSourceY,
+                vx: (dx/dist)*speed, vy: (dy/dist)*speed,
+                color: getPhotonColor(photonFrequency), arrived: false,
+                radius: 2.5 + Math.random()*2.0,
+            });
+        }
+
+        function spawnPhotoelectron(fromY) {
+            const freqAbove = photonFrequency - CUTOFF_FREQ;
+            const baseSpeed = 0.8 + freqAbove * 1.2;
+            const vx = baseSpeed * (0.7 + Math.random() * 0.6);
+            const vy = (Math.random() - 0.5) * baseSpeed * 4.5;
+            photoelectrons.push({
+                x: plateKX + 4,
+                y: fromY,
+                vx: vx,
+                vy: vy,
+                alive: true,
+                trail: []
+            });
+            electronsEmittedTotal++;
+        }
+
+        function getElectricAcceleration() {
+            if (voltageAK >= SATURATION_VOLTAGE) return 0.45;
+            return voltageAK * 0.06;
+        }
+
+        function drawLightSource() {
+            const cx = lightSourceX, cy = lightSourceY, tx = plateKX, ty = targetY;
+            ctx.beginPath(); ctx.moveTo(cx,cy); ctx.lineTo(tx,ty);
+            ctx.strokeStyle='rgba(200,40,40,0.25)'; ctx.lineWidth=5; ctx.stroke();
+            ctx.strokeStyle='rgba(200,40,40,0.85)'; ctx.lineWidth=2; ctx.setLineDash([8,6]); ctx.stroke(); ctx.setLineDash([]);
+            ctx.fillStyle='rgba(255,140,0,0.8)'; ctx.beginPath(); ctx.arc(tx,ty,5,0,Math.PI*2); ctx.fill();
+            const glow=ctx.createRadialGradient(cx,cy,6,cx,cy,35);
+            glow.addColorStop(0,'rgba(255,80,80,0.8)'); glow.addColorStop(0.5,'rgba(255,50,50,0.4)'); glow.addColorStop(1,'rgba(255,0,0,0)');
+            ctx.fillStyle=glow; ctx.beginPath(); ctx.arc(cx,cy,35,0,Math.PI*2); ctx.fill();
+            const bulb=ctx.createRadialGradient(cx-2,cy-3,2,cx,cy,12);
+            bulb.addColorStop(0,'#fff'); bulb.addColorStop(0.6,'#ffaaaa'); bulb.addColorStop(1,'#cc4444');
+            ctx.fillStyle=bulb; ctx.beginPath(); ctx.arc(cx,cy,12,0,Math.PI*2); ctx.fill();
+            ctx.strokeStyle='#aa2222'; ctx.lineWidth=2; ctx.stroke();
+            ctx.fillStyle='#c0392b'; ctx.font='bold 11px "PingFang SC","Microsoft YaHei"'; ctx.textAlign='center'; ctx.fillText('激光光源',cx,cy+28);
+        }
+
+        function drawGlassTube() {
+            const grad=ctx.createLinearGradient(tubeCX,tubeCY-tubeRY,tubeCX,tubeCY+tubeRY);
+            grad.addColorStop(0,'rgba(210,225,245,0.5)'); grad.addColorStop(0.3,'rgba(235,242,252,0.7)');
+            grad.addColorStop(0.5,'rgba(248,251,255,0.8)'); grad.addColorStop(0.7,'rgba(230,240,250,0.65)');
+            grad.addColorStop(1,'rgba(200,215,235,0.4)');
+            ctx.fillStyle=grad; ctx.beginPath(); ctx.ellipse(tubeCX,tubeCY,tubeRX,tubeRY,0,0,Math.PI*2); ctx.fill();
+            ctx.strokeStyle='rgba(120,140,160,0.5)'; ctx.lineWidth=3; ctx.stroke();
+            ctx.fillStyle='#2c3e50'; ctx.font='10px "PingFang SC","Microsoft YaHei"'; ctx.textAlign='center';
+            ctx.fillText('真空光电管',tubeCX,tubeCY-tubeRY-10);
+        }
+
+        function drawPlates() {
+            const kx=plateKX, kTop=plateYTop+8, kBottom=plateYBottom-8;
+            const kGrad=ctx.createLinearGradient(kx-5,0,kx+5,0);
+            kGrad.addColorStop(0,'#7f8c8d'); kGrad.addColorStop(0.4,'#bdc3c7'); kGrad.addColorStop(0.6,'#ecf0f1'); kGrad.addColorStop(1,'#95a5a6');
+            ctx.fillStyle=kGrad; ctx.fillRect(kx-5,kTop,10,kBottom-kTop);
+            ctx.strokeStyle='#2c3e50'; ctx.lineWidth=1.5; ctx.strokeRect(kx-5,kTop,10,kBottom-kTop);
+            ctx.fillStyle='#2c3e50'; ctx.font='bold 13px "PingFang SC","Microsoft YaHei"'; ctx.textAlign='center';
+            ctx.fillText('K (阴极)',kx,kTop-10);
+
+            const ax=plateAX, aTop=plateYTop+20, aBottom=plateYBottom-20;
+            const aGrad=ctx.createLinearGradient(ax-3.5,0,ax+3.5,0);
+            aGrad.addColorStop(0,'#7f8c8d'); aGrad.addColorStop(0.4,'#bdc3c7'); aGrad.addColorStop(0.6,'#ecf0f1'); aGrad.addColorStop(1,'#95a5a6');
+            ctx.fillStyle=aGrad; ctx.fillRect(ax-3.5,aTop,7,aBottom-aTop);
+            ctx.strokeStyle='#2c3e50'; ctx.lineWidth=1.2; ctx.strokeRect(ax-3.5,aTop,7,aBottom-aTop);
+            ctx.fillText('A (阳极)',ax,aTop-10);
+        }
+
+        function drawCircuit() {
+            const kx=plateKX, ax=plateAX;
+            const kWireYBot=tubeCY+tubeRY+25, aWireYBot=tubeCY+tubeRY+12;
+            ctx.strokeStyle='#34495e'; ctx.lineWidth=2;
+            ctx.beginPath(); ctx.moveTo(kx,plateYBottom-8); ctx.lineTo(kx,kWireYBot);
+            ctx.lineTo(rheoX-rheoWidth/2-10,kWireYBot); ctx.lineTo(rheoX-rheoWidth/2-10,rheoMidY); ctx.lineTo(rheoX-rheoWidth/2,rheoMidY); ctx.stroke();
+            ctx.fillStyle='#e67e22'; ctx.beginPath(); ctx.arc(rheoX-rheoWidth/2,rheoMidY,4.5,0,Math.PI*2); ctx.fill();
+
+            ctx.beginPath(); ctx.moveTo(ax,plateYBottom-20); ctx.lineTo(ax,aWireYBot);
+            ctx.lineTo(rheoX+rheoWidth/2+30,aWireYBot); ctx.lineTo(rheoX+rheoWidth/2+30,sliderY); ctx.lineTo(rheoX+rheoWidth/2,sliderY); ctx.stroke();
+
+            ctx.fillStyle='#e74c3c'; ctx.beginPath(); ctx.arc(rheoX+rheoWidth/2,sliderY,6,0,Math.PI*2); ctx.fill();
+            ctx.fillStyle='#e8e8e8'; ctx.beginPath();
+            ctx.moveTo(rheoX-rheoWidth/2-8,sliderY); ctx.lineTo(rheoX+rheoWidth/2+8,sliderY);
+            ctx.lineTo(rheoX+rheoWidth/2+4,sliderY+10); ctx.lineTo(rheoX-rheoWidth/2-4,sliderY+10); ctx.closePath(); ctx.fill();
+            ctx.strokeStyle='#666'; ctx.lineWidth=1; ctx.stroke();
+
+            ctx.fillStyle='#d5d8dc'; ctx.fillRect(rheoX-rheoWidth/2,rheoYTop,rheoWidth,rheoYBottom-rheoYTop);
+            ctx.strokeStyle='#7f8c8d'; ctx.lineWidth=2; ctx.strokeRect(rheoX-rheoWidth/2,rheoYTop,rheoWidth,rheoYBottom-rheoYTop);
+
+            const batX=rheoX+rheoWidth/2+60, batTop=rheoYTop+20, batBottom=rheoYBottom-20;
+            ctx.strokeStyle='#2c3e50'; ctx.lineWidth=3;
+            ctx.beginPath(); ctx.moveTo(batX-18,batTop); ctx.lineTo(batX+18,batTop); ctx.stroke();
+            ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(batX-8,batBottom); ctx.lineTo(batX+8,batBottom); ctx.stroke();
+            ctx.strokeStyle='#7f8c8d'; ctx.lineWidth=1.5; ctx.strokeRect(batX-10,batTop-2,20,batBottom-batTop+4);
+            ctx.fillStyle='#2c3e50'; ctx.font='10px "PingFang SC","Microsoft YaHei"'; ctx.textAlign='center';
+            ctx.fillText('E=3.0V',batX,batBottom+22);
+
+            ctx.strokeStyle='#34495e'; ctx.lineWidth=2;
+            ctx.beginPath(); ctx.moveTo(batX-18,batTop); ctx.lineTo(rheoX+rheoWidth/2,batTop); ctx.lineTo(rheoX+rheoWidth/2,rheoYTop); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(batX-8,batBottom); ctx.lineTo(rheoX+rheoWidth/2,batBottom); ctx.lineTo(rheoX+rheoWidth/2,rheoYBottom); ctx.stroke();
+
+            const meterX = 580, meterW = 110;
+            const voltMeterY = 375, currMeterY = 425;
+            ctx.fillStyle='rgba(255,255,255,0.9)';
+            ctx.fillRect(meterX, voltMeterY, meterW, 42);
+            ctx.strokeStyle='#bdc3c7'; ctx.strokeRect(meterX, voltMeterY, meterW, 42);
+            ctx.fillStyle='#e67e22';
+            ctx.font='bold 15px "PingFang SC","Microsoft YaHei"'; ctx.textAlign='center';
+            ctx.fillText('Uₐₖ = '+(voltageAK>=0?'+':'')+voltageAK.toFixed(2)+' V', meterX+meterW/2, voltMeterY+29);
+
+            ctx.fillStyle='rgba(255,255,255,0.9)';
+            ctx.fillRect(meterX, currMeterY, meterW, 42);
+            ctx.strokeStyle='#bdc3c7'; ctx.strokeRect(meterX, currMeterY, meterW, 42);
+            ctx.fillStyle='#2980b9';
+            const scaledCurrent = currentDisplay * CURRENT_SCALE;
+            ctx.fillText('I = '+scaledCurrent.toFixed(1)+' 相对值', meterX+meterW/2, currMeterY+29);
+        }
+
+        function drawPhotons() {
+            for (const p of photons) {
+                if (p.arrived) continue;
+                const glow=ctx.createRadialGradient(p.x,p.y,p.radius*0.3,p.x,p.y,p.radius*2.2);
+                const c=p.color;
+                glow.addColorStop(0,c.replace('rgb','rgba').replace(')',',0.9)'));
+                glow.addColorStop(0.5,c.replace('rgb','rgba').replace(')',',0.5)'));
+                glow.addColorStop(1,c.replace('rgb','rgba').replace(')',',0)'));
+                ctx.fillStyle=glow; ctx.beginPath(); ctx.arc(p.x,p.y,p.radius*2.2,0,Math.PI*2); ctx.fill();
+                ctx.fillStyle='rgba(255,255,255,0.9)'; ctx.beginPath(); ctx.arc(p.x,p.y,p.radius*0.45,0,Math.PI*2); ctx.fill();
+                ctx.fillStyle=c.replace('rgb','rgba').replace(')',',0.85)'); ctx.beginPath(); ctx.arc(p.x,p.y,p.radius,0,Math.PI*2); ctx.fill();
+            }
+        }
+
+        function drawPhotoelectrons() {
+            for (const pe of photoelectrons) {
+                if (!pe.alive) continue;
+                const trail = pe.trail;
+                if (trail.length > 1) {
+                    for (let i = 1; i < trail.length; i++) {
+                        const alpha = i / trail.length * 0.5;
+                        const thickness = 1.5 + (i / trail.length) * 2;
+                        ctx.strokeStyle = `rgba(100,100,120,${alpha})`;
+                        ctx.lineWidth = thickness;
+                        ctx.beginPath();
+                        ctx.moveTo(trail[i-1].x, trail[i-1].y);
+                        ctx.lineTo(trail[i].x, trail[i].y);
+                        ctx.stroke();
+                    }
+                }
+                const grad=ctx.createRadialGradient(pe.x,pe.y,1,pe.x,pe.y,5);
+                grad.addColorStop(0,'rgba(0,0,0,0.95)');
+                grad.addColorStop(0.5,'rgba(30,30,30,0.8)');
+                grad.addColorStop(1,'rgba(60,60,60,0)');
+                ctx.fillStyle=grad; ctx.beginPath(); ctx.arc(pe.x,pe.y,5,0,Math.PI*2); ctx.fill();
+                ctx.fillStyle='rgba(0,0,0,0.95)'; ctx.beginPath(); ctx.arc(pe.x,pe.y,2.2,0,Math.PI*2); ctx.fill();
+            }
+        }
+
+        function drawInfoOverlay() {
+            const freq=photonFrequency, above=freq>=CUTOFF_FREQ;
+            const hf=6.63e-34*freq*1e14, W0=6.63e-34*CUTOFF_FREQ*1e14, ek=above?(hf-W0):0;
+            ctx.fillStyle='rgba(255,255,255,0.9)'; ctx.fillRect(15,440,310,78);
+            ctx.strokeStyle='#bdc3c7'; ctx.strokeRect(15,440,310,78);
+            ctx.fillStyle='#2c3e50'; ctx.font='bold 12px "PingFang SC","Microsoft YaHei"'; ctx.textAlign='left';
+            ctx.fillText(`激光频率: ${freq.toFixed(2)}×10¹⁴ Hz | 截止: ${CUTOFF_FREQ.toFixed(1)}`,25,462);
+            ctx.fillText(`光子能量: ${(hf*1e19).toFixed(2)}×10⁻¹⁹ J | 逸出功: ${(W0*1e19).toFixed(2)}`,25,482);
+            ctx.fillStyle=above?'#27ae60':'#c0392b';
+            ctx.fillText(above?`✓ 光电效应! Ek ≈ ${(ek/1.6e-19).toFixed(2)} eV`:'✗ 无光电效应',25,502);
+
+            const sx = 335, sy = 440;
+            ctx.fillStyle='rgba(255,255,255,0.9)'; ctx.fillRect(sx, sy, 195, 78);
+            ctx.strokeStyle='#bdc3c7'; ctx.strokeRect(sx, sy, 195, 78);
+            ctx.fillStyle='#2c3e50'; ctx.font='11px "PingFang SC","Microsoft YaHei"';
+            ctx.fillText(`发射电子: ${electronsEmittedTotal}`, sx+10, sy+20);
+            ctx.fillText(`到达A板: ${electronsArrivedA}`, sx+10, sy+40);
+            ctx.fillText(`返回K板: ${electronsReturnedK}`, sx+10, sy+60);
+            ctx.fillText(`光强: ${lightIntensity}/20`, sx+100, sy+60);
+        }
+
+        function drawAll() {
+            ctx.clearRect(0,0,canvas.width,canvas.height);
+            ctx.strokeStyle='rgba(0,0,0,0.04)'; ctx.lineWidth=0.5;
+            for (let gx=0;gx<canvas.width;gx+=30){ctx.beginPath();ctx.moveTo(gx,0);ctx.lineTo(gx,canvas.height);ctx.stroke();}
+            for (let gy=0;gy<canvas.height;gy+=30){ctx.beginPath();ctx.moveTo(0,gy);ctx.lineTo(canvas.width,gy);ctx.stroke();}
+            drawCircuit(); drawGlassTube(); drawPlates(); drawLightSource();
+            drawPhotons(); drawPhotoelectrons(); drawInfoOverlay();
+            ctx.fillStyle='rgba(255,255,255,0.9)';
+            ctx.fillRect(15,15,175,60);
+            ctx.strokeStyle='#bdc3c7'; ctx.strokeRect(15,15,175,60);
+            ctx.fillStyle='#2c3e50'; ctx.font='10px "PingFang SC","Microsoft YaHei"'; ctx.textAlign='left';
+            ctx.fillText('● 彩色光点 = 光子',23,33);
+            ctx.fillText('● 黑色小点 = 光电子',23,48);
+            ctx.fillText('电子方向随机(上/下)',23,63);
+        }
+
+        function updateCurrent() {
+            let arrivalsThisFrame = update._arrivalsThisFrame || 0;
+            arrivalHistory[historyIndex] = arrivalsThisFrame;
+            historyIndex = (historyIndex+1)%CURRENT_WINDOW;
+            const avg = arrivalHistory.reduce((a,b)=>a+b,0)/CURRENT_WINDOW;
+            currentDisplay = currentDisplay*0.85 + avg*0.15;
+            update._arrivalsThisFrame = 0;
+        }
+
+        function update() {
+            frameCount++;
+            if (!update._arrivalsThisFrame) update._arrivalsThisFrame=0;
+            const interval = Math.max(2, 20 - lightIntensity);
+            photonSpawnTimer++;
+            if (photonSpawnTimer >= interval) {
+                photonSpawnTimer=0;
+                spawnPhoton();
+                if (lightIntensity > 12 && Math.random() < (lightIntensity-10)/15) spawnPhoton();
+                if (lightIntensity > 16 && Math.random() < 0.35) spawnPhoton();
+            }
+            for (const p of photons) {
+                if (p.arrived) continue;
+                p.x += p.vx; p.y += p.vy;
+                if (!p.arrived && Math.hypot(p.x-plateKX, p.y-targetY) < 8) {
+                    p.arrived = true;
+                    if (photonFrequency >= CUTOFF_FREQ) {
+                        spawnPhotoelectron(p.y);
+                        recentArrivals.push({x:plateKX,y:p.y,life:12});
+                    }
+                }
+            }
+            photons = photons.filter(p => !p.arrived && p.y<plateYBottom+40 && p.x>plateKX-60);
+            if (photons.length>80) photons = photons.slice(-50);
+
+            const accel = getElectricAcceleration();
+            const isSaturated = voltageAK >= SATURATION_VOLTAGE;
+            for (const pe of photoelectrons) {
+                if (!pe.alive) continue;
+                pe.trail.push({x: pe.x, y: pe.y});
+                if (pe.trail.length > TRAIL_LENGTH) pe.trail.shift();
+
+                pe.vx += accel;
+                pe.x += pe.vx;
+                pe.y += pe.vy;
+
+                if (pe.x >= plateAX - 3) {
+                    pe.alive = false;
+                    electronsArrivedA++;
+                    update._arrivalsThisFrame++;
+                    recentArrivals.push({x: plateAX, y: pe.y, life: 10, type:'arrive'});
+                }
+                if (pe.x <= plateKX + 3 && pe.vx < 0) {
+                    pe.alive = false;
+                    electronsReturnedK++;
+                }
+                if (!isSaturated && (pe.y < plateYTop - 25 || pe.y > plateYBottom + 25)) {
+                    pe.alive = false;
+                }
+                if (pe.x > plateAX + 25) pe.alive = false;
+                if (pe.x < plateKX - 25) pe.alive = false;
+            }
+            photoelectrons = photoelectrons.filter(pe => pe.alive);
+            if (photoelectrons.length > 200) photoelectrons = photoelectrons.slice(-130);
+            for (const r of recentArrivals) r.life--;
+            for (let i=recentArrivals.length-1;i>=0;i--) if (recentArrivals[i].life<=0) recentArrivals.splice(i,1);
+            updateCurrent();
+        }
+
+        function animate() {
+            update(); drawAll();
+            for (const r of recentArrivals) {
+                const alpha=r.life/12;
+                const color=r.type==='arrive'?`rgba(41,128,185,${alpha})`:`rgba(230,126,34,${alpha})`;
+                ctx.fillStyle=color; ctx.beginPath(); ctx.arc(r.x,r.y,8,0,Math.PI*2); ctx.fill();
+            }
+            requestAnimationFrame(animate);
+        }
+
+        freqSlider.addEventListener('input', ()=>{
+            photonFrequency=parseFloat(freqSlider.value);
+            freqValSpan.textContent=photonFrequency.toFixed(2)+'×10¹⁴ Hz';
+            if (photonFrequency>=CUTOFF_FREQ) freqStatusDiv.innerHTML='<span class="info-badge badge-active">✓ 发生光电效应</span>';
+            else freqStatusDiv.innerHTML='<span class="info-badge badge-inactive">✗ 无光电效应</span>';
+        });
+        intensitySlider.addEventListener('input', ()=>{
+            lightIntensity=parseInt(intensitySlider.value);
+            const labels=['弱','较弱','中等','较强','强'];
+            intensityValSpan.textContent=labels[Math.min(4,Math.floor((lightIntensity-1)/4))];
+        });
+        voltageSlider.addEventListener('input', ()=>{
+            voltageAK=Math.round(parseFloat(voltageSlider.value)/100*MAX_BATTERY_V*100)/100;
+            voltageValSpan.textContent=(voltageAK>=0?'+':'')+voltageAK.toFixed(2)+' V';
+            updateSliderFromVoltage();
+        });
+
+        canvas.addEventListener('mousedown', (e)=>{
+            const rect=canvas.getBoundingClientRect();
+            const mx=(e.clientX-rect.left)*(canvas.width/rect.width), my=(e.clientY-rect.top)*(canvas.height/rect.height);
+            if (Math.abs(mx-rheoX)<25 && Math.abs(my-sliderY)<25) { isDraggingSlider=true; canvas.style.cursor='grabbing'; }
+        });
+        canvas.addEventListener('mousemove', (e)=>{
+            const rect=canvas.getBoundingClientRect();
+            const mx=(e.clientX-rect.left)*(canvas.width/rect.width), my=(e.clientY-rect.top)*(canvas.height/rect.height);
+            if (isDraggingSlider) { sliderY=Math.max(rheoYTop,Math.min(rheoYBottom,my)); updateVoltageFromSlider(); }
+            else canvas.style.cursor = (Math.abs(mx-rheoX)<25 && Math.abs(my-sliderY)<25)?'grab':'default';
+        });
+        canvas.addEventListener('mouseup', ()=>{ isDraggingSlider=false; canvas.style.cursor='default'; });
+        canvas.addEventListener('mouseleave', ()=>{ isDraggingSlider=false; canvas.style.cursor='default'; });
+        canvas.addEventListener('touchstart', (e)=>{
+            const rect=canvas.getBoundingClientRect(); const touch=e.touches[0];
+            const mx=(touch.clientX-rect.left)*(canvas.width/rect.width), my=(touch.clientY-rect.top)*(canvas.height/rect.height);
+            if (Math.abs(mx-rheoX)<30 && Math.abs(my-sliderY)<30) { isDraggingSlider=true; e.preventDefault(); }
+        }, {passive:false});
+        canvas.addEventListener('touchmove', (e)=>{
+            if (isDraggingSlider) {
+                const rect=canvas.getBoundingClientRect();
+                const my=(e.touches[0].clientY-rect.top)*(canvas.height/rect.height);
+                sliderY=Math.max(rheoYTop,Math.min(rheoYBottom,my)); updateVoltageFromSlider(); e.preventDefault();
+            }
+        }, {passive:false});
+        canvas.addEventListener('touchend', ()=>{ isDraggingSlider=false; });
+
+        updateSliderFromVoltage();
+        freqValSpan.textContent=photonFrequency.toFixed(2)+'×10¹⁴ Hz';
+        intensityValSpan.textContent='强';
+        voltageValSpan.textContent=(voltageAK>=0?'+':'')+voltageAK.toFixed(2)+' V';
+        voltageSlider.value=Math.round((voltageAK/MAX_BATTERY_V)*100);
+        animate();
+    })();
+</script>
+<style>
+.back-btn {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    padding: 10px 20px;
+    background: rgba(0, 150, 200, 0.3);
+    border: 1px solid #00ffff;
+    color: white;
+    font-size: 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    z-index: 9999;
+    transition: 0.3s;
+    backdrop-filter: blur(5px);
+}
+.back-btn:hover {
+    background: rgba(0, 150, 200, 0.6);
+    box-shadow: 0 0 15px #00ffff;
+}
+</style>
+<button class="back-btn" onclick="goBack()">⬅️ 返回</button>
+<script>
+function goBack() {
+    history.back();
+}
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        goBack();
+    }
+});
+</script>
+<div class="watermark">齐老师动画</div>
+<style>
+.watermark {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    font-size: 14px;
+    color: rgba(0, 255, 255, 0.3);
+    z-index: 9998;
+    pointer-events: none;
+    user-select: none;
+}
+</style>
+<script>
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+});
+</script>
+<style>
+.back-btn {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    padding: 10px 20px;
+    background: rgba(0, 150, 200, 0.3);
+    border: 1px solid #00ffff;
+    color: white;
+    font-size: 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    z-index: 9999;
+    transition: 0.3s;
+    backdrop-filter: blur(5px);
+}
+.back-btn:hover {
+    background: rgba(0, 150, 200, 0.6);
+    box-shadow: 0 0 15px #00ffff;
+}
+</style>
+<button class="back-btn" onclick="goBack()">⬅️ 返回</button>
+<script>
+function goBack() {
+    history.back();
+}
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        goBack();
+    }
+});
+</script>
+<div class="watermark">齐老师动画</div>
+<style>
+.watermark {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    font-size: 14px;
+    color: rgba(0, 255, 255, 0.3);
+    z-index: 9998;
+    pointer-events: none;
+    user-select: none;
+}
+</style>
+<script>
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+});
+</script>
+<style>
+.back-btn {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    padding: 10px 20px;
+    background: rgba(0, 150, 200, 0.3);
+    border: 1px solid #00ffff;
+    color: white;
+    font-size: 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    z-index: 9999;
+    transition: 0.3s;
+    backdrop-filter: blur(5px);
+}
+.back-btn:hover {
+    background: rgba(0, 150, 200, 0.6);
+    box-shadow: 0 0 15px #00ffff;
+}
+</style>
+<button class="back-btn" onclick="goBack()">⬅️ 返回</button>
+<script>
+function goBack() {
+    history.back();
+}
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        goBack();
+    }
+});
+</script>
+<div class="watermark">齐老师动画</div>
+<style>
+.watermark {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    font-size: 14px;
+    color: rgba(0, 255, 255, 0.3);
+    z-index: 9998;
+    pointer-events: none;
+    user-select: none;
+}
+</style>
+<script>
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+});
+</script>
+<style>
+.back-btn {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    padding: 10px 20px;
+    background: rgba(0, 150, 200, 0.3);
+    border: 1px solid #00ffff;
+    color: white;
+    font-size: 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    z-index: 9999;
+    transition: 0.3s;
+    backdrop-filter: blur(5px);
+}
+.back-btn:hover {
+    background: rgba(0, 150, 200, 0.6);
+    box-shadow: 0 0 15px #00ffff;
+}
+</style>
+<button class="back-btn" onclick="goBack()">⬅️ 返回</button>
+<script>
+function goBack() {
+    history.back();
+}
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        goBack();
+    }
+});
+</script>
+<div class="watermark">齐老师动画</div>
+<style>
+.watermark {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    font-size: 14px;
+    color: rgba(0, 255, 255, 0.3);
+    z-index: 9998;
+    pointer-events: none;
+    user-select: none;
+}
+</style>
+<script>
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+});
+</script>
+
+<div style="position: fixed; bottom: 10px; right: 10px; z-index: 9998; color: rgba(255, 255, 255, 0.3); font-family: Arial, sans-serif; font-size: 12px; pointer-events: none;">
+    齐老师动画
+</div>
+
+<script>
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+});
+</script>
+</body>
+</html>
