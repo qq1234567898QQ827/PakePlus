@@ -1,0 +1,995 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta charset="UTF-8">
+    <meta charset="UTF-8">
+    <meta charset="UTF-8">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>飞机投弹模拟：0.2秒快速连投 | 平抛运动 | 大尺寸模型</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+        }
+
+        body {
+            background: #eef2e9;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Segoe UI', 'Quicksand', system-ui, sans-serif;
+            padding: 24px;
+        }
+
+        .sim-container {
+            background: #fffaf2;
+            border-radius: 56px;
+            padding: 22px 26px 28px 26px;
+            box-shadow: 0 20px 35px rgba(0, 0, 0, 0.08);
+            border: 1px solid #fff0e0;
+        }
+
+        canvas {
+            display: block;
+            margin: 0 auto;
+            border-radius: 32px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+            background-color: #e9f3fc;
+            cursor: crosshair;
+        }
+
+        .control-bar {
+            margin-top: 24px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 18px;
+            background: #fffcf5;
+            border-radius: 80px;
+            padding: 12px 28px;
+            align-items: center;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+            border: 1px solid #ffe5cd;
+        }
+
+        .ctrl-panel {
+            background: #ffffffcc;
+            padding: 6px 24px;
+            border-radius: 48px;
+            display: flex;
+            align-items: center;
+            gap: 18px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        .ctrl-panel label {
+            font-weight: 700;
+            font-size: 0.95rem;
+            color: #4f6f7c;
+        }
+
+        input[type="range"] {
+            width: 190px;
+            height: 5px;
+            -webkit-appearance: none;
+            background: #dbcfb5;
+            border-radius: 5px;
+            outline: none;
+        }
+
+        input[type="range"]:focus {
+            outline: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #f0a35e;
+            border: 2px solid #ffffff;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+            cursor: pointer;
+        }
+
+        .value-indicator {
+            background: #f6ede2;
+            padding: 4px 16px;
+            border-radius: 32px;
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: bold;
+            font-size: 0.9rem;
+            color: #b85f2a;
+            min-width: 95px;
+            text-align: center;
+            border: 1px solid #ffdebc;
+        }
+
+        button {
+            background: #ffeade;
+            border: none;
+            color: #6b4a2c;
+            font-weight: bold;
+            padding: 8px 24px;
+            border-radius: 48px;
+            font-family: inherit;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: 0.08s linear;
+            border: 1px solid #ffd8b5;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        button:active {
+            transform: scale(0.96);
+            background: #f7dfc0;
+        }
+
+        .stats-badge {
+            display: flex;
+            gap: 20px;
+            background: #fef3e8;
+            padding: 5px 26px;
+            border-radius: 48px;
+            font-weight: 600;
+            color: #9b6a42;
+            font-size: 0.85rem;
+            border: 1px solid #ffdfbe;
+        }
+
+        hr {
+            height: 38px;
+            margin: 0 6px;
+            border: none;
+            border-left: 2px solid #ffe6cf;
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 16px;
+            font-size: 12px;
+            color: #99afa8;
+            font-weight: 500;
+        }
+    </style>
+<style>
+    /* 齐老师动画 - 统一样式 */
+    body {
+        background: #1a2332 !important;
+    }
+    
+    /* 顶部标题栏 */
+    .qilaoshi-header {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 50px;
+        background: #1a2332;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 99999 !important;
+        border-bottom: 1px solid #2a3a50;
+    }
+    
+    .qilaoshi-title {
+        font-size: 20px;
+        font-weight: 600;
+        color: #8ab4f8;
+        letter-spacing: 2px;
+        font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif;
+    }
+    
+    /* 返回按钮 */
+    .qilaoshi-back-btn {
+        position: fixed;
+        top: 10px;
+        right: 15px;
+        z-index: 999999 !important;
+        background: linear-gradient(135deg, #3a5a80, #2a4a70);
+        color: #ffffff;
+        border: 1px solid #5a8ab0;
+        padding: 8px 18px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        font-family: 'Microsoft YaHei', sans-serif;
+        transition: all 0.2s;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+    }
+    
+    .qilaoshi-back-btn:hover {
+        background: linear-gradient(135deg, #4a6a90, #3a5a80);
+        color: #ffffff;
+        box-shadow: 0 4px 15px rgba(90, 138, 176, 0.4);
+        transform: translateY(-1px);
+    }
+    
+    /* 水印 */
+    .qilaoshi-watermark {
+        position: fixed;
+        bottom: 10px;
+        right: 15px;
+        z-index: 9999;
+        font-size: 11px;
+        color: rgba(138, 180, 248, 0.4);
+        font-family: 'Microsoft YaHei', sans-serif;
+        line-height: 1.5;
+        text-align: right;
+        pointer-events: none;
+    }
+    
+    /* 调整主内容区域，给顶部标题栏留出空间 */
+    body {
+        padding-top: 50px !important;
+    }
+</style>
+</head>
+<body>
+
+    <!-- 齐老师动画 - 顶部导航 -->
+    <div class="qilaoshi-header">
+        <div class="qilaoshi-title">齐老师动画</div>
+    </div>
+    <button class="qilaoshi-back-btn" onclick="window.location.href='../index.html'">← 返回主页</button>
+
+<div>
+    <div class="sim-container">
+        <canvas id="bombCanvas" width="1100" height="560" style="width:100%; height:auto; max-width:1100px; aspect-ratio:1100/560"></canvas>
+        
+        <div class="control-bar">
+            <div class="ctrl-panel">
+                <label>✈️ 飞行速度</label>
+                <input type="range" id="speedSlider" min="-400" max="480" step="5" value="210">
+                <span id="speedVal" class="value-indicator">210 px/s</span>
+            </div>
+            <div class="ctrl-panel">
+                <label>⚙️ 加速度</label>
+                <input type="range" id="accSlider" min="-420" max="420" step="6" value="80">
+                <span id="accVal" class="value-indicator">80 px/s²</span>
+            </div>
+            <hr>
+            <button id="manualDrop">💣 手动投弹</button>
+            <button id="clearBombs">🧹 清除炸弹</button>
+            <button id="resetSim">🔄 重置场景</button>
+            <div class="stats-badge">
+                <span>💥 炸弹数: <span id="bombCount">0</span></span>
+                <span>⏱️ 自动投弹: 0.2s/次</span>
+            </div>
+        </div>
+        <footer>🎯 平抛原理：炸弹水平初速 = 飞机瞬时速度 | 重力加速度 g = 760 px/s² | 大号航弹 + 加宽机体 | 浅色清新背景</footer>
+    </div>
+</div>
+
+<script>
+    (function(){
+        // ---------- canvas元素 ----------
+        const canvas = document.getElementById('bombCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // 固定画布尺寸 (宽屏适合展示快速连投)
+        const W = 1100, H = 560;
+        canvas.width = W;
+        canvas.height = H;
+        
+        // ---------- 物理参数 ----------
+        const GRAVITY = 760;          // 重力加速度 px/s² (平抛轨迹明显)
+        const PLANE_Y = 92;           // 飞机高度 (留出空间)
+        const GROUND_Y = H - 52;       // 地面线
+        
+        // ---------- 飞机状态 ----------
+        let planeX = 220;              // 起始水平位置
+        let planeVx = 210;             // 当前速度 (px/s)
+        let planeAcc = 80;             // 加速度 (px/s²)
+        
+        // ---------- 炸弹系统 (大尺寸炸弹) ----------
+        let bombs = [];                // 每个炸弹: {x, y, vx, vy, radius}
+        const MAX_BOMBS = 180;         // 防止过多影响性能
+        
+        // ---------- 自动投弹: 每0.2秒投一颗 (快速连续) ----------
+        const AUTO_DROP_INTERVAL = 0.2;  // 0.2秒/次
+        let timeSinceLastDrop = 0;
+        
+        // ---------- DOM 元素绑定 ----------
+        const speedSlider = document.getElementById('speedSlider');
+        const accSlider = document.getElementById('accSlider');
+        const speedSpan = document.getElementById('speedVal');
+        const accSpan = document.getElementById('accVal');
+        const bombCounterSpan = document.getElementById('bombCount');
+        const manualBtn = document.getElementById('manualDrop');
+        const clearBtn = document.getElementById('clearBombs');
+        const resetBtn = document.getElementById('resetSim');
+        
+        // ---------- 辅助函数 ----------
+        function updateUI() {
+            speedSpan.innerText = Math.floor(planeVx) + " px/s";
+            accSpan.innerText = Math.floor(planeAcc) + " px/s²";
+            bombCounterSpan.innerText = bombs.length;
+        }
+        
+        // 投掷炸弹 (大半径，继承飞机水平初速)
+        function dropBomb() {
+            if (bombs.length > MAX_BOMBS + 20) return;
+            bombs.push({
+                x: planeX,
+                y: PLANE_Y + 16,       // 从机身下方释放
+                vx: planeVx,
+                vy: 0,
+                radius: 14             // 大尺寸炸弹 (半径14px)
+            });
+            updateUI();
+        }
+        
+        // 清除所有炸弹
+        function clearAllBombs() {
+            bombs = [];
+            updateUI();
+        }
+        
+        // 重置场景 (保留滑块数值，清空炸弹)
+        function resetScenario() {
+            planeX = 220;
+            planeVx = parseFloat(speedSlider.value);
+            planeAcc = parseFloat(accSlider.value);
+            planeX = Math.min(Math.max(planeX, 30), W - 100);
+            bombs = [];
+            timeSinceLastDrop = 0;
+            updateUI();
+        }
+        
+        // ---------- 边界限制 (防止飞机飞出画布) ----------
+        function applyBoundary() {
+            const leftLimit = 24;
+            const rightLimit = W - 90;
+            if (planeX < leftLimit) {
+                planeX = leftLimit;
+                if (planeVx < 0) planeVx = 0;
+            }
+            if (planeX > rightLimit) {
+                planeX = rightLimit;
+                if (planeVx > 0) planeVx = 0;
+            }
+            // 速度限幅 (避免飞出视觉边界)
+            if (planeVx > 620) planeVx = 620;
+            if (planeVx < -460) planeVx = -460;
+        }
+        
+        // ---------- 物理更新 ----------
+        let lastTimestamp = null;
+        let animFrameId = null;
+        
+        // 更新飞机运动 (加速度影响)
+        function updatePlane(dt) {
+            const safeDt = Math.min(dt, 0.033);
+            planeVx += planeAcc * safeDt;
+            if (planeVx > 660) planeVx = 660;
+            if (planeVx < -480) planeVx = -480;
+            planeX += planeVx * safeDt;
+            applyBoundary();
+        }
+        
+        // 更新炸弹 (平抛运动)
+        function updateBombs(dt) {
+            const safeDt = Math.min(dt, 0.033);
+            for (let i = 0; i < bombs.length; i++) {
+                const b = bombs[i];
+                b.vy += GRAVITY * safeDt;
+                b.x += b.vx * safeDt;
+                b.y += b.vy * safeDt;
+            }
+            // 移除落地或超出屏幕的炸弹
+            bombs = bombs.filter(b => {
+                if (b.y + b.radius >= GROUND_Y) return false;
+                if (b.x + b.radius < -180) return false;
+                if (b.x - b.radius > W + 220) return false;
+                if (b.y + b.radius < -100) return false;
+                return true;
+            });
+            if (bombs.length > MAX_BOMBS + 30) bombs = bombs.slice(-MAX_BOMBS);
+        }
+        
+        // 自动投弹 (0.2秒间隔)
+        function updateAutoDrop(dt) {
+            timeSinceLastDrop += dt;
+            if (timeSinceLastDrop >= AUTO_DROP_INTERVAL) {
+                dropBomb();
+                timeSinceLastDrop = 0;
+            }
+        }
+        
+        // ---------- 绘图模块 (浅色清新背景 + 大尺寸飞机/炸弹) ----------
+        function drawBackground() {
+            // 天空渐变色 (浅蓝)
+            const gradSky = ctx.createLinearGradient(0, 0, 0, GROUND_Y);
+            gradSky.addColorStop(0, "#cde6fa");
+            gradSky.addColorStop(0.7, "#eaf4fc");
+            ctx.fillStyle = gradSky;
+            ctx.fillRect(0, 0, W, GROUND_Y);
+            
+            // 草地/大地 (浅绿)
+            ctx.fillStyle = "#cfe3bc";
+            ctx.fillRect(0, GROUND_Y - 10, W, H - GROUND_Y + 18);
+            ctx.fillStyle = "#bbda9a";
+            ctx.fillRect(0, GROUND_Y - 3, W, 6);
+            
+            // 柔和云朵
+            ctx.fillStyle = "#ffffffcc";
+            ctx.beginPath();
+            ctx.ellipse(140, 65, 58, 42, 0, 0, Math.PI * 2);
+            ctx.ellipse(210, 52, 68, 48, 0, 0, Math.PI * 2);
+            ctx.ellipse(290, 70, 52, 38, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.ellipse(860, 100, 62, 46, 0, 0, Math.PI * 2);
+            ctx.ellipse(940, 88, 54, 42, 0, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // 浅色植被纹理
+            ctx.fillStyle = "#bddc9a70";
+            for (let i = 0; i < 16; i++) {
+                ctx.beginPath();
+                ctx.ellipse(i * 80 + 15, GROUND_Y - 4, 45, 12, 0, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+        
+        // 绘制大型飞机 (宽体，醒目)
+        function drawLargePlane() {
+            const px = planeX;
+            const py = PLANE_Y;
+            ctx.save();
+            ctx.shadowBlur = 8;
+            ctx.shadowColor = "rgba(0,0,0,0.08)";
+            // 机身主体 (加长加宽)
+            ctx.beginPath();
+            ctx.moveTo(px - 38, py - 9);
+            ctx.lineTo(px + 60, py);
+            ctx.lineTo(px - 38, py + 11);
+            ctx.fillStyle = "#528a9c";
+            ctx.fill();
+            ctx.beginPath();
+            ctx.ellipse(px - 8, py, 52, 16, 0, 0, Math.PI * 2);
+            ctx.fillStyle = "#6fa7b8";
+            ctx.fill();
+            // 大型机翼
+            ctx.fillStyle = "#427585";
+            ctx.beginPath();
+            ctx.moveTo(px - 22, py - 12);
+            ctx.lineTo(px - 76, py - 36);
+            ctx.lineTo(px - 56, py - 5);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.moveTo(px - 22, py + 12);
+            ctx.lineTo(px - 76, py + 36);
+            ctx.lineTo(px - 56, py + 5);
+            ctx.fill();
+            // 尾翼 (加大)
+            ctx.beginPath();
+            ctx.moveTo(px + 42, py - 12);
+            ctx.lineTo(px + 66, py);
+            ctx.lineTo(px + 42, py + 12);
+            ctx.fillStyle = "#5d98aa";
+            ctx.fill();
+            // 大型驾驶舱
+            ctx.beginPath();
+            ctx.arc(px + 28, py, 10, 0, Math.PI * 2);
+            ctx.fillStyle = "#fff7cf";
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(px + 30, py - 1, 4, 0, Math.PI * 2);
+            ctx.fillStyle = "#2c6875";
+            ctx.fill();
+            // 螺旋桨 (动态旋转)
+            ctx.save();
+            ctx.translate(px - 48, py);
+            const angle = Date.now() / 55;
+            ctx.rotate(angle);
+            ctx.fillStyle = "#c88444";
+            ctx.fillRect(-10, -5, 20, 10);
+            ctx.fillRect(-5, -10, 10, 20);
+            ctx.restore();
+            
+            // 引擎喷射气流 (速度越快拖尾越长)
+            if (Math.abs(planeVx) > 22) {
+                const trailLen = Math.min(34, Math.abs(planeVx) / 12);
+                ctx.beginPath();
+                ctx.moveTo(px - 54, py);
+                ctx.lineTo(px - 80 - trailLen, py - 5);
+                ctx.lineTo(px - 80 - trailLen, py + 5);
+                ctx.fillStyle = "#c9e2edaa";
+                ctx.fill();
+            }
+            ctx.restore();
+        }
+        
+        // 绘制大尺寸炸弹 (半径14，附带拖尾火花)
+        function drawBigBombs() {
+            for (const b of bombs) {
+                ctx.save();
+                ctx.shadowBlur = 7;
+                ctx.shadowColor = "rgba(0,0,0,0.2)";
+                // 弹体
+                ctx.beginPath();
+                ctx.arc(b.x, b.y, b.radius - 3, 0, Math.PI * 2);
+                ctx.fillStyle = "#694128";
+                ctx.fill();
+                ctx.beginPath();
+                ctx.arc(b.x, b.y, b.radius - 4, 0, Math.PI * 2);
+                ctx.fillStyle = "#9b613a";
+                ctx.fill();
+                // 引信
+                ctx.beginPath();
+                ctx.arc(b.x - 2.2, b.y - 2.5, 3.5, 0, Math.PI * 2);
+                ctx.fillStyle = "#e29856";
+                ctx.fill();
+                ctx.beginPath();
+                ctx.arc(b.x - 2.8, b.y - 3.2, 1.8, 0, Math.PI * 2);
+                ctx.fillStyle = "#ffcf8a";
+                ctx.fill();
+                // 下落拖尾 (快速连投有动态粒子的感觉)
+                for (let t = 0; t < 2; t++) {
+                    ctx.beginPath();
+                    ctx.arc(b.x - (b.vx * 0.05) - t * 6, b.y - (b.vy * 0.04), 3.2, 0, Math.PI * 2);
+                    ctx.fillStyle = `rgba(220, 115, 35, 0.6)`;
+                    ctx.fill();
+                }
+                // 高速下产生的风痕
+                if (Math.abs(b.vx) > 70) {
+                    ctx.beginPath();
+                    ctx.moveTo(b.x - 12, b.y);
+                    ctx.lineTo(b.x - 28, b.y - 5);
+                    ctx.lineTo(b.x - 28, b.y + 5);
+                    ctx.fillStyle = "#ffbc73aa";
+                    ctx.fill();
+                }
+                ctx.restore();
+            }
+        }
+        
+        // 显示HUD信息和辅助准星 (浅色科技风)
+        function drawOverlay() {
+            ctx.font = "bold 20px 'Segoe UI', 'Quicksand'";
+            ctx.fillStyle = "#2b6e7c";
+            ctx.shadowBlur = 0;
+            ctx.fillText(`✈️ 空速: ${Math.abs(planeVx).toFixed(1)} px/s`, 24, 52);
+            ctx.fillText(`⚙️ 加速度: ${planeAcc.toFixed(1)} px/s²`, 24, 94);
+            ctx.fillText(`💣 炸弹载荷: ${bombs.length}`, 24, 136);
+            
+            ctx.font = "14px monospace";
+            ctx.fillStyle = "#7f9a78";
+            ctx.fillText("平抛运动 | g = 760 px/s²", W - 250, H - 22);
+            
+            // 自动投弹计时环 (0.2秒快速投弹指示)
+            const remain = Math.max(0, AUTO_DROP_INTERVAL - timeSinceLastDrop);
+            ctx.beginPath();
+            ctx.arc(W - 78, 60, 22, 0, Math.PI * 2);
+            ctx.strokeStyle = "#cbbf95";
+            ctx.lineWidth = 2.5;
+            ctx.stroke();
+            ctx.beginPath();
+            let angle = (remain / AUTO_DROP_INTERVAL) * Math.PI * 2;
+            ctx.arc(W - 78, 60, 18, -Math.PI / 2, -Math.PI / 2 + angle);
+            ctx.strokeStyle = "#f0a557";
+            ctx.lineWidth = 3.5;
+            ctx.stroke();
+            ctx.fillStyle = "#b37a3e";
+            ctx.font = "bold 14px monospace";
+            ctx.fillText("⚡", W - 88, 67);
+            
+            // 瞄准投弹线
+            ctx.beginPath();
+            ctx.setLineDash([8, 12]);
+            ctx.moveTo(planeX, PLANE_Y + 22);
+            ctx.lineTo(planeX, GROUND_Y - 8);
+            ctx.strokeStyle = "#f5b16b";
+            ctx.lineWidth = 2.4;
+            ctx.stroke();
+            ctx.setLineDash([]);
+            
+            // 投弹瞬间闪光 (0.2s高频投掷，制造视觉效果)
+            if (timeSinceLastDrop < 0.08) {
+                ctx.beginPath();
+                ctx.arc(planeX, PLANE_Y + 18, 18, 0, Math.PI * 2);
+                ctx.fillStyle = "#ffe0a0aa";
+                ctx.fill();
+            }
+        }
+        
+        // ---------- 动画循环 (基于requestAnimationFrame) ----------
+        function animate(nowMs) {
+            if (!lastTimestamp) {
+                lastTimestamp = nowMs;
+                requestAnimationFrame(animate);
+                return;
+            }
+            let dt = Math.min(0.033, (nowMs - lastTimestamp) / 1000);
+            if (dt <= 0.001) {
+                lastTimestamp = nowMs;
+                requestAnimationFrame(animate);
+                return;
+            }
+            
+            // 更新物理
+            updatePlane(dt);
+            updateBombs(dt);
+            updateAutoDrop(dt);
+            
+            // 实时同步UI数值 (同时反映滑动条以外的速度变化)
+            speedSpan.innerText = Math.floor(planeVx) + " px/s";
+            accSpan.innerText = Math.floor(planeAcc) + " px/s²";
+            bombCounterSpan.innerText = bombs.length;
+            
+            // 绘制所有元素
+            drawBackground();
+            drawBigBombs();
+            drawLargePlane();
+            drawOverlay();
+            
+            lastTimestamp = nowMs;
+            animFrameId = requestAnimationFrame(animate);
+        }
+        
+        // ---------- 事件绑定与UI联动 ----------
+        function bindEvents() {
+            speedSlider.addEventListener('input', (e) => {
+                let newSpeed = parseFloat(e.target.value);
+                if (!isNaN(newSpeed)) planeVx = newSpeed;
+                speedSpan.innerText = Math.floor(planeVx) + " px/s";
+            });
+            
+            accSlider.addEventListener('input', (e) => {
+                let newAcc = parseFloat(e.target.value);
+                if (!isNaN(newAcc)) planeAcc = newAcc;
+                accSpan.innerText = Math.floor(planeAcc) + " px/s²";
+            });
+            
+            manualBtn.addEventListener('click', () => {
+                dropBomb();
+            });
+            
+            clearBtn.addEventListener('click', () => {
+                clearAllBombs();
+            });
+            
+            resetBtn.addEventListener('click', () => {
+                resetScenario();
+                speedSlider.value = planeVx;
+                accSlider.value = planeAcc;
+                updateUI();
+                timeSinceLastDrop = 0;
+            });
+        }
+        
+        // 页面可见性处理防止时间跳跃
+        function handleVisibility() {
+            if (document.hidden) {
+                lastTimestamp = null;
+            } else {
+                lastTimestamp = performance.now();
+            }
+        }
+        
+        // 初始化
+        function initSimulation() {
+            bindEvents();
+            planeVx = parseFloat(speedSlider.value);
+            planeAcc = parseFloat(accSlider.value);
+            planeX = 220;
+            bombs = [];
+            timeSinceLastDrop = 0;
+            updateUI();
+            document.addEventListener('visibilitychange', handleVisibility);
+            animFrameId = requestAnimationFrame(animate);
+        }
+        
+        initSimulation();
+    })();
+</script>
+
+<style>
+.back-btn {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    padding: 10px 20px;
+    background: rgba(0, 150, 200, 0.3);
+    border: 1px solid #00ffff;
+    color: white;
+    font-size: 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    z-index: 9999;
+    transition: 0.3s;
+    backdrop-filter: blur(5px);
+}
+.back-btn:hover {
+    background: rgba(0, 150, 200, 0.6);
+    box-shadow: 0 0 15px #00ffff;
+}
+</style>
+<button class="back-btn" onclick="goBack()">⬅️ 返回</button>
+<script>
+function goBack() {
+    history.back();
+}
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        goBack();
+    }
+});
+</script>
+
+
+<div class="watermark">齐老师动画</div>
+<style>
+.watermark {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    font-size: 14px;
+    color: rgba(0, 255, 255, 0.3);
+    z-index: 9998;
+    pointer-events: none;
+    user-select: none;
+}
+</style>
+
+
+<script>
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+});
+</script>
+
+
+<style>
+.back-btn {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    padding: 10px 20px;
+    background: rgba(0, 150, 200, 0.3);
+    border: 1px solid #00ffff;
+    color: white;
+    font-size: 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    z-index: 9999;
+    transition: 0.3s;
+    backdrop-filter: blur(5px);
+}
+.back-btn:hover {
+    background: rgba(0, 150, 200, 0.6);
+    box-shadow: 0 0 15px #00ffff;
+}
+</style>
+<button class="back-btn" onclick="goBack()">⬅️ 返回</button>
+<script>
+function goBack() {
+    history.back();
+}
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        goBack();
+    }
+});
+</script>
+
+
+<div class="watermark">齐老师动画</div>
+<style>
+.watermark {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    font-size: 14px;
+    color: rgba(0, 255, 255, 0.3);
+    z-index: 9998;
+    pointer-events: none;
+    user-select: none;
+}
+</style>
+
+
+<script>
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+});
+</script>
+
+
+<style>
+.back-btn {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    padding: 10px 20px;
+    background: rgba(0, 150, 200, 0.3);
+    border: 1px solid #00ffff;
+    color: white;
+    font-size: 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    z-index: 9999;
+    transition: 0.3s;
+    backdrop-filter: blur(5px);
+}
+.back-btn:hover {
+    background: rgba(0, 150, 200, 0.6);
+    box-shadow: 0 0 15px #00ffff;
+}
+</style>
+<button class="back-btn" onclick="goBack()">⬅️ 返回</button>
+<script>
+function goBack() {
+    history.back();
+}
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        goBack();
+    }
+});
+</script>
+
+
+<div class="watermark">齐老师动画</div>
+<style>
+.watermark {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    font-size: 14px;
+    color: rgba(0, 255, 255, 0.3);
+    z-index: 9998;
+    pointer-events: none;
+    user-select: none;
+}
+</style>
+
+
+<script>
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+});
+</script>
+
+
+<style>
+.back-btn {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    padding: 10px 20px;
+    background: rgba(0, 150, 200, 0.3);
+    border: 1px solid #00ffff;
+    color: white;
+    font-size: 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    z-index: 9999;
+    transition: 0.3s;
+    backdrop-filter: blur(5px);
+}
+.back-btn:hover {
+    background: rgba(0, 150, 200, 0.6);
+    box-shadow: 0 0 15px #00ffff;
+}
+</style>
+<button class="back-btn" onclick="goBack()">⬅️ 返回</button>
+<script>
+function goBack() {
+    history.back();
+}
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        goBack();
+    }
+});
+</script>
+
+
+<div class="watermark">齐老师动画</div>
+<style>
+.watermark {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    font-size: 14px;
+    color: rgba(0, 255, 255, 0.3);
+    z-index: 9998;
+    pointer-events: none;
+    user-select: none;
+}
+</style>
+
+
+<script>
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+});
+</script>
+
+
+    <!-- 齐老师动画 - 水印 -->
+    <div class="qilaoshi-watermark">
+        QQ 3398528250<br>
+        抖音 35320300542
+    </div>
+
+
+    <!-- 齐老师动画 - 安全保护脚本 -->
+    <script>
+    (function() {
+        // 禁用右键菜单
+        document.addEventListener('contextmenu', function(e) {
+            e.preventDefault();
+            return false;
+        });
+        
+        // ESC键返回主页
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' || e.keyCode === 27) {
+                window.location.href = '../index.html';
+            }
+        });
+        
+        // 禁用开发者工具快捷键
+        document.addEventListener('keydown', function(e) {
+            // F12
+            if (e.key === 'F12' || e.keyCode === 123) {
+                e.preventDefault();
+                return false;
+            }
+            // Ctrl+U
+            if ((e.ctrlKey || e.metaKey) && (e.key === 'u' || e.keyCode === 85)) {
+                e.preventDefault();
+                return false;
+            }
+            // Ctrl+Shift+I
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'i' || e.keyCode === 73)) {
+                e.preventDefault();
+                return false;
+            }
+            // Ctrl+Shift+J
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'j' || e.keyCode === 74)) {
+                e.preventDefault();
+                return false;
+            }
+            // Ctrl+Shift+C
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'c' || e.keyCode === 67)) {
+                e.preventDefault();
+                return false;
+            }
+        });
+        
+        // 检测开发者工具打开（简单检测）
+        var devtoolsOpen = false;
+        var threshold = 160;
+        setInterval(function() {
+            var widthThreshold = window.outerWidth - window.innerWidth > threshold;
+            var heightThreshold = window.outerHeight - window.innerHeight > threshold;
+            if (widthThreshold || heightThreshold) {
+                if (!devtoolsOpen) {
+                    devtoolsOpen = true;
+                    // 可以选择跳转或其他操作
+                }
+            } else {
+                devtoolsOpen = false;
+            }
+        }, 1000);
+    })();
+    </script>
+
+</body>
+</html>
