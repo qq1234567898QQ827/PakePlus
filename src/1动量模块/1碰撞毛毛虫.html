@@ -1,0 +1,703 @@
+<!doctype html>
+<html lang="zh-CN">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>动量毛毛虫模型 - 交互式物理教学</title>
+  <script src="https://static.zxxk.com/h5/static/7a614b9a197e532c00d09a23b0996b5f.js"></script>
+  <script src="https://static.zxxk.com/h5/static/99855b2c305ad1b10a5f86f4fafbef41.js"></script>
+  <style>
+body {
+  font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif;
+  background: #0f172a;
+  color: #e2e8f0;
+  margin: 0;
+  padding: 0;
+}
+#canvas-container {
+  display: flex;
+  justify-content: center;
+  background: #1e293b;
+  border-top: 2px solid #334155;
+  border-bottom: 2px solid #334155;
+}
+.control-panel {
+  background: #1e293b;
+  border-radius: 12px;
+  padding: 16px 20px;
+  margin: 8px auto;
+  max-width: 1200px;
+}
+.slider-label {
+  font-size: 13px;
+  color: #94a3b8;
+  margin-bottom: 2px;
+}
+.slider-value {
+  font-size: 14px;
+  font-weight: bold;
+  color: #38bdf8;
+}
+input[type="range"] {
+  -webkit-appearance: none;
+  width: 100%;
+  height: 6px;
+  border-radius: 3px;
+  background: #334155;
+  outline: none;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #38bdf8;
+  cursor: pointer;
+  border: 2px solid #0f172a;
+}
+.btn {
+  padding: 8px 20px;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+  border: none;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+.btn-play {
+  background: #22c55e;
+  color: #0f172a;
+}
+.btn-play:hover {
+  background: #16a34a;
+}
+.btn-pause {
+  background: #f59e0b;
+  color: #0f172a;
+}
+.btn-pause:hover {
+  background: #d97706;
+}
+.btn-reset {
+  background: #ef4444;
+  color: white;
+}
+.btn-reset:hover {
+  background: #dc2626;
+}
+.data-box {
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 13px;
+}
+.data-label {
+  color: #64748b;
+  font-size: 11px;
+}
+.data-value {
+  color: #f1f5f9;
+  font-weight: bold;
+  font-size: 15px;
+}
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: #cbd5e1;
+  cursor: pointer;
+}
+.checkbox-label input[type="checkbox"] {
+  accent-color: #38bdf8;
+  width: 16px;
+  height: 16px;
+}
+</style>
+  <meta name="copyright" content="学科网（zxxk.com）版权所有">
+  <meta name="signature" content="QQABLYAw4gAQkIaACZ4qRwnOCkgYkIEjLCgkQVAbOARiCRFABIA=">
+ <style>
+    /* 齐老师动画 - 统一样式 */
+    body {
+        background: #1a2332 !important;
+    }
+    
+    /* 顶部标题栏 */
+    .qilaoshi-header {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 50px;
+        background: #1a2332;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 99999 !important;
+        border-bottom: 1px solid #2a3a50;
+    }
+    
+    .qilaoshi-title {
+        font-size: 20px;
+        font-weight: 600;
+        color: #8ab4f8;
+        letter-spacing: 2px;
+        font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif;
+    }
+    
+    /* 返回按钮 */
+    .qilaoshi-back-btn {
+        position: fixed;
+        top: 10px;
+        right: 15px;
+        z-index: 999999 !important;
+        background: linear-gradient(135deg, #3a5a80, #2a4a70);
+        color: #ffffff;
+        border: 1px solid #5a8ab0;
+        padding: 8px 18px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        font-family: 'Microsoft YaHei', sans-serif;
+        transition: all 0.2s;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+    }
+    
+    .qilaoshi-back-btn:hover {
+        background: linear-gradient(135deg, #4a6a90, #3a5a80);
+        color: #ffffff;
+        box-shadow: 0 4px 15px rgba(90, 138, 176, 0.4);
+        transform: translateY(-1px);
+    }
+    
+    /* 水印 */
+    .qilaoshi-watermark {
+        position: fixed;
+        bottom: 10px;
+        right: 15px;
+        z-index: 9999;
+        font-size: 11px;
+        color: rgba(138, 180, 248, 0.4);
+        font-family: 'Microsoft YaHei', sans-serif;
+        line-height: 1.5;
+        text-align: right;
+        pointer-events: none;
+    }
+    
+    /* 调整主内容区域，给顶部标题栏留出空间 */
+    body {
+        padding-top: 50px !important;
+    }
+</style>
+</head>
+ <body>
+
+    <!-- 齐老师动画 - 顶部导航 -->
+    <div class="qilaoshi-header">
+        <div class="qilaoshi-title">齐老师动画</div>
+    </div>
+    <button class="qilaoshi-back-btn" onclick="window.location.href='../index.html'">← 返回主页</button>
+
+  <!-- 核心修改：删除副标题p标签，修改h1标题为「动量毛毛虫模型」 -->
+  <header class="text-center py-3" style="background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);">
+   <h1 class="text-2xl font-bold" style="background: linear-gradient(90deg, #f59e0b, #ef4444, #38bdf8); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">动量毛毛虫模型</h1>
+  </header>
+  <div id="canvas-container"></div>
+  <div class="control-panel">
+   <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+    <div>
+     <div class="slider-label">
+      物块A质量 (kg)
+     </div>
+     <div class="flex items-center gap-2"><input type="range" id="massA" min="0.5" max="5" step="0.1" value="2.0" class="flex-1"> <span class="slider-value" id="massA-val">2.0</span>
+     </div>
+    </div>
+    <div>
+     <div class="slider-label">
+      物块B质量 (kg)
+     </div>
+     <div class="flex items-center gap-2"><input type="range" id="massB" min="0.5" max="5" step="0.1" value="1.0" class="flex-1"> <span class="slider-value" id="massB-val">1.0</span>
+     </div>
+    </div>
+    <div>
+     <div class="slider-label">
+      A初速度 v₀ (m/s)
+     </div>
+     <div class="flex items-center gap-2"><input type="range" id="v0" min="1" max="3.5" step="0.5" value="3.0" class="flex-1"> <span class="slider-value" id="v0-val">3.0</span>
+     </div>
+    </div>
+    <div class="flex flex-col gap-2">
+     <div class="flex gap-2"><button class="btn btn-play flex-1" id="btn-play" onclick="togglePlay()">▶ 播放</button> <button class="btn btn-reset flex-1" id="btn-reset" onclick="resetSim()">↺ 重置</button>
+     </div>
+     <div class="flex gap-4"><label class="checkbox-label"> <input type="checkbox" id="showMomentum"> 显示动量 P=mv </label> <label class="checkbox-label"> <input type="checkbox" id="slowMotion"> 慢动作 0.2x </label>
+     </div>
+    </div>
+   </div>
+   <!-- 修改：将 md:grid-cols-5 改为 md:grid-cols-4，删除总能量模块 -->
+   <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+    <div class="data-box">
+     <div class="data-label">
+      时间 t(s)
+     </div>
+     <div class="data-value" id="time-display">
+      0.000
+     </div>
+    </div>
+    <div class="data-box">
+     <div class="data-label">
+      当前阶段
+     </div>
+     <div class="data-value" id="data-phase">
+      等待开始
+     </div>
+    </div>
+    <div class="data-box">
+     <div class="data-label">
+      物块间距 L (m)
+     </div>
+     <div class="data-value" id="data-distance">
+      --
+     </div>
+    </div>
+    <div class="data-box">
+     <div class="data-label">
+      总动量 (kg·m/s)
+     </div>
+     <div class="data-value" id="data-momentum">
+      --
+     </div>
+    </div>
+   </div>
+  </div>
+  <script>
+let canvasW, canvasH;
+let sim = {};
+let history = [];
+let isPlaying = false;
+let p5Instance;
+function initParams() {
+  let mA = parseFloat(document.getElementById('massA').value);
+  let mB = parseFloat(document.getElementById('massB').value);
+  let v0 = parseFloat(document.getElementById('v0').value);
+  let springNatural = 2.8;
+  let k = 8.0;
+  let blockW = 0.8;
+  let xA0 = 0;
+  let xB0 = 6;
+  return {
+    mA: mA,
+    mB: mB,
+    v0: v0,
+    k: k,
+    springNatural: springNatural,
+    blockW: blockW,
+    xA: xA0,
+    xB: xB0,
+    vA: v0,
+    vB: 0,
+    t: 0,
+    dt: 1 / 3000,
+    attached: false,
+    phase: "靠近",
+    xA0: xA0
+  };
+}
+function resetSim() {
+  sim = initParams();
+  history = [];
+  recordState();
+  isPlaying = false;
+  document.getElementById('btn-play').textContent = '▶ 播放';
+  document.getElementById('btn-play').className = 'btn btn-play flex-1';
+  updateDataDisplay();
+}
+function recordState() {
+  let gap = sim.xB - sim.xA - sim.blockW;
+  let springDeform = 0;
+  let springForce = 0;
+  let Ep = 0;
+  if (sim.attached) {
+    let currentSpringLen = gap;
+    springDeform = currentSpringLen - sim.springNatural;
+    springForce = sim.k * springDeform;
+    Ep = 0.5 * sim.k * springDeform * springDeform;
+  }
+  let EkA = 0.5 * sim.mA * sim.vA * sim.vA;
+  let EkB = 0.5 * sim.mB * sim.vB * sim.vB;
+  history.push({
+    t: sim.t,
+    xA: sim.xA,
+    xB: sim.xB,
+    vA: sim.vA,
+    vB: sim.vB,
+    attached: sim.attached,
+    phase: sim.phase,
+    gap: gap,
+    springForce: springForce,
+    EkA: EkA,
+    EkB: EkB,
+    Ep: Ep,
+    totalE: EkA + EkB + Ep,
+    totalP: sim.mA * sim.vA + sim.mB * sim.vB
+  });
+}
+function physicsStep() {
+  let gap = sim.xB - sim.xA - sim.blockW;
+  if (!sim.attached) {
+    if (gap <= sim.springNatural) {
+      sim.attached = true;
+      sim.phase = "压缩";
+    } else {
+      sim.xA += sim.vA * sim.dt;
+      sim.t += sim.dt;
+      return;
+    }
+  }
+  if (sim.attached) {
+    let delta = gap - sim.springNatural;
+    let forceOnA = sim.k * delta;
+    let forceOnB = -sim.k * delta;
+    let aA = forceOnA / sim.mA;
+    let aB = forceOnB / sim.mB;
+    sim.vA += aA * sim.dt;
+    sim.vB += aB * sim.dt;
+    sim.xA += sim.vA * sim.dt;
+    sim.xB += sim.vB * sim.dt;
+    if (delta < -0.01) {
+      sim.phase = "压缩";
+    } else if (delta > 0.01) {
+      sim.phase = "拉伸";
+    } else {
+      sim.phase = "恢复";
+    }
+  }
+  sim.t += sim.dt;
+}
+function togglePlay() {
+  isPlaying = !isPlaying;
+  if (isPlaying) {
+    document.getElementById('btn-play').textContent = '⏸ 暂停';
+    document.getElementById('btn-play').className = 'btn btn-pause flex-1';
+  } else {
+    document.getElementById('btn-play').textContent = '▶ 播放';
+    document.getElementById('btn-play').className = 'btn btn-play flex-1';
+  }
+}
+function updateDataDisplay() {
+  let idx = history.length - 1;
+  if (idx < 0) return;
+  let s = history[idx];
+  document.getElementById('time-display').textContent = s.t.toFixed(3);
+  document.getElementById('data-phase').textContent = s.phase;
+  document.getElementById('data-distance').textContent = s.gap.toFixed(3);
+  document.getElementById('data-momentum').textContent = s.totalP.toFixed(4);
+  // 移除：删除总能量显示的更新代码
+}
+let sketch = function(p) {
+  let cameraX = 0;
+  let cameraSmoothX = 0;
+  let SCALE = 80;
+  let groundY;
+  p.setup = function() {
+    canvasW = Math.min(1200, window.innerWidth);
+    canvasH = 320;
+    let canvas = p.createCanvas(canvasW, canvasH);
+    canvas.parent('canvas-container');
+    groundY = canvasH * 0.68;
+    resetSim();
+  };
+  p.draw = function() {
+    let slowMotion = document.getElementById('slowMotion').checked;
+    let showMomentum = document.getElementById('showMomentum').checked;
+    if (isPlaying) {
+      let stepsPerFrame = slowMotion ? 10 : 50;
+      for (let i = 0; i < stepsPerFrame; i++) {
+        physicsStep();
+        if (history.length === 0 || sim.t - history[history.length - 1].t >= 0.001) {
+          recordState();
+        }
+      }
+      updateDataDisplay();
+    }
+    let state = history.length > 0 ? history[history.length - 1] : null;
+    if (!state) {
+      p.background(15, 23, 42);
+      return;
+    }
+    let centerX = (state.xA + state.xB) / 2;
+    cameraSmoothX += (centerX * SCALE - cameraSmoothX) * 0.08;
+    p.background(15, 23, 42);
+    p.push();
+    p.translate(canvasW / 2 - cameraSmoothX, 0);
+    drawGrid(p, state);
+    p.stroke(71, 85, 105);
+    p.strokeWeight(2);
+    p.line(-5000, groundY, 10000, groundY);
+    drawSpring(p, state);
+    drawBlock(p, state.xA, sim.mA, state.vA, '#f97316', '#ea580c', 'A', showMomentum);
+    drawBlock(p, state.xB, sim.mB, state.vB, '#06b6d4', '#0891b2', 'B', showMomentum);
+    drawDistanceLabel(p, state);
+    p.pop();
+  };
+  function drawGrid(p, state) {
+    let originX = sim.xA0 * SCALE;
+    let leftBound = cameraSmoothX - canvasW;
+    let rightBound = cameraSmoothX + canvasW;
+    p.textAlign(p.CENTER, p.TOP);
+    p.textSize(11);
+    let startM = Math.floor(leftBound / SCALE) - 1;
+    let endM = Math.ceil(rightBound / SCALE) + 1;
+    for (let m = startM; m <= endM; m++) {
+      let px = m * SCALE;
+      p.stroke(30, 41, 59, 80);
+      p.strokeWeight(1);
+      if (m % 5 === 0) {
+        p.stroke(30, 41, 59, 150);
+        p.strokeWeight(1.5);
+      }
+      p.line(px, 0, px, canvasH);
+      if (m >= 0) {
+        p.noStroke();
+        p.fill(100, 116, 139);
+        p.text(m, px, groundY + 8);
+      }
+    }
+    for (let py = 0; py < canvasH; py += SCALE) {
+      p.stroke(30, 41, 59, 50);
+      p.strokeWeight(1);
+      p.line(-5000, py, 10000, py);
+    }
+    let ox = originX;
+    p.fill(248, 113, 113);
+    p.noStroke();
+    p.textSize(14);
+    p.textAlign(p.CENTER, p.TOP);
+    p.text('O', ox, groundY + 8);
+    p.stroke(248, 113, 113);
+    p.strokeWeight(2);
+    p.line(ox, groundY - 10, ox, groundY + 5);
+  }
+  function drawSpring(p, state) {
+    let bw = sim.blockW * SCALE;
+    let leftX, rightX;
+    if (state.attached) {
+      leftX = state.xA * SCALE + bw / 2;
+      rightX = state.xB * SCALE - bw / 2;
+    } else {
+      rightX = state.xB * SCALE - bw / 2;
+      leftX = rightX - sim.springNatural * SCALE;
+    }
+    let y = groundY - (bw * 0.5);
+    let springLen = rightX - leftX;
+    if (springLen < 5) springLen = 5;
+    let coils = 18;
+    let naturalPx = sim.springNatural * SCALE;
+    let ratio = springLen / naturalPx;
+    let amplitude = 14;
+    if (ratio < 1) {
+      amplitude = 14 * ratio;
+      if (amplitude < 4) amplitude = 4;
+    } else {
+      amplitude = 14 / Math.sqrt(ratio);
+    }
+    let r = 250, g = 204, b = 21;
+    if (state.attached) {
+      let delta = state.gap - sim.springNatural;
+      if (delta < -0.05) { r = 239; g = 68; b = 68; }
+      else if (delta > 0.05) { r = 59; g = 130; b = 246; }
+    }
+    p.stroke(r, g, b);
+    p.strokeWeight(2.5);
+    p.noFill();
+    p.line(leftX, y, leftX + 8, y);
+    p.line(rightX - 8, y, rightX, y);
+    p.beginShape();
+    let segments = coils * 4;
+    let innerLeft = leftX + 8;
+    let innerRight = rightX - 8;
+    let innerLen = innerRight - innerLeft;
+    if (innerLen < 2) innerLen = 2;
+    for (let i = 0; i <= segments; i++) {
+      let t = i / segments;
+      let sx = innerLeft + t * innerLen;
+      let sy = y + Math.sin(t * coils * Math.PI * 2) * amplitude;
+      p.vertex(sx, sy);
+    }
+    p.endShape();
+  }
+  function drawBlock(p, x, mass, vel, color1, color2, label, showMom) {
+    let bw = sim.blockW * SCALE;
+    let bh = bw * 0.8;
+    let px = x * SCALE;
+    let by = groundY - bh;
+    p.noStroke();
+    p.fill(0, 0, 0, 40);
+    p.rect(px - bw / 2 + 3, by + 3, bw, bh, 4);
+    let c1 = p.color(color1);
+    let c2 = p.color(color2);
+    p.fill(c1);
+    p.stroke(c2);
+    p.strokeWeight(2);
+    p.rect(px - bw / 2, by, bw, bh, 4);
+    p.fill(255);
+    p.noStroke();
+    p.textAlign(p.CENTER, p.CENTER);
+    p.textSize(18);
+    p.textStyle(p.BOLD);
+    p.text(label, px, by + bh / 2 - 8);
+    p.textSize(10);
+    p.textStyle(p.NORMAL);
+    p.text(mass.toFixed(1) + ' kg', px, by + bh / 2 + 10);
+    let arrowY = by - 25;
+    let velScale = 18;
+    let arrowLen = vel * velScale;
+    p.fill(c1);
+    p.noStroke();
+    p.textSize(12);
+    p.textAlign(p.CENTER, p.BOTTOM);
+    p.textStyle(p.BOLD);
+    p.text('v = ' + vel.toFixed(2) + ' m/s', px, arrowY - 8);
+    p.textStyle(p.NORMAL);
+    if (Math.abs(arrowLen) > 3) {
+      p.stroke(c2);
+      p.strokeWeight(3);
+      p.line(px, arrowY, px + arrowLen, arrowY);
+      let dir = arrowLen > 0 ? 1 : -1;
+      p.fill(c2);
+      p.noStroke();
+      p.triangle(px + arrowLen, arrowY - 6, px + arrowLen, arrowY + 6, px + arrowLen + dir * 10, arrowY);
+    }
+    if (showMom) {
+      let momY = groundY + 35;
+      let mom = mass * vel;
+      let momScale = 10;
+      let momLen = mom * momScale;
+      p.fill(168, 85, 247);
+      p.noStroke();
+      p.textSize(11);
+      p.textAlign(p.CENTER, p.TOP);
+      p.text('P = ' + mom.toFixed(2) + ' kg·m/s', px, momY + 12);
+      if (Math.abs(momLen) > 3) {
+        p.stroke(168, 85, 247);
+        p.strokeWeight(2.5);
+        p.line(px, momY, px + momLen, momY);
+        let dir = momLen > 0 ? 1 : -1;
+        p.fill(168, 85, 247);
+        p.noStroke();
+        p.triangle(px + momLen, momY - 5, px + momLen, momY + 5, px + momLen + dir * 8, momY);
+      }
+    }
+  }
+  function drawDistanceLabel(p, state) {
+    let bw = sim.blockW * SCALE;
+    let leftX = state.xA * SCALE + bw / 2;
+    let rightX = state.xB * SCALE - bw / 2;
+    let midX = (leftX + rightX) / 2;
+    let y = groundY - bw * 0.8 - 70;
+    p.noStroke();
+    p.fill(250, 204, 21);
+    p.textAlign(p.CENTER, p.CENTER);
+    p.textSize(13);
+    p.textStyle(p.BOLD);
+    p.text('间距 L = ' + state.gap.toFixed(3) + ' m', midX, y);
+    p.textStyle(p.NORMAL);
+    p.stroke(250, 204, 21, 120);
+    p.strokeWeight(1);
+    p.line(leftX, y + 10, rightX, y + 10);
+    p.line(leftX, y + 5, leftX, y + 15);
+    p.line(rightX, y + 5, rightX, y + 15);
+  }
+  p.windowResized = function() {
+    canvasW = Math.min(1200, window.innerWidth);
+    p.resizeCanvas(canvasW, canvasH);
+  };
+};
+document.getElementById('massA').addEventListener('input', function() {
+  document.getElementById('massA-val').textContent = this.value;
+  resetSim();
+});
+document.getElementById('massB').addEventListener('input', function() {
+  document.getElementById('massB-val').textContent = this.value;
+  resetSim();
+});
+document.getElementById('v0').addEventListener('input', function() {
+  document.getElementById('v0-val').textContent = this.value;
+  resetSim();
+});
+p5Instance = new p5(sketch);
+ </script>
+ 
+    <!-- 齐老师动画 - 水印 -->
+    <div class="qilaoshi-watermark">
+        QQ 3398528250<br>
+        抖音 35320300542
+    </div>
+
+
+    <!-- 齐老师动画 - 安全保护脚本 -->
+    <script>
+    (function() {
+        // 禁用右键菜单
+        document.addEventListener('contextmenu', function(e) {
+            e.preventDefault();
+            return false;
+        });
+        
+        // ESC键返回主页
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' || e.keyCode === 27) {
+                window.location.href = '../index.html';
+            }
+        });
+        
+        // 禁用开发者工具快捷键
+        document.addEventListener('keydown', function(e) {
+            // F12
+            if (e.key === 'F12' || e.keyCode === 123) {
+                e.preventDefault();
+                return false;
+            }
+            // Ctrl+U
+            if ((e.ctrlKey || e.metaKey) && (e.key === 'u' || e.keyCode === 85)) {
+                e.preventDefault();
+                return false;
+            }
+            // Ctrl+Shift+I
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'i' || e.keyCode === 73)) {
+                e.preventDefault();
+                return false;
+            }
+            // Ctrl+Shift+J
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'j' || e.keyCode === 74)) {
+                e.preventDefault();
+                return false;
+            }
+            // Ctrl+Shift+C
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'c' || e.keyCode === 67)) {
+                e.preventDefault();
+                return false;
+            }
+        });
+        
+        // 检测开发者工具打开（简单检测）
+        var devtoolsOpen = false;
+        var threshold = 160;
+        setInterval(function() {
+            var widthThreshold = window.outerWidth - window.innerWidth > threshold;
+            var heightThreshold = window.outerHeight - window.innerHeight > threshold;
+            if (widthThreshold || heightThreshold) {
+                if (!devtoolsOpen) {
+                    devtoolsOpen = true;
+                    // 可以选择跳转或其他操作
+                }
+            } else {
+                devtoolsOpen = false;
+            }
+        }, 1000);
+    })();
+    </script>
+
+</body>
+</html>
