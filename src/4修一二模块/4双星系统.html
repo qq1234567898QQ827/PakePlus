@@ -1,0 +1,990 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>双星系统 - 高中物理天体动画</title>
+    <style>
+        :root {
+            --bg: #0a0f1a;
+            --panel-bg: #0d1525;
+            --text: #c8d6e5;
+            --accent-red: #e84545;
+            --accent-gold: #e8b845;
+            --slider-red: #d44;
+            --slider-gold: #da0;
+            --border: #1e2d45;
+            --shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: var(--bg);
+            font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', 'Helvetica Neue', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 16px;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            background: radial-gradient(ellipse at center, #0f1a2e 0%, #060d18 55%, #020810 100%);
+        }
+
+        .container {
+            background: var(--panel-bg);
+            border-radius: 20px;
+            padding: 20px 24px 24px;
+            box-shadow: var(--shadow), 0 0 0 1px var(--border);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+            max-width: 780px;
+            width: 100%;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            width: 100%;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .header .icon-orbit {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border: 2px dashed rgba(255, 255, 255, 0.4);
+            position: relative;
+            flex-shrink: 0;
+            animation: iconPulse 3s ease-in-out infinite;
+        }
+        .icon-orbit::before,
+        .icon-orbit::after {
+            content: '';
+            position: absolute;
+            border-radius: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+        }
+        .icon-orbit::before {
+            width: 10px;
+            height: 10px;
+            background: #e84545;
+            left: 28%;
+            box-shadow: 0 0 8px #e84545;
+        }
+        .icon-orbit::after {
+            width: 8px;
+            height: 8px;
+            background: #e8b845;
+            left: 72%;
+            box-shadow: 0 0 8px #e8b845;
+        }
+        @keyframes iconPulse {
+            0%,
+            100% {
+                border-color: rgba(255, 255, 255, 0.35);
+            }
+            50% {
+                border-color: rgba(255, 255, 255, 0.7);
+            }
+        }
+
+        .header h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #e8ecf2;
+            letter-spacing: 0.04em;
+            white-space: nowrap;
+        }
+        .header .badge {
+            font-size: 0.7rem;
+            background: rgba(255, 255, 255, 0.08);
+            color: #a0b5d0;
+            padding: 4px 10px;
+            border-radius: 20px;
+            letter-spacing: 0.05em;
+            white-space: nowrap;
+        }
+
+        .canvas-wrapper {
+            position: relative;
+            width: 100%;
+            max-width: 720px;
+            aspect-ratio: 720 / 470;
+            border-radius: 14px;
+            overflow: hidden;
+            box-shadow: inset 0 0 60px rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.07);
+            background: #080e1a;
+            cursor: default;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            border-radius: 14px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 20px;
+            width: 100%;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .control-group {
+            flex: 1;
+            min-width: 200px;
+            max-width: 320px;
+            background: rgba(255, 255, 255, 0.025);
+            border-radius: 14px;
+            padding: 14px 18px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            transition: border-color 0.3s;
+        }
+        .control-group:hover {
+            border-color: rgba(255, 255, 255, 0.18);
+        }
+
+        .control-group label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: #bcc8da;
+            margin-bottom: 8px;
+            letter-spacing: 0.03em;
+        }
+        .control-group label .dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+            flex-shrink: 0;
+            box-shadow: 0 0 10px currentColor;
+        }
+        .dot.red {
+            background: #e84545;
+            box-shadow: 0 0 12px #e84545;
+        }
+        .dot.gold {
+            background: #e8b845;
+            box-shadow: 0 0 12px #e8b845;
+        }
+
+        .mass-value {
+            font-weight: 700;
+            font-size: 1.05rem;
+            color: #e8ecf2;
+            margin-left: auto;
+            min-width: 44px;
+            text-align: right;
+        }
+
+        input[type="range"] {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 7px;
+            border-radius: 10px;
+            outline: none;
+            cursor: pointer;
+            margin: 4px 0 6px;
+            transition: opacity 0.2s;
+        }
+        input[type="range"]:active {
+            opacity: 0.85;
+        }
+        #sliderRed {
+            background: linear-gradient(90deg, #3a1010, #e84545, #ff7070);
+        }
+        #sliderGold {
+            background: linear-gradient(90deg, #3a2a08, #e8b845, #ffd870);
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid rgba(255, 255, 255, 0.7);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
+            transition: transform 0.15s;
+        }
+        input[type="range"]::-webkit-slider-thumb:active {
+            transform: scale(1.2);
+        }
+        #sliderRed::-webkit-slider-thumb {
+            background: #e84545;
+            box-shadow: 0 0 16px #e84545aa, 0 2px 8px rgba(0, 0, 0, 0.5);
+        }
+        #sliderGold::-webkit-slider-thumb {
+            background: #e8b845;
+            box-shadow: 0 0 16px #e8b845aa, 0 2px 8px rgba(0, 0, 0, 0.5);
+        }
+
+        .info-strip {
+            display: flex;
+            gap: 14px;
+            flex-wrap: wrap;
+            justify-content: center;
+            font-size: 0.78rem;
+            color: #8a9bb5;
+            letter-spacing: 0.03em;
+        }
+        .info-strip span {
+            background: rgba(255, 255, 255, 0.03);
+            padding: 5px 12px;
+            border-radius: 16px;
+            white-space: nowrap;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .info-strip .val {
+            font-weight: 600;
+            color: #c8d6e5;
+        }
+
+        .btn-row {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .btn {
+            padding: 8px 18px;
+            border-radius: 22px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.05);
+            color: #c8d6e5;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 500;
+            letter-spacing: 0.03em;
+            transition: all 0.25s;
+            white-space: nowrap;
+            font-family: inherit;
+        }
+        .btn:hover {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: rgba(255, 255, 255, 0.4);
+        }
+        .btn:active {
+            background: rgba(255, 255, 255, 0.18);
+            transform: scale(0.96);
+        }
+        .btn.active-btn {
+            background: rgba(255, 255, 255, 0.13);
+            border-color: rgba(255, 255, 255, 0.5);
+            color: #fff;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 12px 10px 16px;
+                border-radius: 14px;
+                gap: 10px;
+            }
+            .header h1 {
+                font-size: 1.2rem;
+            }
+            .control-group {
+                min-width: 130px;
+                padding: 10px 12px;
+            }
+            .controls {
+                gap: 8px;
+            }
+            .canvas-wrapper {
+                border-radius: 10px;
+            }
+            canvas {
+                border-radius: 10px;
+            }
+            .btn {
+                padding: 6px 13px;
+                font-size: 0.78rem;
+            }
+            .info-strip {
+                font-size: 0.7rem;
+                gap: 6px;
+            }
+        }
+    </style>
+<style>
+    /* 齐老师动画 - 统一样式 */
+    body {
+        background: #1a2332 !important;
+    }
+    
+    /* 顶部标题栏 */
+    .qilaoshi-header {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 50px;
+        background: #1a2332;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 99999 !important;
+        border-bottom: 1px solid #2a3a50;
+    }
+    
+    .qilaoshi-title {
+        font-size: 20px;
+        font-weight: 600;
+        color: #8ab4f8;
+        letter-spacing: 2px;
+        font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif;
+    }
+    
+    /* 返回按钮 */
+    .qilaoshi-back-btn {
+        position: fixed;
+        top: 10px;
+        right: 15px;
+        z-index: 999999 !important;
+        background: linear-gradient(135deg, #3a5a80, #2a4a70);
+        color: #ffffff;
+        border: 1px solid #5a8ab0;
+        padding: 8px 18px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        font-family: 'Microsoft YaHei', sans-serif;
+        transition: all 0.2s;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+    }
+    
+    .qilaoshi-back-btn:hover {
+        background: linear-gradient(135deg, #4a6a90, #3a5a80);
+        color: #ffffff;
+        box-shadow: 0 4px 15px rgba(90, 138, 176, 0.4);
+        transform: translateY(-1px);
+    }
+    
+    /* 水印 */
+    .qilaoshi-watermark {
+        position: fixed;
+        bottom: 10px;
+        right: 15px;
+        z-index: 9999;
+        font-size: 11px;
+        color: rgba(138, 180, 248, 0.4);
+        font-family: 'Microsoft YaHei', sans-serif;
+        line-height: 1.5;
+        text-align: right;
+        pointer-events: none;
+    }
+    
+    /* 调整主内容区域，给顶部标题栏留出空间 */
+    body {
+        padding-top: 50px !important;
+    }
+</style>
+</head>
+<body>
+
+    <!-- 齐老师动画 - 顶部导航 -->
+    <div class="qilaoshi-header">
+        <div class="qilaoshi-title">齐老师动画</div>
+    </div>
+    <button class="qilaoshi-back-btn" onclick="window.location.href='../index.html'">← 返回主页</button>
+
+    <div class="container">
+        <!-- 头部 -->
+        <div class="header">
+            <div class="icon-orbit"></div>
+            <h1>双星系统模拟</h1>
+            <span class="badge">高中物理·天体运动</span>
+        </div>
+
+        <!-- 画布 -->
+        <div class="canvas-wrapper">
+            <canvas id="canvas"></canvas>
+        </div>
+
+        <!-- 信息条 -->
+        <div class="info-strip" id="infoStrip">
+            <span>🕐 周期: <span class="val" id="infoPeriod">--</span> s</span>
+            <span>🔴 轨道半径 r₁: <span class="val" id="infoR1">--</span> px</span>
+            <span>🟡 轨道半径 r₂: <span class="val" id="infoR2">--</span> px</span>
+            <span>⚪ 质心偏移比: <span class="val" id="infoRatio">--</span></span>
+        </div>
+
+        <!-- 控制面板 -->
+        <div class="controls">
+            <div class="control-group" id="groupRed">
+                <label>
+                    <span class="dot red"></span> 红色星质量 m₁
+                    <span class="mass-value" id="valRed">2.0</span>&nbsp;M₀
+                </label>
+                <input type="range" id="sliderRed" min="0.5" max="5.0" step="0.1" value="2.0">
+            </div>
+            <div class="control-group" id="groupGold">
+                <label>
+                    <span class="dot gold"></span> 黄色星质量 m₂
+                    <span class="mass-value" id="valGold">1.0</span>&nbsp;M₀
+                </label>
+                <input type="range" id="sliderGold" min="0.5" max="5.0" step="0.1" value="1.0">
+            </div>
+        </div>
+
+        <!-- 按钮行 -->
+        <div class="btn-row">
+            <button class="btn active-btn" id="btnPause" title="暂停 / 播放动画">⏯️ 暂停</button>
+            <button class="btn" id="btnClearTrail" title="清除轨迹线">🧹 清除轨迹</button>
+            <button class="btn" id="btnReset" title="恢复默认参数">🔄 重置</button>
+            <button class="btn" id="btnSpeedDown" title="减慢动画">🐢 减速</button>
+            <button class="btn" id="btnSpeedUp" title="加快动画">🐇 加速</button>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            // ==================== DOM元素 ====================
+            const canvas = document.getElementById('canvas');
+            const ctx = canvas.getContext('2d');
+
+            const sliderRed = document.getElementById('sliderRed');
+            const sliderGold = document.getElementById('sliderGold');
+            const valRed = document.getElementById('valRed');
+            const valGold = document.getElementById('valGold');
+            const btnPause = document.getElementById('btnPause');
+            const btnClearTrail = document.getElementById('btnClearTrail');
+            const btnReset = document.getElementById('btnReset');
+            const btnSpeedDown = document.getElementById('btnSpeedDown');
+            const btnSpeedUp = document.getElementById('btnSpeedUp');
+
+            const infoPeriod = document.getElementById('infoPeriod');
+            const infoR1 = document.getElementById('infoR1');
+            const infoR2 = document.getElementById('infoR2');
+            const infoRatio = document.getElementById('infoRatio');
+
+            // ==================== 参数 ====================
+            const R_TOTAL = 185; // 两颗星之间的总距离（像素），保持恒定
+            const G_EFF = 4200000; // 有效引力常数（像素³/(M₀·s²)），调整使动画速度合适
+            const TRAIL_MAX = 700; // 轨迹最大点数
+            const STAR_BASE_RADIUS = 9; // 星球基础半径
+
+            let massRed = parseFloat(sliderRed.value); // m₁ 红色星质量
+            let massGold = parseFloat(sliderGold.value); // m₂ 黄色星质量
+            let prevMassRed = massRed;
+            let prevMassGold = massGold;
+
+            let angle = 0; // 当前旋转角度（弧度）
+            let isPaused = false;
+            let speedMultiplier = 1.0; // 速度倍率
+
+            // 轨迹存储
+            let trailRed = [];
+            let trailGold = [];
+
+            // 背景星星
+            let bgStars = [];
+
+            // ==================== Canvas内部尺寸 ====================
+            const INTERNAL_WIDTH = 720;
+            const INTERNAL_HEIGHT = 470;
+
+            function resizeCanvas() {
+                const wrapper = canvas.parentElement;
+                const wrapperWidth = wrapper.clientWidth;
+                const scale = Math.min(1, wrapperWidth / INTERNAL_WIDTH);
+                canvas.width = INTERNAL_WIDTH;
+                canvas.height = INTERNAL_HEIGHT;
+                canvas.style.width = Math.floor(INTERNAL_WIDTH * scale) + 'px';
+                canvas.style.height = Math.floor(INTERNAL_HEIGHT * scale) + 'px';
+            }
+
+            // ==================== 计算轨道参数 ====================
+            function getOrbitParams() {
+                const mTotal = massRed + massGold;
+                const r1 = R_TOTAL * massGold / mTotal; // 红色星到质心的距离
+                const r2 = R_TOTAL * massRed / mTotal; // 黄色星到质心的距离
+                const omega = Math.sqrt(G_EFF * mTotal / (R_TOTAL * R_TOTAL * R_TOTAL)); // 角速度
+                const period = (2 * Math.PI) / omega; // 周期（秒）
+                return { r1, r2, omega, period, mTotal };
+            }
+
+            function getStarRadius(mass) {
+                // 星球视觉半径与质量的立方根成正比（模拟体积与质量的关系）
+                return STAR_BASE_RADIUS * Math.pow(mass, 0.38) + 2;
+            }
+
+            // ==================== 初始化背景星星 ====================
+            function initBgStars() {
+                bgStars = [];
+                const count = 160;
+                for (let i = 0; i < count; i++) {
+                    bgStars.push({
+                        x: Math.random() * INTERNAL_WIDTH,
+                        y: Math.random() * INTERNAL_HEIGHT,
+                        r: Math.random() * 1.6 + 0.3,
+                        brightness: Math.random() * 0.5 + 0.35,
+                        twinkleSpeed: Math.random() * 2 + 1,
+                        twinkleOffset: Math.random() * Math.PI * 2,
+                    });
+                }
+            }
+
+            // ==================== 绘制函数 ====================
+            function drawBackground(time) {
+                // 浅蓝黑色渐变背景
+                const bgGrad = ctx.createRadialGradient(
+                    INTERNAL_WIDTH / 2, INTERNAL_HEIGHT / 2, INTERNAL_WIDTH * 0.1,
+                    INTERNAL_WIDTH / 2, INTERNAL_HEIGHT / 2, INTERNAL_WIDTH * 0.75
+                );
+                bgGrad.addColorStop(0, '#101d30');
+                bgGrad.addColorStop(0.5, '#0a1322');
+                bgGrad.addColorStop(1, '#040a14');
+                ctx.fillStyle = bgGrad;
+                ctx.fillRect(0, 0, INTERNAL_WIDTH, INTERNAL_HEIGHT);
+
+                // 背景星星
+                for (const star of bgStars) {
+                    const twinkle = 0.55 + 0.45 * Math.sin(time * star.twinkleSpeed + star.twinkleOffset);
+                    const alpha = star.brightness * twinkle;
+                    ctx.beginPath();
+                    ctx.arc(star.x, star.y, star.r, 0, Math.PI * 2);
+                    ctx.fillStyle = `rgba(180,210,255,${alpha.toFixed(2)})`;
+                    ctx.fill();
+                }
+            }
+
+            function drawStar(x, y, radius, colorCenter, colorMid, colorOuter, glowColor, glowSize) {
+                // 光晕
+                ctx.save();
+                ctx.shadowBlur = glowSize;
+                ctx.shadowColor = glowColor;
+                const grad = ctx.createRadialGradient(x - radius * 0.2, y - radius * 0.25, radius * 0.05, x, y, radius);
+                grad.addColorStop(0, colorCenter);
+                grad.addColorStop(0.35, colorMid);
+                grad.addColorStop(0.75, colorOuter);
+                grad.addColorStop(1, 'rgba(0,0,0,0)');
+                ctx.fillStyle = grad;
+                ctx.beginPath();
+                ctx.arc(x, y, radius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+
+                // 内核亮点
+                const innerGrad = ctx.createRadialGradient(x, y, 0, x, y, radius * 0.45);
+                innerGrad.addColorStop(0, 'rgba(255,255,255,0.95)');
+                innerGrad.addColorStop(0.5, 'rgba(255,255,255,0.35)');
+                innerGrad.addColorStop(1, 'rgba(255,255,255,0)');
+                ctx.fillStyle = innerGrad;
+                ctx.beginPath();
+                ctx.arc(x, y, radius * 0.45, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            function drawTrail(trail, color, lineWidth) {
+                if (trail.length < 2) return;
+                ctx.save();
+                ctx.strokeStyle = color;
+                ctx.lineWidth = lineWidth;
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+                ctx.globalAlpha = 0.7;
+                ctx.beginPath();
+                ctx.moveTo(trail[0].x, trail[0].y);
+                for (let i = 1; i < trail.length; i++) {
+                    ctx.lineTo(trail[i].x, trail[i].y);
+                }
+                ctx.stroke();
+                // 渐变淡出尾部
+                if (trail.length > 3) {
+                    const fadeLen = Math.min(30, Math.floor(trail.length * 0.2));
+                    const lastIdx = trail.length - 1;
+                    for (let i = 0; i < fadeLen; i++) {
+                        const idx = lastIdx - i;
+                        if (idx <= 0) break;
+                        const alpha = 0.7 * (1 - i / fadeLen);
+                        ctx.strokeStyle = color.replace('0.85', alpha.toFixed(3)).replace('0.7', alpha.toFixed(3));
+                        ctx.globalAlpha = alpha;
+                        ctx.lineWidth = lineWidth * (1 - i / fadeLen * 0.5);
+                        ctx.beginPath();
+                        ctx.moveTo(trail[idx - 1].x, trail[idx - 1].y);
+                        ctx.lineTo(trail[idx].x, trail[idx].y);
+                        ctx.stroke();
+                    }
+                }
+                ctx.restore();
+            }
+
+            function drawConnectionLine(x1, y1, x2, y2, cx, cy) {
+                // 连接两颗星的虚线，经过质心
+                ctx.save();
+                ctx.setLineDash([6, 8]);
+                ctx.strokeStyle = 'rgba(180,200,230,0.35)';
+                ctx.lineWidth = 1.2;
+                ctx.beginPath();
+                ctx.moveTo(x1, y1);
+                ctx.lineTo(x2, y2);
+                ctx.stroke();
+                ctx.setLineDash([]);
+
+                // 质心标记
+                ctx.fillStyle = 'rgba(255,255,255,0.85)';
+                ctx.shadowBlur = 8;
+                ctx.shadowColor = 'rgba(255,255,255,0.6)';
+                ctx.beginPath();
+                ctx.arc(cx, cy, 3.5, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.shadowBlur = 0;
+
+                // 质心十字
+                ctx.strokeStyle = 'rgba(255,255,255,0.55)';
+                ctx.lineWidth = 0.8;
+                ctx.beginPath();
+                ctx.moveTo(cx - 7, cy);
+                ctx.lineTo(cx + 7, cy);
+                ctx.moveTo(cx, cy - 7);
+                ctx.lineTo(cx, cy + 7);
+                ctx.stroke();
+                ctx.restore();
+            }
+
+            // ==================== 主绘制 ====================
+            function draw(time) {
+                ctx.clearRect(0, 0, INTERNAL_WIDTH, INTERNAL_HEIGHT);
+                drawBackground(time);
+
+                const cx = INTERNAL_WIDTH / 2;
+                const cy = INTERNAL_HEIGHT / 2;
+                const { r1, r2 } = getOrbitParams();
+
+                // 两颗星的位置（相位差π）
+                const redX = cx + r1 * Math.cos(angle);
+                const redY = cy + r1 * Math.sin(angle);
+                const goldX = cx - r2 * Math.cos(angle);
+                const goldY = cy - r2 * Math.sin(angle);
+
+                // 绘制连接线（在星球下方）
+                drawConnectionLine(redX, redY, goldX, goldY, cx, cy);
+
+                // 绘制轨迹（在星球下方）
+                drawTrail(trailRed, 'rgba(240,70,70,0.75)', 1.6);
+                drawTrail(trailGold, 'rgba(235,175,55,0.75)', 1.6);
+
+                // 绘制轨道圆环（半透明虚线参考圆）
+                ctx.save();
+                ctx.setLineDash([3, 10]);
+                ctx.strokeStyle = 'rgba(240,70,70,0.18)';
+                ctx.lineWidth = 0.8;
+                ctx.beginPath();
+                ctx.arc(cx, cy, r1, 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.strokeStyle = 'rgba(235,175,55,0.18)';
+                ctx.beginPath();
+                ctx.arc(cx, cy, r2, 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.setLineDash([]);
+                ctx.restore();
+
+                // 绘制红色星
+                const radRed = getStarRadius(massRed);
+                drawStar(redX, redY, radRed,
+                    '#ffffff', '#ff9999', '#d42020',
+                    'rgba(240,60,60,0.75)', 22 + radRed * 0.8
+                );
+
+                // 绘制黄色星
+                const radGold = getStarRadius(massGold);
+                drawStar(goldX, goldY, radGold,
+                    '#ffffff', '#ffe9a0', '#c88820',
+                    'rgba(230,170,50,0.75)', 22 + radGold * 0.8
+                );
+
+                // 质心标签
+                ctx.fillStyle = 'rgba(255,255,255,0.7)';
+                ctx.font = '11px "PingFang SC","Microsoft YaHei","Segoe UI",sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('质心', cx, cy - 13);
+            }
+
+            // ==================== 更新轨迹 ====================
+            function updateTrails() {
+                const cx = INTERNAL_WIDTH / 2;
+                const cy = INTERNAL_HEIGHT / 2;
+                const { r1, r2 } = getOrbitParams();
+
+                const redX = cx + r1 * Math.cos(angle);
+                const redY = cy + r1 * Math.sin(angle);
+                const goldX = cx - r2 * Math.cos(angle);
+                const goldY = cy - r2 * Math.sin(angle);
+
+                trailRed.push({ x: redX, y: redY });
+                trailGold.push({ x: goldX, y: goldY });
+
+                while (trailRed.length > TRAIL_MAX) trailRed.shift();
+                while (trailGold.length > TRAIL_MAX) trailGold.shift();
+            }
+
+            function clearTrails() {
+                trailRed = [];
+                trailGold = [];
+            }
+
+            // ==================== 更新信息面板 ====================
+            function updateInfoPanel() {
+                const { r1, r2, period } = getOrbitParams();
+                infoPeriod.textContent = period.toFixed(2);
+                infoR1.textContent = r1.toFixed(1);
+                infoR2.textContent = r2.toFixed(1);
+                const ratio = massGold > 0.001 ? (massRed / massGold) : 999;
+                infoRatio.textContent = 'r₁:r₂ = ' + (r1 / Math.max(r2, 0.01)).toFixed(2) +
+                    ' (m₂:m₁ = ' + (massGold / Math.max(massRed, 0.01)).toFixed(2) + ')';
+            }
+
+            // ==================== 动画循环 ====================
+            let lastTime = null;
+            let trailAccum = 0;
+            const TRAIL_INTERVAL = 0.016; // 约每16ms记录一个轨迹点（~60fps记录频率）
+
+            function animate(timestamp) {
+                if (!isPaused) {
+                    if (lastTime === null) lastTime = timestamp;
+                    let dt = (timestamp - lastTime) / 1000; // 秒
+                    if (dt <= 0) dt = 0.016;
+                    if (dt > 0.2) dt = 0.2; // 防止大帧跳跃
+
+                    const { omega } = getOrbitParams();
+                    angle += omega * dt * speedMultiplier;
+                    // 角度归一化
+                    if (angle > Math.PI * 200) angle -= Math.PI * 200;
+                    if (angle < -Math.PI * 200) angle += Math.PI * 200;
+
+                    // 轨迹采样
+                    trailAccum += dt;
+                    if (trailAccum >= TRAIL_INTERVAL) {
+                        trailAccum -= TRAIL_INTERVAL;
+                        updateTrails();
+                    }
+
+                    lastTime = timestamp;
+                } else {
+                    lastTime = null;
+                    trailAccum = 0;
+                }
+
+                // 检测质量变化，自动清除轨迹
+                if (Math.abs(massRed - prevMassRed) > 0.001 || Math.abs(massGold - prevMassGold) > 0.001) {
+                    clearTrails();
+                    trailAccum = 0;
+                    prevMassRed = massRed;
+                    prevMassGold = massGold;
+                }
+
+                draw(timestamp / 1000);
+                updateInfoPanel();
+                requestAnimationFrame(animate);
+            }
+
+            // ==================== 事件处理 ====================
+            sliderRed.addEventListener('input', () => {
+                massRed = parseFloat(sliderRed.value);
+                valRed.textContent = massRed.toFixed(1);
+            });
+
+            sliderGold.addEventListener('input', () => {
+                massGold = parseFloat(sliderGold.value);
+                valGold.textContent = massGold.toFixed(1);
+            });
+
+            btnPause.addEventListener('click', () => {
+                isPaused = !isPaused;
+                if (isPaused) {
+                    btnPause.textContent = '▶️ 播放';
+                    btnPause.classList.remove('active-btn');
+                    lastTime = null;
+                    trailAccum = 0;
+                } else {
+                    btnPause.textContent = '⏯️ 暂停';
+                    btnPause.classList.add('active-btn');
+                }
+            });
+
+            btnClearTrail.addEventListener('click', () => {
+                clearTrails();
+                trailAccum = 0;
+                // 短暂视觉反馈
+                btnClearTrail.style.transform = 'scale(0.9)';
+                setTimeout(() => { btnClearTrail.style.transform = ''; }, 120);
+            });
+
+            btnReset.addEventListener('click', () => {
+                massRed = 2.0;
+                massGold = 1.0;
+                prevMassRed = 2.0;
+                prevMassGold = 1.0;
+                sliderRed.value = 2.0;
+                sliderGold.value = 1.0;
+                valRed.textContent = '2.0';
+                valGold.textContent = '1.0';
+                angle = 0;
+                speedMultiplier = 1.0;
+                clearTrails();
+                trailAccum = 0;
+                lastTime = null;
+                if (isPaused) {
+                    isPaused = false;
+                    btnPause.textContent = '⏯️ 暂停';
+                    btnPause.classList.add('active-btn');
+                }
+                updateInfoPanel();
+            });
+
+            btnSpeedDown.addEventListener('click', () => {
+                speedMultiplier = Math.max(0.1, speedMultiplier - 0.25);
+                btnSpeedDown.textContent = '🐢 减速 (×' + speedMultiplier.toFixed(2) + ')';
+                btnSpeedUp.textContent = '🐇 加速 (×' + speedMultiplier.toFixed(2) + ')';
+            });
+
+            btnSpeedUp.addEventListener('click', () => {
+                speedMultiplier = Math.min(5.0, speedMultiplier + 0.25);
+                btnSpeedDown.textContent = '🐢 减速 (×' + speedMultiplier.toFixed(2) + ')';
+                btnSpeedUp.textContent = '🐇 加速 (×' + speedMultiplier.toFixed(2) + ')';
+            });
+
+            // 键盘快捷键
+            window.addEventListener('keydown', (e) => {
+                switch (e.key.toLowerCase()) {
+                    case ' ':
+                        e.preventDefault();
+                        btnPause.click();
+                        break;
+                    case 'c':
+                        if (!e.ctrlKey && !e.metaKey) {
+                            btnClearTrail.click();
+                        }
+                        break;
+                    case 'r':
+                        if (!e.ctrlKey && !e.metaKey) {
+                            btnReset.click();
+                        }
+                        break;
+                    case 'arrowleft':
+                        speedMultiplier = Math.max(0.1, speedMultiplier - 0.25);
+                        btnSpeedDown.textContent = '🐢 减速 (×' + speedMultiplier.toFixed(2) + ')';
+                        btnSpeedUp.textContent = '🐇 加速 (×' + speedMultiplier.toFixed(2) + ')';
+                        break;
+                    case 'arrowright':
+                        speedMultiplier = Math.min(5.0, speedMultiplier + 0.25);
+                        btnSpeedDown.textContent = '🐢 减速 (×' + speedMultiplier.toFixed(2) + ')';
+                        btnSpeedUp.textContent = '🐇 加速 (×' + speedMultiplier.toFixed(2) + ')';
+                        break;
+                }
+            });
+
+            // 响应窗口大小变化
+            window.addEventListener('resize', resizeCanvas);
+
+            // ==================== 启动 ====================
+            function init() {
+                resizeCanvas();
+                initBgStars();
+                prevMassRed = massRed;
+                prevMassGold = massGold;
+                valRed.textContent = massRed.toFixed(1);
+                valGold.textContent = massGold.toFixed(1);
+                updateInfoPanel();
+                requestAnimationFrame(animate);
+            }
+
+            init();
+            console.log('🌌 双星系统模拟已就绪');
+            console.log('   🖱️ 拖动滑块调节质量 | ⏯️ 空格键暂停 | 🧹 C键清除轨迹 | 🔄 R键重置');
+            console.log('   🐢← →🐇 方向键调节速度 | 质心固定在画布中央');
+            console.log('   📐 双星始终在质心两侧，相位差180°');
+        })();
+    </script>
+
+    <!-- 齐老师动画 - 水印 -->
+    <div class="qilaoshi-watermark">
+        QQ 3398528250<br>
+        抖音 35320300542
+    </div>
+
+
+    <!-- 齐老师动画 - 安全保护脚本 -->
+    <script>
+    (function() {
+        // 禁用右键菜单
+        document.addEventListener('contextmenu', function(e) {
+            e.preventDefault();
+            return false;
+        });
+        
+        // ESC键返回主页
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' || e.keyCode === 27) {
+                window.location.href = '../index.html';
+            }
+        });
+        
+        // 禁用开发者工具快捷键
+        document.addEventListener('keydown', function(e) {
+            // F12
+            if (e.key === 'F12' || e.keyCode === 123) {
+                e.preventDefault();
+                return false;
+            }
+            // Ctrl+U
+            if ((e.ctrlKey || e.metaKey) && (e.key === 'u' || e.keyCode === 85)) {
+                e.preventDefault();
+                return false;
+            }
+            // Ctrl+Shift+I
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'i' || e.keyCode === 73)) {
+                e.preventDefault();
+                return false;
+            }
+            // Ctrl+Shift+J
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'j' || e.keyCode === 74)) {
+                e.preventDefault();
+                return false;
+            }
+            // Ctrl+Shift+C
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'c' || e.keyCode === 67)) {
+                e.preventDefault();
+                return false;
+            }
+        });
+        
+        // 检测开发者工具打开（简单检测）
+        var devtoolsOpen = false;
+        var threshold = 160;
+        setInterval(function() {
+            var widthThreshold = window.outerWidth - window.innerWidth > threshold;
+            var heightThreshold = window.outerHeight - window.innerHeight > threshold;
+            if (widthThreshold || heightThreshold) {
+                if (!devtoolsOpen) {
+                    devtoolsOpen = true;
+                    // 可以选择跳转或其他操作
+                }
+            } else {
+                devtoolsOpen = false;
+            }
+        }, 1000);
+    })();
+    </script>
+
+</body>
+</html>
