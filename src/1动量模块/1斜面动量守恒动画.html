@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>齐老师动画 - 斜面动量守恒</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #0a0e1a;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    color: #b0c8e0;
+    overflow-x: hidden;
+    user-select: none;
+  }
+  h1 {
+    font-size: 32px;
+    font-weight: bold;
+    padding: 20px 0;
+    letter-spacing: 4px;
+    color: #7ec8f8;
+    text-shadow: 0 0 20px rgba(126,200,248,0.6), 0 0 40px rgba(126,200,248,0.3), 0 0 80px rgba(126,200,248,0.15);
+  }
+  .canvas-wrap {
+    width: 100%;
+    max-width: 960px;
+    padding: 0 10px;
+  }
+  canvas {
+    width: 100%;
+    height: 500px;
+    border-radius: 8px;
+    border: 1px solid rgba(126,200,248,0.2);
+    display: block;
+  }
+  .controls {
+    width: 100%;
+    max-width: 960px;
+    padding: 16px 10px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+  }
+  button {
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s;
+  }
+  .btn-mode {
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  }
+  .btn-mode.smooth {
+    background: linear-gradient(135deg, #3a7bd5, #2b5ea7);
+  }
+  .btn-mode.rough {
+    background: linear-gradient(135deg, #8b5e3c, #6b4c3b);
+  }
+  .btn-play {
+    background: linear-gradient(135deg, #7ec8f8, #4da8e8);
+    color: #0a0e1a;
+    box-shadow: 0 2px 8px rgba(126,200,248,0.3);
+  }
+  .btn-reset {
+    background: rgba(255,255,255,0.08);
+    color: #b0c8e0;
+    border: 1px solid rgba(255,255,255,0.12);
+  }
+  .mass-control {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    color: #b0c8e0;
+  }
+  .mass-control input[type="range"] {
+    width: 112px;
+    accent-color: #7ec8f8;
+  }
+  .hint {
+    margin-left: auto;
+    font-size: 12px;
+    color: #5a7a9a;
+  }
+  .watermark {
+    position: fixed;
+    bottom: 16px;
+    right: 16px;
+    color: rgba(255,255,255,0.25);
+    font-size: 14px;
+    pointer-events: none;
+    z-index: 100;
+  }
+</style>
+<style>
+    /* 齐老师动画 - 统一样式 */
+    body {
+        background: #1a2332 !important;
+    }
+    
+    /* 顶部标题栏 */
+    .qilaoshi-header {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 50px;
+        background: #1a2332;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 99999 !important;
+        border-bottom: 1px solid #2a3a50;
+    }
+    
+    .qilaoshi-title {
+        font-size: 20px;
+        font-weight: 600;
+        color: #8ab4f8;
+        letter-spacing: 2px;
+        font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif;
+    }
+    
+    /* 返回按钮 */
+    .qilaoshi-back-btn {
+        position: fixed;
+        top: 10px;
+        right: 15px;
+        z-index: 999999 !important;
+        background: linear-gradient(135deg, #3a5a80, #2a4a70);
+        color: #ffffff;
+        border: 1px solid #5a8ab0;
+        padding: 8px 18px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        font-family: 'Microsoft YaHei', sans-serif;
+        transition: all 0.2s;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+    }
+    
+    .qilaoshi-back-btn:hover {
+        background: linear-gradient(135deg, #4a6a90, #3a5a80);
+        color: #ffffff;
+        box-shadow: 0 4px 15px rgba(90, 138, 176, 0.4);
+        transform: translateY(-1px);
+    }
+    
+    /* 水印 */
+    .qilaoshi-watermark {
+        position: fixed;
+        bottom: 10px;
+        right: 15px;
+        z-index: 9999;
+        font-size: 11px;
+        color: rgba(138, 180, 248, 0.4);
+        font-family: 'Microsoft YaHei', sans-serif;
+        line-height: 1.5;
+        text-align: right;
+        pointer-events: none;
+    }
+    
+    /* 调整主内容区域，给顶部标题栏留出空间 */
+    body {
+        padding-top: 50px !important;
+    }
+</style>
+</head>
+<body oncontextmenu="return false;">
+
+    <!-- 齐老师动画 - 顶部导航 -->
+    <div class="qilaoshi-header">
+        <div class="qilaoshi-title">齐老师动画</div>
+    </div>
+    <button class="qilaoshi-back-btn" onclick="window.location.href='../index.html'">← 返回主页</button>
+
+
+<h1>齐老师动画</h1>
+
+<div class="canvas-wrap">
+  <canvas id="canvas" width="960" height="500"></canvas>
+</div>
+
+<div class="controls">
+  <button id="btnMode" class="btn-mode smooth">地面：光滑</button>
+  <div class="mass-control">
+    <span id="massLabel">M/m = 3.0</span>
+    <input type="range" id="massSlider" min="1" max="10" step="0.5" value="3">
+  </div>
+  <button id="btnPlay" class="btn-play">开始</button>
+  <button id="btnReset" class="btn-reset">重置</button>
+  <span class="hint">快捷键: 空格 暂停 | R 重置 | T 切换 | ← → 调质量比</span>
+</div>
+
+<div class="watermark">3398528250</div>
+
+<script>
+(function() {
+  const canvas = document.getElementById('canvas');
+  const ctx = canvas.getContext('2d');
+
+  const G = 9.8;
+  const THETA = (30 * Math.PI) / 180;
+  const SIN_THETA = Math.sin(THETA);
+  const COS_THETA = Math.cos(THETA);
+  const SCALE = 100;
+
+  const WEDGE_BASE_W = 350;
+  const WEDGE_H = WEDGE_BASE_W * Math.tan(THETA);
+  const BALL_R = 14;
+  const GROUND_Y = 380;
+  const INIT_WEDGE_X = 250;
+  const MAX_BALL_S = (WEDGE_BASE_W / SCALE) / COS_THETA;
+
+  let mode = 'smooth'; // 'smooth' or 'rough'
+  let massRatio = 3;
+  let isPlaying = false;
+  let ballReachedBottom = false;
+
+  let physics = {
+    ballS: 0,
+    ballVS: 0,
+    wedgeX: 0,
+    wedgeV: 0,
+    phase: 'sliding', // 'sliding' or 'horizontal'
+    ballAbsX: 0,
+  };
+
+  let trail = [];
+  let stars = [];
+  let animFrameId = 0;
+  let lastTime = 0;
+
+  function generateStars() {
+    stars = [];
+    const count = 120;
+    for (let i = 0; i < count; i++) {
+      stars.push({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height * 0.85,
+        r: Math.random() * 1.8 + 0.4,
+        phase: Math.random() * Math.PI * 2,
+        speed: Math.random() * 0.02 + 0.005,
+        opacity: Math.random() * 0.5 + 0.5,
+      });
+    }
+  }
+
+  function drawStars(time) {
+    for (const star of stars) {
+      const flicker = Math.sin(time * star.speed + star.phase) * 0.4 + 0.6;
+      const alpha = star.opacity * flicker;
+      ctx.fillStyle = `rgba(255,255,255,${alpha})`;
+      ctx.beginPath();
+      ctx.arc(star.x, star.y, star.r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  function drawGround() {
+    if (mode === 'smooth') {
+      const grad = ctx.createLinearGradient(0, GROUND_Y, 0, GROUND_Y + 60);
+      grad.addColorStop(0, '#3a7bd5');
+      grad.addColorStop(0.3, '#2b5ea7');
+      grad.addColorStop(1, '#1a3a6e');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, GROUND_Y, canvas.width, 60);
+
+      ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+      ctx.lineWidth = 1;
+      for (let i = 0; i < 3; i++) {
+        const y = GROUND_Y + 8 + i * 14;
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(canvas.width, y);
+        ctx.stroke();
+      }
+    } else {
+      ctx.fillStyle = '#6b4c3b';
+      ctx.fillRect(0, GROUND_Y, canvas.width, 60);
+
+      ctx.fillStyle = '#5a3d2e';
+      for (let i = 0; i < 200; i++) {
+        const rx = Math.random() * canvas.width;
+        const ry = GROUND_Y + Math.random() * 60;
+        ctx.fillRect(rx, ry, 2 + Math.random() * 3, 1 + Math.random() * 2);
+      }
+
+      ctx.strokeStyle = '#7d5a45';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(0, GROUND_Y);
+      ctx.lineTo(canvas.width, GROUND_Y);
+      ctx.stroke();
+    }
+  }
+
+  function drawWedge(wedgeCanvasX) {
+    const x0 = wedgeCanvasX;
+    const y0 = GROUND_Y;
+    const x1 = wedgeCanvasX + WEDGE_BASE_W;
+    const y1 = GROUND_Y;
+    const x2 = wedgeCanvasX;
+    const y2 = GROUND_Y - WEDGE_H;
+
+    const woodGrad = ctx.createLinearGradient(x0, y0, x1, y2);
+    woodGrad.addColorStop(0, '#c4956a');
+    woodGrad.addColorStop(0.4, '#d4a574');
+    woodGrad.addColorStop(0.7, '#b8845a');
+    woodGrad.addColorStop(1, '#a0704a');
+
+    ctx.fillStyle = woodGrad;
+    ctx.beginPath();
+    ctx.moveTo(x0, y0);
+    ctx.lineTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.strokeStyle = '#8b5e3c';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(x0, y0);
+    ctx.lineTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.closePath();
+    ctx.stroke();
+
+    ctx.strokeStyle = 'rgba(139,94,60,0.25)';
+    ctx.lineWidth = 1;
+    const grainSpacing = 14;
+    const grainCount = Math.floor(WEDGE_H / grainSpacing);
+    for (let i = 1; i <= grainCount; i++) {
+      const gy = GROUND_Y - i * grainSpacing;
+      const gx = x0 + (i * grainSpacing) / Math.tan(THETA);
+      ctx.beginPath();
+      ctx.moveTo(x0, gy);
+      ctx.lineTo(Math.min(gx, x1), gy);
+      ctx.stroke();
+    }
+  }
+
+  function drawBall(bx, by) {
+    const grad = ctx.createRadialGradient(bx - 4, by - 4, BALL_R * 0.1, bx, by, BALL_R);
+    grad.addColorStop(0, '#ffffff');
+    grad.addColorStop(0.25, '#e8e8e8');
+    grad.addColorStop(0.5, '#c0c0c0');
+    grad.addColorStop(0.75, '#808080');
+    grad.addColorStop(1, '#505050');
+
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(bx, by, BALL_R, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.arc(bx, by, BALL_R, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+
+  function drawArrow(fromX, fromY, vx, vy, color) {
+    const speed = Math.sqrt(vx * vx + vy * vy);
+    if (speed < 0.01) return;
+
+    const arrowScale = 25;
+    const len = speed * arrowScale;
+    const nx = vx / speed;
+    const ny = vy / speed;
+    const toX = fromX + nx * len;
+    const toY = fromY + ny * len;
+
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.moveTo(fromX, fromY);
+    ctx.lineTo(toX, toY);
+    ctx.stroke();
+
+    const headLen = 10;
+    const angle = Math.atan2(ny, nx);
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.moveTo(toX, toY);
+    ctx.lineTo(
+      toX - headLen * Math.cos(angle - Math.PI / 6),
+      toY - headLen * Math.sin(angle - Math.PI / 6),
+    );
+    ctx.lineTo(
+      toX - headLen * Math.cos(angle + Math.PI / 6),
+      toY - headLen * Math.sin(angle + Math.PI / 6),
+    );
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  function drawFrame(time) {
+    ctx.fillStyle = '#0a0e1a';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    drawStars(time);
+    drawGround();
+
+    // 初始位置红色虚线
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255,80,80,0.6)';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([8, 6]);
+    ctx.beginPath();
+    ctx.moveTo(INIT_WEDGE_X, GROUND_Y);
+    ctx.lineTo(INIT_WEDGE_X + WEDGE_BASE_W, GROUND_Y);
+    ctx.lineTo(INIT_WEDGE_X, GROUND_Y - WEDGE_H);
+    ctx.closePath();
+    ctx.stroke();
+    ctx.restore();
+
+    const wedgeCanvasX = INIT_WEDGE_X + physics.wedgeX * SCALE;
+    drawWedge(wedgeCanvasX);
+
+    let ballCanvasX, ballCanvasY;
+    if (physics.phase === 'horizontal') {
+      ballCanvasX = physics.ballAbsX * SCALE;
+      ballCanvasY = GROUND_Y - BALL_R;
+    } else {
+      ballCanvasX = wedgeCanvasX + BALL_R + physics.ballS * SCALE * COS_THETA;
+      ballCanvasY = GROUND_Y - WEDGE_H - BALL_R + physics.ballS * SCALE * SIN_THETA;
+    }
+    drawBall(ballCanvasX, ballCanvasY);
+
+    // 轨迹
+    const lastPt = trail[trail.length - 1];
+    if (!lastPt || Math.hypot(ballCanvasX - lastPt.x, ballCanvasY - lastPt.y) > 3) {
+      trail.push({ x: ballCanvasX, y: ballCanvasY });
+    }
+
+    if (trail.length >= 2) {
+      ctx.save();
+      ctx.strokeStyle = 'rgba(68,136,255,0.7)';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([6, 4]);
+      ctx.beginPath();
+      ctx.moveTo(trail[0].x, trail[0].y);
+      for (let i = 1; i < trail.length; i++) {
+        ctx.lineTo(trail[i].x, trail[i].y);
+      }
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    // 支持力箭头（仅滑动阶段显示）
+    if (physics.phase === 'sliding') {
+      const nLen = 2.5;
+      const nVx = SIN_THETA * nLen;
+      const nVy = -COS_THETA * nLen;
+      const nStartX = ballCanvasX - SIN_THETA * BALL_R;
+      const nStartY = ballCanvasY + COS_THETA * BALL_R;
+      drawArrow(nStartX, nStartY, nVx, nVy, '#4488ff');
+    }
+
+    if (mode === 'smooth' && Math.abs(physics.wedgeV) > 0.005) {
+      const wedgeCenterX = wedgeCanvasX + WEDGE_BASE_W / 2;
+      const wedgeCenterY = GROUND_Y - WEDGE_H / 2;
+      drawArrow(wedgeCenterX, wedgeCenterY, physics.wedgeV, 0, '#4488ff');
+    }
+  }
+
+  function update(dt) {
+    if (physics.phase === 'horizontal') {
+      physics.ballAbsX += physics.ballVS * dt;
+      physics.wedgeX += physics.wedgeV * dt;
+
+      const ballCanvasX = physics.ballAbsX * SCALE;
+      const wedgeCanvasX = INIT_WEDGE_X + physics.wedgeX * SCALE;
+      const outOfBounds =
+        ballCanvasX > canvas.width + 50 ||
+        ballCanvasX < -100 ||
+        wedgeCanvasX > canvas.width + 100 ||
+        wedgeCanvasX + WEDGE_BASE_W < -100;
+
+      if (outOfBounds) {
+        isPlaying = false;
+        ballReachedBottom = true;
+        updatePlayButton();
+      }
+    } else {
+      const aRel = G * SIN_THETA;
+
+      if (mode === 'rough') {
+        physics.ballVS += aRel * dt;
+        physics.ballS += physics.ballVS * dt;
+        physics.wedgeV = 0;
+        physics.wedgeX = 0;
+      } else {
+        const aWedge = -(1 / (massRatio + 1)) * G * SIN_THETA * COS_THETA;
+        physics.ballVS += aRel * dt;
+        physics.ballS += physics.ballVS * dt;
+        physics.wedgeV += aWedge * dt;
+        physics.wedgeX += physics.wedgeV * dt;
+      }
+
+      if (physics.ballS >= MAX_BALL_S) {
+        physics.ballS = MAX_BALL_S;
+        const wedgeCanvasX = INIT_WEDGE_X + physics.wedgeX * SCALE;
+        const ballAbsXEnd = (wedgeCanvasX + BALL_R + MAX_BALL_S * SCALE * COS_THETA) / SCALE;
+        physics.ballAbsX = ballAbsXEnd;
+        physics.ballVS = physics.wedgeV + physics.ballVS * COS_THETA;
+        physics.phase = 'horizontal';
+      }
+
+      if (physics.ballS < 0) {
+        physics.ballS = 0;
+        physics.ballVS = 0;
+      }
+    }
+  }
+
+  function loop(timestamp) {
+    if (lastTime === 0) lastTime = timestamp;
+    let dt = (timestamp - lastTime) / 1000;
+    lastTime = timestamp;
+    if (dt > 0.1) dt = 0.016;
+
+    if (isPlaying) {
+      update(dt);
+    }
+
+    drawFrame(timestamp);
+    animFrameId = requestAnimationFrame(loop);
+  }
+
+  function resetPhysics() {
+    physics = {
+      ballS: 0,
+      ballVS: 0,
+      wedgeX: 0,
+      wedgeV: 0,
+      phase: 'sliding',
+      ballAbsX: 0,
+    };
+    trail = [];
+    ballReachedBottom = false;
+  }
+
+  function updatePlayButton() {
+    const btn = document.getElementById('btnPlay');
+    if (isPlaying) {
+      btn.textContent = '暂停';
+    } else if (ballReachedBottom) {
+      btn.textContent = '重新开始';
+    } else {
+      btn.textContent = '开始';
+    }
+  }
+
+  function togglePlay() {
+    if (isPlaying) {
+      isPlaying = false;
+    } else {
+      if (ballReachedBottom) {
+        resetPhysics();
+      }
+      lastTime = 0;
+      isPlaying = true;
+    }
+    updatePlayButton();
+  }
+
+  function switchMode() {
+    mode = mode === 'smooth' ? 'rough' : 'smooth';
+    const btn = document.getElementById('btnMode');
+    btn.textContent = '地面：' + (mode === 'smooth' ? '光滑' : '粗糙');
+    btn.className = 'btn-mode ' + mode;
+    isPlaying = false;
+    resetPhysics();
+    updatePlayButton();
+  }
+
+  function handleReset() {
+    isPlaying = false;
+    resetPhysics();
+    updatePlayButton();
+  }
+
+  function handleMassChange(val) {
+    massRatio = parseFloat(val);
+    document.getElementById('massLabel').textContent = 'M/m = ' + massRatio.toFixed(1);
+    isPlaying = false;
+    resetPhysics();
+    updatePlayButton();
+  }
+
+  // 事件绑定
+  document.getElementById('btnMode').addEventListener('click', switchMode);
+  document.getElementById('btnPlay').addEventListener('click', togglePlay);
+  document.getElementById('btnReset').addEventListener('click', handleReset);
+  document.getElementById('massSlider').addEventListener('input', function(e) {
+    handleMassChange(e.target.value);
+  });
+
+  // 键盘快捷键
+  document.addEventListener('keydown', function(e) {
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON') return;
+
+    switch (e.key.toLowerCase()) {
+      case 'r':
+        handleReset();
+        break;
+      case ' ':
+        e.preventDefault();
+        togglePlay();
+        break;
+      case 't':
+        switchMode();
+        break;
+      case 'arrowleft':
+        {
+          const newVal = Math.max(1, massRatio - 0.5);
+          document.getElementById('massSlider').value = newVal;
+          handleMassChange(newVal);
+        }
+        break;
+      case 'arrowright':
+        {
+          const newVal = Math.min(10, massRatio + 0.5);
+          document.getElementById('massSlider').value = newVal;
+          handleMassChange(newVal);
+        }
+        break;
+    }
+  });
+
+  // 禁用右键
+  document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+  });
+
+  // 初始化
+  generateStars();
+  drawFrame(0);
+  animFrameId = requestAnimationFrame(loop);
+
+})();
+</script>
+
+
+    <!-- 齐老师动画 - 水印 -->
+    <div class="qilaoshi-watermark">
+        QQ 3398528250<br>
+        抖音 35320300542
+    </div>
+
+
+    <!-- 齐老师动画 - 安全保护脚本 -->
+    <script>
+    (function() {
+        // 禁用右键菜单
+        document.addEventListener('contextmenu', function(e) {
+            e.preventDefault();
+            return false;
+        });
+        
+        // ESC键返回主页
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' || e.keyCode === 27) {
+                window.location.href = '../index.html';
+            }
+        });
+        
+        // 禁用开发者工具快捷键
+        document.addEventListener('keydown', function(e) {
+            // F12
+            if (e.key === 'F12' || e.keyCode === 123) {
+                e.preventDefault();
+                return false;
+            }
+            // Ctrl+U
+            if ((e.ctrlKey || e.metaKey) && (e.key === 'u' || e.keyCode === 85)) {
+                e.preventDefault();
+                return false;
+            }
+            // Ctrl+Shift+I
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'i' || e.keyCode === 73)) {
+                e.preventDefault();
+                return false;
+            }
+            // Ctrl+Shift+J
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'j' || e.keyCode === 74)) {
+                e.preventDefault();
+                return false;
+            }
+            // Ctrl+Shift+C
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'c' || e.keyCode === 67)) {
+                e.preventDefault();
+                return false;
+            }
+        });
+        
+        // 检测开发者工具打开（简单检测）
+        var devtoolsOpen = false;
+        var threshold = 160;
+        setInterval(function() {
+            var widthThreshold = window.outerWidth - window.innerWidth > threshold;
+            var heightThreshold = window.outerHeight - window.innerHeight > threshold;
+            if (widthThreshold || heightThreshold) {
+                if (!devtoolsOpen) {
+                    devtoolsOpen = true;
+                    // 可以选择跳转或其他操作
+                }
+            } else {
+                devtoolsOpen = false;
+            }
+        }, 1000);
+    })();
+    </script>
+
+</body>
+</html>
