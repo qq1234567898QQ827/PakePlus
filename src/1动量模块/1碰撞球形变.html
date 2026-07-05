@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>深刻理解三种碰撞</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: "Microsoft YaHei", sans-serif;
+            background: #2b2b2b;
+            padding: 20px;
+            color: #e0e0e0;
+        }
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            background: #363636;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            padding: 25px;
+        }
+        h1 {
+            text-align: center;
+            color: #f5f5f5;
+            margin-bottom: 20px;
+            font-size: 24px;
+        }
+        .stage-indicator {
+            text-align: center;
+            font-size: 18px;
+            font-weight: bold;
+            color: #ff6b6b;
+            margin-bottom: 15px;
+            height: 28px;
+        }
+        canvas {
+            display: block;
+            margin: 0 auto;
+            background: #2f2f2f;
+            border: 2px solid #555;
+            border-radius: 8px;
+        }
+        .controls {
+            margin-top: 20px;
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 20px;
+            padding: 20px;
+            background: #404040;
+            border-radius: 8px;
+        }
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .control-group label {
+            font-size: 14px;
+            color: #ddd;
+            font-weight: 500;
+        }
+        .control-group input[type="range"] {
+            width: 100%;
+            cursor: pointer;
+        }
+        .control-group .value-display {
+            font-size: 13px;
+            color: #4db8ff;
+            font-weight: bold;
+        }
+        .buttons {
+            grid-column: 1 / -1;
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 10px;
+        }
+        button {
+            padding: 10px 25px;
+            font-size: 15px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: 500;
+            color: white;
+        }
+        .btn-play {
+            background: #27ae60;
+        }
+        .btn-pause {
+            background: #f39c12;
+        }
+        .btn-reset {
+            background: #e74c3c;
+        }
+        .btn-slow {
+            background: #3498db;
+        }
+        button:hover {
+            opacity: 0.85;
+            transform: translateY(-1px);
+        }
+        button.active {
+            box-shadow: inset 0 2px 5px rgba(0,0,0,0.2);
+        }
+        .legend {
+            margin-top: 15px;
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            font-size: 14px;
+            color: #ddd;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .legend-dot {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+        }
+        .red { background: #e74c3c; }
+        .blue { background: #3498db; }
+    </style>
+<style>
+    /* 齐老师动画 - 统一样式 */
+    body {
+        background: #1a2332 !important;
+    }
+    
+    /* 顶部标题栏 */
+    .qilaoshi-header {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 50px;
+        background: #1a2332;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 99999 !important;
+        border-bottom: 1px solid #2a3a50;
+    }
+    
+    .qilaoshi-title {
+        font-size: 20px;
+        font-weight: 600;
+        color: #8ab4f8;
+        letter-spacing: 2px;
+        font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif;
+    }
+    
+    /* 返回按钮 */
+    .qilaoshi-back-btn {
+        position: fixed;
+        top: 10px;
+        right: 15px;
+        z-index: 999999 !important;
+        background: linear-gradient(135deg, #3a5a80, #2a4a70);
+        color: #ffffff;
+        border: 1px solid #5a8ab0;
+        padding: 8px 18px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        font-family: 'Microsoft YaHei', sans-serif;
+        transition: all 0.2s;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+    }
+    
+    .qilaoshi-back-btn:hover {
+        background: linear-gradient(135deg, #4a6a90, #3a5a80);
+        color: #ffffff;
+        box-shadow: 0 4px 15px rgba(90, 138, 176, 0.4);
+        transform: translateY(-1px);
+    }
+    
+    /* 水印 */
+    .qilaoshi-watermark {
+        position: fixed;
+        bottom: 10px;
+        right: 15px;
+        z-index: 9999;
+        font-size: 11px;
+        color: rgba(138, 180, 248, 0.4);
+        font-family: 'Microsoft YaHei', sans-serif;
+        line-height: 1.5;
+        text-align: right;
+        pointer-events: none;
+    }
+    
+    /* 调整主内容区域，给顶部标题栏留出空间 */
+    body {
+        padding-top: 50px !important;
+    }
+</style>
+</head>
+<body>
+
+    <!-- 齐老师动画 - 顶部导航 -->
+    <div class="qilaoshi-header">
+        <div class="qilaoshi-title">齐老师动画</div>
+    </div>
+    <button class="qilaoshi-back-btn" onclick="window.location.href='../index.html'">← 返回主页</button>
+
+    <div class="container">
+        <h1>深刻理解三种碰撞</h1>
+        
+        <div class="stage-indicator" id="stageText">阶段：靠近 — 红球匀速向右，蓝球静止，球体无形变</div>
+        
+        <canvas id="canvas" width="1000" height="320"></canvas>
+        
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-dot red"></div>
+                <span>红球（入射球）</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-dot blue"></div>
+                <span>蓝球（被碰球）</span>
+            </div>
+        </div>
+
+        <div class="controls">
+            <div class="control-group">
+                <label>红球质量 m₁ (kg)</label>
+                <input type="range" id="mass1" min="0.5" max="5" step="0.1" value="2">
+                <div class="value-display">m₁ = <span id="mass1Val">2.0</span> kg</div>
+            </div>
+            <div class="control-group">
+                <label>蓝球质量 m₂ (kg)</label>
+                <input type="range" id="mass2" min="0.5" max="5" step="0.1" value="1">
+                <div class="value-display">m₂ = <span id="mass2Val">1.0</span> kg</div>
+            </div>
+            <div class="control-group">
+                <label>红球初速度 v₀ (m/s)</label>
+                <input type="range" id="velocity0" min="3" max="10" step="0.5" value="6">
+                <div class="value-display">v₀ = <span id="velocity0Val">6.0</span> m/s</div>
+            </div>
+            
+            <div class="buttons">
+                <button class="btn-play" id="btnPlay">▶ 播放</button>
+                <button class="btn-pause" id="btnPause">⏸ 暂停</button>
+                <button class="btn-slow" id="btnSlow">🐢 0.5倍速</button>
+                <button class="btn-reset" id="btnReset">↺ 重置</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        // 物理参数
+        let m1 = 2.0;
+        let m2 = 1.0;
+        let v0 = 6.0;
+        
+        // 状态变量
+        let t = 0;
+        let isPlaying = false;
+        let speedScale = 1.0;
+        let lastTime = 0;
+        
+        // 几何常量
+        const r1 = 30;
+        const r2 = 30;
+        const startX1 = 150;
+        const startX2 = 450;
+        const ballY = 180;
+        const contactX1 = startX2 - r1 - r2;
+        const approachDistance = contactX1 - startX1;
+        const speedK = approachDistance / 3;
+        
+        // 碰撞时长配置
+        const T_collision = 1.5;
+        const baseMaxDeform = 0.3;
+        
+        // DOM元素
+        const stageText = document.getElementById('stageText');
+        
+        // ========== 物理计算函数 ==========
+        function getFinalVelocities() {
+            const v1 = ((m1 - m2) * v0) / (m1 + m2);
+            const v2 = (2 * m1 * v0) / (m1 + m2);
+            return { v1, v2 };
+        }
+        
+        function getCommonVelocity() {
+            return (m1 * v0) / (m1 + m2);
+        }
+        
+        function getContactTime() {
+            return 3 / v0;
+        }
+        
+        function getTiming() {
+            const tContact = getContactTime();
+            return {
+                tContact,
+                tCommon: tContact + T_collision / 2,
+                tSeparate: tContact + T_collision
+            };
+        }
+        
+        function getMaxDeformRatio() {
+            return baseMaxDeform * (v0 / 6);
+        }
+        
+        function getDeformation(time) {
+            const { tContact, tCommon, tSeparate } = getTiming();
+            if (time < tContact || time > tSeparate) return 0;
+            
+            if (time <= tCommon) {
+                const progress = (time - tContact) / (tCommon - tContact);
+                return 0.5 * (1 - Math.cos(Math.PI * progress));
+            } else {
+                const progress = (time - tCommon) / (tSeparate - tCommon);
+                return 0.5 * (1 + Math.cos(Math.PI * progress));
+            }
+        }
+        
+        function getVelocitiesAt(time) {
+            const { tContact, tCommon, tSeparate } = getTiming();
+            const vCommon = getCommonVelocity();
+            const { v1: v1Final, v2: v2Final } = getFinalVelocities();
+            
+            if (time < tContact) {
+                return { v1: v0, v2: 0 };
+            } else if (time <= tCommon) {
+                const progress = (time - tContact) / (tCommon - tContact);
+                // 调整缓动函数，让速度变化更线性，减少卡顿感
+                const ease = progress; // 线性变化
+                return {
+                    v1: v0 - (v0 - vCommon) * ease,
+                    v2: 0 + vCommon * ease
+                };
+            } else if (time < tSeparate) {
+                const progress = (time - tCommon) / (tSeparate - tCommon);
+                // 调整缓动函数，让速度变化更线性，减少卡顿感
+                const ease = progress; // 线性变化
+                return {
+                    v1: vCommon - (vCommon - v1Final) * ease,
+                    v2: vCommon + (v2Final - vCommon) * ease
+                };
+            } else {
+                return { v1: v1Final, v2: v2Final };
+            }
+        }
+        
+        function getPositionsAt(time) {
+            const { tContact, tSeparate } = getTiming();
+            const mTotal = m1 + m2;
+            const vCm = getCommonVelocity();
+            const vCmPx = vCm * speedK;
+            
+            if (time <= tContact) {
+                const progress = time / tContact;
+                return {
+                    x1: startX1 + approachDistance * progress,
+                    x2: startX2
+                };
+            }
+            
+            const contactXCm = (m1 * contactX1 + m2 * startX2) / mTotal;
+            
+            if (time < tSeparate) {
+                const dt = time - tContact;
+                const xCm = contactXCm + vCmPx * dt;
+                
+                const deform = getDeformation(time);
+                const maxDeform = getMaxDeformRatio();
+                const centerDistance = (r1 + r2) * (1 - maxDeform * deform);
+                
+                return {
+                    x1: xCm - (m2 / mTotal) * centerDistance,
+                    x2: xCm + (m1 / mTotal) * centerDistance
+                };
+            }
+            
+            const { v1: v1Final, v2: v2Final } = getFinalVelocities();
+            const v1Px = v1Final * speedK;
+            const v2Px = v2Final * speedK;
+            
+            const dtSep = T_collision;
+            const xCmSep = contactXCm + vCmPx * dtSep;
+            const x1Sep = xCmSep - (m2 / mTotal) * (r1 + r2);
+            const x2Sep = xCmSep + (m1 / mTotal) * (r1 + r2);
+            
+            const dt = time - tSeparate;
+            return {
+                x1: x1Sep + v1Px * dt,
+                x2: x2Sep + v2Px * dt
+            };
+        }
+        
+        // ========== 绘制函数 ==========
+        function updateStageText(time) {
+            const { tContact, tCommon, tSeparate } = getTiming();
+            let text = '';
+            
+            if (time < tContact) {
+                text = '阶段：靠近 — 红球匀速向右，蓝球静止，球体无形变';
+            } else if (time < tCommon) {
+                text = '阶段：挤压 — 两球接触形变，红球减速、蓝球加速';
+            } else if (Math.abs(time - tCommon) < 0.03) {
+                text = '阶段：共速 — 两球速度相等，形变量达到峰值 ⚡';
+            } else if (time < tSeparate) {
+                text = '阶段：恢复 — 蓝球速度超过红球，球体逐渐恢复圆形';
+            } else {
+                text = '阶段：分离 — 形变完全消失，两球以末速度匀速分开';
+            }
+            stageText.textContent = text;
+        }
+        
+        function drawBall(x, y, radius, color, mass, deform = 0) {
+            const maxDeform = getMaxDeformRatio();
+            const rx = radius * (1 - maxDeform * deform);
+            const ry = radius / (1 - maxDeform * deform);
+            
+            // 地面阴影
+            ctx.beginPath();
+            ctx.ellipse(x, y + ry + 5, rx * 0.8, 5, 0, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(0,0,0,0.2)';
+            ctx.fill();
+            
+            // 球体渐变
+            const gradient = ctx.createRadialGradient(
+                x - rx * 0.3, y - ry * 0.3, radius * 0.1,
+                x, y, Math.max(rx, ry)
+            );
+            gradient.addColorStop(0, '#ffffff');
+            gradient.addColorStop(0.3, color);
+            gradient.addColorStop(1, shadeColor(color, -30));
+            
+            ctx.beginPath();
+            ctx.ellipse(x, y, rx, ry, 0, 0, Math.PI * 2);
+            ctx.fillStyle = gradient;
+            ctx.fill();
+            ctx.strokeStyle = shadeColor(color, -40);
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            
+            // 质量标注
+            ctx.fillStyle = '#ccc';
+            ctx.font = '12px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText(mass.toFixed(1) + 'kg', x, y + ry + 20);
+            
+            return ry;
+        }
+        
+        function shadeColor(color, percent) {
+            const num = parseInt(color.replace('#', ''), 16);
+            const amt = Math.round(2.55 * percent);
+            const R = (num >> 16) + amt;
+            const G = (num >> 8 & 0x00FF) + amt;
+            const B = (num & 0x0000FF) + amt;
+            return '#' + (0x1000000 + 
+                (R < 255 ? R < 1 ? 0 : R : 255) * 0x10000 + 
+                (G < 255 ? G < 1 ? 0 : G : 255) * 0x100 + 
+                (B < 255 ? B < 1 ? 0 : B : 255)
+            ).toString(16).slice(1);
+        }
+        
+        // 绘制纯速度箭头（无数值）
+        function drawVelocityArrow(x, y, v, color) {
+            if (Math.abs(v) < 0.01) return;
+            const arrowLength = v * 16;
+            
+            ctx.strokeStyle = color;
+            ctx.fillStyle = color;
+            ctx.lineWidth = 3;
+            
+            // 箭杆
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x + arrowLength, y);
+            ctx.stroke();
+            
+            // 箭头
+            const headSize = 8;
+            const dir = v > 0 ? 1 : -1;
+            ctx.beginPath();
+            ctx.moveTo(x + arrowLength, y);
+            ctx.lineTo(x + arrowLength - dir * headSize, y - headSize/2);
+            ctx.lineTo(x + arrowLength - dir * headSize, y + headSize/2);
+            ctx.closePath();
+            ctx.fill();
+        }
+        
+        function drawGround() {
+            const groundY = ballY + r1 / (1 - getMaxDeformRatio()) + 10;
+            ctx.strokeStyle = '#666';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(0, groundY);
+            ctx.lineTo(canvas.width, groundY);
+            ctx.stroke();
+            
+            for (let i = 0; i < canvas.width; i += 20) {
+                ctx.beginPath();
+                ctx.moveTo(i, groundY);
+                ctx.lineTo(i - 10, groundY + 10);
+                ctx.strokeStyle = '#555';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+            }
+        }
+        
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            drawGround();
+            
+            const { x1, x2 } = getPositionsAt(t);
+            const deformation = getDeformation(t);
+            const { v1, v2 } = getVelocitiesAt(t);
+            
+            drawBall(x1, ballY, r1, '#e74c3c', m1, deformation);
+            drawBall(x2, ballY, r2, '#3498db', m2, deformation);
+            
+            // 速度箭头（红色在上，蓝色在下，固定高度不随形变移动）
+            drawVelocityArrow(x1, ballY - 70, v1, '#ff6b6b');
+            drawVelocityArrow(x2, ballY - 50, v2, '#74b9ff');
+            
+            updateStageText(t);
+        }
+        
+        function animate(timestamp) {
+            if (!lastTime) lastTime = timestamp;
+            const delta = (timestamp - lastTime) / 1000;
+            lastTime = timestamp;
+            
+            if (isPlaying) {
+                t += delta * speedScale;
+                if (t > 3.5) {
+                    t = 3.5;
+                    isPlaying = false;
+                }
+            }
+            
+            draw();
+            requestAnimationFrame(animate);
+        }
+        
+        // ========== 事件监听 ==========
+        document.getElementById('mass1').addEventListener('input', (e) => {
+            m1 = parseFloat(e.target.value);
+            document.getElementById('mass1Val').textContent = m1.toFixed(1);
+            draw();
+        });
+        
+        document.getElementById('mass2').addEventListener('input', (e) => {
+            m2 = parseFloat(e.target.value);
+            document.getElementById('mass2Val').textContent = m2.toFixed(1);
+            draw();
+        });
+        
+        document.getElementById('velocity0').addEventListener('input', (e) => {
+            v0 = parseFloat(e.target.value);
+            document.getElementById('velocity0Val').textContent = v0.toFixed(1);
+            draw();
+        });
+        
+        document.getElementById('btnPlay').addEventListener('click', () => {
+            if (t >= 3.5) t = 0;
+            isPlaying = true;
+            lastTime = 0;
+        });
+        
+        document.getElementById('btnPause').addEventListener('click', () => {
+            isPlaying = false;
+        });
+        
+        document.getElementById('btnReset').addEventListener('click', () => {
+            isPlaying = false;
+            t = 0;
+            lastTime = 0;
+            draw();
+        });
+        
+        const btnSlow = document.getElementById('btnSlow');
+        btnSlow.addEventListener('click', () => {
+            if (speedScale === 1.0) {
+                speedScale = 0.5;
+                btnSlow.textContent = '🐢 0.5倍速 (开启)';
+                btnSlow.classList.add('active');
+            } else {
+                speedScale = 1.0;
+                btnSlow.textContent = '🐢 0.5倍速';
+                btnSlow.classList.remove('active');
+            }
+        });
+        
+        // 初始化
+        draw();
+        requestAnimationFrame(animate);
+    </script>
+
+    <!-- 齐老师动画 - 水印 -->
+    <div class="qilaoshi-watermark">
+        QQ 3398528250<br>
+        抖音 35320300542
+    </div>
+
+
+    <!-- 齐老师动画 - 安全保护脚本 -->
+    <script>
+    (function() {
+        // 禁用右键菜单
+        document.addEventListener('contextmenu', function(e) {
+            e.preventDefault();
+            return false;
+        });
+        
+        // ESC键返回主页
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' || e.keyCode === 27) {
+                window.location.href = '../index.html';
+            }
+        });
+        
+        // 禁用开发者工具快捷键
+        document.addEventListener('keydown', function(e) {
+            // F12
+            if (e.key === 'F12' || e.keyCode === 123) {
+                e.preventDefault();
+                return false;
+            }
+            // Ctrl+U
+            if ((e.ctrlKey || e.metaKey) && (e.key === 'u' || e.keyCode === 85)) {
+                e.preventDefault();
+                return false;
+            }
+            // Ctrl+Shift+I
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'i' || e.keyCode === 73)) {
+                e.preventDefault();
+                return false;
+            }
+            // Ctrl+Shift+J
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'j' || e.keyCode === 74)) {
+                e.preventDefault();
+                return false;
+            }
+            // Ctrl+Shift+C
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'c' || e.keyCode === 67)) {
+                e.preventDefault();
+                return false;
+            }
+        });
+        
+        // 检测开发者工具打开（简单检测）
+        var devtoolsOpen = false;
+        var threshold = 160;
+        setInterval(function() {
+            var widthThreshold = window.outerWidth - window.innerWidth > threshold;
+            var heightThreshold = window.outerHeight - window.innerHeight > threshold;
+            if (widthThreshold || heightThreshold) {
+                if (!devtoolsOpen) {
+                    devtoolsOpen = true;
+                    // 可以选择跳转或其他操作
+                }
+            } else {
+                devtoolsOpen = false;
+            }
+        }, 1000);
+    })();
+    </script>
+
+</body>
+</html>
