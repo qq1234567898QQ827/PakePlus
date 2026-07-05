@@ -1,0 +1,938 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>板块模型 · 可调摩擦系数 · 长木板</title>
+    <style>
+        :root {
+            --bg: #070b14;
+            --panel: rgba(12, 17, 28, 0.8);
+            --text: #d0def0;
+            --accent: #f04a4a;
+            --blue: #3b8ed4;
+            --green: #22c55e;
+            --green-light: #86efac;
+            --green-dark: #15803d;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: radial-gradient(ellipse at 40% 30%, #131c2e 0%, #03050c 80%);
+            min-height: 100vh;
+            display: flex; justify-content: center; align-items: center;
+            font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            padding: 8px; overflow-y: auto;
+        }
+        .container {
+            background: var(--panel);
+            backdrop-filter: blur(28px);
+            border-radius: 24px; padding: 10px 18px 12px;
+            box-shadow: 0 25px 60px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.08);
+            max-width: 980px; width: 100%;
+            display: flex; flex-direction: column; gap: 8px; margin: auto;
+        }
+        .header {
+            display: flex; align-items: center; justify-content: space-between;
+            flex-wrap: wrap; gap: 8px; padding: 0 2px;
+        }
+        .header h1 {
+            font-size: 1.15rem; color: #eaf2ff;
+            text-shadow: 0 0 15px rgba(100,180,255,0.7); letter-spacing: 0.03em;
+        }
+        .stage-indicator {
+            display: flex; gap: 6px; align-items: center;
+            background: rgba(0,0,0,0.4); padding: 4px 14px; border-radius: 22px;
+            border: 1px solid rgba(255,255,255,0.12);
+        }
+        .stage-dot {
+            width: 9px; height: 9px; border-radius: 50%;
+            background: #2a3548; transition: 0.4s;
+        }
+        .stage-dot.active.s1 { background: #8899aa; box-shadow: 0 0 8px #8899aa; }
+        .stage-dot.active.s2 { background: #4db8ff; box-shadow: 0 0 10px #4db8ff; }
+        .stage-dot.active.s3 { background: #ff4d6a; box-shadow: 0 0 10px #ff4d6a; }
+        .stage-text {
+            font-size: 0.7rem; color: #8899bb; margin-left: 4px;
+            min-width: 60px; font-weight: 500; transition: color 0.4s;
+        }
+        .stage-text.s1 { color: #bcc8d4; }
+        .stage-text.s2 { color: #7fc9ff; }
+        .stage-text.s3 { color: #ff8c9e; }
+        canvas {
+            display: block; width: 100%; border-radius: 14px;
+            background: #090d18;
+            box-shadow: inset 0 0 35px rgba(0,0,0,0.5), 0 0 20px rgba(0,140,255,0.06);
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+        #sceneCanvas { height: 360px; }
+        #vtCanvas { height: 220px; background: #080b15; }
+        .controls {
+            display: flex; flex-wrap: wrap; gap: 12px;
+            align-items: center; justify-content: center; padding: 0 2px;
+        }
+        .slider-group {
+            flex: 1 1 260px; min-width: 200px;
+            display: flex; flex-direction: column; gap: 3px;
+        }
+        .slider-header {
+            display: flex; justify-content: space-between;
+            font-size: 0.75rem; color: #a0b4d0;
+        }
+        .slider-header .val {
+            font-weight: 700; font-size: 1rem;
+            color: var(--green-light);
+            text-shadow: 0 0 8px rgba(34, 197, 94, 0.6);
+        }
+
+        /* 力滑块：绿色主题 */
+        .slider-group input[type="range"] {
+            -webkit-appearance: none; width: 100%; height: 6px; border-radius: 3px;
+            background: linear-gradient(to right, #86efac 0%, #22c55e 50%, #15803d 100%);
+            outline: none; cursor: pointer;
+            box-shadow: 0 0 14px rgba(34, 197, 94, 0.3);
+            transition: opacity 0.3s;
+        }
+        .slider-group input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none; width: 26px; height: 26px; border-radius: 50%;
+            background: #fff; border: 3px solid var(--green);
+            box-shadow: 0 0 22px rgba(34, 197, 94, 0.7); cursor: pointer;
+        }
+        /* 禁用滑块样式 */
+        .slider-group input[type="range"]:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        .slider-group input[type="range"]:disabled::-webkit-slider-thumb {
+            cursor: not-allowed;
+            box-shadow: 0 0 12px rgba(34, 197, 94, 0.4);
+        }
+
+        button {
+            padding: 7px 16px; border-radius: 20px;
+            border: 1px solid rgba(255,255,255,0.18);
+            background: rgba(20,30,50,0.55); backdrop-filter: blur(12px);
+            color: #c8daf8; font-size: 0.8rem; cursor: pointer;
+            font-weight: 600; transition: 0.25s; white-space: nowrap;
+        }
+        button:hover {
+            background: rgba(35,50,75,0.7); border-color: rgba(0,200,255,0.4);
+            color: #fff; box-shadow: 0 0 18px rgba(0,160,255,0.3);
+        }
+        button.pause-active {
+            background: #f05454; border-color: #f05454; color: #fff;
+            box-shadow: 0 0 24px rgba(240,84,84,0.8);
+        }
+        /* 摩擦系数场景按钮样式 */
+        .friction-btn {
+            background: rgba(20,30,50,0.7);
+            border-color: rgba(255,107,107,0.4);
+        }
+        .friction-btn:hover {
+            background: rgba(35,50,75,0.85);
+            border-color: rgba(255,107,107,0.6);
+            box-shadow: 0 0 18px rgba(255,107,107,0.4);
+        }
+
+        .friction-row {
+            display: flex; flex-wrap: wrap; gap: 12px;
+            justify-content: center; padding: 0 2px;
+            transition: opacity 0.3s ease, max-height 0.3s ease;
+            max-height: 200px;
+            overflow: hidden;
+        }
+        .friction-row.hidden {
+            opacity: 0;
+            max-height: 0;
+            pointer-events: none;
+        }
+        .friction-slider-group {
+            flex: 1 1 200px; min-width: 160px;
+            display: flex; flex-direction: column; gap: 3px;
+        }
+        .friction-slider-group label {
+            font-size: 0.7rem; color: #a0b4d0;
+            display: flex; justify-content: space-between;
+        }
+        .friction-slider-group span { font-weight: 700; color: #ffb3b3; }
+
+        /* 摩擦滑块样式（保持原有三色） */
+        .friction-slider-group input[type="range"] {
+            -webkit-appearance: none; width: 100%; height: 6px; border-radius: 3px;
+            background: linear-gradient(to right, #8899aa 0%, #8899aa 27%, #4db8ff 27%, #4db8ff 62%, #ff4d6a 62%, #ff4d6a 100%);
+            outline: none; cursor: pointer; box-shadow: 0 0 14px rgba(0,180,255,0.3);
+        }
+        .friction-slider-group input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none; width: 26px; height: 26px; border-radius: 50%;
+            background: #fff; border: 3px solid #f05454;
+            box-shadow: 0 0 22px rgba(255,70,70,0.7); cursor: pointer;
+        }
+        .friction-slider-group input[type="range"]:disabled {
+            opacity: 0.35;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        /* 隐藏类 */
+        .hidden {
+            display: none !important;
+        }
+
+        @media (max-width: 600px) {
+            .container { padding: 8px 10px 10px; gap: 6px; }
+            #sceneCanvas { height: 300px; }
+            #vtCanvas { height: 180px; }
+            button { padding: 6px 12px; font-size: 0.7rem; }
+            .friction-btn { font-size: 0.65rem; padding: 5px 10px; }
+        }
+    </style>
+<style>
+    /* 齐老师动画 - 统一样式 */
+    body {
+        background: #1a2332 !important;
+    }
+    
+    /* 顶部标题栏 */
+    .qilaoshi-header {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 50px;
+        background: #1a2332;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 99999 !important;
+        border-bottom: 1px solid #2a3a50;
+    }
+    
+    .qilaoshi-title {
+        font-size: 20px;
+        font-weight: 600;
+        color: #8ab4f8;
+        letter-spacing: 2px;
+        font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif;
+    }
+    
+    /* 返回按钮 */
+    .qilaoshi-back-btn {
+        position: fixed;
+        top: 10px;
+        right: 15px;
+        z-index: 999999 !important;
+        background: linear-gradient(135deg, #3a5a80, #2a4a70);
+        color: #ffffff;
+        border: 1px solid #5a8ab0;
+        padding: 8px 18px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        font-family: 'Microsoft YaHei', sans-serif;
+        transition: all 0.2s;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+    }
+    
+    .qilaoshi-back-btn:hover {
+        background: linear-gradient(135deg, #4a6a90, #3a5a80);
+        color: #ffffff;
+        box-shadow: 0 4px 15px rgba(90, 138, 176, 0.4);
+        transform: translateY(-1px);
+    }
+    
+    /* 水印 */
+    .qilaoshi-watermark {
+        position: fixed;
+        bottom: 10px;
+        right: 15px;
+        z-index: 9999;
+        font-size: 11px;
+        color: rgba(138, 180, 248, 0.4);
+        font-family: 'Microsoft YaHei', sans-serif;
+        line-height: 1.5;
+        text-align: right;
+        pointer-events: none;
+    }
+    
+    /* 调整主内容区域，给顶部标题栏留出空间 */
+    body {
+        padding-top: 50px !important;
+    }
+</style>
+</head>
+<body>
+
+    <!-- 齐老师动画 - 顶部导航 -->
+    <div class="qilaoshi-header">
+        <div class="qilaoshi-title">齐老师动画</div>
+    </div>
+    <button class="qilaoshi-back-btn" onclick="window.location.href='../index.html'">← 返回主页</button>
+
+<div class="container">
+    <div class="header">
+        <h1>◈ 板块 · 摩擦 · v-t 图像</h1>
+        <div class="stage-indicator">
+            <span class="stage-dot s1 active" id="dot1"></span>
+            <span class="stage-dot s2" id="dot2"></span>
+            <span class="stage-dot s3" id="dot3"></span>
+            <span class="stage-text s1" id="stageLabel">静止阶段</span>
+        </div>
+    </div>
+    <canvas id="sceneCanvas" width="880" height="360"></canvas>
+    <canvas id="vtCanvas" width="880" height="220"></canvas>
+    <div class="controls">
+        <div class="slider-group">
+            <div class="slider-header">
+                <span id="sliderLabel">🟢 水平恒力 F</span>
+                <span class="val" id="forceVal">20.0 N</span>
+            </div>
+            <input type="range" id="forceSlider" min="0" max="45" value="20" step="0.1">
+        </div>
+        <button id="modeBtn">🔄 切换为初速度模式</button>
+        <!-- 摩擦系数场景按钮 -->
+        <button id="frictionCase1Btn" class="friction-btn hidden">情况1：μ₁=0.3，μ₂=0.2</button>
+        <button id="frictionCase2Btn" class="friction-btn hidden">情况2：μ₁=0.2，μ₂=0.3</button>
+        <button id="pauseBtn">⏸️ 暂停</button>
+        <button id="resetBtn">↺ 重置</button>
+    </div>
+    <div class="friction-row hidden" id="frictionRow">
+        <div class="friction-slider-group" id="mu1Group">
+            <label>μ₁ (物块-木板) <span id="mu1Val">0.25</span></label>
+            <input type="range" id="mu1Slider" min="0" max="0.5" value="0.25" step="0.01">
+        </div>
+        <div class="friction-slider-group" id="mu2Group">
+            <label>μ₂ (木板-地面) <span id="mu2Val">0.20</span></label>
+            <input type="range" id="mu2Slider" min="0" max="0.5" value="0.2" step="0.01">
+        </div>
+    </div>
+</div>
+
+<script>
+    (function() {
+        const sceneCanvas = document.getElementById('sceneCanvas');
+        const ctxScene = sceneCanvas.getContext('2d');
+        const vtCanvas = document.getElementById('vtCanvas');
+        const ctxVt = vtCanvas.getContext('2d');
+        const forceSlider = document.getElementById('forceSlider');
+        const forceValEl = document.getElementById('forceVal');
+        const sliderLabel = document.getElementById('sliderLabel');
+        const modeBtn = document.getElementById('modeBtn');
+        const pauseBtn = document.getElementById('pauseBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const mu1Slider = document.getElementById('mu1Slider');
+        const mu2Slider = document.getElementById('mu2Slider');
+        const mu1Val = document.getElementById('mu1Val');
+        const mu2Val = document.getElementById('mu2Val');
+        const frictionRow = document.getElementById('frictionRow');
+        const dot1 = document.getElementById('dot1');
+        const dot2 = document.getElementById('dot2');
+        const dot3 = document.getElementById('dot3');
+        const stageLabel = document.getElementById('stageLabel');
+        const frictionCase1Btn = document.getElementById('frictionCase1Btn');
+        const frictionCase2Btn = document.getElementById('frictionCase2Btn');
+
+        let mu1 = 0.25, mu2 = 0.2;
+        const m = 1.0, M = 3.0, g = 10.0;
+        const pixelsPerMeter = 85;
+        const groundY = 290;
+        const boardW = 400, boardH = 22;
+        const blockW = 40, blockH = 40;
+        const initBoardX = 20;
+        const initBlockX = initBoardX + boardW - blockW - 20;
+
+        let boardX = initBoardX, boardV = 0;
+        let blockX = initBlockX, blockV = 0;
+        let blockOnBoard = true, blockOnGround = false;
+        let F = 20.0, initialVelocity = 6.0, mode = 'force';
+        let particles = [];
+        const VT_WINDOW = 12.0;
+        let elapsedTime = 0;
+        let timeHistory = [], boardVHistory = [], blockVHistory = [];
+        let paused = false;
+        let systemStatic = false;
+        let commonDecel = false;
+        let simulationEnded = false; // 模拟结束标志：停止更新与绘图
+
+        class Particle {
+            constructor(x,y,vx,vy,life,color,size){
+                this.x=x;this.y=y;this.vx=vx;this.vy=vy;this.life=life;this.maxLife=life;this.color=color;this.size=size;
+            }
+            update(dt){ this.x+=this.vx*dt; this.y+=this.vy*dt; this.life-=dt; }
+            get alive(){ return this.life>0; }
+            draw(ctx){
+                const a=Math.max(0,this.life/this.maxLife);
+                ctx.save();ctx.globalAlpha=a;ctx.fillStyle=this.color;ctx.shadowColor=this.color;ctx.shadowBlur=8*a;
+                ctx.beginPath();ctx.arc(this.x,this.y,this.size,0,Math.PI*2);ctx.fill();ctx.restore();
+            }
+        }
+        function spawnParticles(x,y,count,intensity){
+            for(let i=0;i<count;i++){
+                const vx=(Math.random()-0.6)*intensity*60, vy=-Math.random()*intensity*80-20, life=0.2+Math.random()*0.6;
+                const color=`hsl(${15+Math.random()*25},100%,${55+Math.random()*35}%)`;
+                particles.push(new Particle(x,y,vx,vy,life,color,1.5+Math.random()*2.8));
+            }
+        }
+        function getF1Max(){ return mu1*m*g; }
+        function getF2Static(){ return mu2*(m+M)*g; }
+        function getF2Kinetic(){ return mu2*(m+M)*g; }
+
+        function updatePhysics(dt){
+            if(paused || simulationEnded) return;
+            if(systemStatic) return;
+            const effDt=Math.min(dt,0.06);
+            const currentF=(mode==='force')?F:0;
+
+            if(mode==='velocity'){
+                if(!blockOnBoard && blockOnGround){
+                    const aBlock = -mu2*g;
+                    if(Math.abs(blockV)<0.01) blockV=0;
+                    else blockV = Math.max(0, blockV + aBlock * effDt);
+                    blockX += blockV * pixelsPerMeter * effDt;
+                    if(boardV===0 && blockV===0) systemStatic=true;
+                    return;
+                }
+
+                if(blockOnBoard){
+                    const relV = boardV - blockV;
+
+                    if(commonDecel){
+                        const aCommon = -mu2 * g;
+                        boardV = Math.max(0, boardV + aCommon * effDt);
+                        blockV = boardV;
+                        boardX += boardV * pixelsPerMeter * effDt;
+                        blockX += blockV * pixelsPerMeter * effDt;
+                        if(boardV < 1e-4){
+                            boardV = 0; blockV = 0;
+                            systemStatic = true;
+                            commonDecel = false;
+                        }
+                    } else if(mu1 > mu2 && boardV > 0.01){
+                        const f1 = (relV > 0) ? mu1*m*g : -mu1*m*g;
+                        const fGround = -Math.sign(boardV) * mu2*(m+M)*g;
+                        const aBoard = (fGround - f1) / M;
+                        const aBlock = f1 / m;
+                        const relA = aBoard - aBlock;
+
+                        if(relV > 0 && relA < 0){
+                            const tCommon = -relV / relA;
+                            if(tCommon > 0 && tCommon <= effDt){
+                                const tRemain = effDt - tCommon;
+                                const vCommon = boardV + aBoard * tCommon;
+                                boardV = vCommon;
+                                blockV = vCommon;
+                                boardX += boardV * pixelsPerMeter * tCommon;
+                                blockX += blockV * pixelsPerMeter * tCommon;
+
+                                commonDecel = true;
+                                const aCommon = -mu2 * g;
+                                boardV = Math.max(0, boardV + aCommon * tRemain);
+                                blockV = boardV;
+                                boardX += boardV * pixelsPerMeter * tRemain;
+                                blockX += blockV * pixelsPerMeter * tRemain;
+
+                                if(boardV < 1e-4){
+                                    boardV = 0; blockV = 0;
+                                    systemStatic = true;
+                                    commonDecel = false;
+                                }
+                            } else {
+                                boardV += aBoard * effDt;
+                                blockV += aBlock * effDt;
+                                boardX += boardV * pixelsPerMeter * effDt;
+                                blockX += blockV * pixelsPerMeter * effDt;
+                            }
+                        } else if(relV <= 0 && blockV > 0){
+                            commonDecel = true;
+                            const aCommon = -mu2 * g;
+                            boardV = Math.max(0, boardV + aCommon * effDt);
+                            blockV = boardV;
+                            boardX += boardV * pixelsPerMeter * effDt;
+                            blockX += blockV * pixelsPerMeter * effDt;
+                            if(boardV < 1e-4){
+                                boardV = 0; blockV = 0;
+                                systemStatic = true;
+                                commonDecel = false;
+                            }
+                        } else {
+                            boardV += aBoard * effDt;
+                            blockV += aBlock * effDt;
+                            boardX += boardV * pixelsPerMeter * effDt;
+                            blockX += blockV * pixelsPerMeter * effDt;
+                        }
+                    } else {
+                        let f1;
+                        const absRelV = Math.abs(relV);
+                        if(absRelV < 0.01){
+                            f1 = -mu1 * m * g;
+                        } else {
+                            f1 = (relV > 0) ? mu1*m*g : -mu1*m*g;
+                        }
+                        const fGround = -Math.sign(boardV) * mu2*(m+M)*g;
+                        const aBoard = (fGround - f1) / M;
+                        const aBlock = f1 / m;
+
+                        const newBoardV = boardV + aBoard * effDt;
+                        if(newBoardV <= 0 && aBoard < 0){
+                            const tStop = -boardV / aBoard;
+                            const tRemain = effDt - tStop;
+
+                            boardV = 0;
+                            blockV += aBlock * tStop;
+
+                            if(blockV > 0 && tRemain > 0){
+                                blockV = Math.max(0, blockV - mu1*g * tRemain);
+                            }
+
+                            if(blockV <= 0){
+                                blockV = 0;
+                                systemStatic = true;
+                            }
+                        } else {
+                            boardV = newBoardV;
+                            blockV += aBlock * effDt;
+                        }
+
+                        boardX += boardV * pixelsPerMeter * effDt;
+                        blockX += blockV * pixelsPerMeter * effDt;
+                    }
+
+                    if(blockX + blockW < boardX - 2 || blockX > boardX + boardW + 2){
+                        blockOnBoard = false; blockOnGround = true;
+                        spawnParticles(blockX + blockW/2, groundY - boardH, 30, 1.8);
+                    }
+                    if(Math.abs(boardV) < 1e-4 && Math.abs(blockV) < 1e-4){
+                        boardV = 0; blockV = 0;
+                        systemStatic = true;
+                    }
+                }
+                return;
+            }
+
+            // 外力模式
+            const fGround = (Math.abs(boardV)<0.005 && currentF<=getF2Static()) ? -currentF : -Math.sign(boardV>0?boardV:(currentF>getF2Static()?1:-1))*getF2Kinetic();
+            const outBlock={static:false};
+            const relVel=blockV-boardV;
+            let fBlock=0;
+            if(blockOnBoard){
+                if(Math.abs(relVel)<0.02){
+                    const aCommon=(currentF+fGround)/(m+M);
+                    const needed=m*aCommon;
+                    if(Math.abs(needed)<=getF1Max()+0.1 && Math.abs(aCommon)>0.0005){
+                        outBlock.static=true;
+                        fBlock=Math.max(-getF1Max(), Math.min(getF1Max(), needed));
+                    } else {
+                        outBlock.static=false;
+                        fBlock=(needed>0?1:-1)*getF1Max();
+                    }
+                } else {
+                    outBlock.static=false;
+                    fBlock=Math.sign(boardV-blockV)*getF1Max();
+                }
+            }
+            boardV += ((currentF + fGround - fBlock) / M) * effDt;
+            if(boardV<0 && currentF>getF2Static()) boardV=0;
+            boardX += boardV * pixelsPerMeter * effDt;
+
+            if(blockOnBoard){
+                if(outBlock.static) blockV=boardV;
+                else blockV += (fBlock/m) * effDt;
+                blockX += blockV * pixelsPerMeter * effDt;
+                if(blockX+blockW<boardX-2 || blockX>boardX+boardW+2){
+                    blockOnBoard=false; blockOnGround=true;
+                    spawnParticles(blockX+blockW/2,groundY-boardH,30,1.8);
+                }
+            } else if(blockOnGround){
+                if(Math.abs(blockV)<0.015) blockV=0;
+                else blockV += (blockV>0?-mu2*g:mu2*g) * effDt;
+                blockX += blockV * pixelsPerMeter * effDt;
+            }
+
+            if(blockOnBoard && Math.abs(blockV-boardV)>0.03 && currentF>((mu1+mu2)*(m+M)*g)){
+                if(Math.random()<0.85) for(let i=0;i<3;i++) spawnParticles(blockX+Math.random()*blockW,groundY-boardH,3,Math.abs(blockV-boardV)*1.6);
+            }
+            if(Math.abs(boardV)>0.04 && Math.random()<0.25) spawnParticles(boardX+Math.random()*boardW,groundY,2,0.5);
+
+            for(let p of particles) p.update(effDt);
+            particles=particles.filter(p=>p.alive);
+            if(particles.length>100) particles=particles.slice(-80);
+        }
+
+        function getStage(){
+            const currentF=(mode==='force')?F:0;
+            if(currentF<=getF2Static() && Math.abs(boardV)<0.005) return 1;
+            if(currentF<=((mu1+mu2)*(m+M)*g) && blockOnBoard && Math.abs(blockV-boardV)<0.02) return 2;
+            return 3;
+        }
+
+        function drawScene(){
+            const ctx=ctxScene, w=sceneCanvas.width, h=sceneCanvas.height;
+            ctx.clearRect(0,0,w,h);
+            const skyGrad=ctx.createLinearGradient(0,0,0,groundY);
+            skyGrad.addColorStop(0,'#0b1324'); skyGrad.addColorStop(0.5,'#162033'); skyGrad.addColorStop(1,'#1e2e44');
+            ctx.fillStyle=skyGrad; ctx.fillRect(0,0,w,groundY);
+            ctx.fillStyle='rgba(255,255,255,0.8)';
+            for(let i=0;i<50;i++){ const sx=(i*137+40)%w, sy=(i*89+20)%(groundY-20); ctx.beginPath(); ctx.arc(sx,sy,0.6+(i%3)*0.5,0,Math.PI*2); ctx.fill(); }
+            ctx.fillStyle='#131f2e'; ctx.beginPath();
+            ctx.moveTo(0,groundY); ctx.quadraticCurveTo(120,groundY-48,260,groundY-22); ctx.quadraticCurveTo(420,groundY-45,580,groundY-16); ctx.quadraticCurveTo(720,groundY-32,w,groundY-10); ctx.lineTo(w,groundY); ctx.closePath(); ctx.fill();
+            const gGrad=ctx.createLinearGradient(0,groundY,0,h);
+            gGrad.addColorStop(0,'#2f4055'); gGrad.addColorStop(0.15,'#233445'); gGrad.addColorStop(0.5,'#16222f'); gGrad.addColorStop(1,'#0b1219');
+            ctx.fillStyle=gGrad; ctx.fillRect(0,groundY,w,h-groundY);
+            ctx.strokeStyle='rgba(100,160,220,0.12)'; ctx.lineWidth=1;
+            for(let x=0;x<w;x+=40){ ctx.beginPath(); ctx.moveTo(x,groundY); ctx.lineTo(x,h); ctx.stroke(); }
+            for(let y=groundY+15;y<h;y+=30){ ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(w,y); ctx.stroke(); }
+            ctx.strokeStyle='#00a6ff'; ctx.lineWidth=2; ctx.shadowColor='#00b4ff'; ctx.shadowBlur=10;
+            ctx.beginPath(); ctx.moveTo(0,groundY); ctx.lineTo(w,groundY); ctx.stroke(); ctx.shadowBlur=0;
+
+            const arrowX=boardX+boardW, arrowY=groundY-boardH/2;
+            if(mode==='force'){
+                const arrowLen=45+F*2.2;
+                ctx.strokeStyle='rgba(34,197,94,0.5)'; ctx.lineWidth=8;
+                ctx.beginPath(); ctx.moveTo(arrowX,arrowY); ctx.lineTo(arrowX+arrowLen-16,arrowY); ctx.stroke();
+                ctx.strokeStyle='#22c55e'; ctx.lineWidth=4; ctx.shadowColor='#16a34a'; ctx.shadowBlur=12;
+                ctx.beginPath(); ctx.moveTo(arrowX,arrowY); ctx.lineTo(arrowX+arrowLen-14,arrowY); ctx.stroke();
+                ctx.fillStyle='#22c55e'; ctx.beginPath();
+                ctx.moveTo(arrowX+arrowLen,arrowY); ctx.lineTo(arrowX+arrowLen-16,arrowY-11); ctx.lineTo(arrowX+arrowLen-14,arrowY); ctx.lineTo(arrowX+arrowLen-16,arrowY+11);
+                ctx.closePath(); ctx.fill(); ctx.shadowBlur=0;
+                ctx.fillStyle='#fff'; ctx.font='bold 12px "Segoe UI"'; ctx.textAlign='center';
+                ctx.fillText('F',arrowX+arrowLen/2,arrowY-13);
+                ctx.fillStyle='#bbf7d0'; ctx.font='9px monospace'; ctx.fillText(`${F.toFixed(1)} N`,arrowX+arrowLen/2,arrowY+18);
+            } else {
+                const arrowLen=45+initialVelocity*4.0;
+                ctx.strokeStyle='rgba(100,200,255,0.7)'; ctx.lineWidth=3;
+                ctx.setLineDash([6,4]); ctx.beginPath(); ctx.moveTo(arrowX,arrowY); ctx.lineTo(arrowX+arrowLen,arrowY); ctx.stroke();
+                ctx.setLineDash([]);
+                ctx.fillStyle='#4db8ff'; ctx.beginPath();
+                ctx.moveTo(arrowX+arrowLen,arrowY); ctx.lineTo(arrowX+arrowLen-14,arrowY-8); ctx.lineTo(arrowX+arrowLen-14,arrowY+8);
+                ctx.closePath(); ctx.fill();
+                ctx.fillStyle='#fff'; ctx.font='bold 12px "Segoe UI"'; ctx.textAlign='center';
+                ctx.fillText('v₀',arrowX+arrowLen/2,arrowY-13);
+                ctx.fillStyle='#aad4ff'; ctx.font='9px monospace'; ctx.fillText(`${initialVelocity.toFixed(1)} m/s`,arrowX+arrowLen/2,arrowY+18);
+            }
+            const bx=boardX, by=groundY-boardH;
+            ctx.fillStyle='rgba(0,180,255,0.15)'; ctx.fillRect(bx+3,by+3,boardW,boardH);
+            const bGrad=ctx.createLinearGradient(0,by,0,by+boardH);
+            bGrad.addColorStop(0,'#4aa3d9'); bGrad.addColorStop(0.5,'#2e7db5'); bGrad.addColorStop(1,'#1a5680');
+            ctx.fillStyle=bGrad; ctx.fillRect(bx,by,boardW,boardH);
+            ctx.strokeStyle='#7cc8ff'; ctx.lineWidth=2; ctx.shadowColor='#0099ff'; ctx.shadowBlur=8;
+            ctx.strokeRect(bx,by,boardW,boardH); ctx.shadowBlur=0;
+            let blkX, blkY;
+            if(blockOnBoard){ blkY=groundY-boardH-blockH; blkX=blockX; }
+            else { blkY=groundY-blockH; blkX=blockX; }
+            const blkGrad=ctx.createLinearGradient(0,blkY,0,blkY+blockH);
+            blkGrad.addColorStop(0,'#ff6b6b'); blkGrad.addColorStop(0.5,'#e04545'); blkGrad.addColorStop(1,'#b03030');
+            ctx.fillStyle=blkGrad; ctx.fillRect(blkX,blkY,blockW,blockH);
+            ctx.strokeStyle='#ffaaaa'; ctx.lineWidth=2; ctx.shadowColor='#ff4d4d'; ctx.shadowBlur=10;
+            ctx.strokeRect(blkX,blkY,blockW,blockH); ctx.shadowBlur=0;
+            ctx.fillStyle='rgba(255,255,255,0.2)'; ctx.fillRect(blkX+4,blkY+2,blockW-8,5);
+            for(let p of particles) p.draw(ctx);
+        }
+
+        function drawVT(){
+            const ctx=ctxVt, w=vtCanvas.width, h=vtCanvas.height;
+            ctx.clearRect(0,0,w,h); ctx.fillStyle='#080b15'; ctx.fillRect(0,0,w,h);
+            const margin={top:22,right:45,bottom:35,left:55};
+            const plotW=w-margin.left-margin.right, plotH=h-margin.top-margin.bottom;
+            const vMax=(mode==='force')?30.0:7.5, vMin=0, vRange=vMax-vMin;
+            const tMax=Math.max(VT_WINDOW,elapsedTime), tMin=tMax-VT_WINDOW;
+            const tToX=(t)=>margin.left+((t-tMin)/VT_WINDOW)*plotW;
+            const vToY=(v)=>margin.top+plotH-((v-vMin)/vRange)*plotH;
+            ctx.strokeStyle='rgba(80,160,220,0.18)'; ctx.lineWidth=1;
+            for(let t=Math.ceil(tMin/2)*2; t<=tMax; t+=2){ const x=tToX(t); ctx.beginPath(); ctx.moveTo(x,margin.top); ctx.lineTo(x,margin.top+plotH); ctx.stroke(); }
+            const vStep=(mode==='force')?5.0:1.5;
+            for(let v=vStep; v<=vMax; v+=vStep){ const y=vToY(v); ctx.beginPath(); ctx.moveTo(margin.left,y); ctx.lineTo(margin.left+plotW,y); ctx.stroke(); }
+            ctx.strokeStyle='#ffffff'; ctx.lineWidth=2;
+            ctx.beginPath(); ctx.moveTo(margin.left,margin.top); ctx.lineTo(margin.left,margin.top+plotH); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(margin.left,margin.top+plotH); ctx.lineTo(margin.left+plotW,margin.top+plotH); ctx.stroke();
+            ctx.fillStyle='#ffffff';
+            ctx.beginPath(); ctx.moveTo(margin.left,margin.top-7); ctx.lineTo(margin.left-6,margin.top+5); ctx.lineTo(margin.left+6,margin.top+5); ctx.closePath(); ctx.fill();
+            ctx.beginPath(); ctx.moveTo(margin.left+plotW+7,margin.top+plotH); ctx.lineTo(margin.left+plotW-5,margin.top+plotH-6); ctx.lineTo(margin.left+plotW-5,margin.top+plotH+6); ctx.closePath(); ctx.fill();
+            ctx.font='italic bold 13px "Segoe UI"'; ctx.fillStyle='#ffffff'; ctx.textAlign='center';
+            ctx.fillText('V',margin.left-14,margin.top-8); ctx.fillText('t',margin.left+plotW+14,margin.top+plotH+4);
+            ctx.font='bold 11px "Segoe UI"'; ctx.fillText('时间 t (s)',margin.left+plotW/2,h-6);
+            ctx.save(); ctx.translate(14,margin.top+plotH/2); ctx.rotate(-Math.PI/2); ctx.fillText('速度 v (m/s)',0,0); ctx.restore();
+            const drawCurve=(history,color)=>{
+                if(history.length<2) return;
+                ctx.strokeStyle=color; ctx.lineWidth=2.4; ctx.shadowColor=color; ctx.shadowBlur=6;
+                ctx.beginPath(); let started=false;
+                for(let i=0;i<history.length;i++){
+                    const t=timeHistory[i]; if(t<tMin-0.01) continue;
+                    const x=tToX(t), y=vToY(Math.min(history[i],vMax));
+                    if(!started){ ctx.moveTo(x,y); started=true; } else ctx.lineTo(x,y);
+                }
+                ctx.stroke(); ctx.shadowBlur=0;
+            };
+            drawCurve(boardVHistory,'#4db8ff'); drawCurve(blockVHistory,'#ff6b6b');
+            ctx.fillStyle='#4db8ff'; ctx.fillRect(margin.left+10,margin.top+4,14,4);
+            ctx.fillStyle='#ffffff'; ctx.font='bold 10px "Segoe UI"'; ctx.textAlign='left';
+            ctx.fillText('木板速度',margin.left+28,margin.top+9);
+            ctx.fillStyle='#ff6b6b'; ctx.fillRect(margin.left+90,margin.top+4,14,4);
+            ctx.fillText('物块速度',margin.left+108,margin.top+9);
+        }
+
+        function recordData(dt){
+            if(paused || simulationEnded) return;
+            elapsedTime+=dt;
+            timeHistory.push(elapsedTime);
+            boardVHistory.push(boardV);
+            blockVHistory.push(blockV);
+            const cutTime=elapsedTime-VT_WINDOW;
+            while(timeHistory.length>0 && timeHistory[0]<cutTime-0.05){
+                timeHistory.shift(); boardVHistory.shift(); blockVHistory.shift();
+            }
+            if(timeHistory.length>700){
+                timeHistory=timeHistory.slice(-650); boardVHistory=boardVHistory.slice(-650); blockVHistory=blockVHistory.slice(-650);
+            }
+        }
+
+        function updateUI(){
+            const stage=getStage();
+            dot1.classList.toggle('active',stage===1); dot2.classList.toggle('active',stage===2); dot3.classList.toggle('active',stage===3);
+            stageLabel.classList.remove('s1','s2','s3');
+            if(stage===1){ stageLabel.textContent='静止阶段'; stageLabel.classList.add('s1'); }
+            else if(stage===2){ stageLabel.textContent='共加速阶段'; stageLabel.classList.add('s2'); }
+            else { stageLabel.textContent=blockOnBoard?'相对滑动':'木板抽出'; stageLabel.classList.add('s3'); }
+        }
+
+        function resetSim(){
+            boardX=initBoardX; blockX=initBlockX; blockOnBoard=true; blockOnGround=false; particles=[];
+            elapsedTime=0; timeHistory=[]; boardVHistory=[]; blockVHistory=[];
+            systemStatic = false;
+            commonDecel = false;
+            simulationEnded = false; // 重置结束标志
+            if(mode==='force'){ 
+                F=parseFloat(forceSlider.value); 
+                boardV=0; 
+                blockV=0; 
+            }
+            else { 
+                initialVelocity=6.0;
+                F=0; 
+                boardV=initialVelocity; 
+                blockV=0; 
+            }
+            forceValEl.textContent=(mode==='force')?F.toFixed(1)+' N':initialVelocity.toFixed(1)+' m/s';
+            timeHistory.push(0);
+            boardVHistory.push(boardV);
+            blockVHistory.push(blockV);
+        }
+
+        // 设置摩擦系数场景
+        function setFrictionCase(newMu1, newMu2) {
+            mu1 = newMu1;
+            mu2 = newMu2;
+            mu1Slider.value = mu1;
+            mu2Slider.value = mu2;
+            mu1Val.textContent = mu1.toFixed(2);
+            mu2Val.textContent = mu2.toFixed(2);
+            
+            resetSim();
+            paused = false;
+            pauseBtn.textContent = '⏸️ 暂停';
+            pauseBtn.classList.remove('pause-active');
+        }
+
+        function setSliderForMode(newMode){
+            if(newMode==='force'){
+                forceSlider.min=0; 
+                forceSlider.max=45; 
+                forceSlider.step=0.1; 
+                forceSlider.value=20;
+                forceSlider.disabled = false;
+                sliderLabel.innerHTML='🟢 水平恒力 F';
+                modeBtn.textContent='🔄 切换为初速度模式';
+                frictionCase1Btn.classList.add('hidden');
+                frictionCase2Btn.classList.add('hidden');
+                frictionRow.classList.add('hidden');
+                mu1 = 0.25;
+                mu2 = 0.2;
+                mu1Slider.value = mu1;
+                mu2Slider.value = mu2;
+                mu1Val.textContent = mu1.toFixed(2);
+                mu2Val.textContent = mu2.toFixed(2);
+                resetSim();
+            } else {
+                forceSlider.min=6.0; 
+                forceSlider.max=6.0; 
+                forceSlider.step=0.1; 
+                forceSlider.value=6.0;
+                forceSlider.disabled = true;
+                sliderLabel.innerHTML='🔵 木板初速度 v₀ (固定6m/s)';
+                modeBtn.textContent='🔄 切换为外力模式';
+                frictionCase1Btn.classList.remove('hidden');
+                frictionCase2Btn.classList.remove('hidden');
+                frictionRow.classList.add('hidden');
+                setFrictionCase(0.3, 0.2);
+            }
+        }
+
+        // 事件监听
+        mu1Slider.addEventListener('input',()=>{
+            if(mu1Slider.disabled) return;
+            mu1=parseFloat(mu1Slider.value);
+            mu1Val.textContent=mu1.toFixed(2);
+        });
+        mu2Slider.addEventListener('input',()=>{
+            if(mu2Slider.disabled) return;
+            mu2=parseFloat(mu2Slider.value);
+            mu2Val.textContent=mu2.toFixed(2);
+        });
+        forceSlider.addEventListener('input',()=>{
+            const val=parseFloat(forceSlider.value);
+            if(mode==='force'){ F=val; forceValEl.textContent=val.toFixed(1)+' N'; }
+            else { initialVelocity=val; forceValEl.textContent=val.toFixed(1)+' m/s'; }
+        });
+        modeBtn.addEventListener('click',()=>{
+            mode = (mode === 'force') ? 'velocity' : 'force';
+            setSliderForMode(mode);
+            paused = false;
+            pauseBtn.textContent = '⏸️ 暂停';
+            pauseBtn.classList.remove('pause-active');
+        });
+        pauseBtn.addEventListener('click',()=>{
+            if(simulationEnded) return; // 已结束时暂停按钮无效
+            paused=!paused;
+            if(paused){ 
+                pauseBtn.textContent='▶️ 播放'; 
+                pauseBtn.classList.add('pause-active'); 
+            }
+            else { 
+                pauseBtn.textContent='⏸️ 暂停'; 
+                pauseBtn.classList.remove('pause-active'); 
+            }
+        });
+        resetBtn.addEventListener('click',()=>{
+            resetSim();
+            paused=false; 
+            pauseBtn.textContent='⏸️ 暂停'; 
+            pauseBtn.classList.remove('pause-active'); 
+        });
+        frictionCase1Btn.addEventListener('click', () => {
+            setFrictionCase(0.3, 0.2);
+        });
+        frictionCase2Btn.addEventListener('click', () => {
+            setFrictionCase(0.2, 0.3);
+        });
+
+        document.addEventListener('keydown',(e)=>{
+            if(e.key==='ArrowRight'){
+                e.preventDefault();
+                if(mode === 'force'){
+                    const step=1.5;
+                    forceSlider.value=Math.min(parseFloat(forceSlider.max),parseFloat(forceSlider.value)+step);
+                    forceSlider.dispatchEvent(new Event('input'));
+                }
+            }
+            else if(e.key==='ArrowLeft'){
+                e.preventDefault();
+                if(mode === 'force'){
+                    const step=1.5;
+                    forceSlider.value=Math.max(parseFloat(forceSlider.min),parseFloat(forceSlider.value)-step);
+                    forceSlider.dispatchEvent(new Event('input'));
+                }
+            }
+            else if(e.key==='r'||e.key==='R'){ resetBtn.click(); }
+            else if(e.key===' '){ e.preventDefault(); pauseBtn.click(); }
+        });
+        window.addEventListener('resize',()=>{ sceneCanvas.style.width='100%'; vtCanvas.style.width='100%'; });
+
+        // 初始化
+        setSliderForMode('force');
+        resetSim();
+        forceValEl.textContent=F.toFixed(1)+' N';
+        mu1Val.textContent=mu1.toFixed(2);
+        mu2Val.textContent=mu2.toFixed(2);
+        let lastTime=performance.now();
+        function animate(ts){
+            let dt=(ts-lastTime)/1000; if(dt<=0) dt=0.016; if(dt>0.1) dt=0.1; lastTime=ts;
+            updatePhysics(dt);
+            recordData(dt);
+
+            // 判断模拟结束条件：速度归零 或 移出画面
+            if (!simulationEnded) {
+                const outOfScreen = boardX > sceneCanvas.width + 80 || (blockOnGround && blockX > sceneCanvas.width + 80);
+                if (systemStatic || outOfScreen) {
+                    simulationEnded = true;
+                }
+            }
+
+            drawScene();
+            drawVT();
+            updateUI();
+            requestAnimationFrame(animate);
+        }
+        requestAnimationFrame(animate);
+    })();
+</script>
+
+    <!-- 齐老师动画 - 水印 -->
+    <div class="qilaoshi-watermark">
+        QQ 3398528250<br>
+        抖音 35320300542
+    </div>
+
+
+    <!-- 齐老师动画 - 安全保护脚本 -->
+    <script>
+    (function() {
+        // 禁用右键菜单
+        document.addEventListener('contextmenu', function(e) {
+            e.preventDefault();
+            return false;
+        });
+        
+        // ESC键返回主页
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' || e.keyCode === 27) {
+                window.location.href = '../index.html';
+            }
+        });
+        
+        // 禁用开发者工具快捷键
+        document.addEventListener('keydown', function(e) {
+            // F12
+            if (e.key === 'F12' || e.keyCode === 123) {
+                e.preventDefault();
+                return false;
+            }
+            // Ctrl+U
+            if ((e.ctrlKey || e.metaKey) && (e.key === 'u' || e.keyCode === 85)) {
+                e.preventDefault();
+                return false;
+            }
+            // Ctrl+Shift+I
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'i' || e.keyCode === 73)) {
+                e.preventDefault();
+                return false;
+            }
+            // Ctrl+Shift+J
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'j' || e.keyCode === 74)) {
+                e.preventDefault();
+                return false;
+            }
+            // Ctrl+Shift+C
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'c' || e.keyCode === 67)) {
+                e.preventDefault();
+                return false;
+            }
+        });
+        
+        // 检测开发者工具打开（简单检测）
+        var devtoolsOpen = false;
+        var threshold = 160;
+        setInterval(function() {
+            var widthThreshold = window.outerWidth - window.innerWidth > threshold;
+            var heightThreshold = window.outerHeight - window.innerHeight > threshold;
+            if (widthThreshold || heightThreshold) {
+                if (!devtoolsOpen) {
+                    devtoolsOpen = true;
+                    // 可以选择跳转或其他操作
+                }
+            } else {
+                devtoolsOpen = false;
+            }
+        }, 1000);
+    })();
+    </script>
+
+</body>
+</html>
