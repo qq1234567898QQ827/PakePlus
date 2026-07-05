@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta charset="UTF-8">
+    <meta charset="UTF-8">
+    <meta charset="UTF-8">
+<meta charset="utf-8"/>
+<title>光的全反射实验演示</title>
+<style>
+    body {
+        background: #1a1a1e;
+        color: #fff;
+        font-family: system-ui, sans-serif;
+        text-align: center;
+        padding: 20px;
+    }
+    .demo-box {
+        position: relative;
+        margin: 0 auto;
+        width: 700px;
+        height: 420px;
+        background: #0d1117;
+        border: 2px solid #444;
+        border-radius: 8px;
+        overflow: hidden;
+    }
+    /* 空气区域 */
+    .air {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 50%;
+        background: #1a1a1e;
+    }
+    /* 水区域 */
+    .water {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        height: 50%;
+        background: #1e40af;
+        opacity: 0.3;
+    }
+    /* 分界面 */
+    .surface {
+        position: absolute;
+        top: 50%;
+        left: 0;
+        width: 100%;
+        height: 2px;
+        background: #ffffff;
+    }
+    /* 法线 */
+    .normal {
+        position: absolute;
+        top: 0;
+        left: 50%;
+        width: 2px;
+        height: 100%;
+        background: #888;
+        opacity: 0.6;
+    }
+    /* 光线样式 */
+    .ray {
+        stroke-width: 2.5;
+    }
+    .incident-ray { stroke: #ffdd57; } /* 入射光 - 黄色 */
+    .refracted-ray { stroke: #4cc9f0; stroke-dasharray: 5 3; } /* 折射光 - 蓝色 */
+    .reflected-ray { stroke: #f72585; } /* 反射光 - 紫色 */
+    .angle-arc {
+        stroke: #ffdd57;
+        stroke-width: 1.5;
+        fill: none;
+        stroke-dasharray: 3 2;
+    }
+    .text-label {
+        position: absolute;
+        color: #eee;
+        font-size: 16px;
+        font-weight: bold;
+    }
+    .angle-text {
+        fill: #ffdd57;
+        font-size: 13px;
+        font-weight: bold;
+    }
+    #slider {
+        width: 550px;
+        margin: 25px 0;
+    }
+    .panel {
+        font-size: 16px;
+        color: #ccc;
+    }
+</style>
+<style>
+    /* 齐老师动画 - 统一样式 */
+    body {
+        background: #1a2332 !important;
+    }
+    
+    /* 顶部标题栏 */
+    .qilaoshi-header {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 50px;
+        background: #1a2332;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 99999 !important;
+        border-bottom: 1px solid #2a3a50;
+    }
+    
+    .qilaoshi-title {
+        font-size: 20px;
+        font-weight: 600;
+        color: #8ab4f8;
+        letter-spacing: 2px;
+        font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif;
+    }
+    
+    /* 返回按钮 */
+    .qilaoshi-back-btn {
+        position: fixed;
+        top: 10px;
+        right: 15px;
+        z-index: 999999 !important;
+        background: linear-gradient(135deg, #3a5a80, #2a4a70);
+        color: #ffffff;
+        border: 1px solid #5a8ab0;
+        padding: 8px 18px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        font-family: 'Microsoft YaHei', sans-serif;
+        transition: all 0.2s;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+    }
+    
+    .qilaoshi-back-btn:hover {
+        background: linear-gradient(135deg, #4a6a90, #3a5a80);
+        color: #ffffff;
+        box-shadow: 0 4px 15px rgba(90, 138, 176, 0.4);
+        transform: translateY(-1px);
+    }
+    
+    /* 水印 */
+    .qilaoshi-watermark {
+        position: fixed;
+        bottom: 10px;
+        right: 15px;
+        z-index: 9999;
+        font-size: 11px;
+        color: rgba(138, 180, 248, 0.4);
+        font-family: 'Microsoft YaHei', sans-serif;
+        line-height: 1.5;
+        text-align: right;
+        pointer-events: none;
+    }
+    
+    /* 调整主内容区域，给顶部标题栏留出空间 */
+    body {
+        padding-top: 50px !important;
+    }
+</style>
+</head>
+<body>
+
+    <!-- 齐老师动画 - 顶部导航 -->
+    <div class="qilaoshi-header">
+        <div class="qilaoshi-title">齐老师动画</div>
+    </div>
+    <button class="qilaoshi-back-btn" onclick="window.location.href='../index.html'">← 返回主页</button>
+
+<h2>✅ 光的全反射（水 → 空气）</h2>
+
+<div class="demo-box">
+    <div class="air"></div>
+    <div class="water"></div>
+    <div class="surface"></div>
+    <div class="normal"></div>
+
+    <!-- 介质文字 -->
+    <div class="text-label" style="top:25%; left:50%; transform:translate(-50%,-50%);">空气</div>
+    <div class="text-label" style="top:75%; left:50%; transform:translate(-50%,-50%);">水</div>
+    <div class="text-label" style="top:10px; left:50%; transform:translate(-50%,0); font-size:14px; color:#888;">法线</div>
+
+    <svg width="700" height="420" style="position:absolute; top:0; left:0;">
+        <line id="incident" class="ray incident-ray"></line>
+        <line id="refracted" class="ray refracted-ray"></line>
+        <line id="reflected" class="ray reflected-ray"></line>
+        <path id="arc1" class="angle-arc"></path>
+        <path id="arc2" class="angle-arc" stroke="#4cc9f0"></path>
+        <text id="text1" class="angle-text"></text>
+        <text id="text2" class="angle-text" fill="#4cc9f0"></text>
+    </svg>
+</div>
+
+<input type="range" id="slider" min="0" max="60" step="0.2" value="0">
+<div class="panel">
+    入射角 θ₁ = <span id="angle1">0.0</span>° 
+    | 折射角 θ₂ = <span id="angle2">0.0</span>° 
+    | 临界角 = 48.75°
+</div>
+
+<script>
+    const slider = document.getElementById('slider');
+    const angle1 = document.getElementById('angle1');
+    const angle2 = document.getElementById('angle2');
+    const incident = document.getElementById('incident');
+    const refracted = document.getElementById('refracted');
+    const reflected = document.getElementById('reflected');
+    const arc1 = document.getElementById('arc1');
+    const arc2 = document.getElementById('arc2');
+    const text1 = document.getElementById('text1');
+    const text2 = document.getElementById('text2');
+
+    // 折射率：水 1.33，空气 1
+    const n1 = 1.33;
+    const n2 = 1.0;
+    const cx = 350;
+    const cy = 210;
+    const rayLength = 180;
+    const arcRadius = 45;
+
+    function updateDemo() {
+        let theta1 = parseFloat(slider.value);
+        let theta1Rad = theta1 * Math.PI / 180;
+
+        // 计算折射角
+        let sinTheta2 = (n1 / n2) * Math.sin(theta1Rad);
+        let theta2, theta2Rad;
+        let isTotalReflection = false;
+
+        if (sinTheta2 >= 1) {
+            theta2 = 90;
+            theta2Rad = Math.PI / 2;
+            isTotalReflection = true;
+        } else {
+            theta2Rad = Math.asin(sinTheta2);
+            theta2 = theta2Rad * 180 / Math.PI;
+        }
+
+        // 更新数值显示
+        angle1.textContent = theta1.toFixed(1);
+        angle2.textContent = theta2.toFixed(1);
+
+        // 光线亮度变化
+        let brightness = theta1 / 50;
+        if (isTotalReflection) {
+            refracted.style.opacity = 0;
+            arc2.style.opacity = 0;
+            text2.style.opacity = 0;
+            reflected.style.opacity = 1;
+        } else {
+            refracted.style.opacity = Math.max(0, 1 - brightness);
+            reflected.style.opacity = Math.min(1, 0.2 + brightness);
+            arc2.style.opacity = 1;
+            text2.style.opacity = 1;
+        }
+
+        // -------- 绘制入射光 --------
+        let ix = cx - rayLength * Math.sin(theta1Rad);
+        let iy = cy + rayLength * Math.cos(theta1Rad);
+        incident.setAttribute('x1', ix);
+        incident.setAttribute('y1', iy);
+        incident.setAttribute('x2', cx);
+        incident.setAttribute('y2', cy);
+
+        // -------- 绘制反射光 --------
+        let rx = cx + rayLength * Math.sin(theta1Rad);
+        let ry = cy + rayLength * Math.cos(theta1Rad);
+        reflected.setAttribute('x1', cx);
+        reflected.setAttribute('y1', cy);
+        reflected.setAttribute('x2', rx);
+        reflected.setAttribute('y2', ry);
+
+        // -------- 绘制折射光 --------
+        if (!isTotalReflection) {
+            let fx = cx + rayLength * Math.sin(theta2Rad);
+            let fy = cy - rayLength * Math.cos(theta2Rad);
+            refracted.setAttribute('x1', cx);
+            refracted.setAttribute('y1', cy);
+            refracted.setAttribute('x2', fx);
+            refracted.setAttribute('y2', fy);
+        }
+
+        // -------- 绘制角度弧线 --------
+        // 入射角弧线
+        let a1x = cx + arcRadius * Math.sin(theta1Rad);
+        let a1y = cy + arcRadius * Math.cos(theta1Rad);
+        arc1.setAttribute('d', `M ${cx} ${cy} L ${cx} ${cy+arcRadius} A ${arcRadius} ${arcRadius} 0 0 1 ${a1x} ${a1y}`);
+        text1.setAttribute('x', cx + arcRadius * Math.sin(theta1Rad/2 * Math.PI/180) + 8);
+        text1.setAttribute('y', cy + arcRadius * Math.cos(theta1Rad/2 * Math.PI/180) + 15);
+        text1.textContent = `θ₁`;
+
+        // 折射角弧线
+        if (!isTotalReflection) {
+            let a2x = cx + arcRadius * Math.sin(theta2Rad);
+            let a2y = cy - arcRadius * Math.cos(theta2Rad);
+            arc2.setAttribute('d', `M ${cx} ${cy} L ${cx} ${cy-arcRadius} A ${arcRadius} ${arcRadius} 0 0 0 ${a2x} ${a2y}`);
+            text2.setAttribute('x', cx + arcRadius * Math.sin(theta2Rad/2) + 8);
+            text2.setAttribute('y', cy - arcRadius * Math.cos(theta2Rad/2) - 8);
+            text2.textContent = `θ₂`;
+        }
+    }
+
+    slider.addEventListener('input', updateDemo);
+    updateDemo();
+</script>
+
+<style>
+.back-btn {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    padding: 10px 20px;
+    background: rgba(0, 150, 200, 0.3);
+    border: 1px solid #00ffff;
+    color: white;
+    font-size: 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    z-index: 9999;
+    transition: 0.3s;
+    backdrop-filter: blur(5px);
+}
+.back-btn:hover {
+    background: rgba(0, 150, 200, 0.6);
+    box-shadow: 0 0 15px #00ffff;
+}
+</style>
+<button class="back-btn" onclick="goBack()">⬅️ 返回</button>
+<script>
+function goBack() {
+    history.back();
+}
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        goBack();
+    }
+});
+</script>
+
+
+<div class="watermark">齐老师动画</div>
+<style>
+.watermark {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    font-size: 14px;
+    color: rgba(0, 255, 255, 0.3);
+    z-index: 9998;
+    pointer-events: none;
+    user-select: none;
+}
+</style>
+
+
+<script>
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+});
+</script>
+
+
+<style>
+.back-btn {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    padding: 10px 20px;
+    background: rgba(0, 150, 200, 0.3);
+    border: 1px solid #00ffff;
+    color: white;
+    font-size: 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    z-index: 9999;
+    transition: 0.3s;
+    backdrop-filter: blur(5px);
+}
+.back-btn:hover {
+    background: rgba(0, 150, 200, 0.6);
+    box-shadow: 0 0 15px #00ffff;
+}
+</style>
+<button class="back-btn" onclick="goBack()">⬅️ 返回</button>
+<script>
+function goBack() {
+    history.back();
+}
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        goBack();
+    }
+});
+</script>
+
+
+<div class="watermark">齐老师动画</div>
+<style>
+.watermark {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    font-size: 14px;
+    color: rgba(0, 255, 255, 0.3);
+    z-index: 9998;
+    pointer-events: none;
+    user-select: none;
+}
+</style>
+
+
+<script>
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+});
+</script>
+
+
+<style>
+.back-btn {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    padding: 10px 20px;
+    background: rgba(0, 150, 200, 0.3);
+    border: 1px solid #00ffff;
+    color: white;
+    font-size: 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    z-index: 9999;
+    transition: 0.3s;
+    backdrop-filter: blur(5px);
+}
+.back-btn:hover {
+    background: rgba(0, 150, 200, 0.6);
+    box-shadow: 0 0 15px #00ffff;
+}
+</style>
+<button class="back-btn" onclick="goBack()">⬅️ 返回</button>
+<script>
+function goBack() {
+    history.back();
+}
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        goBack();
+    }
+});
+</script>
+
+
+<div class="watermark">齐老师动画</div>
+<style>
+.watermark {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    font-size: 14px;
+    color: rgba(0, 255, 255, 0.3);
+    z-index: 9998;
+    pointer-events: none;
+    user-select: none;
+}
+</style>
+
+
+<script>
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+});
+</script>
+
+
+<style>
+.back-btn {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    padding: 10px 20px;
+    background: rgba(0, 150, 200, 0.3);
+    border: 1px solid #00ffff;
+    color: white;
+    font-size: 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    z-index: 9999;
+    transition: 0.3s;
+    backdrop-filter: blur(5px);
+}
+.back-btn:hover {
+    background: rgba(0, 150, 200, 0.6);
+    box-shadow: 0 0 15px #00ffff;
+}
+</style>
+<button class="back-btn" onclick="goBack()">⬅️ 返回</button>
+<script>
+function goBack() {
+    history.back();
+}
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        goBack();
+    }
+});
+</script>
+
+
+<div class="watermark">齐老师动画</div>
+<style>
+.watermark {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    font-size: 14px;
+    color: rgba(0, 255, 255, 0.3);
+    z-index: 9998;
+    pointer-events: none;
+    user-select: none;
+}
+</style>
+
+
+<script>
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+});
+</script>
+
+
+    <!-- 齐老师动画 - 水印 -->
+    <div class="qilaoshi-watermark">
+        QQ 3398528250<br>
+        抖音 35320300542
+    </div>
+
+
+    <!-- 齐老师动画 - 安全保护脚本 -->
+    <script>
+    (function() {
+        // 禁用右键菜单
+        document.addEventListener('contextmenu', function(e) {
+            e.preventDefault();
+            return false;
+        });
+        
+        // ESC键返回主页
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' || e.keyCode === 27) {
+                window.location.href = '../index.html';
+            }
+        });
+        
+        // 禁用开发者工具快捷键
+        document.addEventListener('keydown', function(e) {
+            // F12
+            if (e.key === 'F12' || e.keyCode === 123) {
+                e.preventDefault();
+                return false;
+            }
+            // Ctrl+U
+            if ((e.ctrlKey || e.metaKey) && (e.key === 'u' || e.keyCode === 85)) {
+                e.preventDefault();
+                return false;
+            }
+            // Ctrl+Shift+I
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'i' || e.keyCode === 73)) {
+                e.preventDefault();
+                return false;
+            }
+            // Ctrl+Shift+J
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'j' || e.keyCode === 74)) {
+                e.preventDefault();
+                return false;
+            }
+            // Ctrl+Shift+C
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'c' || e.keyCode === 67)) {
+                e.preventDefault();
+                return false;
+            }
+        });
+        
+        // 检测开发者工具打开（简单检测）
+        var devtoolsOpen = false;
+        var threshold = 160;
+        setInterval(function() {
+            var widthThreshold = window.outerWidth - window.innerWidth > threshold;
+            var heightThreshold = window.outerHeight - window.innerHeight > threshold;
+            if (widthThreshold || heightThreshold) {
+                if (!devtoolsOpen) {
+                    devtoolsOpen = true;
+                    // 可以选择跳转或其他操作
+                }
+            } else {
+                devtoolsOpen = false;
+            }
+        }, 1000);
+    })();
+    </script>
+
+</body>
+</html>
