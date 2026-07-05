@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>四颗卫星轨道对比 | 高中物理动画</title>
+    <style>
+        :root {
+            --bg: #0f1a2e;
+            --panel-bg: rgba(15, 25, 45, 0.8);
+            --border-glow: rgba(80, 140, 220, 0.4);
+            --font-ui: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+        }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body {
+            background: var(--bg);
+            overflow: hidden;
+            font-family: var(--font-ui);
+            -webkit-font-smoothing: antialiased;
+            user-select: none;
+            height: 100vh; width: 100vw;
+            cursor: grab;
+        }
+        body:active { cursor: grabbing; }
+        #canvas-container { position:fixed; inset:0; z-index:1; }
+        canvas { display:block; }
+
+        #top-label {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10;
+            background: rgba(15, 25, 45, 0.85);
+            border: 1px solid rgba(255, 80, 80, 0.5);
+            color: #ff8a8a;
+            padding: 10px 22px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            letter-spacing: 0.04em;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            white-space: normal;
+            text-align: center;
+            pointer-events: none;
+            box-shadow: 0 2px 12px rgba(255, 50, 50, 0.2);
+            line-height: 1.5;
+        }
+        #top-label span.yellow {
+            color: #ffcc00;
+        }
+
+        #orbit-type-controls {
+            position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%);
+            z-index: 10; display: flex; gap: 12px; flex-wrap: wrap; justify-content: center;
+        }
+        #orbit-type-controls button {
+            background: var(--panel-bg); border: 1px solid var(--border-glow);
+            color: #b0c8e0; padding: 10px 20px; border-radius: 24px; cursor: pointer;
+            font-size: 0.8rem; letter-spacing: 0.04em;
+            backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+            transition: all 0.25s ease; font-family: var(--font-ui);
+            white-space: nowrap; box-shadow: 0 2px 10px rgba(0,0,0,0.4);
+        }
+        #orbit-type-controls button:hover {
+            background: rgba(30,50,80,0.9); border-color: rgba(120,180,255,0.6);
+            color: #e8f0ff; box-shadow: 0 0 15px rgba(80,140,220,0.3);
+        }
+        #orbit-type-controls button.active {
+            background: rgba(60,80,140,0.7); border-color: #88bbff;
+            color: #fff; box-shadow: 0 0 20px rgba(100,150,255,0.5);
+        }
+        @media (max-width: 768px) {
+            #top-label { top: 10px; padding: 8px 14px; font-size: 0.7rem; }
+            #orbit-type-controls { bottom: 30px; gap: 8px; }
+            #orbit-type-controls button { padding: 8px 14px; font-size: 0.7rem; border-radius: 18px; }
+        }
+    </style>
+<style>
+    /* 齐老师动画 - 统一样式 */
+    body {
+        background: #1a2332 !important;
+    }
+    
+    /* 顶部标题栏 */
+    .qilaoshi-header {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 50px;
+        background: #1a2332;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 99999 !important;
+        border-bottom: 1px solid #2a3a50;
+    }
+    
+    .qilaoshi-title {
+        font-size: 20px;
+        font-weight: 600;
+        color: #8ab4f8;
+        letter-spacing: 2px;
+        font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif;
+    }
+    
+    /* 返回按钮 */
+    .qilaoshi-back-btn {
+        position: fixed;
+        top: 10px;
+        right: 15px;
+        z-index: 999999 !important;
+        background: linear-gradient(135deg, #3a5a80, #2a4a70);
+        color: #ffffff;
+        border: 1px solid #5a8ab0;
+        padding: 8px 18px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        font-family: 'Microsoft YaHei', sans-serif;
+        transition: all 0.2s;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+    }
+    
+    .qilaoshi-back-btn:hover {
+        background: linear-gradient(135deg, #4a6a90, #3a5a80);
+        color: #ffffff;
+        box-shadow: 0 4px 15px rgba(90, 138, 176, 0.4);
+        transform: translateY(-1px);
+    }
+    
+    /* 水印 */
+    .qilaoshi-watermark {
+        position: fixed;
+        bottom: 10px;
+        right: 15px;
+        z-index: 9999;
+        font-size: 11px;
+        color: rgba(138, 180, 248, 0.4);
+        font-family: 'Microsoft YaHei', sans-serif;
+        line-height: 1.5;
+        text-align: right;
+        pointer-events: none;
+    }
+    
+    /* 调整主内容区域，给顶部标题栏留出空间 */
+    body {
+        padding-top: 50px !important;
+    }
+</style>
+</head>
+<body>
+
+    <!-- 齐老师动画 - 顶部导航 -->
+    <div class="qilaoshi-header">
+        <div class="qilaoshi-title">齐老师动画</div>
+    </div>
+    <button class="qilaoshi-back-btn" onclick="window.location.href='../index.html'">← 返回主页</button>
+
+    <div id="top-label">
+        🔴 红色球 = 赤道上的物体（随地球自转）<br>
+        <span class="yellow">🟡 黄色球 = 同步卫星</span>
+    </div>
+    <div id="canvas-container"></div>
+    <div id="orbit-type-controls">
+        <button data-sat="white" class="active">⚪ 赤道轨道</button>
+        <button data-sat="green">🟢 倾斜轨道 45°</button>
+        <button data-sat="orange">🟠 极地轨道</button>
+    </div>
+
+    <script type="importmap">
+        { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.157.0/build/three.module.js", "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.157.0/examples/jsm/" } }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+        const container = document.getElementById('canvas-container');
+        const orbitTypeButtons = document.querySelectorAll('#orbit-type-controls button');
+
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x1a2b3c);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: false, alpha: false });
+        renderer.setPixelRatio(1);
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = false;
+        container.appendChild(renderer.domElement);
+
+        const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.5, 120);
+        camera.position.set(18, 12, 26);
+        camera.lookAt(0, 0, 0);
+
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.target.set(0, 0, 0);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.1;
+        controls.enableZoom = false;
+        controls.minDistance = 18;
+        controls.maxDistance = 55;
+        controls.maxPolarAngle = Math.PI * 0.75;
+        controls.minPolarAngle = 0.2;
+        controls.autoRotate = true;
+        controls.autoRotateSpeed = 0.35;
+        controls.update();
+
+        scene.add(new THREE.AmbientLight(0x4a6a8a, 2.5));
+        const dirLight = new THREE.DirectionalLight(0xfff8e8, 4.5);
+        dirLight.position.set(12, 8, 10);
+        scene.add(dirLight);
+
+        const texCanvas = document.createElement('canvas');
+        texCanvas.width = 64; texCanvas.height = 32;
+        const tctx = texCanvas.getContext('2d');
+        tctx.fillStyle = '#1a5a7a'; tctx.fillRect(0, 0, 64, 32);
+        tctx.fillStyle = '#2e7d32'; tctx.fillRect(10, 8, 16, 12); tctx.fillRect(30, 6, 20, 14);
+        const earthTexture = new THREE.CanvasTexture(texCanvas);
+        earthTexture.colorSpace = THREE.SRGBColorSpace;
+
+        const EARTH_RADIUS = 2.0;
+        const earthGroup = new THREE.Group();
+        scene.add(earthGroup);
+        const earthMesh = new THREE.Mesh(
+            new THREE.SphereGeometry(EARTH_RADIUS, 24, 16),
+            new THREE.MeshStandardMaterial({ map: earthTexture, roughness: 0.7, metalness: 0.1, transparent: true, opacity: 0.65, depthWrite: true })
+        );
+        earthGroup.add(earthMesh);
+
+        const atmos = new THREE.Mesh(
+            new THREE.SphereGeometry(EARTH_RADIUS * 1.04, 24, 16),
+            new THREE.MeshBasicMaterial({ color: 0x4488cc, transparent: true, opacity: 0.18, blending: THREE.AdditiveBlending, depthWrite: false })
+        );
+        earthGroup.add(atmos);
+
+        const equatorRing = new THREE.Mesh(
+            new THREE.TorusGeometry(EARTH_RADIUS * 1.002, 0.01, 8, 60),
+            new THREE.MeshBasicMaterial({ color: 0x88bbee, transparent: true, opacity: 0.5 })
+        );
+        equatorRing.rotation.x = -Math.PI / 2;
+        earthGroup.add(equatorRing);
+
+        const sat1Group = new THREE.Group();
+        sat1Group.position.set(EARTH_RADIUS * 1.025, 0, 0);
+        earthGroup.add(sat1Group);
+        sat1Group.add(new THREE.Mesh(
+            new THREE.SphereGeometry(0.18, 8, 6),
+            new THREE.MeshStandardMaterial({ color: 0xff2020, roughness: 0.3, metalness: 0.5, emissive: 0xcc0000, emissiveIntensity: 2.0 })
+        ));
+        const redGlow = new THREE.Mesh(
+            new THREE.SphereGeometry(0.3, 8, 6),
+            new THREE.MeshBasicMaterial({ color: 0xff4444, transparent: true, opacity: 0.35, depthTest: false, depthWrite: false })
+        );
+        sat1Group.add(redGlow);
+
+        const SAT2_RADIUS = EARTH_RADIUS * 1.18;
+        const sat2Group = new THREE.Group();
+        sat2Group.position.set(SAT2_RADIUS, 0, 0);
+        scene.add(sat2Group);
+        sat2Group.add(new THREE.Mesh(
+            new THREE.SphereGeometry(0.15, 8, 6),
+            new THREE.MeshStandardMaterial({ color: 0x3366ff, roughness: 0.3, metalness: 0.5, emissive: 0x2244cc, emissiveIntensity: 1.8 })
+        ));
+        const trailGroup = new THREE.Group();
+        sat2Group.add(trailGroup);
+        for (let i = 0; i < 5; i++) {
+            const t = new THREE.Mesh(
+                new THREE.SphereGeometry(0.04 - i * 0.004, 4, 3),
+                new THREE.MeshBasicMaterial({ color: new THREE.Color().setHSL(0.6, 1, 0.5 + (1 - i / 5) * 0.5), transparent: true, opacity: 0.5 * (1 - i / 5) })
+            );
+            t.position.set(-0.08 * (i + 1), 0, 0);
+            trailGroup.add(t);
+        }
+
+        const SAT3_RADIUS = EARTH_RADIUS * 6.6;
+        const sat3Group = new THREE.Group();
+        sat3Group.position.set(SAT3_RADIUS, 0, 0);
+        scene.add(sat3Group);
+        sat3Group.add(new THREE.Mesh(
+            new THREE.SphereGeometry(0.18, 10, 6),
+            new THREE.MeshStandardMaterial({ color: 0xffcc00, roughness: 0.25, metalness: 0.5, emissive: 0xcc8800, emissiveIntensity: 1.8 })
+        ));
+
+        const SAT4_RADIUS = EARTH_RADIUS * 3.3;
+
+        const sat4WhiteGroup = new THREE.Group();
+        scene.add(sat4WhiteGroup);
+        sat4WhiteGroup.add(new THREE.Mesh(
+            new THREE.SphereGeometry(0.22, 10, 6),
+            new THREE.MeshStandardMaterial({ color: 0xf0f0f0, roughness: 0.2, metalness: 0.4, emissive: 0x888888, emissiveIntensity: 1.6 })
+        ));
+        const whiteOrbitRing = new THREE.Mesh(
+            new THREE.TorusGeometry(SAT4_RADIUS, 0.02, 8, 80),
+            new THREE.MeshBasicMaterial({ color: 0xcccccc, transparent: true, opacity: 0.5 })
+        );
+        whiteOrbitRing.rotation.x = -Math.PI / 2;
+        scene.add(whiteOrbitRing);
+
+        const sat4GreenGroup = new THREE.Group();
+        scene.add(sat4GreenGroup);
+        sat4GreenGroup.add(new THREE.Mesh(
+            new THREE.SphereGeometry(0.17, 10, 6),
+            new THREE.MeshStandardMaterial({ color: 0x44dd44, roughness: 0.2, metalness: 0.4, emissive: 0x228822, emissiveIntensity: 1.4 })
+        ));
+        const greenOrbitRing = new THREE.Mesh(
+            new THREE.TorusGeometry(SAT4_RADIUS, 0.02, 8, 80),
+            new THREE.MeshBasicMaterial({ color: 0x44dd44, transparent: true, opacity: 0.5 })
+        );
+        greenOrbitRing.rotation.x = -Math.PI / 2 + Math.PI / 4;
+        scene.add(greenOrbitRing);
+        greenOrbitRing.visible = false;
+        sat4GreenGroup.visible = false;
+
+        const sat4OrangeGroup = new THREE.Group();
+        scene.add(sat4OrangeGroup);
+        sat4OrangeGroup.add(new THREE.Mesh(
+            new THREE.SphereGeometry(0.17, 10, 6),
+            new THREE.MeshStandardMaterial({ color: 0xff8844, roughness: 0.2, metalness: 0.4, emissive: 0xaa4400, emissiveIntensity: 1.4 })
+        ));
+        const orangeOrbitRing = new THREE.Mesh(
+            new THREE.TorusGeometry(SAT4_RADIUS, 0.02, 8, 80),
+            new THREE.MeshBasicMaterial({ color: 0xff8844, transparent: true, opacity: 0.5 })
+        );
+        orangeOrbitRing.rotation.x = -Math.PI / 2 + Math.PI / 2;
+        scene.add(orangeOrbitRing);
+        orangeOrbitRing.visible = false;
+        sat4OrangeGroup.visible = false;
+
+        const orbitRing2 = new THREE.Mesh(
+            new THREE.TorusGeometry(SAT2_RADIUS, 0.012, 8, 60),
+            new THREE.MeshBasicMaterial({ color: 0x4488dd, transparent: true, opacity: 0.45 })
+        );
+        orbitRing2.rotation.x = -Math.PI / 2;
+        scene.add(orbitRing2);
+        const orbitRing3 = new THREE.Mesh(
+            new THREE.TorusGeometry(SAT3_RADIUS, 0.025, 10, 80),
+            new THREE.MeshBasicMaterial({ color: 0xddaa00, transparent: true, opacity: 0.45 })
+        );
+        orbitRing3.rotation.x = -Math.PI / 2;
+        scene.add(orbitRing3);
+
+        const grid = new THREE.PolarGridHelper(14, 16, 12, 36, 0x334466, 0x223355);
+        grid.position.y = -4.5;
+        scene.add(grid);
+
+        orbitTypeButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const sat = btn.dataset.sat;
+                if (sat === 'white') {
+                    orbitTypeButtons.forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    return;
+                }
+                const isGreen = sat === 'green';
+                const group = isGreen ? sat4GreenGroup : sat4OrangeGroup;
+                const ring = isGreen ? greenOrbitRing : orangeOrbitRing;
+                const newState = !group.visible;
+                group.visible = newState;
+                ring.visible = newState;
+                btn.classList.toggle('active', newState);
+                const whiteBtn = document.querySelector('[data-sat="white"]');
+                if (!sat4GreenGroup.visible && !sat4OrangeGroup.visible) {
+                    whiteBtn.classList.add('active');
+                } else {
+                    whiteBtn.classList.remove('active');
+                }
+            });
+        });
+
+        const ANGULAR_RATIO = 17.14;
+        const BASE_EARTH_PERIOD = 20.0;
+        const earthAngVel = (2 * Math.PI) / BASE_EARTH_PERIOD;
+        const leoAngVel = earthAngVel * ANGULAR_RATIO;
+        const meoPeriod = BASE_EARTH_PERIOD * Math.pow(0.5, 1.5);
+        const meoAngVel = (2 * Math.PI) / meoPeriod;
+
+        let earthAngle = 0, sat2Angle = Math.PI * 0.35, sat3Angle = 0, sat4Angle = Math.PI * 0.8;
+
+        function setPositionByAngle(group, radius, angle, inclination = 0) {
+            const x = radius * Math.cos(angle);
+            const y = -radius * Math.sin(angle) * Math.sin(inclination);
+            const z = radius * Math.sin(angle) * Math.cos(inclination);
+            group.position.set(x, y, z);
+        }
+
+        const clock = new THREE.Clock();
+        function animate() {
+            requestAnimationFrame(animate);
+            const dt = Math.min(clock.getDelta(), 0.1);
+            earthAngle += earthAngVel * dt;
+            earthGroup.rotation.y = earthAngle;
+            sat2Angle -= leoAngVel * dt;
+            setPositionByAngle(sat2Group, SAT2_RADIUS, sat2Angle);
+            const tangentDir = new THREE.Vector3(-Math.sin(sat2Angle), 0, Math.cos(sat2Angle)).normalize();
+            trailGroup.rotation.y = Math.atan2(tangentDir.z, tangentDir.x) + Math.PI;
+            sat3Angle -= earthAngVel * dt;
+            setPositionByAngle(sat3Group, SAT3_RADIUS, sat3Angle);
+            sat4Angle -= meoAngVel * dt;
+            setPositionByAngle(sat4WhiteGroup, SAT4_RADIUS, sat4Angle, 0);
+            if (sat4GreenGroup.visible) setPositionByAngle(sat4GreenGroup, SAT4_RADIUS, sat4Angle, Math.PI / 4);
+            if (sat4OrangeGroup.visible) setPositionByAngle(sat4OrangeGroup, SAT4_RADIUS, sat4Angle, Math.PI / 2);
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        window.addEventListener('keydown', (e) => {
+            switch (e.key.toLowerCase()) {
+                case '1': camera.position.set(0,20,1); controls.target.set(0,0,0); controls.update(); break;
+                case '2': camera.position.set(0,1,30); controls.target.set(0,0,0); controls.update(); break;
+                case '3': camera.position.set(18,12,26); controls.target.set(0,0,0); controls.update(); break;
+                case 'a': controls.autoRotate = !controls.autoRotate; break;
+                case 'r': camera.position.set(18,12,26); controls.target.set(0,0,0); controls.update(); break;
+            }
+        });
+
+        let lastTap = 0;
+        renderer.domElement.addEventListener('pointerdown', (e) => {
+            const now = Date.now();
+            if (now - lastTap < 300 && e.pointerType === 'touch') {
+                camera.position.set(18,12,26);
+                controls.target.set(0,0,0);
+                controls.update();
+            }
+            lastTap = now;
+        });
+
+        requestAnimationFrame(animate);
+    </script>
+
+    <!-- 齐老师动画 - 水印 -->
+    <div class="qilaoshi-watermark">
+        QQ 3398528250<br>
+        抖音 35320300542
+    </div>
+
+
+    <!-- 齐老师动画 - 安全保护脚本 -->
+    <script>
+    (function() {
+        // 禁用右键菜单
+        document.addEventListener('contextmenu', function(e) {
+            e.preventDefault();
+            return false;
+        });
+        
+        // ESC键返回主页
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' || e.keyCode === 27) {
+                window.location.href = '../index.html';
+            }
+        });
+        
+        // 禁用开发者工具快捷键
+        document.addEventListener('keydown', function(e) {
+            // F12
+            if (e.key === 'F12' || e.keyCode === 123) {
+                e.preventDefault();
+                return false;
+            }
+            // Ctrl+U
+            if ((e.ctrlKey || e.metaKey) && (e.key === 'u' || e.keyCode === 85)) {
+                e.preventDefault();
+                return false;
+            }
+            // Ctrl+Shift+I
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'i' || e.keyCode === 73)) {
+                e.preventDefault();
+                return false;
+            }
+            // Ctrl+Shift+J
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'j' || e.keyCode === 74)) {
+                e.preventDefault();
+                return false;
+            }
+            // Ctrl+Shift+C
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'c' || e.keyCode === 67)) {
+                e.preventDefault();
+                return false;
+            }
+        });
+        
+        // 检测开发者工具打开（简单检测）
+        var devtoolsOpen = false;
+        var threshold = 160;
+        setInterval(function() {
+            var widthThreshold = window.outerWidth - window.innerWidth > threshold;
+            var heightThreshold = window.outerHeight - window.innerHeight > threshold;
+            if (widthThreshold || heightThreshold) {
+                if (!devtoolsOpen) {
+                    devtoolsOpen = true;
+                    // 可以选择跳转或其他操作
+                }
+            } else {
+                devtoolsOpen = false;
+            }
+        }, 1000);
+    })();
+    </script>
+
+</body>
+</html>
