@@ -1,0 +1,988 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>高中物理 · 传送带模型3D | 金属传送带 · 平抛运动</title>
+    <style>
+        :root {
+            --bg: rgba(18, 22, 28, 0.8);
+            --accent: #4da6ff;
+            --red: #ff5252;
+            --text: #e0e8f5;
+            --panel-bg: rgba(14, 20, 30, 0.85);
+            --border: #3a4a5e;
+        }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            overflow: hidden;
+            background: #000;
+            height: 100vh;
+            width: 100vw;
+            user-select: none;
+        }
+        #canvas3d {
+            display: block;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+        .controls {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 14px;
+            padding: 16px 22px;
+            background: var(--panel-bg);
+            backdrop-filter: blur(16px);
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+            align-items: flex-end;
+            justify-content: center;
+            max-width: 95vw;
+        }
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            min-width: 90px;
+            flex: 1;
+            max-width: 160px;
+        }
+        .control-group label {
+            font-size: 0.65rem;
+            font-weight: 600;
+            color: #8a9bb8;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+        .value-display {
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: #c8ddf8;
+            background: #151f2c;
+            padding: 3px 8px;
+            border-radius: 5px;
+            text-align: center;
+            border: 1px solid #2d3d55;
+        }
+        input[type="range"] {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 6px;
+            border-radius: 8px;
+            background: #1e2c3d;
+            outline: none;
+            cursor: pointer;
+            border: 1px solid #2f4058;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: #e8f0fa;
+            cursor: pointer;
+            border: 2px solid #5a90cc;
+            box-shadow: 0 0 14px rgba(70, 130, 220, 0.6);
+            transition: 0.2s;
+        }
+        .btn-row {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            align-items: flex-end;
+        }
+        button {
+            padding: 8px 14px;
+            border-radius: 7px;
+            border: 1px solid #3a5070;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.7rem;
+            letter-spacing: 0.03em;
+            transition: all 0.2s;
+            white-space: nowrap;
+            background: #172435;
+            color: #b0cde8;
+            font-family: inherit;
+        }
+        button:hover {
+            background: #253f5c;
+            border-color: #5a80b0;
+            box-shadow: 0 0 14px rgba(50, 100, 180, 0.5);
+        }
+        button.active {
+            background: #1e3b5a;
+            border-color: #5a90c8;
+            color: #d0e4f8;
+            box-shadow: 0 0 12px rgba(60, 120, 200, 0.55);
+        }
+        .vt-panel {
+            position: absolute;
+            bottom: 130px;
+            right: 20px;
+            z-index: 10;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 6px 24px rgba(0, 0, 0, 0.6);
+            border: 1px solid #2a3a50;
+            background: #0a101c;
+        }
+        .vt-panel canvas {
+            display: block;
+            width: 280px;
+            height: 170px;
+        }
+        @media (max-width: 768px) {
+            .controls {
+                padding: 10px 12px;
+                gap: 8px;
+                bottom: 10px;
+            }
+            .control-group {
+                min-width: 60px;
+                flex: 1 1 40%;
+                max-width: 130px;
+            }
+            .vt-panel {
+                bottom: 160px;
+                right: 10px;
+            }
+            .vt-panel canvas {
+                width: 200px;
+                height: 130px;
+            }
+        }
+        .back-btn {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            padding: 10px 20px;
+            background: rgba(0, 150, 200, 0.3);
+            border: 1px solid #00ffff;
+            color: white;
+            font-size: 14px;
+            border-radius: 8px;
+            cursor: pointer;
+            z-index: 9999;
+            transition: 0.3s;
+            backdrop-filter: blur(5px);
+        }
+        .back-btn:hover {
+            background: rgba(0, 150, 200, 0.6);
+            box-shadow: 0 0 15px #00ffff;
+        }
+        .watermark {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            font-size: 14px;
+            color: rgba(0, 255, 255, 0.3);
+            z-index: 9998;
+            pointer-events: none;
+            user-select: none;
+        }
+    </style>
+<style>
+    /* 齐老师动画 - 统一样式 */
+    body {
+        background: #1a2332 !important;
+    }
+    
+    /* 顶部标题栏 */
+    .qilaoshi-header {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 50px;
+        background: #1a2332;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 99999 !important;
+        border-bottom: 1px solid #2a3a50;
+    }
+    
+    .qilaoshi-title {
+        font-size: 20px;
+        font-weight: 600;
+        color: #8ab4f8;
+        letter-spacing: 2px;
+        font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif;
+    }
+    
+    /* 返回按钮 */
+    .qilaoshi-back-btn {
+        position: fixed;
+        top: 10px;
+        right: 15px;
+        z-index: 999999 !important;
+        background: linear-gradient(135deg, #3a5a80, #2a4a70);
+        color: #ffffff;
+        border: 1px solid #5a8ab0;
+        padding: 8px 18px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        font-family: 'Microsoft YaHei', sans-serif;
+        transition: all 0.2s;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+    }
+    
+    .qilaoshi-back-btn:hover {
+        background: linear-gradient(135deg, #4a6a90, #3a5a80);
+        color: #ffffff;
+        box-shadow: 0 4px 15px rgba(90, 138, 176, 0.4);
+        transform: translateY(-1px);
+    }
+    
+    /* 水印 */
+    .qilaoshi-watermark {
+        position: fixed;
+        bottom: 10px;
+        right: 15px;
+        z-index: 9999;
+        font-size: 11px;
+        color: rgba(138, 180, 248, 0.4);
+        font-family: 'Microsoft YaHei', sans-serif;
+        line-height: 1.5;
+        text-align: right;
+        pointer-events: none;
+    }
+    
+    /* 调整主内容区域，给顶部标题栏留出空间 */
+    body {
+        padding-top: 50px !important;
+    }
+</style>
+</head>
+<body>
+
+    <!-- 齐老师动画 - 顶部导航 -->
+    <div class="qilaoshi-header">
+        <div class="qilaoshi-title">齐老师动画</div>
+    </div>
+    <button class="qilaoshi-back-btn" onclick="window.location.href='../index.html'">← 返回主页</button>
+
+    <canvas id="canvas3d"></canvas>
+
+    <div class="controls">
+        <div class="control-group">
+            <label>⚙️ 传送带 v<sub>带</sub> (m/s)</label>
+            <span class="value-display" id="beltSpeedVal">+2.0</span>
+            <input type="range" id="beltSpeed" min="-10" max="10" step="0.1" value="2">
+        </div>
+        <div class="control-group">
+            <label>🚀 物块初速 v<sub>0</sub> (m/s)</label>
+            <span class="value-display" id="blockInitSpeedVal">-5.0</span>
+            <input type="range" id="blockInitSpeed" min="-12" max="12" step="0.1" value="-5">
+        </div>
+        <div class="control-group">
+            <label>📐 动摩擦因数 μ</label>
+            <span class="value-display" id="muVal">0.40</span>
+            <input type="range" id="mu" min="0.05" max="1.0" step="0.01" value="0.4">
+        </div>
+        <div class="btn-row">
+            <button id="btnReset">🔄 重置</button>
+            <button class="preset-btn active" data-preset="0">减速反向</button>
+            <button class="preset-btn" data-preset="1">加速追赶</button>
+            <button class="preset-btn" data-preset="2">减速共速</button>
+        </div>
+    </div>
+
+    <div class="vt-panel">
+        <canvas id="vtCanvas" width="280" height="170"></canvas>
+    </div>
+
+    <script type="importmap">
+        { "imports": { "three": "https://unpkg.com/three@0.157.0/build/three.module.js", "three/addons/": "https://unpkg.com/three@0.157.0/examples/jsm/" } }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+        const canvas3d = document.getElementById('canvas3d');
+        const renderer = new THREE.WebGLRenderer({ canvas: canvas3d, antialias: true, alpha: true });
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.2;
+
+        // 浅蓝黑色极简背景
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x1a2b3c);
+        scene.fog = new THREE.Fog(0x1a2b3c, 18, 45);
+
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.5, 60);
+        camera.position.set(7, 5.5, 9);
+        camera.lookAt(0, 0.7, 0);
+
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.target.set(0, 0.7, 0);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.08;
+        controls.maxPolarAngle = Math.PI / 2.15;
+        controls.minDistance = 3.5;
+        controls.maxDistance = 22;
+        controls.update();
+
+        // 光照
+        const ambientLight = new THREE.AmbientLight(0x8899bb, 2.0);
+        scene.add(ambientLight);
+        const sunLight = new THREE.DirectionalLight(0xfff5e8, 4.2);
+        sunLight.position.set(12, 16, 6);
+        sunLight.castShadow = true;
+        sunLight.shadow.mapSize.width = 1024;
+        sunLight.shadow.mapSize.height = 1024;
+        sunLight.shadow.camera.near = 0.5;
+        sunLight.shadow.camera.far = 50;
+        sunLight.shadow.camera.left = -12;
+        sunLight.shadow.camera.right = 12;
+        sunLight.shadow.camera.top = 10;
+        sunLight.shadow.camera.bottom = -6;
+        sunLight.shadow.bias = -0.0003;
+        scene.add(sunLight);
+        const fillLight = new THREE.DirectionalLight(0x8899cc, 1.2);
+        fillLight.position.set(-4, 3, -3);
+        scene.add(fillLight);
+
+        // 地面
+        const groundY = -0.35;
+        const groundGeo = new THREE.PlaneGeometry(35, 35);
+        const groundMat = new THREE.MeshStandardMaterial({ color: 0x2a3b4c, roughness: 0.85, metalness: 0.02 });
+        const ground = new THREE.Mesh(groundGeo, groundMat);
+        ground.rotation.x = -Math.PI / 2;
+        ground.position.y = groundY;
+        ground.receiveShadow = true;
+        scene.add(ground);
+
+        // 传送带基础参数
+        const WHEEL_RADIUS = 0.4;
+        const BELT_THICKNESS = 0.06;
+        const BELT_WIDTH = 1.0;
+        const PATH_RADIUS = WHEEL_RADIUS + BELT_THICKNESS / 2;
+        const LEFT_X = -4.0;
+        const RIGHT_X = 4.0;
+        const STRAIGHT_LEN = RIGHT_X - LEFT_X;
+        const ARC_LEN = Math.PI * PATH_RADIUS;
+        const TOTAL_LEN = 2 * STRAIGHT_LEN + 2 * ARC_LEN;
+
+        const BLOCK_LENGTH = 0.08;
+        const NUM_BLOCKS = Math.floor(TOTAL_LEN / BLOCK_LENGTH) + 2;
+        const BLOCK_SPACING = TOTAL_LEN / NUM_BLOCKS;
+
+        let animDistance = 0;
+        const drumCenterY = 0.4;
+        const halfBelt = 4.0;
+        const beltLength = 8.0;
+        const beltTopY = drumCenterY + PATH_RADIUS; // 传送带表面高度
+
+        // 滚筒构造：Z轴为圆心连线转轴
+        function createWheel(x, radius) {
+            const group = new THREE.Group();
+            group.position.set(x, drumCenterY, 0);
+
+            const wheelGeo = new THREE.CylinderGeometry(radius, radius, BELT_WIDTH * 1.2, 32);
+            const wheelMat = new THREE.MeshStandardMaterial({
+                color: '#d8dce8',
+                roughness: 0.35,
+                metalness: 0.85,
+            });
+            const wheel = new THREE.Mesh(wheelGeo, wheelMat);
+            wheel.rotation.x = Math.PI / 2;
+            wheel.castShadow = true;
+            wheel.receiveShadow = true;
+            group.add(wheel);
+
+            const hubGeo = new THREE.CylinderGeometry(radius * 0.65, radius * 0.65, BELT_WIDTH * 1.25, 16);
+            const hubMat = new THREE.MeshStandardMaterial({
+                color: '#c0c5d0',
+                roughness: 0.3,
+                metalness: 0.9,
+            });
+            const hub = new THREE.Mesh(hubGeo, hubMat);
+            hub.rotation.x = Math.PI / 2;
+            hub.castShadow = true;
+            hub.receiveShadow = true;
+            group.add(hub);
+
+            const axleGeo = new THREE.CylinderGeometry(0.07, 0.07, BELT_WIDTH * 1.4, 16);
+            const axleMat = new THREE.MeshStandardMaterial({
+                color: '#f0f2f8',
+                roughness: 0.2,
+                metalness: 0.95,
+            });
+            const axle = new THREE.Mesh(axleGeo, axleMat);
+            axle.rotation.x = Math.PI / 2;
+            axle.castShadow = true;
+            axle.receiveShadow = true;
+            group.add(axle);
+
+            return group;
+        }
+
+        const leftWheel = createWheel(LEFT_X, WHEEL_RADIUS);
+        const rightWheel = createWheel(RIGHT_X, WHEEL_RADIUS);
+        scene.add(leftWheel);
+        scene.add(rightWheel);
+
+        // 路径：左半圆绕左侧滚筒外侧
+        function getPathPoint(distance) {
+            let d = ((distance % TOTAL_LEN) + TOTAL_LEN) % TOTAL_LEN;
+
+            // 段1：上直线段
+            if (d < STRAIGHT_LEN) {
+                const t = d / STRAIGHT_LEN;
+                return {
+                    x: LEFT_X + t * STRAIGHT_LEN,
+                    y: PATH_RADIUS + drumCenterY,
+                    tangentAngle: 0,
+                };
+            }
+            d -= STRAIGHT_LEN;
+
+            // 段2：右圆弧段（绕右滚筒右侧）
+            if (d < ARC_LEN) {
+                const angle = Math.PI / 2 - (d / ARC_LEN) * Math.PI;
+                return {
+                    x: RIGHT_X + PATH_RADIUS * Math.cos(angle),
+                    y: PATH_RADIUS * Math.sin(angle) + drumCenterY,
+                    tangentAngle: angle - Math.PI / 2,
+                };
+            }
+            d -= ARC_LEN;
+
+            // 段3：下直线段
+            if (d < STRAIGHT_LEN) {
+                const t = d / STRAIGHT_LEN;
+                return {
+                    x: RIGHT_X - t * STRAIGHT_LEN,
+                    y: -PATH_RADIUS + drumCenterY,
+                    tangentAngle: Math.PI,
+                };
+            }
+            d -= STRAIGHT_LEN;
+
+            // 段4：左圆弧段（绕左滚筒左侧）
+            if (d < ARC_LEN) {
+                const angle = -Math.PI / 2 - (d / ARC_LEN) * Math.PI;
+                return {
+                    x: LEFT_X + PATH_RADIUS * Math.cos(angle),
+                    y: PATH_RADIUS * Math.sin(angle) + drumCenterY,
+                    tangentAngle: angle - Math.PI / 2,
+                };
+            }
+
+            return { x: LEFT_X, y: PATH_RADIUS + drumCenterY, tangentAngle: 0 };
+        }
+
+        // 传送带金属小块
+        const beltBlocks = [];
+        const blockGeometry = new THREE.BoxGeometry(BLOCK_LENGTH, BELT_THICKNESS, BELT_WIDTH);
+        const materialMain = new THREE.MeshStandardMaterial({ color: '#e0e4ee', roughness: 0.38, metalness: 0.88 });
+        const materialAlt = new THREE.MeshStandardMaterial({ color: '#d2d6e2', roughness: 0.42, metalness: 0.85 });
+        for (let i = 0; i < NUM_BLOCKS; i++) {
+            const mat = i % 2 === 0 ? materialMain : materialAlt;
+            const block = new THREE.Mesh(blockGeometry, mat);
+            block.castShadow = true;
+            block.receiveShadow = true;
+            scene.add(block);
+            beltBlocks.push({ mesh: block, offset: i * BLOCK_SPACING });
+        }
+
+        // 传送带横向标记线
+        const markerGroup = new THREE.Group();
+        scene.add(markerGroup);
+        const markerGeo = new THREE.BoxGeometry(0.02, BELT_THICKNESS * 1.6, BELT_WIDTH * 0.9);
+        const markerMat = new THREE.MeshStandardMaterial({ color: '#8a8f9e', roughness: 0.5, metalness: 0.7 });
+        const markerMeshes = [];
+        const MARKER_COUNT = 40;
+        for (let i = 0; i < MARKER_COUNT; i++) {
+            const marker = new THREE.Mesh(markerGeo, markerMat);
+            marker.castShadow = true;
+            marker.receiveShadow = true;
+            markerGroup.add(marker);
+            markerMeshes.push({ mesh: marker, offset: i * (TOTAL_LEN / MARKER_COUNT) });
+        }
+
+        // 附着传送带的划痕系统
+        const scratchGroup = new THREE.Group();
+        scene.add(scratchGroup);
+        const scratchGeo = new THREE.BoxGeometry(0.05, 0.008, BELT_WIDTH * 0.92);
+        const scratchMat = new THREE.MeshBasicMaterial({
+            color: 0xff0000,
+            transparent: true,
+            opacity: 1.0,
+            depthWrite: false,
+            polygonOffset: true,
+            polygonOffsetFactor: -1,
+            polygonOffsetUnits: -1
+        });
+        const scratchList = [];
+        const MAX_SCRATCH_NUM = 600;
+        let slideDistanceAccum = 0;
+        const SCRATCH_INTERVAL = 0.018;
+
+        function addScratch(distance) {
+            if (scratchList.length > MAX_SCRATCH_NUM) return;
+            const mesh = new THREE.Mesh(scratchGeo, scratchMat.clone());
+            mesh.renderOrder = 5;
+            scratchGroup.add(mesh);
+            scratchList.push({ mesh, distance: distance });
+        }
+
+        function updateScratches(dt) {
+            for (let i = scratchList.length - 1; i >= 0; i--) {
+                const s = scratchList[i];
+                s.distance += beltSpeed * dt;
+                if (s.distance > TOTAL_LEN * 1.6) {
+                    scratchGroup.remove(s.mesh);
+                    scratchList.splice(i, 1);
+                    continue;
+                }
+                const pt = getPathPoint(s.distance);
+                s.mesh.position.set(pt.x, pt.y + 0.004, 0);
+                s.mesh.rotation.z = pt.tangentAngle;
+            }
+        }
+
+        // 传送带支架
+        function createSupport(x) {
+            const group = new THREE.Group();
+            const pillarGeo = new THREE.BoxGeometry(0.22, drumCenterY + 0.35, 0.7);
+            const pillarMat = new THREE.MeshStandardMaterial({ color: 0x3d4858, roughness: 0.45, metalness: 0.7 });
+            const pillar = new THREE.Mesh(pillarGeo, pillarMat);
+            pillar.position.y = (drumCenterY - 0.35) / 2;
+            pillar.castShadow = true;
+            pillar.receiveShadow = true;
+            group.add(pillar);
+
+            const baseGeo = new THREE.BoxGeometry(0.6, 0.08, 1.1);
+            const baseMat = new THREE.MeshStandardMaterial({ color: 0x2a3340, roughness: 0.4, metalness: 0.75 });
+            const base = new THREE.Mesh(baseGeo, baseMat);
+            base.position.y = -0.35 + 0.04;
+            base.castShadow = true;
+            base.receiveShadow = true;
+            group.add(base);
+
+            group.position.set(x, -0.35, 0);
+            scene.add(group);
+            return group;
+        }
+        createSupport(-halfBelt);
+        createSupport(halfBelt);
+
+        const beamGeo = new THREE.BoxGeometry(beltLength - 0.5, 0.1, 0.25);
+        const beamMat = new THREE.MeshStandardMaterial({ color: 0x353f50, roughness: 0.4, metalness: 0.7 });
+        const beam = new THREE.Mesh(beamGeo, beamMat);
+        beam.position.set(0, drumCenterY - WHEEL_RADIUS - 0.12, 0);
+        beam.castShadow = true;
+        beam.receiveShadow = true;
+        scene.add(beam);
+
+        // 红色物块m
+        const blockSize = 0.5;
+        const blockGeo = new THREE.BoxGeometry(blockSize, blockSize, blockSize);
+        const blockMat = new THREE.MeshStandardMaterial({ color: 0xe83838, roughness: 0.18, metalness: 0.25 });
+        const block = new THREE.Mesh(blockGeo, blockMat);
+        block.castShadow = true;
+        block.receiveShadow = true;
+        block.position.y = beltTopY + blockSize / 2;
+        scene.add(block);
+
+        // m文字标签
+        const labelCanvas = document.createElement('canvas');
+        labelCanvas.width = 128;
+        labelCanvas.height = 128;
+        const lctx = labelCanvas.getContext('2d');
+        lctx.fillStyle = 'white';
+        lctx.font = 'bold 58px "PingFang SC","Microsoft YaHei",sans-serif';
+        lctx.textAlign = 'center';
+        lctx.textBaseline = 'middle';
+        lctx.fillText('m', 64, 64);
+        const labelTex = new THREE.CanvasTexture(labelCanvas);
+        const labelGeo = new THREE.PlaneGeometry(0.38, 0.38);
+        const labelMat = new THREE.MeshBasicMaterial({ map: labelTex, transparent: true, side: THREE.DoubleSide, depthWrite: false });
+        const labelMesh = new THREE.Mesh(labelGeo, labelMat);
+        labelMesh.position.y = blockSize / 2 + 0.02;
+        labelMesh.rotation.y = Math.PI;
+        block.add(labelMesh);
+
+        // 物理变量
+        const g = 9.8;
+        let beltSpeed = 2.0;
+        let blockInitSpeed = -5.0;
+        let mu = 0.4;
+        let blockV = blockInitSpeed; // 水平速度
+        let blockVy = 0; // 竖直速度（y轴向上为正）
+        let blockX = halfBelt - 0.8;
+        let isStuck = false;
+        let isFlying = false; // 是否处于平抛状态
+        let isLanded = false; // 是否已经落地
+        let simTime = 0;
+        let vtData = [{ t: 0, v: blockInitSpeed }];
+
+        function isOnBelt(x) {
+            return x > -halfBelt + 0.45 && x < halfBelt - 0.45;
+        }
+
+        function resetExperiment() {
+            blockV = blockInitSpeed;
+            blockVy = 0;
+            blockX = halfBelt - 0.8;
+            isStuck = false;
+            isFlying = false;
+            isLanded = false;
+            simTime = 0;
+            vtData = [{ t: 0, v: blockInitSpeed }];
+            animDistance = 0;
+            slideDistanceAccum = 0;
+            block.position.x = blockX;
+            block.position.y = beltTopY + blockSize / 2;
+            block.rotation.set(0, 0, 0);
+            // 清空所有划痕
+            scratchList.forEach(s => scratchGroup.remove(s.mesh));
+            scratchList.length = 0;
+        }
+
+        // UI交互
+        function readUI() {
+            beltSpeed = parseFloat(document.getElementById('beltSpeed').value);
+            blockInitSpeed = parseFloat(document.getElementById('blockInitSpeed').value);
+            mu = parseFloat(document.getElementById('mu').value);
+            document.getElementById('beltSpeedVal').textContent = beltSpeed.toFixed(1);
+            document.getElementById('blockInitSpeedVal').textContent = blockInitSpeed.toFixed(1);
+            document.getElementById('muVal').textContent = mu.toFixed(2);
+        }
+        document.getElementById('beltSpeed').addEventListener('input', readUI);
+        document.getElementById('blockInitSpeed').addEventListener('input', readUI);
+        document.getElementById('mu').addEventListener('input', readUI);
+        document.getElementById('btnReset').addEventListener('click', () => { readUI(); resetExperiment(); });
+        document.querySelectorAll('.preset-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                const p = parseInt(btn.dataset.preset);
+                if (p === 0) {
+                    document.getElementById('beltSpeed').value = 2;
+                    document.getElementById('blockInitSpeed').value = -5;
+                    document.getElementById('mu').value = 0.4;
+                }
+                if (p === 1) {
+                    document.getElementById('beltSpeed').value = 5;
+                    document.getElementById('blockInitSpeed').value = 1.5;
+                    document.getElementById('mu').value = 0.35;
+                }
+                if (p === 2) {
+                    document.getElementById('beltSpeed').value = 3;
+                    document.getElementById('blockInitSpeed').value = 7;
+                    document.getElementById('mu').value = 0.3;
+                }
+                readUI();
+                resetExperiment();
+            });
+        });
+        window.addEventListener('keydown', (e) => {
+            if (e.key === ' ') {
+                e.preventDefault();
+                window._paused = !window._paused;
+            }
+            if (e.key === 'r' || e.key === 'R') {
+                readUI();
+                resetExperiment();
+            }
+        });
+
+        // V-t图像
+        const vtCanvas = document.getElementById('vtCanvas');
+        const vtCtx = vtCanvas.getContext('2d');
+        function drawVTGraph() {
+            const w = vtCanvas.width, h = vtCanvas.height;
+            vtCtx.clearRect(0, 0, w, h);
+            vtCtx.fillStyle = '#0a101c';
+            vtCtx.fillRect(0, 0, w, h);
+            const pl = 38, pr = w - 15, pt = 15, pb = h - 25, vMin = -12, vMax = 12, tMax = Math.max(6, simTime + 1.5);
+            const toX = t => pl + (t / tMax) * (pr - pl);
+            const toY = v => pb - ((v - vMin) / (vMax - vMin)) * (pb - pt);
+            vtCtx.strokeStyle = 'rgba(40,60,90,0.5)';
+            vtCtx.lineWidth = 0.5;
+            for (let v = -12; v <= 12; v += 3) {
+                const y = toY(v);
+                vtCtx.beginPath(); vtCtx.moveTo(pl, y); vtCtx.lineTo(pr, y); vtCtx.stroke();
+            }
+            for (let t = 0; t <= tMax; t += 1) {
+                const x = toX(t);
+                vtCtx.beginPath(); vtCtx.moveTo(x, pt); vtCtx.lineTo(x, pb); vtCtx.stroke();
+            }
+            vtCtx.strokeStyle = '#8899b8';
+            vtCtx.lineWidth = 1.5;
+            vtCtx.beginPath(); vtCtx.moveTo(pl, pt); vtCtx.lineTo(pl, pb); vtCtx.lineTo(pr, pb); vtCtx.stroke();
+            const beltY = toY(beltSpeed);
+            if (beltY > pt && beltY < pb) {
+                vtCtx.strokeStyle = '#ff9944';
+                vtCtx.setLineDash([5, 3]);
+                vtCtx.beginPath(); vtCtx.moveTo(pl, beltY); vtCtx.lineTo(pr, beltY); vtCtx.stroke();
+                vtCtx.setLineDash([]);
+                vtCtx.fillStyle = '#ff9944';
+                vtCtx.font = '10px "PingFang SC","Microsoft YaHei",sans-serif';
+                vtCtx.fillText('v带', pl + 4, beltY - 4);
+            }
+            if (vtData.length > 1) {
+                vtCtx.strokeStyle = '#00e676';
+                vtCtx.lineWidth = 2.2;
+                vtCtx.beginPath();
+                let started = false;
+                for (const pt of vtData) {
+                    const sx = toX(pt.t), sy = toY(pt.v);
+                    if (sx <= pr) {
+                        if (!started) { vtCtx.moveTo(sx, sy); started = true; }
+                        else vtCtx.lineTo(sx, sy);
+                    }
+                }
+                vtCtx.stroke();
+                const last = vtData[vtData.length - 1];
+                const lx = toX(last.t), ly = toY(last.v);
+                vtCtx.fillStyle = '#00e676';
+                vtCtx.beginPath(); vtCtx.arc(lx, ly, 4, 0, 2 * Math.PI); vtCtx.fill();
+                vtCtx.fillStyle = 'white';
+                vtCtx.font = 'bold 10px "PingFang SC","Microsoft YaHei",sans-serif';
+                vtCtx.fillText(last.v.toFixed(1), lx + 5, ly - 5);
+            }
+            vtCtx.fillStyle = '#8899b8';
+            vtCtx.font = '10px sans-serif';
+            vtCtx.textAlign = 'right';
+            for (let v = -12; v <= 12; v += 3) vtCtx.fillText(v, pl - 4, toY(v) + 3);
+            vtCtx.textAlign = 'center';
+            vtCtx.fillText('t (s)', pl + (pr - pl) / 2, pb + 16);
+            vtCtx.save();
+            vtCtx.translate(8, pt + (pb - pt) / 2);
+            vtCtx.rotate(-Math.PI / 2);
+            vtCtx.fillText('v (m/s)', 0, 0);
+            vtCtx.restore();
+        }
+
+        // 主动画循环
+        const clock = new THREE.Clock();
+        window._paused = false;
+        function animate() {
+            requestAnimationFrame(animate);
+            if (window._paused) {
+                controls.update();
+                renderer.render(scene, camera);
+                return;
+            }
+            const dt = Math.min(clock.getDelta(), 0.05);
+            if (dt > 0) {
+                simTime += dt;
+                let sliding = false;
+                let vRel = 0;
+
+                if (isLanded) {
+                    // 已落地，静止不动
+                    blockV = 0;
+                    blockVy = 0;
+                } else if (isOnBelt(blockX)) {
+                    // 在传送带上：受摩擦力，高度不变
+                    isFlying = false;
+                    blockVy = 0;
+                    block.position.y = beltTopY + blockSize / 2;
+
+                    vRel = blockV - beltSpeed;
+                    if (!isStuck && Math.abs(vRel) < 0.015) {
+                        blockV = beltSpeed;
+                        isStuck = true;
+                    } else if (isStuck && Math.abs(vRel) >= 0.015) {
+                        isStuck = false;
+                    }
+                    if (!isStuck) {
+                        sliding = true;
+                        const a = (vRel > 0 ? -1 : 1) * mu * g;
+                        const prevV = blockV;
+                        blockV += a * dt;
+                        if ((prevV - beltSpeed) * (blockV - beltSpeed) < 0) {
+                            blockV = beltSpeed;
+                            isStuck = true;
+                            sliding = false;
+                        }
+                    }
+                } else {
+                    // 离开传送带：平抛运动
+                    isFlying = true;
+                    isStuck = false;
+                    // 竖直方向自由落体（y向上，重力加速度为负）
+                    blockVy -= g * dt;
+                    // 更新竖直位置
+                    block.position.y += blockVy * dt;
+                    // 落地检测
+                    const blockBottomY = block.position.y - blockSize / 2;
+                    if (blockBottomY <= groundY) {
+                        isLanded = true;
+                        block.position.y = groundY + blockSize / 2;
+                        blockV = 0;
+                        blockVy = 0;
+                    }
+                }
+
+                // 更新水平位置
+                blockX += blockV * dt;
+                block.position.x = blockX;
+
+                // 只有在传送带上滑动时才生成划痕
+                if (sliding && !isFlying) {
+                    const relSpeed = Math.abs(vRel);
+                    slideDistanceAccum += relSpeed * dt;
+                    const beltDistAtBlock = blockX - LEFT_X;
+                    while (slideDistanceAccum >= SCRATCH_INTERVAL) {
+                        slideDistanceAccum -= SCRATCH_INTERVAL;
+                        const offset = vRel > 0 ? -0.03 : 0.03;
+                        addScratch(beltDistAtBlock + offset);
+                    }
+                }
+                updateScratches(dt);
+
+                // 记录v-t数据（水平速度）
+                if (vtData.length === 0 || simTime - vtData[vtData.length - 1].t > 0.04) {
+                    vtData.push({ t: simTime, v: blockV });
+                    if (vtData.length > 400) vtData.shift();
+                }
+
+                // 传送带位移与滚筒旋转
+                const moveDelta = beltSpeed * dt;
+                animDistance += moveDelta;
+                const wheelRotateAngle = animDistance / WHEEL_RADIUS;
+                leftWheel.rotation.z = wheelRotateAngle;
+                rightWheel.rotation.z = wheelRotateAngle;
+
+                // 更新皮带小块位置姿态
+                for (let i = 0; i < beltBlocks.length; i++) {
+                    const item = beltBlocks[i];
+                    const d = (animDistance + item.offset) % TOTAL_LEN;
+                    const pt = getPathPoint(d);
+                    item.mesh.position.set(pt.x, pt.y, 0);
+                    item.mesh.rotation.z = pt.tangentAngle;
+                }
+                for (let i = 0; i < markerMeshes.length; i++) {
+                    const mk = markerMeshes[i];
+                    const d = (animDistance + mk.offset) % TOTAL_LEN;
+                    const pt = getPathPoint(d);
+                    mk.mesh.position.set(pt.x, pt.y, 0);
+                    mk.mesh.rotation.z = pt.tangentAngle;
+                }
+            }
+            drawVTGraph();
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        readUI();
+        resetExperiment();
+        block.position.x = blockX;
+        animate();
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+        console.log('✅ 平抛运动已添加：物块飞出传送带后自动平抛，落地静止');
+    </script>
+
+    <button class="back-btn" onclick="goBack()">⬅️ 返回</button>
+    <div class="watermark">齐老师动画</div>
+
+    <script>
+        function goBack() { history.back(); }
+        document.addEventListener('keydown', e => { if (e.key === 'Escape') goBack(); });
+        document.addEventListener('contextmenu', e => e.preventDefault());
+    </script>
+
+    <!-- 齐老师动画 - 水印 -->
+    <div class="qilaoshi-watermark">
+        QQ 3398528250<br>
+        抖音 35320300542
+    </div>
+
+
+    <!-- 齐老师动画 - 安全保护脚本 -->
+    <script>
+    (function() {
+        // 禁用右键菜单
+        document.addEventListener('contextmenu', function(e) {
+            e.preventDefault();
+            return false;
+        });
+        
+        // ESC键返回主页
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' || e.keyCode === 27) {
+                window.location.href = '../index.html';
+            }
+        });
+        
+        // 禁用开发者工具快捷键
+        document.addEventListener('keydown', function(e) {
+            // F12
+            if (e.key === 'F12' || e.keyCode === 123) {
+                e.preventDefault();
+                return false;
+            }
+            // Ctrl+U
+            if ((e.ctrlKey || e.metaKey) && (e.key === 'u' || e.keyCode === 85)) {
+                e.preventDefault();
+                return false;
+            }
+            // Ctrl+Shift+I
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'i' || e.keyCode === 73)) {
+                e.preventDefault();
+                return false;
+            }
+            // Ctrl+Shift+J
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'j' || e.keyCode === 74)) {
+                e.preventDefault();
+                return false;
+            }
+            // Ctrl+Shift+C
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'c' || e.keyCode === 67)) {
+                e.preventDefault();
+                return false;
+            }
+        });
+        
+        // 检测开发者工具打开（简单检测）
+        var devtoolsOpen = false;
+        var threshold = 160;
+        setInterval(function() {
+            var widthThreshold = window.outerWidth - window.innerWidth > threshold;
+            var heightThreshold = window.outerHeight - window.innerHeight > threshold;
+            if (widthThreshold || heightThreshold) {
+                if (!devtoolsOpen) {
+                    devtoolsOpen = true;
+                    // 可以选择跳转或其他操作
+                }
+            } else {
+                devtoolsOpen = false;
+            }
+        }, 1000);
+    })();
+    </script>
+
+</body>
+</html>
