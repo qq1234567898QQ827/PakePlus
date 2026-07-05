@@ -1,0 +1,991 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta charset="UTF-8">
+    <meta charset="UTF-8">
+    <meta charset="UTF-8">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>高中物理：开普勒第二定律 - 地球中心椭圆轨道卫星动画</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: 'Microsoft YaHei', 'SimHei', 'PingFang SC', 'Roboto', sans-serif;
+        }
+        #info {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: white;
+            background: rgba(0,0,0,0.75);
+            padding: 12px 20px;
+            border-radius: 8px;
+            backdrop-filter: blur(8px);
+            pointer-events: none;
+            z-index: 10;
+            border-left: 4px solid #ffaa44;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.3);
+            font-size: 14px;
+            font-weight: 500;
+        }
+        #info h1 {
+            margin: 0 0 5px;
+            font-size: 1.2rem;
+            letter-spacing: 1px;
+        }
+        #info p {
+            margin: 0;
+            font-size: 0.85rem;
+            opacity: 0.9;
+        }
+        #law-card {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            color: white;
+            background: rgba(0,0,0,0.7);
+            padding: 10px 18px;
+            border-radius: 12px;
+            font-size: 0.9rem;
+            font-family: monospace;
+            pointer-events: none;
+            z-index: 10;
+            backdrop-filter: blur(5px);
+            border-top: 2px solid #ffaa44;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+        }
+        #law-card .area-value {
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: #ffaa66;
+        }
+        .controls-panel {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(0,0,0,0.7);
+            backdrop-filter: blur(8px);
+            padding: 6px 16px;
+            border-radius: 30px;
+            color: white;
+            font-size: 12px;
+            display: flex;
+            gap: 15px;
+            z-index: 10;
+            pointer-events: auto;
+            font-family: monospace;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        .controls-panel button {
+            background: #ffaa44;
+            border: none;
+            color: #1e2a3a;
+            padding: 4px 14px;
+            border-radius: 30px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: 0.2s;
+            font-size: 12px;
+        }
+        .controls-panel button:hover {
+            background: #ffcc66;
+            transform: scale(1.02);
+        }
+        @media (max-width: 600px) {
+            #info { font-size: 10px; top: 10px; left: 10px; padding: 6px 12px; }
+            #law-card { font-size: 10px; bottom: 10px; left: 10px; padding: 6px 12px; }
+            .controls-panel { font-size: 10px; bottom: 10px; right: 10px; }
+        }
+        .status-badge {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(0,0,0,0.6);
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            color: #ccddff;
+            font-family: monospace;
+            pointer-events: none;
+            z-index: 10;
+        }
+    </style>
+<style>
+    /* 齐老师动画 - 统一样式 */
+    body {
+        background: #1a2332 !important;
+    }
+    
+    /* 顶部标题栏 */
+    .qilaoshi-header {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 50px;
+        background: #1a2332;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 99999 !important;
+        border-bottom: 1px solid #2a3a50;
+    }
+    
+    .qilaoshi-title {
+        font-size: 20px;
+        font-weight: 600;
+        color: #8ab4f8;
+        letter-spacing: 2px;
+        font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif;
+    }
+    
+    /* 返回按钮 */
+    .qilaoshi-back-btn {
+        position: fixed;
+        top: 10px;
+        right: 15px;
+        z-index: 999999 !important;
+        background: linear-gradient(135deg, #3a5a80, #2a4a70);
+        color: #ffffff;
+        border: 1px solid #5a8ab0;
+        padding: 8px 18px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        font-family: 'Microsoft YaHei', sans-serif;
+        transition: all 0.2s;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+    }
+    
+    .qilaoshi-back-btn:hover {
+        background: linear-gradient(135deg, #4a6a90, #3a5a80);
+        color: #ffffff;
+        box-shadow: 0 4px 15px rgba(90, 138, 176, 0.4);
+        transform: translateY(-1px);
+    }
+    
+    /* 水印 */
+    .qilaoshi-watermark {
+        position: fixed;
+        bottom: 10px;
+        right: 15px;
+        z-index: 9999;
+        font-size: 11px;
+        color: rgba(138, 180, 248, 0.4);
+        font-family: 'Microsoft YaHei', sans-serif;
+        line-height: 1.5;
+        text-align: right;
+        pointer-events: none;
+    }
+    
+    /* 调整主内容区域，给顶部标题栏留出空间 */
+    body {
+        padding-top: 50px !important;
+    }
+</style>
+</head>
+<body>
+
+    <!-- 齐老师动画 - 顶部导航 -->
+    <div class="qilaoshi-header">
+        <div class="qilaoshi-title">齐老师动画</div>
+    </div>
+    <button class="qilaoshi-back-btn" onclick="window.location.href='../index.html'">← 返回主页</button>
+
+    <div id="info">
+        <h1>📐 开普勒第二定律 | 中心天体: 地球</h1>
+        <p>椭圆轨道 | 卫星与地球的连线在相等时间内扫过的面积相等 ➜ 近日点速度↑ 远日点速度↓</p>
+    </div>
+    <div id="law-card">
+        🟢 当前扇形面积 (最近 Δt) : <span id="area-value" class="area-value">0.000</span> &nbsp; (面积速度恒定)<br>
+        ⏱️ 采样间隔: 0.9秒 &nbsp; | &nbsp; 椭圆离心率: <span id="ecc-value">0.62</span>
+    </div>
+    <div class="controls-panel">
+        <span>🖱️ 鼠标拖拽旋转 | 右键平移</span>
+        <button id="reset-view">重置视角</button>
+    </div>
+    <div class="status-badge">
+        🛰️ 卫星 | 开普勒运动
+    </div>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.128.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.128.0/examples/jsm/"
+            }
+        }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+
+        // --- 初始化场景、相机、渲染器 ---
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x050b1a); // 深邃星空
+        scene.fog = new THREE.FogExp2(0x050b1a, 0.0006);
+
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(6, 4.5, 9);
+        camera.lookAt(0, 0, 0);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+        renderer.setPixelRatio(window.devicePixelRatio);
+        document.body.appendChild(renderer.domElement);
+
+        const labelRenderer = new CSS2DRenderer();
+        labelRenderer.setSize(window.innerWidth, window.innerHeight);
+        labelRenderer.domElement.style.position = 'absolute';
+        labelRenderer.domElement.style.top = '0px';
+        labelRenderer.domElement.style.left = '0px';
+        labelRenderer.domElement.style.pointerEvents = 'none';
+        document.body.appendChild(labelRenderer.domElement);
+
+        // --- 轨道控制器 ---
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.rotateSpeed = 1.0;
+        controls.zoomSpeed = 1.2;
+        controls.panSpeed = 0.8;
+        controls.enableZoom = true;
+        controls.enablePan = true;
+        controls.target.set(0, 0, 0);
+        
+        document.getElementById('reset-view').addEventListener('click', () => {
+            camera.position.set(6, 4.5, 9);
+            controls.target.set(0, 0, 0);
+            controls.update();
+        });
+
+        // --- 星空粒子背景 ---
+        const starGeometry = new THREE.BufferGeometry();
+        const starCount = 1800;
+        const starPositions = new Float32Array(starCount * 3);
+        for (let i = 0; i < starCount; i++) {
+            starPositions[i*3] = (Math.random() - 0.5) * 1800;
+            starPositions[i*3+1] = (Math.random() - 0.5) * 1000;
+            starPositions[i*3+2] = (Math.random() - 0.5) * 600 - 200;
+        }
+        starGeometry.setAttribute('position', new THREE.BufferAttribute(starPositions, 3));
+        const starMaterial = new THREE.PointsMaterial({ color: 0xffffff, size: 0.22, transparent: true, opacity: 0.7 });
+        const stars = new THREE.Points(starGeometry, starMaterial);
+        scene.add(stars);
+        
+        function rotateStars() {
+            stars.rotation.y += 0.00015;
+            stars.rotation.x += 0.0001;
+            requestAnimationFrame(rotateStars);
+        }
+        rotateStars();
+
+        // --- 地球 (中心天体) ---
+        const earthRadius = 0.68;
+        const textureLoader = new THREE.TextureLoader();
+        const earthMap = textureLoader.load('https://threejs.org/examples/textures/planets/earth_atmos_2048.jpg');
+        const earthSpecularMap = textureLoader.load('https://threejs.org/examples/textures/planets/earth_specular_2048.jpg');
+        const earthNormalMap = textureLoader.load('https://threejs.org/examples/textures/planets/earth_normal_2048.jpg');
+        const cloudMap = textureLoader.load('https://threejs.org/examples/textures/planets/earth_clouds_1024.png');
+        
+        const earthMaterial = new THREE.MeshPhongMaterial({
+            map: earthMap,
+            specularMap: earthSpecularMap,
+            specular: new THREE.Color('grey'),
+            shininess: 5,
+            normalMap: earthNormalMap
+        });
+        const earth = new THREE.Mesh(new THREE.SphereGeometry(earthRadius, 128, 128), earthMaterial);
+        scene.add(earth);
+        
+        // 云层
+        const cloudGeometry = new THREE.SphereGeometry(earthRadius + 0.02, 128, 128);
+        const cloudMaterial = new THREE.MeshPhongMaterial({
+            map: cloudMap,
+            transparent: true,
+            opacity: 0.12,
+            blending: THREE.AdditiveBlending
+        });
+        const clouds = new THREE.Mesh(cloudGeometry, cloudMaterial);
+        scene.add(clouds);
+        
+        // 大气层光晕
+        const atmosGeometry = new THREE.SphereGeometry(earthRadius + 0.09, 64, 64);
+        const atmosMaterial = new THREE.MeshBasicMaterial({
+            color: 0x3388cc,
+            transparent: true,
+            opacity: 0.08,
+            side: THREE.BackSide
+        });
+        const atmosphere = new THREE.Mesh(atmosGeometry, atmosMaterial);
+        scene.add(atmosphere);
+        
+        // 地球周围微粒子环 (装饰)
+        const dustGeo = new THREE.BufferGeometry();
+        const dustCount = 1200;
+        const dustPos = [];
+        for (let i = 0; i < dustCount; i++) {
+            const theta = Math.random() * Math.PI * 2;
+            const phi = Math.acos(2 * Math.random() - 1);
+            const r = earthRadius + 0.14;
+            dustPos.push(r * Math.sin(phi) * Math.cos(theta), r * Math.sin(phi) * Math.sin(theta), r * Math.cos(phi));
+        }
+        dustGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(dustPos), 3));
+        const dustPoints = new THREE.Points(dustGeo, new THREE.PointsMaterial({ color: 0x88aaff, size: 0.008, transparent: true }));
+        scene.add(dustPoints);
+        
+        // --- 椭圆轨道参数 (满足开普勒定律，地球位于焦点) ---
+        // 半长轴 a = 3.6, 离心率 e = 0.62 => 半短轴 b = a * sqrt(1-e^2)
+        const a_orbit = 3.65;
+        const e_orbit = 0.62;
+        const b_orbit = a_orbit * Math.sqrt(1 - e_orbit * e_orbit);  // ≈ 2.86
+        // 焦点距离中心偏移量 c = a * e
+        const c_focus = a_orbit * e_orbit;
+        // 由于我们想让地球位于椭圆的一个焦点上，标准椭圆方程以中心为原点时焦点在(±c,0)，需要偏移使地球位于原点
+        // 方法：轨道几何变换：椭圆中心位于 (-c, 0, 0)，这样右焦点在原点(地球位置)
+        // 因此轨道点坐标: x_center = a * cosθ, z_center = b * sinθ, 再平移 + (c,0) 使焦点到原点
+        // 最终世界坐标: x = a * cosθ - c, z = b * sinθ
+        function getOrbitPoint(angleRad) {
+            const x_center = a_orbit * Math.cos(angleRad);
+            const z_center = b_orbit * Math.sin(angleRad);
+            return new THREE.Vector3(x_center - c_focus, 0, z_center);
+        }
+        
+        // 绘制椭圆轨迹 (线框)
+        const orbitPoints = [];
+        const segments = 300;
+        for (let i = 0; i <= segments; i++) {
+            const angle = (i / segments) * Math.PI * 2;
+            orbitPoints.push(getOrbitPoint(angle));
+        }
+        const orbitGeometry = new THREE.BufferGeometry().setFromPoints(orbitPoints);
+        const orbitMaterialLine = new THREE.LineBasicMaterial({ color: 0x44bbff, linewidth: 2, transparent: true, opacity: 0.85 });
+        const orbitLine = new THREE.LineLoop(orbitGeometry, orbitMaterialLine);
+        scene.add(orbitLine);
+        
+        // 添加轨道上的光点 (增强轨迹可视性)
+        const orbitDotsGeo = new THREE.BufferGeometry();
+        const dotPosArray = [];
+        for (let i = 0; i < 450; i++) {
+            const angle = (i / 450) * Math.PI * 2;
+            const pos = getOrbitPoint(angle);
+            dotPosArray.push(pos.x, pos.y, pos.z);
+        }
+        orbitDotsGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(dotPosArray), 3));
+        const orbitDotsMat = new THREE.PointsMaterial({ color: 0x77ccff, size: 0.045 });
+        const orbitDotsObj = new THREE.Points(orbitDotsGeo, orbitDotsMat);
+        scene.add(orbitDotsObj);
+        
+        // --- 卫星 (绕地球运动) ---
+        const satelliteGeo = new THREE.SphereGeometry(0.28, 96, 96);
+        const satelliteMat = new THREE.MeshStandardMaterial({
+            color: 0xdd8844,
+            roughness: 0.4,
+            metalness: 0.3,
+            emissive: 0x442200
+        });
+        const satellite = new THREE.Mesh(satelliteGeo, satelliteMat);
+        scene.add(satellite);
+        
+        // 卫星光晕
+        const satGlowGeo = new THREE.SphereGeometry(0.34, 24, 24);
+        const satGlowMat = new THREE.MeshBasicMaterial({ color: 0xffaa66, transparent: true, opacity: 0.2, side: THREE.BackSide });
+        const satGlow = new THREE.Mesh(satGlowGeo, satGlowMat);
+        satellite.add(satGlow);
+        
+        // CSS2D 标签
+        const satDiv = document.createElement('div');
+        satDiv.textContent = '🛰️ 卫星';
+        satDiv.style.color = '#ffcc88';
+        satDiv.style.fontSize = '14px';
+        satDiv.style.fontWeight = 'bold';
+        satDiv.style.background = 'rgba(0,0,0,0.6)';
+        satDiv.style.padding = '2px 10px';
+        satDiv.style.borderRadius = '20px';
+        satDiv.style.borderLeft = '3px solid #ffaa55';
+        satDiv.style.fontFamily = 'sans-serif';
+        const satLabel = new CSS2DObject(satDiv);
+        satellite.add(satLabel);
+        satLabel.position.set(0, 0.45, 0);
+        
+        // 地球标签
+        const earthDiv = document.createElement('div');
+        earthDiv.textContent = '🌍 地球 (焦点)';
+        earthDiv.style.color = '#c0e0ff';
+        earthDiv.style.fontSize = '15px';
+        earthDiv.style.fontWeight = 'bold';
+        earthDiv.style.background = 'rgba(0,0,0,0.55)';
+        earthDiv.style.padding = '2px 12px';
+        earthDiv.style.borderRadius = '30px';
+        earthDiv.style.border = '1px solid #88aaff';
+        const earthLabel = new CSS2DObject(earthDiv);
+        earth.add(earthLabel);
+        earthLabel.position.set(0, earthRadius + 0.38, 0);
+        
+        // --- 开普勒第二定律核心: 动态扇形区域，展示相等时间扫过相等面积 ---
+        // 原理: 基于面积速度恒定，积分真近点角，同时每固定时间间隔采样位置绘制扇形区域
+        let lastSamplePos = null;
+        let currentSectorMesh = null;
+        let lastSampleTime = 0;
+        const SAMPLE_INTERVAL = 0.9; // 秒
+        
+        // 辅助函数: 计算三角形面积 (原点, p1, p2)
+        function triangleAreaFromOrigin(p1, p2) {
+            const crossX = p1.y * p2.z - p1.z * p2.y;
+            const crossY = p1.z * p2.x - p1.x * p2.z;
+            const crossZ = p1.x * p2.y - p1.y * p2.x;
+            const crossMag = Math.sqrt(crossX*crossX + crossY*crossY + crossZ*crossZ);
+            return 0.5 * crossMag;
+        }
+        
+        // 创建扇形三角形Mesh (半透明)
+        function createSectorTriangle(p1, p2, colorHex = 0x33ffaa, opacityVal = 0.45) {
+            const vertices = [0, 0, 0, p1.x, p1.y, p1.z, p2.x, p2.y, p2.z];
+            const indices = [0, 1, 2];
+            const geometry = new THREE.BufferGeometry();
+            geometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(vertices), 3));
+            geometry.setIndex(indices);
+            geometry.computeVertexNormals();
+            const material = new THREE.MeshPhongMaterial({
+                color: colorHex,
+                side: THREE.DoubleSide,
+                transparent: true,
+                opacity: opacityVal,
+                emissive: 0x226600,
+                depthWrite: false
+            });
+            return new THREE.Mesh(geometry, material);
+        }
+        
+        function updateSectorDisplay(currentPos, previousPos) {
+            if (currentSectorMesh) {
+                scene.remove(currentSectorMesh);
+                if (currentSectorMesh.geometry) currentSectorMesh.geometry.dispose();
+                if (currentSectorMesh.material) currentSectorMesh.material.dispose();
+            }
+            if (!previousPos || !currentPos) return;
+            const newSector = createSectorTriangle(previousPos, currentPos, 0x55ffaa, 0.48);
+            scene.add(newSector);
+            currentSectorMesh = newSector;
+            
+            const areaVal = triangleAreaFromOrigin(previousPos, currentPos);
+            document.getElementById('area-value').innerText = areaVal.toFixed(4);
+        }
+        
+        // 连线: 卫星与地球的连接线
+        let connectorLine = null;
+        function updateConnectorLine(satPos) {
+            if (connectorLine) scene.remove(connectorLine);
+            const points = [new THREE.Vector3(0, 0, 0), satPos.clone()];
+            const lineGeo = new THREE.BufferGeometry().setFromPoints(points);
+            const lineMat = new THREE.LineBasicMaterial({ color: 0xffaa66, linewidth: 2 }); 
+            connectorLine = new THREE.Line(lineGeo, lineMat);
+            scene.add(connectorLine);
+        }
+        
+        // 卫星拖尾效果 (轨迹粒子)
+        const trailMaxLen = 14;
+        const trailHistory = [];
+        const trailMat = new THREE.PointsMaterial({ color: 0xffaa77, size: 0.07, transparent: true, opacity: 0.6 });
+        let trailPointsObj = new THREE.Points(new THREE.BufferGeometry(), trailMat);
+        scene.add(trailPointsObj);
+        
+        function updateTrail(currentPos) {
+            trailHistory.unshift(currentPos.clone());
+            if (trailHistory.length > trailMaxLen) trailHistory.pop();
+            const verticesArray = [];
+            trailHistory.forEach(pos => {
+                verticesArray.push(pos.x, pos.y, pos.z);
+            });
+            const newGeo = new THREE.BufferGeometry();
+            newGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(verticesArray), 3));
+            trailPointsObj.geometry.dispose();
+            trailPointsObj.geometry = newGeo;
+        }
+        
+        // --- 开普勒运动: 基于面积速度恒定，数值积分真近点角 ---
+        // 面积速度常数 dA/dt = 常数，根据椭圆参数确定合适的周期 T 约为 12 秒
+        // 椭圆面积 = π * a * b，面积速度 constant = 椭圆面积 / T
+        const T_target = 12.5;      // 目标周期(秒)
+        const ellipseArea = Math.PI * a_orbit * b_orbit;
+        const areaSpeedConst = ellipseArea / T_target;   // dA/dt 恒定
+        
+        // 真近点角 θ 和 r 的关系满足椭圆极坐标: r = a(1-e^2)/(1+e cosθ)
+        // 且面积速度: dA/dt = 0.5 * r^2 * dθ/dt => dθ/dt = 2 * areaSpeedConst / r^2
+        let trueAnomaly = 0.0;       // 初始角度 (弧度)
+        
+        function getRadiusFromTheta(theta) {
+            const denominator = 1 + e_orbit * Math.cos(theta);
+            return a_orbit * (1 - e_orbit * e_orbit) / denominator;
+        }
+        
+        // 根据真近点角获取卫星的世界坐标 (地球位于焦点原点)
+        function getSatellitePosition(theta) {
+            const r = getRadiusFromTheta(theta);
+            // 极坐标转直角坐标，焦点在原点，椭圆极坐标方程直接给出 x = r cosθ, z = r sinθ
+            return new THREE.Vector3(r * Math.cos(theta), 0, r * Math.sin(theta));
+        }
+        
+        // 数值积分更新真近点角 (保证面积速度恒定)
+        function updateTrueAnomalyByAreaSpeed(deltaTime, currentTheta) {
+            if (deltaTime > 0.03) deltaTime = 0.03;
+            const r = getRadiusFromTheta(currentTheta);
+            // dθ/dt = 2 * areaSpeedConst / r^2
+            const dTheta_dt = (2 * areaSpeedConst) / (r * r);
+            let newTheta = currentTheta + dTheta_dt * deltaTime;
+            newTheta = newTheta % (Math.PI * 2);
+            return newTheta;
+        }
+        
+        // 验证轨道显示是否正确: 初值位置
+        let satellitePos = getSatellitePosition(trueAnomaly);
+        satellite.position.copy(satellitePos);
+        updateConnectorLine(satellitePos);
+        updateTrail(satellitePos);
+        
+        // 采样管理: 用于显示相等时间间隔的扇形
+        let prevSampledPosition = null;
+        let lastSampleRealTime = 0;
+        
+        // 添加一些辅助视觉元素: 近日点和远日点标记
+        const perihelionPos = getSatellitePosition(0);       // 真近点角0 近日点
+        const aphelionPos = getSatellitePosition(Math.PI);   // 远日点
+        const markerMat = new THREE.MeshStandardMaterial({ color: 0xffaa66, emissive: 0x442200 });
+        const periMarker = new THREE.Mesh(new THREE.SphereGeometry(0.1, 16, 16), markerMat);
+        const aphMarker = new THREE.Mesh(new THREE.SphereGeometry(0.1, 16, 16), markerMat);
+        periMarker.position.copy(perihelionPos);
+        aphMarker.position.copy(aphelionPos);
+        scene.add(periMarker);
+        scene.add(aphMarker);
+        
+        // 添加文字标签 (CSS2D)
+        const periDiv = document.createElement('div');
+        periDiv.textContent = '📌 近日点 (速度快)';
+        periDiv.style.color = '#ffaa77';
+        periDiv.style.fontSize = '11px';
+        periDiv.style.background = 'rgba(0,0,0,0.5)';
+        periDiv.style.padding = '2px 6px';
+        periDiv.style.borderRadius = '12px';
+        const periLabel = new CSS2DObject(periDiv);
+        periLabel.position.copy(perihelionPos);
+        periLabel.position.y += 0.35;
+        scene.add(periLabel);
+        
+        const aphDiv = document.createElement('div');
+        aphDiv.textContent = '🐢 远日点 (速度慢)';
+        aphDiv.style.color = '#aaccff';
+        aphDiv.style.fontSize = '11px';
+        aphDiv.style.background = 'rgba(0,0,0,0.5)';
+        aphDiv.style.padding = '2px 6px';
+        aphDiv.style.borderRadius = '12px';
+        const aphLabel = new CSS2DObject(aphDiv);
+        aphLabel.position.copy(aphelionPos);
+        aphLabel.position.y += 0.35;
+        scene.add(aphLabel);
+        
+        // 显示离心率数值
+        document.getElementById('ecc-value').innerText = e_orbit.toFixed(3);
+        
+        // --- 灯光系统 ---
+        const ambientLight = new THREE.AmbientLight(0x404060);
+        scene.add(ambientLight);
+        const mainLight = new THREE.DirectionalLight(0xffeedd, 1.2);
+        mainLight.position.set(5, 8, 4);
+        mainLight.castShadow = true;
+        scene.add(mainLight);
+        const fillLight = new THREE.PointLight(0x4488aa, 0.4);
+        fillLight.position.set(-2, 1, -3);
+        scene.add(fillLight);
+        const earthLight = new THREE.PointLight(0x88aaff, 0.35);
+        earthLight.position.set(0, 0, 0);
+        scene.add(earthLight);
+        
+        // 辅助网格半透明 (参考平面)
+        const gridHelper = new THREE.GridHelper(16, 24, 0x88aaff, 0x446688);
+        gridHelper.position.y = -1.3;
+        gridHelper.material.transparent = true;
+        gridHelper.material.opacity = 0.2;
+        scene.add(gridHelper);
+        
+        // 轻微轴线指示 (可选)
+        const axesHelper = new THREE.AxesHelper(5);
+        axesHelper.material.transparent = true;
+        axesHelper.material.opacity = 0.12;
+        scene.add(axesHelper);
+        
+        // --- 动画循环与时间积分 ---
+        let lastFrameTime = performance.now() / 1000;
+        let earthRotationAngle = 0;
+        
+        function animate() {
+            const now = performance.now() / 1000;
+            let delta = Math.min(0.033, now - lastFrameTime);
+            if (delta < 0) delta = 0.016;
+            lastFrameTime = now;
+            
+            // 1. 更新卫星真近点角 (基于面积速度恒定)
+            trueAnomaly = updateTrueAnomalyByAreaSpeed(delta, trueAnomaly);
+            const newSatPos = getSatellitePosition(trueAnomaly);
+            satellite.position.copy(newSatPos);
+            
+            // 2. 更新视觉元素: 连线、拖尾
+            updateConnectorLine(newSatPos);
+            updateTrail(newSatPos);
+            
+            // 3. 开普勒第二定律可视化: 固定时间间隔采样扇形区域
+            if (lastSampleRealTime === 0) {
+                lastSampleRealTime = now;
+                prevSampledPosition = newSatPos.clone();
+            } else if (now - lastSampleRealTime >= SAMPLE_INTERVAL) {
+                const currentSampled = newSatPos.clone();
+                if (prevSampledPosition) {
+                    updateSectorDisplay(currentSampled, prevSampledPosition);
+                }
+                prevSampledPosition = currentSampled.clone();
+                lastSampleRealTime = now;
+            }
+            
+            // 地球自转与云层
+            earthRotationAngle += 0.01;
+            earth.rotation.y = earthRotationAngle;
+            clouds.rotation.y = earthRotationAngle * 1.08;
+            atmosphere.rotation.y += 0.003;
+            dustPoints.rotation.y += 0.002;
+            
+            // 更新轨道控制器
+            controls.update();
+            
+            // 渲染
+            renderer.render(scene, camera);
+            labelRenderer.render(scene, camera);
+            
+            requestAnimationFrame(animate);
+        }
+        
+        // 初始化采样定时器起始
+        setTimeout(() => {
+            lastSampleRealTime = performance.now() / 1000;
+            prevSampledPosition = satellite.position.clone();
+        }, 100);
+        
+        window.addEventListener('resize', onWindowResize);
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            labelRenderer.setSize(window.innerWidth, window.innerHeight);
+        }
+        
+        // 启动动画
+        animate();
+        
+        // 控制台输出参数
+        console.log(`开普勒第二定律动画 | 地球中心椭圆轨道 | 半长轴: ${a_orbit}, 离心率: ${e_orbit}, 周期约: ${T_target}s | 面积速度恒定`);
+    </script>
+
+<style>
+.back-btn {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    padding: 10px 20px;
+    background: rgba(0, 150, 200, 0.3);
+    border: 1px solid #00ffff;
+    color: white;
+    font-size: 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    z-index: 9999;
+    transition: 0.3s;
+    backdrop-filter: blur(5px);
+}
+.back-btn:hover {
+    background: rgba(0, 150, 200, 0.6);
+    box-shadow: 0 0 15px #00ffff;
+}
+</style>
+<button class="back-btn" onclick="goBack()">⬅️ 返回</button>
+<script>
+function goBack() {
+    history.back();
+}
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        goBack();
+    }
+});
+</script>
+
+
+<div class="watermark">齐老师动画</div>
+<style>
+.watermark {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    font-size: 14px;
+    color: rgba(0, 255, 255, 0.3);
+    z-index: 9998;
+    pointer-events: none;
+    user-select: none;
+}
+</style>
+
+
+<script>
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+});
+</script>
+
+
+<style>
+.back-btn {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    padding: 10px 20px;
+    background: rgba(0, 150, 200, 0.3);
+    border: 1px solid #00ffff;
+    color: white;
+    font-size: 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    z-index: 9999;
+    transition: 0.3s;
+    backdrop-filter: blur(5px);
+}
+.back-btn:hover {
+    background: rgba(0, 150, 200, 0.6);
+    box-shadow: 0 0 15px #00ffff;
+}
+</style>
+<button class="back-btn" onclick="goBack()">⬅️ 返回</button>
+<script>
+function goBack() {
+    history.back();
+}
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        goBack();
+    }
+});
+</script>
+
+
+<div class="watermark">齐老师动画</div>
+<style>
+.watermark {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    font-size: 14px;
+    color: rgba(0, 255, 255, 0.3);
+    z-index: 9998;
+    pointer-events: none;
+    user-select: none;
+}
+</style>
+
+
+<script>
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+});
+</script>
+
+
+<style>
+.back-btn {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    padding: 10px 20px;
+    background: rgba(0, 150, 200, 0.3);
+    border: 1px solid #00ffff;
+    color: white;
+    font-size: 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    z-index: 9999;
+    transition: 0.3s;
+    backdrop-filter: blur(5px);
+}
+.back-btn:hover {
+    background: rgba(0, 150, 200, 0.6);
+    box-shadow: 0 0 15px #00ffff;
+}
+</style>
+<button class="back-btn" onclick="goBack()">⬅️ 返回</button>
+<script>
+function goBack() {
+    history.back();
+}
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        goBack();
+    }
+});
+</script>
+
+
+<div class="watermark">齐老师动画</div>
+<style>
+.watermark {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    font-size: 14px;
+    color: rgba(0, 255, 255, 0.3);
+    z-index: 9998;
+    pointer-events: none;
+    user-select: none;
+}
+</style>
+
+
+<script>
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+});
+</script>
+
+
+<style>
+.back-btn {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    padding: 10px 20px;
+    background: rgba(0, 150, 200, 0.3);
+    border: 1px solid #00ffff;
+    color: white;
+    font-size: 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    z-index: 9999;
+    transition: 0.3s;
+    backdrop-filter: blur(5px);
+}
+.back-btn:hover {
+    background: rgba(0, 150, 200, 0.6);
+    box-shadow: 0 0 15px #00ffff;
+}
+</style>
+<button class="back-btn" onclick="goBack()">⬅️ 返回</button>
+<script>
+function goBack() {
+    history.back();
+}
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        goBack();
+    }
+});
+</script>
+
+
+<div class="watermark">齐老师动画</div>
+<style>
+.watermark {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    font-size: 14px;
+    color: rgba(0, 255, 255, 0.3);
+    z-index: 9998;
+    pointer-events: none;
+    user-select: none;
+}
+</style>
+
+
+<script>
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+});
+</script>
+
+
+    <!-- 齐老师动画 - 水印 -->
+    <div class="qilaoshi-watermark">
+        QQ 3398528250<br>
+        抖音 35320300542
+    </div>
+
+
+    <!-- 齐老师动画 - 安全保护脚本 -->
+    <script>
+    (function() {
+        // 禁用右键菜单
+        document.addEventListener('contextmenu', function(e) {
+            e.preventDefault();
+            return false;
+        });
+        
+        // ESC键返回主页
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' || e.keyCode === 27) {
+                window.location.href = '../index.html';
+            }
+        });
+        
+        // 禁用开发者工具快捷键
+        document.addEventListener('keydown', function(e) {
+            // F12
+            if (e.key === 'F12' || e.keyCode === 123) {
+                e.preventDefault();
+                return false;
+            }
+            // Ctrl+U
+            if ((e.ctrlKey || e.metaKey) && (e.key === 'u' || e.keyCode === 85)) {
+                e.preventDefault();
+                return false;
+            }
+            // Ctrl+Shift+I
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'i' || e.keyCode === 73)) {
+                e.preventDefault();
+                return false;
+            }
+            // Ctrl+Shift+J
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'j' || e.keyCode === 74)) {
+                e.preventDefault();
+                return false;
+            }
+            // Ctrl+Shift+C
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'c' || e.keyCode === 67)) {
+                e.preventDefault();
+                return false;
+            }
+        });
+        
+        // 检测开发者工具打开（简单检测）
+        var devtoolsOpen = false;
+        var threshold = 160;
+        setInterval(function() {
+            var widthThreshold = window.outerWidth - window.innerWidth > threshold;
+            var heightThreshold = window.outerHeight - window.innerHeight > threshold;
+            if (widthThreshold || heightThreshold) {
+                if (!devtoolsOpen) {
+                    devtoolsOpen = true;
+                    // 可以选择跳转或其他操作
+                }
+            } else {
+                devtoolsOpen = false;
+            }
+        }, 1000);
+    })();
+    </script>
+
+</body>
+</html>
