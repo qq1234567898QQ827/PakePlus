@@ -1,0 +1,1000 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta charset="UTF-8">
+    <meta charset="UTF-8">
+    <meta charset="UTF-8">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>斜上抛小球动画 | 可调方向 | 轨迹保留与擦除</title>
+    <style>
+        * {
+            user-select: none;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', 'Poppins', 'Roboto', sans-serif;
+            background: linear-gradient(145deg, #1a2a3a 0%, #0f1a24 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .card {
+            background: rgba(30, 40, 50, 0.75);
+            backdrop-filter: blur(2px);
+            border-radius: 2rem;
+            padding: 1.2rem;
+            box-shadow: 0 25px 45px rgba(0, 0, 0, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        canvas {
+            display: block;
+            margin: 0 auto;
+            border-radius: 1.2rem;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+            cursor: crosshair;
+            background: #eaf4e5;
+        }
+
+        .controls {
+            margin-top: 1rem;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 1.2rem;
+            align-items: flex-end;
+            background: rgba(20, 28, 34, 0.7);
+            padding: 0.8rem 1.2rem;
+            border-radius: 2rem;
+            backdrop-filter: blur(4px);
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.3rem;
+            background: #1e2a32;
+            padding: 0.5rem 1rem;
+            border-radius: 1.8rem;
+            box-shadow: inset 0 1px 2px rgba(0,0,0,0.2), 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        .control-group label {
+            font-size: 0.75rem;
+            font-weight: bold;
+            color: #bdd4e2;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .control-group span {
+            font-size: 0.9rem;
+            font-weight: bold;
+            color: #facc15;
+            background: #0f1720;
+            padding: 0.2rem 0.5rem;
+            border-radius: 2rem;
+            text-align: center;
+            min-width: 70px;
+        }
+
+        input[type="range"] {
+            width: 180px;
+            cursor: pointer;
+            background: #2d3e4b;
+            height: 4px;
+            border-radius: 5px;
+            -webkit-appearance: none;
+        }
+        input[type="range"]:focus {
+            outline: none;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            background: #facc15;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 0 6px gold;
+            border: none;
+        }
+
+        button {
+            background: #2c3e44;
+            border: none;
+            font-weight: bold;
+            padding: 0.4rem 1.2rem;
+            border-radius: 2rem;
+            color: white;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 5px black;
+            letter-spacing: 0.5px;
+        }
+        button:hover {
+            background: #facc15;
+            color: #1e2a32;
+            transform: scale(0.97);
+            box-shadow: 0 1px 3px black;
+        }
+        .info-panel {
+            display: flex;
+            gap: 1rem;
+            background: #0f171f;
+            padding: 0.3rem 1rem;
+            border-radius: 2rem;
+            align-items: center;
+            font-size: 0.8rem;
+            font-family: monospace;
+            font-weight: bold;
+        }
+        .info-panel div {
+            color: #9ec8da;
+        }
+        .info-panel span {
+            color: #facc15;
+        }
+
+        @media (max-width: 800px) {
+            .controls { gap: 0.8rem; }
+            .control-group { padding: 0.3rem 0.7rem; }
+            input[type="range"] { width: 130px; }
+        }
+    </style>
+<style>
+    /* 齐老师动画 - 统一样式 */
+    body {
+        background: #1a2332 !important;
+    }
+    
+    /* 顶部标题栏 */
+    .qilaoshi-header {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 50px;
+        background: #1a2332;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 99999 !important;
+        border-bottom: 1px solid #2a3a50;
+    }
+    
+    .qilaoshi-title {
+        font-size: 20px;
+        font-weight: 600;
+        color: #8ab4f8;
+        letter-spacing: 2px;
+        font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif;
+    }
+    
+    /* 返回按钮 */
+    .qilaoshi-back-btn {
+        position: fixed;
+        top: 10px;
+        right: 15px;
+        z-index: 999999 !important;
+        background: linear-gradient(135deg, #3a5a80, #2a4a70);
+        color: #ffffff;
+        border: 1px solid #5a8ab0;
+        padding: 8px 18px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        font-family: 'Microsoft YaHei', sans-serif;
+        transition: all 0.2s;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+    }
+    
+    .qilaoshi-back-btn:hover {
+        background: linear-gradient(135deg, #4a6a90, #3a5a80);
+        color: #ffffff;
+        box-shadow: 0 4px 15px rgba(90, 138, 176, 0.4);
+        transform: translateY(-1px);
+    }
+    
+    /* 水印 */
+    .qilaoshi-watermark {
+        position: fixed;
+        bottom: 10px;
+        right: 15px;
+        z-index: 9999;
+        font-size: 11px;
+        color: rgba(138, 180, 248, 0.4);
+        font-family: 'Microsoft YaHei', sans-serif;
+        line-height: 1.5;
+        text-align: right;
+        pointer-events: none;
+    }
+    
+    /* 调整主内容区域，给顶部标题栏留出空间 */
+    body {
+        padding-top: 50px !important;
+    }
+</style>
+</head>
+<body>
+
+    <!-- 齐老师动画 - 顶部导航 -->
+    <div class="qilaoshi-header">
+        <div class="qilaoshi-title">齐老师动画</div>
+    </div>
+    <button class="qilaoshi-back-btn" onclick="window.location.href='../index.html'">← 返回主页</button>
+
+<div>
+    <div class="card">
+        <canvas id="projectileCanvas" width="1000" height="600" style="width:100%; height:auto; max-width:1000px; aspect-ratio:1000/600"></canvas>
+
+        <div class="controls">
+            <div class="control-group">
+                <label>🎯 初速度方向 (角度)</label>
+                <input type="range" id="angleSlider" min="0" max="90" step="1" value="55">
+                <span id="angleValue">55°</span>
+            </div>
+            <div class="control-group">
+                <label>⚡ 初速度大小</label>
+                <input type="range" id="speedSlider" min="120" max="420" step="5" value="260">
+                <span id="speedValue">260 px/s</span>
+            </div>
+            <div class="control-group">
+                <label>🧹 轨迹控制</label>
+                <button id="clearTrailBtn">🗑️ 擦除轨迹</button>
+            </div>
+            <div class="control-group">
+                <label>🔄 运动重置</label>
+                <button id="resetMotionBtn">✨ 重新抛射</button>
+            </div>
+            <div class="info-panel">
+                <div>📐 角度: <span id="dispAngle">55°</span></div>
+                <div>🚀 初速: <span id="dispSpeed">260</span> px/s</div>
+                <div>📍 位置: (<span id="posX">0</span>, <span id="posY">0</span>)</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function(){
+        // ----- 物理参数 & 画布元素 ------
+        const canvas = document.getElementById('projectileCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // 固定世界参数
+        const W = 1000, H = 600;
+        canvas.width = W;
+        canvas.height = H;
+        
+        // 地面高度 (y坐标)
+        const GROUND_Y = H - 55;     // 地面位置 y = 545 (让小球落在地表)
+        const RADIUS = 12;           // 小球半径
+        // 起始发射点 (从一定高度斜上抛)
+        const START_X = 140;
+        const START_Y = H - 170;      // 起始高度 = 430 (离地面115px，有上升空间)
+        
+        // 重力加速度 (px/s²) 模拟真实感
+        const G = 780;    // 适中，让抛物线明显
+        
+        // 运动状态变量
+        let pos = { x: START_X, y: START_Y };
+        let vel = { x: 0, y: 0 };      // 初始速度由UI确定
+        let running = true;             // 运动是否进行中 (触地或出界后false)
+        let animationId = null;
+        let lastTimestamp = null;
+        
+        // 轨迹存储 (保留点坐标)
+        let trailPoints = [];            // 存储 {x, y}
+        const MAX_TRAIL = 500;           // 限制最大轨迹点数，防止过密
+        
+        // UI 元素
+        const angleSlider = document.getElementById('angleSlider');
+        const angleValue = document.getElementById('angleValue');
+        const speedSlider = document.getElementById('speedSlider');
+        const speedValue = document.getElementById('speedValue');
+        const clearTrailBtn = document.getElementById('clearTrailBtn');
+        const resetMotionBtn = document.getElementById('resetMotionBtn');
+        const dispAngle = document.getElementById('dispAngle');
+        const dispSpeed = document.getElementById('dispSpeed');
+        const posXSpan = document.getElementById('posX');
+        const posYSpan = document.getElementById('posY');
+        
+        // 当前参数 (用于重置)
+        let currentAngleDeg = 55;      // 默认55度
+        let currentSpeed = 260;        // px/s
+        
+        // ----- 辅助函数: 根据角度和速度更新初始速度分量 -----
+        function updateVelocityFromUI() {
+            const rad = currentAngleDeg * Math.PI / 180;
+            const v0 = currentSpeed;
+            // 注意 canvas Y轴向下，向上为负
+            vel.x = v0 * Math.cos(rad);
+            vel.y = -v0 * Math.sin(rad);   // 向上 Vy 为负
+        }
+        
+        // 重置整个运动 (位置,速度,轨迹,运行标志)
+        function fullResetMotion() {
+            // 取消旧动画
+            if (animationId) {
+                cancelAnimationFrame(animationId);
+                animationId = null;
+            }
+            // 重置位置初始点
+            pos.x = START_X;
+            pos.y = START_Y;
+            // 根据当前UI角度/速度重新计算速度
+            currentAngleDeg = parseFloat(angleSlider.value);
+            currentSpeed = parseFloat(speedSlider.value);
+            updateVelocityFromUI();
+            // 清空轨迹
+            trailPoints = [];
+            // 运动标志开启
+            running = true;
+            // 重置时间戳系统，避免dt异常
+            lastTimestamp = null;
+            // 重新绘制场景 (立刻显示小球和干净轨迹)
+            drawScene();
+            // 启动动画循环
+            startAnimation();
+            // 更新显示UI数值
+            updateUIValues();
+        }
+        
+        // 仅擦除轨迹，保留当前运动状态 (不影响位置、速度、运行标志)
+        function clearTrailOnly() {
+            trailPoints = [];
+            drawScene();   // 重绘(当前小球+无轨迹)
+            // 如果运动已停止，也依然只清除轨迹，界面清爽
+        }
+        
+        // 边界检测与停止逻辑 (返回是否存活)
+        function checkBoundaryAndStop() {
+            // 超出左右边界 (考虑半径)
+            if (pos.x + RADIUS >= W || pos.x - RADIUS <= 0) {
+                if (running) {
+                    running = false;
+                    // 将小球拉回边界内避免视觉溢出
+                    if (pos.x + RADIUS >= W) pos.x = W - RADIUS;
+                    if (pos.x - RADIUS <= 0) pos.x = RADIUS;
+                    drawScene();
+                }
+                return false;
+            }
+            // 触地检测 (小球下沿碰到地面)
+            if (pos.y + RADIUS >= GROUND_Y) {
+                if (running) {
+                    running = false;
+                    pos.y = GROUND_Y - RADIUS;  // 定格在地面
+                    drawScene();
+                }
+                return false;
+            }
+            return true;
+        }
+        
+        // 物理更新 (基于时间差 dt 秒)
+        function updatePhysics(dt) {
+            if (!running) return false;
+            
+            // 欧拉积分
+            pos.x += vel.x * dt;
+            pos.y += vel.y * dt;
+            vel.y += G * dt;     // 重力加速度向下为正
+            
+            // 边界检测（如果碰撞则停止运动并且不继续增加轨迹）
+            const stillActive = checkBoundaryAndStop();
+            if (!stillActive) {
+                // 运动终止，不再添加轨迹点，但已经修改位置到边界
+                return false;
+            }
+            
+            // 运动依然活跃，记录当前点到轨迹中 (保留轨迹)
+            // 为避免过密，但每帧都记录才有细腻轨迹，保留最后MAX_TRAIL个点
+            trailPoints.push({ x: pos.x, y: pos.y });
+            if (trailPoints.length > MAX_TRAIL) {
+                trailPoints.shift();
+            }
+            return true;
+        }
+        
+        // ---------- 绘图模块 (优美风格) ----------
+        function drawScene() {
+            if (!ctx) return;
+            ctx.clearRect(0, 0, W, H);
+            
+            // 1. 天空渐变背景
+            const gradSky = ctx.createLinearGradient(0, 0, 0, GROUND_Y-20);
+            gradSky.addColorStop(0, "#c9e9ff");
+            gradSky.addColorStop(1, "#e0f0e8");
+            ctx.fillStyle = gradSky;
+            ctx.fillRect(0, 0, W, GROUND_Y-8);
+            
+            // 2. 草地/地面
+            ctx.fillStyle = "#5f8b5c";
+            ctx.fillRect(0, GROUND_Y-8, W, H - GROUND_Y + 8);
+            ctx.fillStyle = "#487a3b";
+            ctx.fillRect(0, GROUND_Y-4, W, 6);
+            // 草地高光
+            ctx.fillStyle = "#7da064";
+            for(let i=0;i<12;i++) {
+                ctx.beginPath();
+                ctx.moveTo(i*90, GROUND_Y-6);
+                ctx.lineTo(i*90+35, GROUND_Y-14);
+                ctx.lineTo(i*90-35, GROUND_Y-14);
+                ctx.fill();
+            }
+            // 地面阴影线
+            ctx.strokeStyle = "#2c5a2a";
+            ctx.lineWidth = 2;
+            for(let i=0;i<W+20;i+=40){
+                ctx.beginPath();
+                ctx.moveTo(i, GROUND_Y-2);
+                ctx.lineTo(i+20, GROUND_Y-2);
+                ctx.stroke();
+            }
+            
+            // 3. 绘制轨迹 (复古点阵风格 + 半透明残影)
+            if (trailPoints.length > 0) {
+                // 绘制光晕轨迹: 从旧到新渐变透明度
+                for (let i = 0; i < trailPoints.length; i++) {
+                    const p = trailPoints[i];
+                    const alpha = 0.4 + (i / trailPoints.length) * 0.5; // 旧点略淡
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, RADIUS * 0.45, 0, Math.PI * 2);
+                    ctx.fillStyle = `rgba(230, 90, 50, ${alpha * 0.8})`;
+                    ctx.fill();
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, RADIUS * 0.25, 0, Math.PI * 2);
+                    ctx.fillStyle = `rgba(255, 180, 70, ${alpha + 0.2})`;
+                    ctx.fill();
+                }
+                // 添加连线 (柔和线条，增加轨迹美感)
+                ctx.beginPath();
+                ctx.lineWidth = 2.5;
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+                ctx.strokeStyle = "rgba(210, 80, 40, 0.65)";
+                ctx.moveTo(trailPoints[0].x, trailPoints[0].y);
+                for (let i = 1; i < trailPoints.length; i++) {
+                    ctx.lineTo(trailPoints[i].x, trailPoints[i].y);
+                }
+                ctx.stroke();
+            }
+            
+            // 4. 绘制辅助参考: 虚线起始点标记 & 高度参考
+            ctx.beginPath();
+            ctx.setLineDash([6, 8]);
+            ctx.strokeStyle = "#aa9977";
+            ctx.lineWidth = 1.5;
+            ctx.moveTo(START_X - 18, START_Y);
+            ctx.lineTo(START_X + 38, START_Y);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(START_X, START_Y - 12);
+            ctx.lineTo(START_X, START_Y + 12);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            ctx.fillStyle = "#b8860b";
+            ctx.font = "bold 12px 'Segoe UI'";
+            ctx.shadowBlur = 0;
+            ctx.fillText("🚀 发射点", START_X - 35, START_Y - 8);
+            
+            // 5. 绘制小球 (金属光泽)
+            ctx.shadowBlur = 8;
+            ctx.shadowColor = "rgba(0,0,0,0.3)";
+            // 外发光
+            ctx.beginPath();
+            ctx.arc(pos.x, pos.y, RADIUS+1, 0, Math.PI*2);
+            ctx.fillStyle = "rgba(255,200,100,0.3)";
+            ctx.fill();
+            // 主球体
+            const gradBall = ctx.createRadialGradient(pos.x-4, pos.y-4, 3, pos.x, pos.y, RADIUS);
+            gradBall.addColorStop(0, "#ffb347");
+            gradBall.addColorStop(1, "#e05a1a");
+            ctx.beginPath();
+            ctx.arc(pos.x, pos.y, RADIUS, 0, Math.PI*2);
+            ctx.fillStyle = gradBall;
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(pos.x-2, pos.y-3, 3, 0, Math.PI*2);
+            ctx.fillStyle = "#fff9e0";
+            ctx.fill();
+            ctx.fillStyle = "#ffffff";
+            ctx.beginPath();
+            ctx.arc(pos.x-3, pos.y-5, 1.2, 0, Math.PI*2);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+            
+            // 6. 实时速度矢量指示 (箭头)
+            const speedMag = Math.hypot(vel.x, vel.y);
+            if (running && speedMag > 8) {
+                const arrowLen = Math.min(45, 18 + speedMag / 22);
+                const angleVel = Math.atan2(vel.y, vel.x);
+                const arrowX = pos.x + Math.cos(angleVel) * (RADIUS + 4);
+                const arrowY = pos.y + Math.sin(angleVel) * (RADIUS + 4);
+                const tipX = arrowX + Math.cos(angleVel) * arrowLen;
+                const tipY = arrowY + Math.sin(angleVel) * arrowLen;
+                ctx.beginPath();
+                ctx.moveTo(arrowX, arrowY);
+                ctx.lineTo(tipX, tipY);
+                ctx.lineWidth = 2.5;
+                ctx.strokeStyle = "#ffdd77";
+                ctx.shadowBlur = 4;
+                ctx.stroke();
+                // 箭头三角形
+                const anglePerp = Math.PI / 6;
+                const leftX = tipX - Math.cos(angleVel - anglePerp) * 10;
+                const leftY = tipY - Math.sin(angleVel - anglePerp) * 10;
+                const rightX = tipX - Math.cos(angleVel + anglePerp) * 10;
+                const rightY = tipY - Math.sin(angleVel + anglePerp) * 10;
+                ctx.beginPath();
+                ctx.moveTo(tipX, tipY);
+                ctx.lineTo(leftX, leftY);
+                ctx.lineTo(rightX, rightY);
+                ctx.fillStyle = "#ffcc44";
+                ctx.fill();
+                ctx.fillStyle = "#ffaa33";
+                ctx.font = "bold 10px monospace";
+                ctx.fillText("⤴", tipX-8, tipY-6);
+            }
+            
+            // 绘制地面阴影 (小球投影)
+            ctx.shadowBlur = 0;
+            ctx.fillStyle = "rgba(0,0,0,0.2)";
+            ctx.beginPath();
+            ctx.ellipse(pos.x, GROUND_Y-3, RADIUS*0.9, RADIUS*0.4, 0, 0, Math.PI*2);
+            ctx.fill();
+            
+            // 显示运动状态(停止提示)
+            if (!running) {
+                ctx.font = "bold 20px 'Segoe UI'";
+                ctx.fillStyle = "#3a2800";
+                ctx.shadowBlur = 0;
+                ctx.fillText("⛔ 落地停⽌ | 调整参数或点击重置", W/2-200, 50);
+                ctx.font = "14px monospace";
+                ctx.fillStyle = "#664d00";
+                ctx.fillText("点击「重新抛射」或改变角度/速度继续", W/2-170, 90);
+            }
+            
+            // 显示实时坐标数据
+            ctx.font = "12px 'Courier New'";
+            ctx.fillStyle = "#1e3a2f";
+            ctx.fillText(`x: ${Math.floor(pos.x)}  y: ${Math.floor(pos.y)}`, pos.x+12, pos.y-12);
+            
+            // 更新HTML面板上的位置
+            posXSpan.innerText = Math.floor(pos.x);
+            posYSpan.innerText = Math.floor(pos.y);
+        }
+        
+        // ------ 动画循环 (基于时间的物理) ------
+        let lastFrameTime = null;
+        function animationFrame(nowMs) {
+            if (!running) {
+                // 如果运动停止，仅仅重绘场景并继续请求动画 (等待重置/调节重新开始)
+                drawScene();
+                animationId = requestAnimationFrame(animationFrame);
+                return;
+            }
+            
+            if (lastFrameTime === null) {
+                lastFrameTime = nowMs;
+                animationId = requestAnimationFrame(animationFrame);
+                drawScene();
+                return;
+            }
+            
+            let dt = Math.min(0.033, (nowMs - lastFrameTime) / 1000); // 限制最大33ms
+            if (dt <= 0) {
+                lastFrameTime = nowMs;
+                animationId = requestAnimationFrame(animationFrame);
+                return;
+            }
+            
+            // 更新物理 (如果碰撞停止，running变false)
+            const active = updatePhysics(dt);
+            drawScene();   // 每次更新后绘制
+            
+            lastFrameTime = nowMs;
+            
+            // 继续循环
+            animationId = requestAnimationFrame(animationFrame);
+        }
+        
+        function startAnimation() {
+            if (animationId) cancelAnimationFrame(animationId);
+            lastFrameTime = null;
+            animationId = requestAnimationFrame(animationFrame);
+        }
+        
+        // ------ UI 联动逻辑 ------
+        function updateUIValues() {
+            angleValue.innerText = currentAngleDeg + "°";
+            speedValue.innerText = currentSpeed + " px/s";
+            dispAngle.innerText = currentAngleDeg + "°";
+            dispSpeed.innerText = currentSpeed;
+        }
+        
+        // 当滑块改变角度或速度时: 重置整个运动 (清空轨迹，从起点开始，新方向)
+        function onParamsChanged() {
+            // 获取最新值
+            let newAngle = parseFloat(angleSlider.value);
+            let newSpeed = parseFloat(speedSlider.value);
+            // 更新全局参数
+            currentAngleDeg = newAngle;
+            currentSpeed = newSpeed;
+            updateUIValues();
+            // 完全重置运动 (位置归位、速度重新计算、清空轨迹、running恢复)
+            // 完全重置函数内部会取消动画再启动
+            fullResetMotion();
+        }
+        
+        // 重置运动按钮 (同样完全重置)
+        function onResetMotion() {
+            // 同步滑块显示值到全局变量
+            currentAngleDeg = parseFloat(angleSlider.value);
+            currentSpeed = parseFloat(speedSlider.value);
+            updateUIValues();
+            fullResetMotion();
+        }
+        
+        // 擦除轨迹 (不清运动)
+        function onClearTrail() {
+            clearTrailOnly();
+        }
+        
+        // 监听滑块事件
+        angleSlider.addEventListener('input', function(e) {
+            const val = parseFloat(e.target.value);
+            angleSlider.value = val;
+            currentAngleDeg = val;
+            updateUIValues();
+            // 实时重置运动 (从新角度开始)
+            fullResetMotion();
+        });
+        
+        speedSlider.addEventListener('input', function(e) {
+            const val = parseFloat(e.target.value);
+            speedSlider.value = val;
+            currentSpeed = val;
+            updateUIValues();
+            fullResetMotion();
+        });
+        
+        clearTrailBtn.addEventListener('click', onClearTrail);
+        resetMotionBtn.addEventListener('click', onResetMotion);
+        
+        // 初始设定
+        function init() {
+            currentAngleDeg = 55;
+            currentSpeed = 260;
+            angleSlider.value = currentAngleDeg;
+            speedSlider.value = currentSpeed;
+            updateVelocityFromUI();
+            pos.x = START_X;
+            pos.y = START_Y;
+            trailPoints = [];
+            running = true;
+            updateUIValues();
+            drawScene();
+            startAnimation();
+        }
+        
+        // 窗口大小自适应时保持canvas比例(纯css已经处理,但确保重绘)
+        window.addEventListener('resize', () => {
+            drawScene();
+        });
+        
+        init();
+    })();
+</script>
+
+<style>
+.back-btn {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    padding: 10px 20px;
+    background: rgba(0, 150, 200, 0.3);
+    border: 1px solid #00ffff;
+    color: white;
+    font-size: 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    z-index: 9999;
+    transition: 0.3s;
+    backdrop-filter: blur(5px);
+}
+.back-btn:hover {
+    background: rgba(0, 150, 200, 0.6);
+    box-shadow: 0 0 15px #00ffff;
+}
+</style>
+<button class="back-btn" onclick="goBack()">⬅️ 返回</button>
+<script>
+function goBack() {
+    history.back();
+}
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        goBack();
+    }
+});
+</script>
+
+
+<div class="watermark">齐老师动画</div>
+<style>
+.watermark {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    font-size: 14px;
+    color: rgba(0, 255, 255, 0.3);
+    z-index: 9998;
+    pointer-events: none;
+    user-select: none;
+}
+</style>
+
+
+<script>
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+});
+</script>
+
+
+<style>
+.back-btn {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    padding: 10px 20px;
+    background: rgba(0, 150, 200, 0.3);
+    border: 1px solid #00ffff;
+    color: white;
+    font-size: 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    z-index: 9999;
+    transition: 0.3s;
+    backdrop-filter: blur(5px);
+}
+.back-btn:hover {
+    background: rgba(0, 150, 200, 0.6);
+    box-shadow: 0 0 15px #00ffff;
+}
+</style>
+<button class="back-btn" onclick="goBack()">⬅️ 返回</button>
+<script>
+function goBack() {
+    history.back();
+}
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        goBack();
+    }
+});
+</script>
+
+
+<div class="watermark">齐老师动画</div>
+<style>
+.watermark {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    font-size: 14px;
+    color: rgba(0, 255, 255, 0.3);
+    z-index: 9998;
+    pointer-events: none;
+    user-select: none;
+}
+</style>
+
+
+<script>
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+});
+</script>
+
+
+<style>
+.back-btn {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    padding: 10px 20px;
+    background: rgba(0, 150, 200, 0.3);
+    border: 1px solid #00ffff;
+    color: white;
+    font-size: 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    z-index: 9999;
+    transition: 0.3s;
+    backdrop-filter: blur(5px);
+}
+.back-btn:hover {
+    background: rgba(0, 150, 200, 0.6);
+    box-shadow: 0 0 15px #00ffff;
+}
+</style>
+<button class="back-btn" onclick="goBack()">⬅️ 返回</button>
+<script>
+function goBack() {
+    history.back();
+}
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        goBack();
+    }
+});
+</script>
+
+
+<div class="watermark">齐老师动画</div>
+<style>
+.watermark {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    font-size: 14px;
+    color: rgba(0, 255, 255, 0.3);
+    z-index: 9998;
+    pointer-events: none;
+    user-select: none;
+}
+</style>
+
+
+<script>
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+});
+</script>
+
+
+<style>
+.back-btn {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    padding: 10px 20px;
+    background: rgba(0, 150, 200, 0.3);
+    border: 1px solid #00ffff;
+    color: white;
+    font-size: 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    z-index: 9999;
+    transition: 0.3s;
+    backdrop-filter: blur(5px);
+}
+.back-btn:hover {
+    background: rgba(0, 150, 200, 0.6);
+    box-shadow: 0 0 15px #00ffff;
+}
+</style>
+<button class="back-btn" onclick="goBack()">⬅️ 返回</button>
+<script>
+function goBack() {
+    history.back();
+}
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        goBack();
+    }
+});
+</script>
+
+
+<div class="watermark">齐老师动画</div>
+<style>
+.watermark {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    font-size: 14px;
+    color: rgba(0, 255, 255, 0.3);
+    z-index: 9998;
+    pointer-events: none;
+    user-select: none;
+}
+</style>
+
+
+<script>
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+});
+</script>
+
+
+    <!-- 齐老师动画 - 水印 -->
+    <div class="qilaoshi-watermark">
+        QQ 3398528250<br>
+        抖音 35320300542
+    </div>
+
+
+    <!-- 齐老师动画 - 安全保护脚本 -->
+    <script>
+    (function() {
+        // 禁用右键菜单
+        document.addEventListener('contextmenu', function(e) {
+            e.preventDefault();
+            return false;
+        });
+        
+        // ESC键返回主页
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' || e.keyCode === 27) {
+                window.location.href = '../index.html';
+            }
+        });
+        
+        // 禁用开发者工具快捷键
+        document.addEventListener('keydown', function(e) {
+            // F12
+            if (e.key === 'F12' || e.keyCode === 123) {
+                e.preventDefault();
+                return false;
+            }
+            // Ctrl+U
+            if ((e.ctrlKey || e.metaKey) && (e.key === 'u' || e.keyCode === 85)) {
+                e.preventDefault();
+                return false;
+            }
+            // Ctrl+Shift+I
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'i' || e.keyCode === 73)) {
+                e.preventDefault();
+                return false;
+            }
+            // Ctrl+Shift+J
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'j' || e.keyCode === 74)) {
+                e.preventDefault();
+                return false;
+            }
+            // Ctrl+Shift+C
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'c' || e.keyCode === 67)) {
+                e.preventDefault();
+                return false;
+            }
+        });
+        
+        // 检测开发者工具打开（简单检测）
+        var devtoolsOpen = false;
+        var threshold = 160;
+        setInterval(function() {
+            var widthThreshold = window.outerWidth - window.innerWidth > threshold;
+            var heightThreshold = window.outerHeight - window.innerHeight > threshold;
+            if (widthThreshold || heightThreshold) {
+                if (!devtoolsOpen) {
+                    devtoolsOpen = true;
+                    // 可以选择跳转或其他操作
+                }
+            } else {
+                devtoolsOpen = false;
+            }
+        }, 1000);
+    })();
+    </script>
+
+</body>
+</html>
