@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>红蓝双球 · XY平面圆周运动 + X轴投影</title>
+    <style>
+        :root {
+            --bg: #0a0f1a;
+            --panel-bg: rgba(10, 15, 30, 0.9);
+            --border: rgba(80, 140, 255, 0.4);
+            --text: #cdd9f0;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background: var(--bg);
+            overflow: hidden;
+            font-family: 'Segoe UI', 'JetBrains Mono', monospace;
+            height: 100vh;
+            width: 100vw;
+            user-select: none;
+        }
+        #canvas-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+        .hint-overlay {
+            position: fixed;
+            top: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 8;
+            font-family: 'JetBrains Mono', 'Fira Code', monospace;
+            font-size: 15px;
+            letter-spacing: 2px;
+            color: rgba(200, 220, 255, 0.85);
+            text-shadow: 0 0 12px rgba(120, 180, 255, 0.7), 0 0 30px rgba(70, 130, 255, 0.5);
+            pointer-events: none;
+            animation: glowPulse 2.5s ease-in-out infinite;
+            backdrop-filter: blur(2px);
+            -webkit-backdrop-filter: blur(2px);
+            padding: 4px 16px;
+            border-radius: 20px;
+            background: rgba(10, 20, 40, 0.4);
+        }
+        @keyframes glowPulse {
+            0%, 100% {
+                text-shadow: 0 0 12px rgba(120, 180, 255, 0.7), 0 0 30px rgba(70, 130, 255, 0.5);
+                opacity: 0.75;
+            }
+            50% {
+                text-shadow: 0 0 20px rgba(180, 210, 255, 0.9), 0 0 45px rgba(100, 160, 255, 0.7);
+                opacity: 1;
+            }
+        }
+
+        /* 控制面板 - 移至左下角 */
+        .control-panel {
+            position: fixed;
+            bottom: 28px;
+            left: 28px;
+            z-index: 10;
+            background: var(--panel-bg);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 16px 22px 18px;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 10px;
+            box-shadow: 0 8px 40px rgba(0, 0, 0, 0.6);
+            max-width: 280px;
+        }
+        .panel-label {
+            color: #aabbdd;
+            font-size: 11px;
+            letter-spacing: 2.5px;
+            text-transform: uppercase;
+            font-weight: 500;
+            white-space: nowrap;
+        }
+        .btn-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            width: 100%;
+        }
+        .phase-btn {
+            padding: 10px 16px;
+            border-radius: 12px;
+            border: 1px solid rgba(100, 150, 230, 0.4);
+            background: rgba(20, 30, 60, 0.6);
+            color: #c0d0f0;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 13px;
+            letter-spacing: 1.5px;
+            transition: all 0.25s;
+            font-weight: 500;
+            backdrop-filter: blur(8px);
+            width: 100%;
+            text-align: center;
+        }
+        .phase-btn:hover {
+            background: rgba(40, 70, 130, 0.75);
+            border-color: rgba(160, 200, 255, 0.65);
+            color: #fff;
+            box-shadow: 0 0 20px rgba(60, 140, 255, 0.25);
+            transform: translateX(2px);
+        }
+        .phase-btn:active {
+            transform: scale(0.96);
+        }
+        .phase-btn.active {
+            background: rgba(50, 90, 170, 0.7);
+            border-color: rgba(180, 210, 255, 0.85);
+            color: #fff;
+            box-shadow: 0 0 24px rgba(70, 150, 255, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+            font-weight: 600;
+        }
+        .info-tag {
+            color: #8899bb;
+            font-size: 10px;
+            letter-spacing: 1.5px;
+            white-space: nowrap;
+        }
+        .info-tag .highlight {
+            color: #e0ecff;
+            font-weight: 700;
+        }
+
+        @media (max-width: 700px) {
+            .control-panel {
+                bottom: 16px;
+                left: 12px;
+                padding: 12px 16px 14px;
+                gap: 8px;
+                max-width: 220px;
+                border-radius: 16px;
+            }
+            .phase-btn {
+                padding: 8px 12px;
+                font-size: 12px;
+                letter-spacing: 1px;
+            }
+            .panel-label {
+                font-size: 10px;
+                letter-spacing: 2px;
+            }
+            .info-tag {
+                font-size: 9px;
+            }
+            .hint-overlay {
+                font-size: 13px;
+                top: 16px;
+                padding: 4px 12px;
+            }
+        }
+    </style>
+<style>
+    /* 齐老师动画 - 统一样式 */
+    body {
+        background: #1a2332 !important;
+    }
+    
+    /* 顶部标题栏 */
+    .qilaoshi-header {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 50px;
+        background: #1a2332;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 99999 !important;
+        border-bottom: 1px solid #2a3a50;
+    }
+    
+    .qilaoshi-title {
+        font-size: 20px;
+        font-weight: 600;
+        color: #8ab4f8;
+        letter-spacing: 2px;
+        font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif;
+    }
+    
+    /* 返回按钮 */
+    .qilaoshi-back-btn {
+        position: fixed;
+        top: 10px;
+        right: 15px;
+        z-index: 999999 !important;
+        background: linear-gradient(135deg, #3a5a80, #2a4a70);
+        color: #ffffff;
+        border: 1px solid #5a8ab0;
+        padding: 8px 18px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        font-family: 'Microsoft YaHei', sans-serif;
+        transition: all 0.2s;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+    }
+    
+    .qilaoshi-back-btn:hover {
+        background: linear-gradient(135deg, #4a6a90, #3a5a80);
+        color: #ffffff;
+        box-shadow: 0 4px 15px rgba(90, 138, 176, 0.4);
+        transform: translateY(-1px);
+    }
+    
+    /* 水印 */
+    .qilaoshi-watermark {
+        position: fixed;
+        bottom: 10px;
+        right: 15px;
+        z-index: 9999;
+        font-size: 11px;
+        color: rgba(138, 180, 248, 0.4);
+        font-family: 'Microsoft YaHei', sans-serif;
+        line-height: 1.5;
+        text-align: right;
+        pointer-events: none;
+    }
+    
+    /* 调整主内容区域，给顶部标题栏留出空间 */
+    body {
+        padding-top: 50px !important;
+    }
+</style>
+</head>
+<body>
+
+    <!-- 齐老师动画 - 顶部导航 -->
+    <div class="qilaoshi-header">
+        <div class="qilaoshi-title">齐老师动画</div>
+    </div>
+    <button class="qilaoshi-back-btn" onclick="window.location.href='../index.html'">← 返回主页</button>
+
+    <div id="canvas-container"></div>
+    <div class="hint-overlay">✨ 点击左侧按钮直接启动 ✨</div>
+
+    <div class="control-panel">
+        <span class="panel-label">🔴 滞后相位 🔵</span>
+        <div class="btn-group" id="btnGroup">
+            <button class="phase-btn active" data-phase="T/4">T/4 · 90°</button>
+            <button class="phase-btn" data-phase="T/2">T/2 · 180°</button>
+            <button class="phase-btn" data-phase="3T/4">3T/4 · 270°</button>
+        </div>
+        <span class="info-tag" id="infoTag">红球先动，蓝球滞后 <span class="highlight">T/4 (90°)</span></span>
+    </div>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.157.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.157.0/examples/jsm/"
+            }
+        }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+
+        const container = document.getElementById('canvas-container');
+        const btnGroup = document.getElementById('btnGroup');
+        const infoTag = document.getElementById('infoTag');
+        const phaseBtns = btnGroup.querySelectorAll('.phase-btn');
+
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x0a0f1a);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.2;
+        container.appendChild(renderer.domElement);
+
+        const labelRenderer = new CSS2DRenderer();
+        labelRenderer.setSize(window.innerWidth, window.innerHeight);
+        labelRenderer.domElement.style.position = 'fixed';
+        labelRenderer.domElement.style.top = '0';
+        labelRenderer.domElement.style.left = '0';
+        labelRenderer.domElement.style.pointerEvents = 'none';
+        labelRenderer.domElement.style.zIndex = '5';
+        container.appendChild(labelRenderer.domElement);
+
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.5, 50);
+        camera.position.set(0, 0, 14);
+        camera.lookAt(0, 0, 0);
+
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.target.set(0, 0, 0);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.1;
+        controls.minDistance = 6;
+        controls.maxDistance = 28;
+        controls.maxPolarAngle = Math.PI * 0.55;
+        controls.minPolarAngle = 0.1;
+        controls.autoRotate = false;
+        controls.update();
+
+        scene.add(new THREE.AmbientLight(0x334466, 1.8));
+        const dirLight = new THREE.DirectionalLight(0xffffff, 2.5);
+        dirLight.position.set(0, 0, 8);
+        scene.add(dirLight);
+
+        const ORBIT_RADIUS = 4.5;
+        const BALL_RADIUS = 0.28;
+        const PERIOD_T = 6.5;
+        const ANGULAR_VELOCITY = (2 * Math.PI) / PERIOD_T;
+        const GLOW_SIZE = 1.6;
+        const PROJECTION_BALL_RADIUS = 0.2;
+        const PROJECTION_GLOW_SIZE = 1.0;
+
+        const phaseMap = {
+            'T/4': { delay: PERIOD_T / 4, angle: Math.PI / 2, label: 'T/4 (90°)' },
+            'T/2': { delay: PERIOD_T / 2, angle: Math.PI, label: 'T/2 (180°)' },
+            '3T/4': { delay: (3 * PERIOD_T) / 4, angle: (3 * Math.PI) / 2, label: '3T/4 (270°)' },
+        };
+        let currentPhaseKey = 'T/4';
+        let startupDelay = phaseMap[currentPhaseKey].delay;
+        let animationTime = 0;
+        let isStartupDemo = true;
+        let blueFrozenUntil = startupDelay;
+        let paused = false;
+
+        function createGlowTexture(innerColor, outerColor, size = 128) {
+            const canvas = document.createElement('canvas');
+            canvas.width = size;
+            canvas.height = size;
+            const ctx = canvas.getContext('2d');
+            const half = size / 2;
+            const gradient = ctx.createRadialGradient(half, half, half * 0.02, half, half, half);
+            gradient.addColorStop(0, innerColor);
+            gradient.addColorStop(0.2, innerColor);
+            gradient.addColorStop(0.5, outerColor);
+            gradient.addColorStop(0.85, 'rgba(0,0,0,0)');
+            gradient.addColorStop(1, 'rgba(0,0,0,0)');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, size, size);
+            const tex = new THREE.CanvasTexture(canvas);
+            tex.needsUpdate = true;
+            tex.minFilter = THREE.LinearFilter;
+            return tex;
+        }
+
+        function createAxes() {
+            const group = new THREE.Group();
+            const axisLength = 6.5;
+            const arrowHeadLength = 0.35;
+            const arrowHeadWidth = 0.18;
+            const colorX = 0xff6666;
+            const colorY = 0x66ff66;
+
+            const xLineGeo = new THREE.BufferGeometry().setFromPoints([
+                new THREE.Vector3(-axisLength, 0, 0), new THREE.Vector3(axisLength, 0, 0)
+            ]);
+            group.add(new THREE.Line(xLineGeo, new THREE.LineBasicMaterial({ color: colorX, opacity: 0.6, transparent: true })));
+
+            const xArrow = new THREE.Mesh(
+                new THREE.ConeGeometry(arrowHeadWidth, arrowHeadLength, 16),
+                new THREE.MeshStandardMaterial({ color: colorX, emissive: colorX, emissiveIntensity: 0.7, roughness: 0.3 })
+            );
+            xArrow.position.set(axisLength, 0, 0);
+            xArrow.rotation.z = -Math.PI / 2;
+            group.add(xArrow);
+
+            const yLineGeo = new THREE.BufferGeometry().setFromPoints([
+                new THREE.Vector3(0, -axisLength, 0), new THREE.Vector3(0, axisLength, 0)
+            ]);
+            group.add(new THREE.Line(yLineGeo, new THREE.LineBasicMaterial({ color: colorY, opacity: 0.6, transparent: true })));
+
+            const yArrow = new THREE.Mesh(
+                new THREE.ConeGeometry(arrowHeadWidth, arrowHeadLength, 16),
+                new THREE.MeshStandardMaterial({ color: colorY, emissive: colorY, emissiveIntensity: 0.7, roughness: 0.3 })
+            );
+            yArrow.position.set(0, axisLength, 0);
+            group.add(yArrow);
+
+            const tickSize = 0.12;
+            for (let i = -Math.floor(axisLength); i <= Math.floor(axisLength); i += 1.0) {
+                if (Math.abs(i) < 0.001) continue;
+                group.add(new THREE.Line(
+                    new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(i, -tickSize, 0), new THREE.Vector3(i, tickSize, 0)]),
+                    new THREE.LineBasicMaterial({ color: 0x8899aa, opacity: 0.5, transparent: true })
+                ));
+                group.add(new THREE.Line(
+                    new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(-tickSize, i, 0), new THREE.Vector3(tickSize, i, 0)]),
+                    new THREE.LineBasicMaterial({ color: 0x8899aa, opacity: 0.5, transparent: true })
+                ));
+                if (Number.isInteger(i) && i !== 0) {
+                    const divX = document.createElement('div');
+                    divX.textContent = i;
+                    divX.style.color = '#ccddee';
+                    divX.style.fontSize = '11px';
+                    const labelX = new CSS2DObject(divX);
+                    labelX.position.set(i, -0.35, 0);
+                    group.add(labelX);
+                    const divY = document.createElement('div');
+                    divY.textContent = i;
+                    divY.style.color = '#ccddee';
+                    divY.style.fontSize = '11px';
+                    const labelY = new CSS2DObject(divY);
+                    labelY.position.set(-0.45, i, 0);
+                    group.add(labelY);
+                }
+            }
+
+            const divO = document.createElement('div');
+            divO.textContent = 'O';
+            divO.style.color = '#fff';
+            divO.style.fontSize = '13px';
+            divO.style.fontWeight = '600';
+            const labelO = new CSS2DObject(divO);
+            labelO.position.set(-0.25, -0.3, 0);
+            group.add(labelO);
+
+            const divXLabel = document.createElement('div');
+            divXLabel.textContent = 'X';
+            divXLabel.style.color = '#ff8888';
+            divXLabel.style.fontSize = '14px';
+            divXLabel.style.fontWeight = 'bold';
+            const xLabelObj = new CSS2DObject(divXLabel);
+            xLabelObj.position.set(axisLength + 0.5, 0.2, 0);
+            group.add(xLabelObj);
+
+            const divYLabel = document.createElement('div');
+            divYLabel.textContent = 'Y';
+            divYLabel.style.color = '#88ff88';
+            divYLabel.style.fontSize = '14px';
+            divYLabel.style.fontWeight = 'bold';
+            const yLabelObj = new CSS2DObject(divYLabel);
+            yLabelObj.position.set(0.2, axisLength + 0.4, 0);
+            group.add(yLabelObj);
+
+            return group;
+        }
+        scene.add(createAxes());
+
+        const circlePoints = [];
+        for (let i = 0; i <= 256; i++) {
+            const angle = (i / 256) * Math.PI * 2;
+            circlePoints.push(new THREE.Vector3(ORBIT_RADIUS * Math.cos(angle), ORBIT_RADIUS * Math.sin(angle), 0));
+        }
+        const circle = new THREE.Line(
+            new THREE.BufferGeometry().setFromPoints(circlePoints),
+            new THREE.LineDashedMaterial({ color: 0x335577, dashSize: 0.5, gapSize: 0.25, transparent: true, opacity: 0.55 })
+        );
+        circle.computeLineDistances();
+        scene.add(circle);
+
+        const centerDot = new THREE.Mesh(
+            new THREE.SphereGeometry(0.12, 16, 16),
+            new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xffffff, emissiveIntensity: 1.5 })
+        );
+        scene.add(centerDot);
+
+        function createBall(color, emissive, glowInner, glowOuter, radius = BALL_RADIUS, glowSize = GLOW_SIZE) {
+            const group = new THREE.Group();
+            group.add(new THREE.Mesh(
+                new THREE.SphereGeometry(radius, 48, 48),
+                new THREE.MeshStandardMaterial({ color, emissive, emissiveIntensity: 2.2, roughness: 0.2, metalness: 0.1 })
+            ));
+            const sprite = new THREE.Sprite(new THREE.SpriteMaterial({
+                map: createGlowTexture(glowInner, glowOuter),
+                blending: THREE.AdditiveBlending,
+                depthWrite: false,
+                transparent: true,
+                opacity: 0.7,
+            }));
+            sprite.scale.set(glowSize, glowSize, 1);
+            group.add(sprite);
+            return group;
+        }
+
+        const redBall = createBall(0xff3050, 0xff1030, 'rgba(255,60,80,1)', 'rgba(255,80,40,0.4)');
+        const blueBall = createBall(0x2090ff, 0x1060e0, 'rgba(40,140,255,1)', 'rgba(30,100,240,0.4)');
+        scene.add(redBall);
+        scene.add(blueBall);
+
+        const redProjection = createBall(0xff4060, 0xff1030, 'rgba(255,70,90,0.9)', 'rgba(255,100,60,0.25)', PROJECTION_BALL_RADIUS, PROJECTION_GLOW_SIZE);
+        const blueProjection = createBall(0x3090ff, 0x1060e0, 'rgba(50,150,255,0.9)', 'rgba(40,120,250,0.25)', PROJECTION_BALL_RADIUS, PROJECTION_GLOW_SIZE);
+        scene.add(redProjection);
+        scene.add(blueProjection);
+
+        function setBallPosition(ball, angle) {
+            ball.position.set(ORBIT_RADIUS * Math.cos(angle), ORBIT_RADIUS * Math.sin(angle), 0);
+        }
+        function updateProjections() {
+            redProjection.position.set(redBall.position.x, 0, 0);
+            blueProjection.position.set(blueBall.position.x, 0, 0);
+        }
+
+        function createTrailLine(color, maxPoints = 2000) {
+            const positions = new Float32Array(maxPoints * 3);
+            const geo = new THREE.BufferGeometry();
+            geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            const line = new THREE.Line(geo, new THREE.LineBasicMaterial({ color, linewidth: 2, transparent: true, opacity: 0.8 }));
+            line.frustumCulled = false;
+            return { line, positions, maxPoints, pointCount: 0 };
+        }
+
+        const redTrail = createTrailLine(0xff4060);
+        const blueTrail = createTrailLine(0x4090ff);
+        scene.add(redTrail.line);
+        scene.add(blueTrail.line);
+
+        function addTrailPoint(trail, point) {
+            const { positions, maxPoints, pointCount } = trail;
+            const idx = pointCount < maxPoints ? pointCount : pointCount % maxPoints;
+            positions[idx * 3] = point.x;
+            positions[idx * 3 + 1] = point.y;
+            positions[idx * 3 + 2] = point.z;
+            trail.pointCount++;
+            trail.line.geometry.setDrawRange(0, Math.min(trail.pointCount, maxPoints));
+            trail.line.geometry.attributes.position.needsUpdate = true;
+        }
+
+        function clearTrail(trail) {
+            trail.pointCount = 0;
+            trail.line.geometry.setDrawRange(0, 0);
+            trail.line.geometry.attributes.position.needsUpdate = true;
+        }
+
+        function launchDemo() {
+            animationTime = 0;
+            isStartupDemo = true;
+            paused = false;
+            startupDelay = phaseMap[currentPhaseKey].delay;
+            blueFrozenUntil = startupDelay;
+            clearTrail(redTrail);
+            clearTrail(blueTrail);
+            setBallPosition(redBall, 0);
+            setBallPosition(blueBall, 0);
+            updateProjections();
+        }
+
+        function updateUI() {
+            phaseBtns.forEach(b => b.classList.remove('active'));
+            const activeBtn = document.querySelector(`.phase-btn[data-phase="${currentPhaseKey}"]`);
+            if (activeBtn) activeBtn.classList.add('active');
+            infoTag.innerHTML = `红球先动，蓝球滞后 <span class="highlight">${phaseMap[currentPhaseKey].label}</span>`;
+        }
+
+        phaseBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                currentPhaseKey = btn.dataset.phase;
+                updateUI();
+                launchDemo();
+            });
+        });
+
+        window.addEventListener('keydown', (e) => {
+            const key = e.key.toLowerCase();
+            if (key === '1') { currentPhaseKey = 'T/4';
+                updateUI();
+                launchDemo(); } else if (key === '2') { currentPhaseKey = 'T/2';
+                updateUI();
+                launchDemo(); } else if (key === '3') { currentPhaseKey = '3T/4';
+                updateUI();
+                launchDemo(); }
+        });
+
+        let lastTap = 0;
+        window.addEventListener('touchstart', (e) => {
+            const now = Date.now();
+            if (now - lastTap < 300 && e.target.tagName !== 'BUTTON') {
+                launchDemo();
+                updateUI();
+            }
+            lastTap = now;
+        }, { passive: true });
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            labelRenderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        const clock = new THREE.Clock();
+        let trailRecordTimer = 0;
+        const trailRecordInterval = 0.03;
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const dt = Math.min(clock.getDelta(), 0.15);
+            controls.update();
+
+            if (!paused) {
+                animationTime += dt;
+                const redAngle = ANGULAR_VELOCITY * animationTime;
+                let blueAngle;
+                if (isStartupDemo && animationTime < blueFrozenUntil) {
+                    blueAngle = 0;
+                } else {
+                    if (isStartupDemo && animationTime >= blueFrozenUntil) isStartupDemo = false;
+                    blueAngle = ANGULAR_VELOCITY * (animationTime - startupDelay);
+                }
+                setBallPosition(redBall, redAngle);
+                setBallPosition(blueBall, blueAngle);
+                updateProjections();
+
+                trailRecordTimer += dt;
+                while (trailRecordTimer >= trailRecordInterval) {
+                    trailRecordTimer -= trailRecordInterval;
+                    addTrailPoint(redTrail, redBall.position.clone());
+                    addTrailPoint(blueTrail, blueBall.position.clone());
+                }
+            }
+
+            centerDot.scale.setScalar(1 + Math.sin(animationTime * 3) * 0.1);
+            renderer.render(scene, camera);
+            labelRenderer.render(scene, camera);
+        }
+
+        function init() {
+            updateUI();
+            launchDemo();
+            requestAnimationFrame(animate);
+        }
+        init();
+    </script>
+
+    <!-- 齐老师动画 - 水印 -->
+    <div class="qilaoshi-watermark">
+        QQ 3398528250<br>
+        抖音 35320300542
+    </div>
+
+
+    <!-- 齐老师动画 - 安全保护脚本 -->
+    <script>
+    (function() {
+        // 禁用右键菜单
+        document.addEventListener('contextmenu', function(e) {
+            e.preventDefault();
+            return false;
+        });
+        
+        // ESC键返回主页
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' || e.keyCode === 27) {
+                window.location.href = '../index.html';
+            }
+        });
+        
+        // 禁用开发者工具快捷键
+        document.addEventListener('keydown', function(e) {
+            // F12
+            if (e.key === 'F12' || e.keyCode === 123) {
+                e.preventDefault();
+                return false;
+            }
+            // Ctrl+U
+            if ((e.ctrlKey || e.metaKey) && (e.key === 'u' || e.keyCode === 85)) {
+                e.preventDefault();
+                return false;
+            }
+            // Ctrl+Shift+I
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'i' || e.keyCode === 73)) {
+                e.preventDefault();
+                return false;
+            }
+            // Ctrl+Shift+J
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'j' || e.keyCode === 74)) {
+                e.preventDefault();
+                return false;
+            }
+            // Ctrl+Shift+C
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'c' || e.keyCode === 67)) {
+                e.preventDefault();
+                return false;
+            }
+        });
+        
+        // 检测开发者工具打开（简单检测）
+        var devtoolsOpen = false;
+        var threshold = 160;
+        setInterval(function() {
+            var widthThreshold = window.outerWidth - window.innerWidth > threshold;
+            var heightThreshold = window.outerHeight - window.innerHeight > threshold;
+            if (widthThreshold || heightThreshold) {
+                if (!devtoolsOpen) {
+                    devtoolsOpen = true;
+                    // 可以选择跳转或其他操作
+                }
+            } else {
+                devtoolsOpen = false;
+            }
+        }, 1000);
+    })();
+    </script>
+
+</body>
+</html>
