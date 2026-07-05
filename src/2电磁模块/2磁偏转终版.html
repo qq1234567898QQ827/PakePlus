@@ -1,0 +1,870 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>高中物理磁偏转动画</title>
+  <script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    body {
+      overflow: hidden;
+      background: #0a0e27;
+    }
+    #particles-js {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      top: 0;
+      left: 0;
+      z-index: 1;
+    }
+    #simulationCanvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      z-index: 2;
+    }
+    .controls {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      z-index: 3;
+      background: rgba(10, 14, 39, 0.8);
+      padding: 20px;
+      border-radius: 10px;
+      color: white;
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(100, 150, 255, 0.3);
+      box-shadow: 0 0 20px rgba(100, 150, 255, 0.2);
+    }
+    .controls h3 {
+      margin-bottom: 15px;
+      color: #64b5f6;
+      text-align: center;
+    }
+    .control-item {
+      margin-bottom: 15px;
+      font-size: 14px;
+    }
+    .control-item label {
+      display: block;
+      margin-bottom: 5px;
+    }
+    .control-item input[type="range"] {
+      width: 200px;
+      accent-color: #64b5f6;
+    }
+    .controls button {
+      width: 100%;
+      padding: 10px;
+      background: #1976d2;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: background 0.3s;
+    }
+    .controls button:hover {
+      background: #1565c0;
+    }
+    /* 底部的磁场形状控制栏 */
+    .shape-controls {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 60px;
+      z-index: 3;
+      background: rgba(10, 14, 39, 0.8);
+      backdrop-filter: blur(10px);
+      border-top: 1px solid rgba(100, 150, 255, 0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 15px;
+      padding: 0 20px;
+    }
+    .shape-controls label {
+      color: white;
+      font-size: 14px;
+    }
+    .shape-btn {
+      padding: 8px 16px;
+      background: #1976d2;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: all 0.3s;
+    }
+    .shape-btn:hover {
+      background: #1565c0;
+    }
+    .shape-btn.active {
+      background: #64b5f6;
+      box-shadow: 0 0 10px rgba(100, 181, 246, 0.5);
+    }
+  </style>
+<style>
+    /* 齐老师动画 - 统一样式 */
+    body {
+        background: #1a2332 !important;
+    }
+    
+    /* 顶部标题栏 */
+    .qilaoshi-header {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 50px;
+        background: #1a2332;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 99999 !important;
+        border-bottom: 1px solid #2a3a50;
+    }
+    
+    .qilaoshi-title {
+        font-size: 20px;
+        font-weight: 600;
+        color: #8ab4f8;
+        letter-spacing: 2px;
+        font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif;
+    }
+    
+    /* 返回按钮 */
+    .qilaoshi-back-btn {
+        position: fixed;
+        top: 10px;
+        right: 15px;
+        z-index: 999999 !important;
+        background: linear-gradient(135deg, #3a5a80, #2a4a70);
+        color: #ffffff;
+        border: 1px solid #5a8ab0;
+        padding: 8px 18px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        font-family: 'Microsoft YaHei', sans-serif;
+        transition: all 0.2s;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+    }
+    
+    .qilaoshi-back-btn:hover {
+        background: linear-gradient(135deg, #4a6a90, #3a5a80);
+        color: #ffffff;
+        box-shadow: 0 4px 15px rgba(90, 138, 176, 0.4);
+        transform: translateY(-1px);
+    }
+    
+    /* 水印 */
+    .qilaoshi-watermark {
+        position: fixed;
+        bottom: 10px;
+        right: 15px;
+        z-index: 9999;
+        font-size: 11px;
+        color: rgba(138, 180, 248, 0.4);
+        font-family: 'Microsoft YaHei', sans-serif;
+        line-height: 1.5;
+        text-align: right;
+        pointer-events: none;
+    }
+    
+    /* 调整主内容区域，给顶部标题栏留出空间 */
+    body {
+        padding-top: 50px !important;
+    }
+</style>
+</head>
+<body>
+
+    <!-- 齐老师动画 - 顶部导航 -->
+    <div class="qilaoshi-header">
+        <div class="qilaoshi-title">齐老师动画</div>
+    </div>
+    <button class="qilaoshi-back-btn" onclick="window.location.href='../index.html'">← 返回主页</button>
+
+  <div id="particles-js"></div>
+  <canvas id="simulationCanvas"></canvas>
+  
+  <div class="controls">
+    <h3>参数调节</h3>
+    <div class="control-item">
+      <label>速度大小: <span id="speedValue">5.0</span></label>
+      <input type="range" id="speedSlider" min="1" max="40" step="0.1" value="5">
+    </div>
+    <div class="control-item">
+      <label>速度方向(°): <span id="angleValue">0</span></label>
+      <!-- 方向范围加倍，支持更大角度入射 -->
+      <input type="range" id="angleSlider" min="-180" max="180" step="1" value="0">
+    </div>
+    <!-- 尺寸调节控件，默认隐藏 -->
+    <div class="control-item" id="sizeControls" style="display: none;">
+      <label>磁场宽度: <span id="widthValue">400</span></label>
+      <input type="range" id="widthSlider" min="100" max="500" step="10" value="400">
+      <label id="heightLabel" style="margin-top: 8px;">磁场高度: <span id="heightValue">300</span></label>
+      <input type="range" id="heightSlider" min="100" max="400" step="10" value="300">
+      <label id="posYLabel" style="margin-top: 8px;">入射上下位置: <span id="posYValue">0</span></label>
+      <input type="range" id="posYSlider" min="-100" max="100" step="1" value="0">
+      <label id="posXLabel" style="margin-top: 8px;">入射左右位置: <span id="posXValue">0</span></label>
+      <input type="range" id="posXSlider" min="-150" max="150" step="1" value="0">
+    </div>
+    <button id="resetBtn">重置动画</button>
+    <button id="keepTrajBtn" style="margin-top: 8px;">开启保留轨迹</button>
+    <button id="clearTrajBtn" style="margin-top: 8px;">删除所有轨迹</button>
+  </div>
+
+  <!-- 底部的磁场形状选择栏，全部横向显示按钮 -->
+  <div class="shape-controls">
+    <label>磁场形状选择:</label>
+    <button class="shape-btn active" data-shape="circle">圆形磁场</button>
+    <button class="shape-btn" data-shape="rect">矩形磁场</button>
+    <button class="shape-btn" data-shape="triangle">三角形磁场</button>
+    <button class="shape-btn" data-shape="single">单边界磁场</button>
+    <button class="shape-btn" data-shape="double">双边界磁场</button>
+  </div>
+
+  <script>
+    // 确保DOM完全加载后再执行所有JS
+    document.addEventListener('DOMContentLoaded', function() {
+      // 初始化科技感粒子背景
+      particlesJS('particles-js', {
+        particles: {
+          number: { value: 80, density: { enable: true, value_area: 800 } },
+          color: { value: "#64b5f6" },
+          shape: { type: "circle" },
+          opacity: { value: 0.5, random: true },
+          size: { value: 3, random: true },
+          line_linked: {
+            enable: true,
+            distance: 150,
+            color: "#64b5f6",
+            opacity: 0.2,
+            width: 1
+          },
+          move: {
+            enable: true,
+            speed: 1,
+            direction: "none",
+            random: true,
+            straight: false,
+            out_mode: "out",
+            bounce: false
+          }
+        },
+        interactivity: {
+          detect_on: "canvas",
+          events: {
+            onhover: { enable: true, mode: "grab" },
+            onclick: { enable: true, mode: "push" },
+            resize: true
+          },
+          modes: {
+            grab: { distance: 140, line_linked: { opacity: 0.5 } },
+            push: { particles_nb: 4 }
+          }
+        },
+        retina_detect: true
+      });
+
+      // 画布初始化
+      const canvas = document.getElementById('simulationCanvas');
+      const ctx = canvas.getContext('2d');
+
+      // 调整画布大小，留出底部控制栏
+      function resizeCanvas() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight - 60; // 底部控制栏高度60px
+      }
+      resizeCanvas();
+      window.addEventListener('resize', resizeCanvas);
+
+      // 磁场区域参数
+      let centerX, centerY, B_radius;
+      function updateMagneticFieldPos() {
+        centerX = canvas.width / 2;
+        centerY = canvas.height / 2;
+        B_radius = 200;
+      }
+      updateMagneticFieldPos();
+      window.addEventListener('resize', updateMagneticFieldPos);
+
+      // 可调节的尺寸参数
+      let rectWidth = 400;
+      let rectHeight = 300;
+      let doubleWidth = 400;
+
+      // 磁场形状
+      let magneticShape = 'circle';
+
+      // 物理参数
+      const B = 0.05;    // 磁场强度
+      const m = 1;      // 粒子质量
+      const q = 1;      // 粒子电荷量（正电）
+
+      // 判断点是否在磁场内
+      function isInMagnetic(x, y) {
+        const dx = x - centerX;
+        const dy = y - centerY;
+        const tol = 1; // 边界容差，确保边界处也有磁场
+        if (magneticShape === 'circle') {
+          return dx*dx + dy*dy <= (B_radius + tol)*(B_radius + tol);
+        } else if (magneticShape === 'rect') {
+          return x >= centerX - rectWidth/2 - tol && x <= centerX + rectWidth/2 + tol &&
+                 y >= centerY - rectHeight/2 - tol && y <= centerY + rectHeight/2 + tol;
+        } else if (magneticShape === 'triangle') {
+          // 等边三角形，左边的边垂直，边长300，粒子从左边的边的中点进入
+          const leftEdgeX = centerX - B_radius; // 左边的边的x坐标
+          const p1 = {x: leftEdgeX, y: centerY - 150}; // 左上顶点
+          const p2 = {x: leftEdgeX, y: centerY + 150}; // 左下顶点
+          const p3 = {x: leftEdgeX + 259.8, y: centerY}; // 右顶点，等边三角形的高=√3/2*300≈259.8
+          // 叉乘判断点是否在三角形内
+          const c1 = (p2.x - p1.x)*(y - p1.y) - (p2.y - p1.y)*(x - p1.x);
+          const c2 = (p3.x - p2.x)*(y - p2.y) - (p3.y - p2.y)*(x - p2.x);
+          const c3 = (p1.x - p3.x)*(y - p3.y) - (p1.y - p3.y)*(x - p3.x);
+          const hasNeg = (c1 < -tol) || (c2 < -tol) || (c3 < -tol);
+          const hasPos = (c1 > tol) || (c2 > tol) || (c3 > tol);
+          return !(hasNeg && hasPos);
+        } else if (magneticShape === 'single') {
+          // 单边界：左边界右侧都是磁场
+          return x >= centerX - B_radius - tol;
+        } else if (magneticShape === 'double') {
+          // 双边界：左边界固定在入射位置，只有右边界可调节
+          const leftEdge = centerX - B_radius;
+          const rightEdge = leftEdge + doubleWidth;
+          return x >= leftEdge - tol && x <= rightEdge + tol;
+        }
+        return false;
+      }
+
+      // 粒子状态
+      let particle = {
+        x: 0,
+        y: 0,
+        vx: 0,
+        vy: 0
+      };
+      let trajectory = []; // 运动轨迹
+      let keepTrajectory = false; // 是否保留轨迹
+      let lastInMagnetic = false; // 记录上一帧粒子是否在磁场内
+
+      // 控制元素
+      const speedSlider = document.getElementById('speedSlider');
+      const angleSlider = document.getElementById('angleSlider');
+      const speedValue = document.getElementById('speedValue');
+      const angleValue = document.getElementById('angleValue');
+      const resetBtn = document.getElementById('resetBtn');
+      const keepTrajBtn = document.getElementById('keepTrajBtn');
+      const clearTrajBtn = document.getElementById('clearTrajBtn');
+      const sizeControls = document.getElementById('sizeControls');
+      const widthSlider = document.getElementById('widthSlider');
+      const heightSlider = document.getElementById('heightSlider');
+      const widthValue = document.getElementById('widthValue');
+      const heightValue = document.getElementById('heightValue');
+      const heightLabel = document.getElementById('heightLabel');
+      const posYSlider = document.getElementById('posYSlider');
+      const posYValue = document.getElementById('posYValue');
+      const posYLabel = document.getElementById('posYLabel');
+      const posXSlider = document.getElementById('posXSlider');
+      const posXValue = document.getElementById('posXValue');
+      const posXLabel = document.getElementById('posXLabel');
+
+      // 重置粒子状态
+      function resetParticle() {
+        // 初始位置：入射点（可调节上下和左右位置）
+        // 矩形磁场时使用入射位置滑块，其他形状默认从左边界中心入射
+        const posYOffset = magneticShape === 'rect' ? parseFloat(posYSlider.value) : 0;
+        const posXOffset = magneticShape === 'rect' ? parseFloat(posXSlider.value) : 0;
+        particle.x = centerX - B_radius + posXOffset; // 左右调节
+        particle.y = centerY + posYOffset;            // 上下调节
+        
+        // 根据滑块计算初始速度
+        const speed = parseFloat(speedSlider.value);
+        const angle = parseFloat(angleSlider.value) * Math.PI / 180; // 角度转弧度
+        particle.vx = speed * Math.cos(angle);
+        particle.vy = speed * Math.sin(angle);
+        
+        // 如果没有开启保留轨迹，才清空轨迹
+        if (!keepTrajectory) {
+          trajectory = [];
+        }
+        // 添加轨迹断点，避免不同轮次的轨迹被错误连线
+        trajectory.push(null);
+        
+        // 更新显示值
+        speedValue.textContent = speed.toFixed(1);
+        angleValue.textContent = angleSlider.value;
+        posYValue.textContent = posYSlider.value;
+        posXValue.textContent = posXSlider.value;
+        
+        // 重置状态标记
+        lastInMagnetic = false;
+      }
+
+      // 控制事件监听
+      speedSlider.addEventListener('input', resetParticle);
+      angleSlider.addEventListener('input', resetParticle);
+      resetBtn.addEventListener('click', resetParticle);
+
+      // 尺寸调节事件
+      widthSlider.addEventListener('input', () => {
+        const w = parseFloat(widthSlider.value);
+        widthValue.textContent = w;
+        if (magneticShape === 'rect') {
+          rectWidth = w;
+        } else if (magneticShape === 'double') {
+          doubleWidth = w;
+        }
+        resetParticle();
+      });
+      heightSlider.addEventListener('input', () => {
+        const h = parseFloat(heightSlider.value);
+        heightValue.textContent = h;
+        if (magneticShape === 'rect') {
+          rectHeight = h;
+        }
+        resetParticle();
+      });
+      // 入射位置调节事件
+      posYSlider.addEventListener('input', resetParticle);
+      posXSlider.addEventListener('input', resetParticle);
+
+      // 形状按钮的点击事件
+      const shapeBtns = document.querySelectorAll('.shape-btn');
+      shapeBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+          const shape = btn.dataset.shape;
+          magneticShape = shape;
+          // 更新按钮选中状态
+          shapeBtns.forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          
+          // 根据形状显示/隐藏尺寸调节控件
+          if (shape === 'rect') {
+            sizeControls.style.display = 'block';
+            heightLabel.style.display = 'block';
+            heightSlider.style.display = 'block';
+            posYLabel.style.display = 'block';
+            posYSlider.style.display = 'block';
+            posXLabel.style.display = 'block';
+            posXSlider.style.display = 'block';
+            // 设置滑块为当前矩形的尺寸
+            widthSlider.value = rectWidth;
+            widthValue.textContent = rectWidth;
+            heightSlider.value = rectHeight;
+            heightValue.textContent = rectHeight;
+            posYValue.textContent = posYSlider.value;
+            posXValue.textContent = posXSlider.value;
+          } else if (shape === 'double') {
+            sizeControls.style.display = 'block';
+            // 双边界只显示宽度调节
+            heightLabel.style.display = 'none';
+            heightSlider.style.display = 'none';
+            posYLabel.style.display = 'none';
+            posYSlider.style.display = 'none';
+            posXLabel.style.display = 'none';
+            posXSlider.style.display = 'none';
+            // 设置滑块为当前双边界的尺寸
+            widthSlider.value = doubleWidth;
+            widthValue.textContent = doubleWidth;
+          } else {
+            // 其他形状隐藏尺寸调节
+            sizeControls.style.display = 'none';
+          }
+          
+          // 重置动画
+          resetParticle();
+        });
+      });
+
+      // 轨迹控制按钮事件
+      keepTrajBtn.addEventListener('click', () => {
+        keepTrajectory = !keepTrajectory;
+        keepTrajBtn.textContent = keepTrajectory ? '关闭保留轨迹' : '开启保留轨迹';
+      });
+      clearTrajBtn.addEventListener('click', () => {
+        trajectory = [];
+      });
+
+      // 绘制速度矢量，红色显示，统一箭头长度，不随速度大小变化
+      function drawVelocityVector() {
+        // 绘制速度矢量，红色
+        ctx.strokeStyle = '#ff5252';
+        ctx.fillStyle = '#ff5252';
+        ctx.lineWidth = 2;
+        
+        // 统一箭头长度，不随速度大小变化，只保留方向，已加倍
+        const fixedArrowLength = 40; // 固定箭头长度，已加倍
+        const angle = Math.atan2(particle.vy, particle.vx); // 速度方向
+        const endX = particle.x + Math.cos(angle) * fixedArrowLength;
+        const endY = particle.y + Math.sin(angle) * fixedArrowLength;
+        
+        // 绘制箭头的线
+        ctx.beginPath();
+        ctx.moveTo(particle.x, particle.y);
+        ctx.lineTo(endX, endY);
+        ctx.stroke();
+        
+        // 绘制箭头的头部，也同步加倍
+        const headLen = 16;
+        ctx.beginPath();
+        ctx.moveTo(endX, endY);
+        ctx.lineTo(endX - headLen * Math.cos(angle - Math.PI/6), endY - headLen * Math.sin(angle - Math.PI/6));
+        ctx.lineTo(endX - headLen * Math.cos(angle + Math.PI/6), endY - headLen * Math.sin(angle + Math.PI/6));
+        ctx.closePath();
+        ctx.fill();
+      }
+
+      // 绘制磁场区域与磁感线
+      function drawMagneticField() {
+        ctx.strokeStyle = 'rgba(100, 181, 246, 0.8)';
+        ctx.fillStyle = 'rgba(100, 181, 246, 0.1)';
+        ctx.lineWidth = 2;
+        
+        // 开启边界发光效果，实现科技感
+        ctx.shadowBlur = 15;
+        ctx.shadowColor = 'rgba(100, 181, 246, 1)';
+        
+        if (magneticShape === 'circle') {
+          // 圆形磁场
+          ctx.beginPath();
+          ctx.arc(centerX, centerY, B_radius, 0, Math.PI * 2);
+          ctx.stroke();
+          
+          // 关闭发光效果，避免影响填充和磁感线
+          ctx.shadowBlur = 0;
+          ctx.fill();
+          
+          // 绘制磁感线
+          ctx.strokeStyle = 'rgba(100, 181, 246, 0.5)';
+          const gridSize = 30;
+          for (let x = centerX - B_radius + gridSize/2; x < centerX + B_radius; x += gridSize) {
+            for (let y = centerY - B_radius + gridSize/2; y < centerY + B_radius; y += gridSize) {
+              if (isInMagnetic(x, y)) {
+                const size = 5;
+                ctx.beginPath();
+                ctx.moveTo(x - size, y - size);
+                ctx.lineTo(x + size, y + size);
+                ctx.moveTo(x + size, y - size);
+                ctx.lineTo(x - size, y + size);
+                ctx.stroke();
+              }
+            }
+          }
+        } else if (magneticShape === 'rect') {
+          // 矩形磁场，可调节尺寸
+          ctx.strokeRect(centerX - rectWidth/2, centerY - rectHeight/2, rectWidth, rectHeight);
+          
+          // 关闭发光效果
+          ctx.shadowBlur = 0;
+          ctx.fillRect(centerX - rectWidth/2, centerY - rectHeight/2, rectWidth, rectHeight);
+          
+          // 绘制磁感线
+          ctx.strokeStyle = 'rgba(100, 181, 246, 0.5)';
+          const gridSize = 30;
+          for (let x = centerX - rectWidth/2 + gridSize/2; x < centerX + rectWidth/2; x += gridSize) {
+            for (let y = centerY - rectHeight/2 + gridSize/2; y < centerY + rectHeight/2; y += gridSize) {
+              if (isInMagnetic(x, y)) {
+                const size = 5;
+                ctx.beginPath();
+                ctx.moveTo(x - size, y - size);
+                ctx.lineTo(x + size, y + size);
+                ctx.moveTo(x + size, y - size);
+                ctx.lineTo(x - size, y + size);
+                ctx.stroke();
+              }
+            }
+          }
+        } else if (magneticShape === 'triangle') {
+          // 等边三角形磁场，左边的边垂直，边长300，粒子从左边的边的中点进入
+          const leftEdgeX = centerX - B_radius;
+          const p1 = {x: leftEdgeX, y: centerY - 150}; // 左上顶点
+          const p2 = {x: leftEdgeX, y: centerY + 150}; // 左下顶点
+          const p3 = {x: leftEdgeX + 259.8, y: centerY}; // 右顶点，等边三角形的高=√3/2*300≈259.8
+          ctx.beginPath();
+          ctx.moveTo(p1.x, p1.y);
+          ctx.lineTo(p2.x, p2.y);
+          ctx.lineTo(p3.x, p3.y);
+          ctx.closePath();
+          ctx.stroke();
+          
+          // 关闭发光效果
+          ctx.shadowBlur = 0;
+          ctx.fill();
+          
+          // 绘制磁感线
+          ctx.strokeStyle = 'rgba(100, 181, 246, 0.5)';
+          const gridSize = 30;
+          // 遍历三角形的范围，绘制磁感线
+          for (let x = leftEdgeX + gridSize/2; x < leftEdgeX + 260; x += gridSize) {
+            for (let y = centerY - 150 + gridSize/2; y < centerY + 150; y += gridSize) {
+              if (isInMagnetic(x, y)) {
+                const size = 5;
+                ctx.beginPath();
+                ctx.moveTo(x - size, y - size);
+                ctx.lineTo(x + size, y + size);
+                ctx.moveTo(x + size, y - size);
+                ctx.lineTo(x - size, y + size);
+                ctx.stroke();
+              }
+            }
+          }
+        } else if (magneticShape === 'single') {
+          // 单边界磁场
+          ctx.beginPath();
+          ctx.moveTo(centerX - B_radius, centerY - 300);
+          ctx.lineTo(centerX - B_radius, centerY + 300);
+          ctx.stroke();
+          
+          // 关闭发光效果
+          ctx.shadowBlur = 0;
+          ctx.fillRect(centerX - B_radius, centerY - 300, canvas.width, 600);
+          
+          // 绘制磁感线
+          ctx.strokeStyle = 'rgba(100, 181, 246, 0.5)';
+          const gridSize = 30;
+          for (let x = centerX - B_radius + gridSize/2; x < canvas.width; x += gridSize) {
+            for (let y = centerY - 300 + gridSize/2; y < centerY + 300; y += gridSize) {
+              if (isInMagnetic(x, y)) {
+                const size = 5;
+                ctx.beginPath();
+                ctx.moveTo(x - size, y - size);
+                ctx.lineTo(x + size, y + size);
+                ctx.moveTo(x + size, y - size);
+                ctx.lineTo(x - size, y + size);
+                ctx.stroke();
+              }
+            }
+          }
+        } else if (magneticShape === 'double') {
+          // 双边界磁场，左边界固定，只有右边界可调节
+          const leftEdge = centerX - B_radius;
+          const rightEdge = leftEdge + doubleWidth;
+          ctx.beginPath();
+          ctx.moveTo(leftEdge, centerY - 300);
+          ctx.lineTo(leftEdge, centerY + 300);
+          ctx.moveTo(rightEdge, centerY - 300);
+          ctx.lineTo(rightEdge, centerY + 300);
+          ctx.stroke();
+          
+          // 关闭发光效果
+          ctx.shadowBlur = 0;
+          ctx.fillRect(leftEdge, centerY - 300, doubleWidth, 600);
+          
+          // 绘制磁感线
+          ctx.strokeStyle = 'rgba(100, 181, 246, 0.5)';
+          const gridSize = 30;
+          for (let x = leftEdge + gridSize/2; x < rightEdge; x += gridSize) {
+            for (let y = centerY - 300 + gridSize/2; y < centerY + 300; y += gridSize) {
+              if (isInMagnetic(x, y)) {
+                const size = 5;
+                ctx.beginPath();
+                ctx.moveTo(x - size, y - size);
+                ctx.lineTo(x + size, y + size);
+                ctx.moveTo(x + size, y - size);
+                ctx.lineTo(x - size, y + size);
+                ctx.stroke();
+              }
+            }
+          }
+        }
+      }
+
+      // 绘制轨迹，支持断点分隔不同轮次的运动
+      function drawTrajectory() {
+        if (trajectory.length < 2) return;
+        ctx.strokeStyle = '#ff5252';
+        ctx.lineWidth = 2;
+        
+        let startIdx = 0;
+        for (let i = 0; i < trajectory.length; i++) {
+          if (trajectory[i] === null) {
+            // 遇到断点，绘制当前段
+            if (i > startIdx) {
+              ctx.beginPath();
+              ctx.moveTo(trajectory[startIdx].x, trajectory[startIdx].y);
+              for (let j = startIdx + 1; j < i; j++) {
+                ctx.lineTo(trajectory[j].x, trajectory[j].y);
+              }
+              ctx.stroke();
+            }
+            startIdx = i + 1;
+          }
+        }
+        // 绘制最后一段轨迹
+        if (trajectory.length > startIdx) {
+          ctx.beginPath();
+          ctx.moveTo(trajectory[startIdx].x, trajectory[startIdx].y);
+          for (let j = startIdx + 1; j < trajectory.length; j++) {
+            ctx.lineTo(trajectory[j].x, trajectory[j].y);
+          }
+          ctx.stroke();
+        }
+      }
+
+      // 绘制当前的粒子，增强发光效果
+      function drawParticle() {
+        // 增强的发光光晕，让红色粒子更明显
+        const gradient = ctx.createRadialGradient(particle.x, particle.y, 0, particle.x, particle.y, 20);
+        gradient.addColorStop(0, 'rgba(255, 82, 82, 0.9)');
+        gradient.addColorStop(1, 'rgba(255, 82, 82, 0)');
+        ctx.fillStyle = gradient;
+        ctx.beginPath();
+        ctx.arc(particle.x, particle.y, 20, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // 粒子本体
+        ctx.beginPath();
+        ctx.arc(particle.x, particle.y, 5, 0, Math.PI * 2);
+        ctx.fillStyle = '#ff5252';
+        ctx.fill();
+      }
+
+      // 动画主循环
+      function animate() {
+        // 清空画布
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        // 绘制磁场
+        drawMagneticField();
+        
+        // 记录当前位置到轨迹
+        trajectory.push({x: particle.x, y: particle.y});
+        
+        // 绘制轨迹
+        drawTrajectory();
+        
+        // 绘制当前的粒子
+        drawParticle();
+        
+        // 绘制速度矢量，红色显示，统一箭头长度
+        drawVelocityVector();
+        
+        // 然后更新粒子状态，为下一帧准备
+        // 检查粒子是否在磁场内
+        const inMagneticField = isInMagnetic(particle.x, particle.y);
+        
+        // 时间步长，控制动画速度
+        const dt = 0.5;
+        
+        if (inMagneticField) {
+          // 洛伦兹力只改变速度方向，不改变速度大小
+          // 使用旋转矩阵精确更新速度方向，保证速度大小严格不变
+          const omega = q * B / m;  // 角速度 ω = qB/m
+          const dtheta = omega * dt;  // 每帧旋转的角度
+          
+          // 旋转速度向量（逆时针旋转dtheta），保持速度大小不变
+          const cosT = Math.cos(dtheta);
+          const sinT = Math.sin(dtheta);
+          const newVx = particle.vx * cosT - particle.vy * sinT;
+          const newVy = particle.vx * sinT + particle.vy * cosT;
+          particle.vx = newVx;
+          particle.vy = newVy;
+        }
+        
+        // 更新位置
+        particle.x += particle.vx * dt;
+        particle.y += particle.vy * dt;
+        
+        // 更新上一帧的磁场内状态
+        lastInMagnetic = isInMagnetic(particle.x, particle.y);
+        
+        // 粒子超出画布时自动重置（射出磁场后做匀速直线运动，直到飞出画面）
+        if (particle.x < -50 || particle.x > canvas.width +50 || 
+            particle.y < -50 || particle.y > canvas.height +50) {
+          resetParticle();
+        }
+        
+        requestAnimationFrame(animate);
+      }
+
+      // 初始化并启动动画
+      resetParticle();
+      animate();
+    });
+  </script>
+
+    <!-- 齐老师动画 - 水印 -->
+    <div class="qilaoshi-watermark">
+        QQ 3398528250<br>
+        抖音 35320300542
+    </div>
+
+
+    <!-- 齐老师动画 - 安全保护脚本 -->
+    <script>
+    (function() {
+        // 禁用右键菜单
+        document.addEventListener('contextmenu', function(e) {
+            e.preventDefault();
+            return false;
+        });
+        
+        // ESC键返回主页
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' || e.keyCode === 27) {
+                window.location.href = '../index.html';
+            }
+        });
+        
+        // 禁用开发者工具快捷键
+        document.addEventListener('keydown', function(e) {
+            // F12
+            if (e.key === 'F12' || e.keyCode === 123) {
+                e.preventDefault();
+                return false;
+            }
+            // Ctrl+U
+            if ((e.ctrlKey || e.metaKey) && (e.key === 'u' || e.keyCode === 85)) {
+                e.preventDefault();
+                return false;
+            }
+            // Ctrl+Shift+I
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'i' || e.keyCode === 73)) {
+                e.preventDefault();
+                return false;
+            }
+            // Ctrl+Shift+J
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'j' || e.keyCode === 74)) {
+                e.preventDefault();
+                return false;
+            }
+            // Ctrl+Shift+C
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'c' || e.keyCode === 67)) {
+                e.preventDefault();
+                return false;
+            }
+        });
+        
+        // 检测开发者工具打开（简单检测）
+        var devtoolsOpen = false;
+        var threshold = 160;
+        setInterval(function() {
+            var widthThreshold = window.outerWidth - window.innerWidth > threshold;
+            var heightThreshold = window.outerHeight - window.innerHeight > threshold;
+            if (widthThreshold || heightThreshold) {
+                if (!devtoolsOpen) {
+                    devtoolsOpen = true;
+                    // 可以选择跳转或其他操作
+                }
+            } else {
+                devtoolsOpen = false;
+            }
+        }, 1000);
+    })();
+    </script>
+
+</body>
+</html>
