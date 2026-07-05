@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>高中物理动画 · 光滑半圆槽往复运动（科技感）</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: radial-gradient(circle at 30% 30%, #1a2b4c, #0b0e14 80%);
+            font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 12px;
+        }
+        .container {
+            background: rgba(10, 15, 25, 0.7);
+            backdrop-filter: blur(28px);
+            -webkit-backdrop-filter: blur(28px);
+            border-radius: 2.2rem;
+            padding: 1.2rem 1.6rem 1.2rem;
+            box-shadow: 0 30px 50px rgba(0,0,0,0.8), inset 0 0 0 1px rgba(100, 150, 255, 0.25);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+            max-height: 100vh;
+        }
+        canvas {
+            display: block;
+            width: 100%;
+            height: auto;
+            max-width: 850px;
+            border-radius: 1.6rem;
+            background: #0a0e1a;
+            box-shadow: 0 0 40px rgba(0, 160, 255, 0.2), inset 0 0 60px rgba(0,0,0,0.5);
+        }
+        .control-panel {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.8rem;
+            color: #b0c8ff;
+            font-size: 1.1rem;
+            background: rgba(15, 20, 35, 0.8);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-radius: 2.5rem;
+            padding: 0.8rem 1.6rem;
+            border: 1px solid rgba(70, 130, 255, 0.3);
+        }
+        .buttons-wrapper {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: center;
+            gap: 0.8rem;
+        }
+        .sliders-wrapper {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: center;
+            gap: 0.8rem 1.5rem;
+        }
+        .slider-group { display: flex; align-items: center; gap: 0.4rem; }
+        .slider-group label { font-weight: 500; color: #8ea4d0; white-space: nowrap; font-size: 1rem; }
+        input[type="range"] { width: 80px; accent-color: #4a90e2; }
+        button {
+            background: #2a4a7a; border: none; color: #e0eaff; font-weight: bold;
+            padding: 0.6rem 1.5rem; border-radius: 2.5rem; letter-spacing: 0.4px;
+            cursor: pointer; font-size: 1rem; transition: 0.25s;
+            background: linear-gradient(180deg, #3a5a9a 0%, #1a3a6a 100%);
+            box-shadow: 0 4px 12px rgba(0, 100, 255, 0.3);
+            border: 1px solid rgba(100, 180, 255, 0.4);
+            white-space: nowrap;
+        }
+        button:hover { background: linear-gradient(180deg, #4a6aaa 0%, #2a4a8a 100%); color: #fff; }
+        button.active { background: linear-gradient(180deg, #e04040 0%, #a02020 100%); border-color: rgba(255, 120, 120, 0.6); color: #fff; }
+        .value-display { min-width: 3rem; text-align: right; font-weight: 600; color: #aad0ff; font-size: 1rem; }
+    </style>
+<style>
+    /* 齐老师动画 - 统一样式 */
+    body {
+        background: #1a2332 !important;
+    }
+    
+    /* 顶部标题栏 */
+    .qilaoshi-header {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 50px;
+        background: #1a2332;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 99999 !important;
+        border-bottom: 1px solid #2a3a50;
+    }
+    
+    .qilaoshi-title {
+        font-size: 20px;
+        font-weight: 600;
+        color: #8ab4f8;
+        letter-spacing: 2px;
+        font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif;
+    }
+    
+    /* 返回按钮 */
+    .qilaoshi-back-btn {
+        position: fixed;
+        top: 10px;
+        right: 15px;
+        z-index: 999999 !important;
+        background: linear-gradient(135deg, #3a5a80, #2a4a70);
+        color: #ffffff;
+        border: 1px solid #5a8ab0;
+        padding: 8px 18px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        font-family: 'Microsoft YaHei', sans-serif;
+        transition: all 0.2s;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+    }
+    
+    .qilaoshi-back-btn:hover {
+        background: linear-gradient(135deg, #4a6a90, #3a5a80);
+        color: #ffffff;
+        box-shadow: 0 4px 15px rgba(90, 138, 176, 0.4);
+        transform: translateY(-1px);
+    }
+    
+    /* 水印 */
+    .qilaoshi-watermark {
+        position: fixed;
+        bottom: 10px;
+        right: 15px;
+        z-index: 9999;
+        font-size: 11px;
+        color: rgba(138, 180, 248, 0.4);
+        font-family: 'Microsoft YaHei', sans-serif;
+        line-height: 1.5;
+        text-align: right;
+        pointer-events: none;
+    }
+    
+    /* 调整主内容区域，给顶部标题栏留出空间 */
+    body {
+        padding-top: 50px !important;
+    }
+</style>
+</head>
+<body>
+
+    <!-- 齐老师动画 - 顶部导航 -->
+    <div class="qilaoshi-header">
+        <div class="qilaoshi-title">齐老师动画</div>
+    </div>
+    <button class="qilaoshi-back-btn" onclick="window.location.href='../index.html'">← 返回主页</button>
+
+<div class="container">
+    <canvas id="physicsCanvas" width="850" height="420"></canvas>
+    <div class="control-panel">
+        <div class="buttons-wrapper">
+            <button id="resetButton">↺ 重置</button>
+            <button id="pauseButton">⏯️ 暂停</button>
+            <button id="trailButton" class="active">🔴 轨迹: 开</button>
+        </div>
+        <div class="sliders-wrapper">
+            <div class="slider-group"><label>槽质量 M</label><input type="range" id="massM" min="1.0" max="8.0" value="3.5" step="0.1"><span class="value-display" id="massMVal">3.5</span>kg</div>
+            <div class="slider-group"><label>球质量 m</label><input type="range" id="massm" min="0.3" max="3.0" value="0.9" step="0.1"><span class="value-display" id="massmVal">0.9</span>kg</div>
+            <div class="slider-group"><label>下落高度 H</label><input type="range" id="heightH" min="0.2" max="2.5" value="0.8" step="0.1"><span class="value-display" id="heightHVal">0.8</span>m</div>
+        </div>
+    </div>
+</div>
+
+<script>
+(function() {
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    const trailCanvas = document.createElement('canvas');
+    trailCanvas.width = canvas.width;
+    trailCanvas.height = canvas.height;
+    const trailCtx = trailCanvas.getContext('2d');
+
+    const massMInput = document.getElementById('massM');
+    const massmInput = document.getElementById('massm');
+    const heightHInput = document.getElementById('heightH');
+    const massMVal = document.getElementById('massMVal');
+    const massmVal = document.getElementById('massmVal');
+    const heightHVal = document.getElementById('heightHVal');
+    const resetBtn = document.getElementById('resetButton');
+    const pauseBtn = document.getElementById('pauseButton');
+    const trailBtn = document.getElementById('trailButton');
+
+    let params = { M: 3.5, m: 0.9, H: 0.8 };
+    const R = 2.0;
+    const GAP = 0.3;
+    const g = 9.8;
+    const SCALE = 60;
+    const GROUND_Y = 350;
+    const ORIGIN_X = 280;
+    const BALL_R = 0.2;
+
+    function toCanvasX(px) { return ORIGIN_X + px * SCALE; }
+    function toCanvasY(py) { return GROUND_Y - py * SCALE; }
+
+    const State = { FALLING: 'falling', SLIDING: 'sliding', FREE_FLY: 'free_fly' };
+    let simState = State.FALLING;
+    let paused = false;
+    let showTrail = true;
+
+    let x_O = 0.0, v_O = 0.0;
+    let phi = 0.0, omega = 0.0;
+    let ballX = 0.0, ballY = 0.0, ballVx = 0.0, ballVy = 0.0;
+    let v0 = 0.0;
+    let freeSide = 'left';
+    let trailPoints = [];
+
+    // 木纹图案 (深色环境依然采用棕色木纹，保持真实感)
+    function createWoodPattern() {
+        const patternCanvas = document.createElement('canvas');
+        patternCanvas.width = 220;
+        patternCanvas.height = 110;
+        const pctx = patternCanvas.getContext('2d');
+        pctx.fillStyle = '#8B5E3C';
+        pctx.fillRect(0, 0, patternCanvas.width, patternCanvas.height);
+        for (let i = 0; i < 45; i++) {
+            const y = i * 3 + Math.sin(i * 1.8) * 1.5;
+            pctx.beginPath();
+            pctx.moveTo(0, y);
+            for (let x = 0; x <= patternCanvas.width; x += 12) {
+                const offsetY = Math.sin(x * 0.04 + i * 0.7) * 2.0 + Math.cos(x * 0.025) * 1.2;
+                pctx.lineTo(x, y + offsetY);
+            }
+            const shade = i % 3;
+            if (shade === 0) pctx.strokeStyle = '#6B3A2A';
+            else if (shade === 1) pctx.strokeStyle = '#9B6B4A';
+            else pctx.strokeStyle = '#7A4A32';
+            pctx.lineWidth = 1.4;
+            pctx.stroke();
+        }
+        for (let j = 0; j < 8; j++) {
+            const baseY = 18 + j * 14;
+            pctx.beginPath();
+            pctx.moveTo(0, baseY);
+            for (let x = 0; x <= patternCanvas.width; x += 10) {
+                pctx.lineTo(x, baseY + Math.sin(x * 0.035 + j) * 3.5);
+            }
+            pctx.strokeStyle = '#4A2818';
+            pctx.lineWidth = 2.2;
+            pctx.stroke();
+        }
+        for (let k = 0; k < 20; k++) {
+            const y = 10 + k * 6;
+            pctx.beginPath();
+            pctx.moveTo(0, y);
+            for (let x = 0; x <= patternCanvas.width; x += 18) {
+                pctx.lineTo(x, y + Math.sin(x * 0.06 + k) * 1.0);
+            }
+            pctx.strokeStyle = '#A07050';
+            pctx.lineWidth = 0.7;
+            pctx.stroke();
+        }
+        return ctx.createPattern(patternCanvas, 'repeat');
+    }
+    const woodPattern = createWoodPattern();
+
+    function readParams() {
+        params.M = +massMInput.value;
+        params.m = +massmInput.value;
+        params.H = +heightHInput.value;
+        massMVal.textContent = params.M.toFixed(1);
+        massmVal.textContent = params.m.toFixed(1);
+        heightHVal.textContent = params.H.toFixed(1);
+    }
+
+    function resetSim() {
+        readParams();
+        v0 = Math.sqrt(2 * g * params.H);
+        simState = State.FALLING;
+        x_O = 0.0; v_O = 0.0;
+        phi = 0.0; omega = 0.0;
+        ballX = R - BALL_R;
+        ballY = R + GAP + BALL_R + params.H;
+        ballVx = 0.0; ballVy = 0.0;
+        freeSide = 'left';
+        trailPoints = [];
+        trailCtx.clearRect(0, 0, trailCanvas.width, trailCanvas.height);
+    }
+
+    function getBallAbsPos() {
+        if (simState === State.SLIDING) {
+            const Reff = R - BALL_R;
+            return {
+                x: x_O + Reff * Math.cos(phi),
+                y: (R + GAP) - Reff * Math.sin(phi)
+            };
+        } else {
+            return { x: ballX, y: ballY };
+        }
+    }
+
+    function addTrailPoint() {
+        const pos = getBallAbsPos();
+        trailPoints.push({ x: pos.x, y: pos.y });
+        if (trailPoints.length > 150) {
+            flushTrailToOffscreen();
+        }
+    }
+
+    function flushTrailToOffscreen() {
+        if (trailPoints.length < 2) return;
+        trailCtx.beginPath();
+        trailCtx.strokeStyle = '#ff5050';
+        trailCtx.lineWidth = 2.2;
+        trailCtx.lineCap = 'round';
+        trailCtx.lineJoin = 'round';
+        const first = trailPoints[0];
+        trailCtx.moveTo(toCanvasX(first.x), toCanvasY(first.y));
+        for (let i = 1; i < trailPoints.length; i++) {
+            const pt = trailPoints[i];
+            trailCtx.lineTo(toCanvasX(pt.x), toCanvasY(pt.y));
+        }
+        trailCtx.stroke();
+        const last = trailPoints[trailPoints.length - 1];
+        trailPoints = [{ x: last.x, y: last.y }];
+    }
+
+    function stepFalling(dt) {
+        ballVy -= g * dt;
+        ballY += ballVy * dt;
+        ballX = R - BALL_R + x_O;
+        if (ballY <= R + GAP + BALL_R) {
+            ballY = R + GAP + BALL_R;
+            v0 = Math.abs(ballVy);
+            phi = 0.0;
+            const Reff = R - BALL_R;
+            omega = v0 / Reff;
+            x_O = 0.0; v_O = 0.0;
+            simState = State.SLIDING;
+        }
+    }
+
+    function stepSliding(dt) {
+        const M = params.M, m = params.m, H = params.H;
+        const Reff = R - BALL_R;
+        const mu = m / (M + m);
+        const s = Math.sin(phi);
+        const denom = Reff * Reff * (1 - mu * s * s);
+        const numerator = 2 * g * (H + BALL_R + R * Math.sin(phi));
+        const omegaMag = Math.sqrt(Math.max(0, numerator / denom));
+        omega = omega > 0 ? omegaMag : (omega < 0 ? -omegaMag : omegaMag);
+
+        phi += omega * dt;
+        v_O = (m * Reff * omega * s) / (M + m);
+        x_O += v_O * dt;
+
+        if (phi >= Math.PI) {
+            phi = Math.PI;
+            ballX = x_O - R + BALL_R;
+            ballY = R + GAP + BALL_R;
+            ballVx = 0.0;
+            ballVy = Reff * omega;
+            v_O = 0.0;
+            freeSide = 'left';
+            simState = State.FREE_FLY;
+        } else if (phi <= 0.0) {
+            phi = 0.0;
+            ballX = x_O + R - BALL_R;
+            ballY = R + GAP + BALL_R;
+            ballVx = 0.0;
+            ballVy = -Reff * omega;
+            v_O = 0.0;
+            freeSide = 'right';
+            simState = State.FREE_FLY;
+        }
+    }
+
+    function stepFreeFly(dt) {
+        ballVy -= g * dt;
+        ballY += ballVy * dt;
+        ballX = (freeSide === 'left') ? (x_O - R + BALL_R) : (x_O + R - BALL_R);
+
+        if (ballY <= R + GAP + BALL_R && ballVy < 0) {
+            const targetX = (freeSide === 'left') ? (x_O - R + BALL_R) : (x_O + R - BALL_R);
+            if (Math.abs(ballX - targetX) < 0.15) {
+                if (freeSide === 'left') {
+                    phi = Math.PI;
+                    omega = -v0 / (R - BALL_R);
+                } else {
+                    phi = 0.0;
+                    omega = v0 / (R - BALL_R);
+                }
+                ballY = R + GAP + BALL_R;
+                ballX = targetX;
+                simState = State.SLIDING;
+            }
+        }
+    }
+
+    function update(dt) {
+        if (paused) return;
+        const maxDt = 0.006; // 缩小积分步长，提升轨迹平滑度
+        let rem = dt;
+        while (rem > 0) {
+            const s = Math.min(rem, maxDt);
+            if (simState === State.FALLING) stepFalling(s);
+            else if (simState === State.SLIDING) stepSliding(s);
+            else if (simState === State.FREE_FLY) stepFreeFly(s);
+            rem -= s;
+            addTrailPoint(); // 每个子步记录轨迹点
+        }
+    }
+
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // 科技感深色背景
+        ctx.fillStyle = '#0a0e1a';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // 地面（深色金属质感）
+        ctx.fillStyle = '#1e2430';
+        ctx.fillRect(20, GROUND_Y, canvas.width - 40, canvas.height - GROUND_Y);
+        ctx.fillStyle = '#2a3340';
+        ctx.fillRect(20, GROUND_Y, canvas.width - 40, 4);
+        ctx.strokeStyle = '#4a6080';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([6, 5]);
+        ctx.beginPath();
+        ctx.moveTo(20, GROUND_Y);
+        ctx.lineTo(canvas.width - 20, GROUND_Y);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        const cx = toCanvasX(x_O);
+        const cy = toCanvasY(R + GAP);
+        const rPx = R * SCALE;
+
+        const woodLeft = cx - rPx;
+        const woodTop = cy;
+        const woodRight = cx + rPx;
+        const woodBottom = GROUND_Y;
+        const woodPath = new Path2D();
+        woodPath.rect(woodLeft, woodTop, woodRight - woodLeft, woodBottom - woodTop);
+        woodPath.arc(cx, cy, rPx, 0, Math.PI, false);
+        ctx.save();
+        ctx.fillStyle = woodPattern;
+        ctx.fill(woodPath, 'evenodd');
+        ctx.restore();
+
+        ctx.beginPath();
+        ctx.arc(cx, cy, rPx, 0, Math.PI, false);
+        ctx.strokeStyle = '#4a6080';
+        ctx.lineWidth = 5;
+        ctx.stroke();
+        ctx.strokeStyle = '#6a80a0';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        if (showTrail) {
+            if (trailPoints.length > 1) {
+                ctx.beginPath();
+                ctx.strokeStyle = '#ff5050';
+                ctx.lineWidth = 2.2;
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+                const first = trailPoints[0];
+                ctx.moveTo(toCanvasX(first.x), toCanvasY(first.y));
+                for (let i = 1; i < trailPoints.length; i++) {
+                    const pt = trailPoints[i];
+                    ctx.lineTo(toCanvasX(pt.x), toCanvasY(pt.y));
+                }
+                ctx.stroke();
+            }
+            ctx.drawImage(trailCanvas, 0, 0);
+        }
+
+        function drawMetalBall(bcx, bcy, radius = 12) {
+            const grad = ctx.createRadialGradient(bcx - 3, bcy - 5, radius * 0.1, bcx, bcy, radius);
+            grad.addColorStop(0, '#fdfdfd');
+            grad.addColorStop(0.25, '#e0e0e0');
+            grad.addColorStop(0.5, '#a0a0a0');
+            grad.addColorStop(0.75, '#505050');
+            grad.addColorStop(1, '#1a1a1a');
+            ctx.beginPath();
+            ctx.arc(bcx, bcy, radius, 0, 2 * Math.PI);
+            ctx.fillStyle = grad;
+            ctx.fill();
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 1.8;
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.arc(bcx - 4, bcy - 5, radius * 0.25, 0, 2 * Math.PI);
+            ctx.fillStyle = 'rgba(255,255,255,0.9)';
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(bcx + 2, bcy + 3, radius * 0.12, 0, 2 * Math.PI);
+            ctx.fillStyle = 'rgba(255,255,255,0.4)';
+            ctx.fill();
+        }
+
+        const pos = getBallAbsPos();
+        drawMetalBall(toCanvasX(pos.x), toCanvasY(pos.y));
+
+        // 显示机械能与水平动量（科技感字体）
+        ctx.font = 'bold 13px "Courier New", "PingFang SC"';
+        ctx.fillStyle = '#80c0ff';
+        let E = 0, Px = 0;
+        if (simState === State.FALLING) {
+            E = params.m * g * ballY + 0.5 * params.m * (ballVx*ballVx + ballVy*ballVy);
+            Px = params.M * v_O + params.m * ballVx;
+        } else if (simState === State.SLIDING) {
+            const Reff = R - BALL_R;
+            const absY = (R + GAP) - Reff * Math.sin(phi);
+            const vx = v_O - Reff * omega * Math.sin(phi);
+            const vy = -Reff * omega * Math.cos(phi);
+            E = 0.5 * params.M * v_O * v_O + 0.5 * params.m * (vx*vx + vy*vy) + params.m * g * absY;
+            Px = params.M * v_O + params.m * vx;
+        } else {
+            E = 0.5 * params.M * v_O * v_O + 0.5 * params.m * (ballVx*ballVx + ballVy*ballVy) + params.m * g * ballY;
+            Px = params.M * v_O + params.m * ballVx;
+        }
+        ctx.fillText(`⚡ 机械能: ${E.toFixed(1)} J  (守恒)`, 40, 40);
+        ctx.fillText(`📊 水平动量: ${Px.toFixed(2)} kg·m/s  (守恒)`, 40, 65);
+    }
+
+    let lastT = 0;
+    function loop(ts) {
+        if (!lastT) lastT = ts;
+        let dt = (ts - lastT) / 1000;
+        if (dt > 0.1) dt = 0.016;
+        update(dt);
+        draw();
+        lastT = ts;
+        requestAnimationFrame(loop);
+    }
+
+    function onParamChange() { readParams(); resetSim(); }
+    massMInput.addEventListener('input', () => massMVal.textContent = (+massMInput.value).toFixed(1));
+    massmInput.addEventListener('input', () => massmVal.textContent = (+massmInput.value).toFixed(1));
+    heightHInput.addEventListener('input', () => heightHVal.textContent = (+heightHInput.value).toFixed(1));
+    massMInput.addEventListener('change', onParamChange);
+    massmInput.addEventListener('change', onParamChange);
+    heightHInput.addEventListener('change', onParamChange);
+    resetBtn.addEventListener('click', () => { readParams(); resetSim(); });
+    pauseBtn.addEventListener('click', () => { paused = !paused; });
+    trailBtn.addEventListener('click', () => {
+        showTrail = !showTrail;
+        trailBtn.textContent = showTrail ? '🔴 轨迹: 开' : '⚪ 轨迹: 关';
+        trailBtn.classList.toggle('active', showTrail);
+    });
+
+    readParams();
+    resetSim();
+    lastT = 0;
+    requestAnimationFrame(loop);
+})();
+</script>
+
+    <!-- 齐老师动画 - 水印 -->
+    <div class="qilaoshi-watermark">
+        QQ 3398528250<br>
+        抖音 35320300542
+    </div>
+
+
+    <!-- 齐老师动画 - 安全保护脚本 -->
+    <script>
+    (function() {
+        // 禁用右键菜单
+        document.addEventListener('contextmenu', function(e) {
+            e.preventDefault();
+            return false;
+        });
+        
+        // ESC键返回主页
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' || e.keyCode === 27) {
+                window.location.href = '../index.html';
+            }
+        });
+        
+        // 禁用开发者工具快捷键
+        document.addEventListener('keydown', function(e) {
+            // F12
+            if (e.key === 'F12' || e.keyCode === 123) {
+                e.preventDefault();
+                return false;
+            }
+            // Ctrl+U
+            if ((e.ctrlKey || e.metaKey) && (e.key === 'u' || e.keyCode === 85)) {
+                e.preventDefault();
+                return false;
+            }
+            // Ctrl+Shift+I
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'i' || e.keyCode === 73)) {
+                e.preventDefault();
+                return false;
+            }
+            // Ctrl+Shift+J
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'j' || e.keyCode === 74)) {
+                e.preventDefault();
+                return false;
+            }
+            // Ctrl+Shift+C
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'c' || e.keyCode === 67)) {
+                e.preventDefault();
+                return false;
+            }
+        });
+        
+        // 检测开发者工具打开（简单检测）
+        var devtoolsOpen = false;
+        var threshold = 160;
+        setInterval(function() {
+            var widthThreshold = window.outerWidth - window.innerWidth > threshold;
+            var heightThreshold = window.outerHeight - window.innerHeight > threshold;
+            if (widthThreshold || heightThreshold) {
+                if (!devtoolsOpen) {
+                    devtoolsOpen = true;
+                    // 可以选择跳转或其他操作
+                }
+            } else {
+                devtoolsOpen = false;
+            }
+        }, 1000);
+    })();
+    </script>
+
+</body>
+</html>
