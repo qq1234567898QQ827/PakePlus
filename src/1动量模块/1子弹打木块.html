@@ -1,0 +1,848 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <title>子弹打木块 · 可穿透 | 物理动画</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      background: #050a14;
+      font-family: 'Segoe UI', 'Roboto', 'Noto Sans', system-ui, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+    .container {
+      background: rgba(8, 18, 33, 0.85);
+      backdrop-filter: blur(22px);
+      border-radius: 2.8rem;
+      box-shadow: 0 28px 65px rgba(0, 180, 255, 0.4), 0 0 0 1px rgba(0, 230, 200, 0.3);
+      padding: 2rem 2rem 1.8rem;
+      width: fit-content;
+      max-width: 1000px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    h2 {
+      font-weight: 500;
+      font-size: 2rem;
+      letter-spacing: 2px;
+      color: #c4edff;
+      margin-bottom: 0.8rem;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-shadow: 0 0 16px #0099ff;
+    }
+    canvas {
+      display: block;
+      margin: 0 auto;
+      border-radius: 28px;
+      background: radial-gradient(circle at 20% 30%, #10253a, #040b16);
+      box-shadow: 0 0 45px rgba(0, 160, 255, 0.55), inset 0 0 38px rgba(0, 0, 0, 0.7);
+      width: 100%;
+      height: auto;
+      border: 1px solid #1c3e57;
+    }
+    .control-panel {
+      margin-top: 1.5rem;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: center;
+      gap: 1.8rem;
+      background: rgba(13, 26, 41, 0.7);
+      backdrop-filter: blur(12px);
+      padding: 1rem 2.4rem;
+      border-radius: 60px;
+      box-shadow: 0 0 25px rgba(0, 200, 255, 0.4);
+      border: 1px solid #204b66;
+    }
+    .slider-group {
+      display: flex;
+      align-items: center;
+      gap: 0.8rem;
+      font-weight: 500;
+      color: #d6f2ff;
+    }
+    .slider-group label {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: rgba(0, 26, 48, 0.65);
+      padding: 0.3rem 1.2rem;
+      border-radius: 30px;
+      white-space: nowrap;
+    }
+    #v0Display {
+      font-weight: 700;
+      font-size: 1.3rem;
+      min-width: 70px;
+      display: inline-block;
+      text-align: center;
+      color: #ffac33;
+      background: #162e41;
+      border-radius: 20px;
+      padding: 0.1rem 0.6rem;
+    }
+    input[type="range"] {
+      width: 190px;
+      height: 6px;
+      -webkit-appearance: none;
+      background: #1d394d;
+      border-radius: 5px;
+      outline: none;
+      cursor: pointer;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 22px;
+      height: 22px;
+      background: #00d0ff;
+      border-radius: 50%;
+      box-shadow: 0 0 18px #00e5ff;
+      border: 2px solid white;
+      transition: 0.15s;
+    }
+    input[type="range"]::-webkit-slider-thumb:hover {
+      background: #ff7b24;
+      box-shadow: 0 0 22px #ff6200;
+    }
+    button {
+      background: #082435;
+      border: none;
+      color: #d7f6ff;
+      font-weight: 600;
+      font-size: 1rem;
+      padding: 0.55rem 1.8rem;
+      border-radius: 40px;
+      letter-spacing: 0.8px;
+      cursor: pointer;
+      box-shadow: 0 0 18px rgba(0, 180, 255, 0.6);
+      transition: all 0.2s;
+      border: 1px solid #2b6b8c;
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
+    }
+    button:hover {
+      background: #ff6200;
+      border-color: #ff944d;
+      box-shadow: 0 0 30px #ff6200cc;
+      color: white;
+      transform: translateY(-2px);
+    }
+    .info-board {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 1.8rem;
+      margin-top: 1.2rem;
+      font-size: 0.95rem;
+      background: rgba(7, 18, 30, 0.7);
+      backdrop-filter: blur(10px);
+      padding: 0.8rem 2.2rem;
+      border-radius: 40px;
+      color: #c5e0f7;
+      font-weight: 500;
+      border: 1px solid #1e4862;
+    }
+    .info-board span {
+      font-weight: 700;
+      background: #122e44;
+      padding: 0.15rem 0.9rem;
+      border-radius: 20px;
+      color: #80d7ff;
+      margin: 0 0.2rem;
+    }
+    .note {
+      font-size: 0.8rem;
+      color: #6e90aa;
+      margin-top: 0.5rem;
+      text-align: center;
+    }
+  </style>
+<style>
+    /* 齐老师动画 - 统一样式 */
+    body {
+        background: #1a2332 !important;
+    }
+    
+    /* 顶部标题栏 */
+    .qilaoshi-header {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 50px;
+        background: #1a2332;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 99999 !important;
+        border-bottom: 1px solid #2a3a50;
+    }
+    
+    .qilaoshi-title {
+        font-size: 20px;
+        font-weight: 600;
+        color: #8ab4f8;
+        letter-spacing: 2px;
+        font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif;
+    }
+    
+    /* 返回按钮 */
+    .qilaoshi-back-btn {
+        position: fixed;
+        top: 10px;
+        right: 15px;
+        z-index: 999999 !important;
+        background: linear-gradient(135deg, #3a5a80, #2a4a70);
+        color: #ffffff;
+        border: 1px solid #5a8ab0;
+        padding: 8px 18px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        font-family: 'Microsoft YaHei', sans-serif;
+        transition: all 0.2s;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+    }
+    
+    .qilaoshi-back-btn:hover {
+        background: linear-gradient(135deg, #4a6a90, #3a5a80);
+        color: #ffffff;
+        box-shadow: 0 4px 15px rgba(90, 138, 176, 0.4);
+        transform: translateY(-1px);
+    }
+    
+    /* 水印 */
+    .qilaoshi-watermark {
+        position: fixed;
+        bottom: 10px;
+        right: 15px;
+        z-index: 9999;
+        font-size: 11px;
+        color: rgba(138, 180, 248, 0.4);
+        font-family: 'Microsoft YaHei', sans-serif;
+        line-height: 1.5;
+        text-align: right;
+        pointer-events: none;
+    }
+    
+    /* 调整主内容区域，给顶部标题栏留出空间 */
+    body {
+        padding-top: 50px !important;
+    }
+</style>
+</head>
+<body>
+
+    <!-- 齐老师动画 - 顶部导航 -->
+    <div class="qilaoshi-header">
+        <div class="qilaoshi-title">齐老师动画</div>
+    </div>
+    <button class="qilaoshi-back-btn" onclick="window.location.href='../index.html'">← 返回主页</button>
+
+<div class="container">
+  <h2>🔫 子弹打木块</h2>
+  <canvas id="physicsCanvas" width="820" height="340" aria-label="子弹打木块动画画布"></canvas>
+
+  <div class="control-panel">
+    <div class="slider-group">
+      <label>⚡ 子弹初速度 <span id="v0Display">400</span> px/s</label>
+      <input type="range" id="v0Slider" min="100" max="1500" value="400" step="5">
+    </div>
+    <button id="resetButton">
+      <span>↺</span> 重置发射
+    </button>
+  </div>
+
+  <div class="info-board">
+    <div>🔹 子弹质量 m = <span>1</span></div>
+    <div>🟫 木块质量 M = <span>4</span></div>
+    <div>🎯 共同速度 v' = <span id="vCommonDisplay">80</span> px/s</div>
+  </div>
+  <div class="note">
+    💡 光滑地面 · 木块初始静止 · 恒定摩擦力 · 速度足够大时子弹可穿透木块
+  </div>
+</div>
+
+<script>
+  (function() {
+    // ---------- DOM 元素 ----------
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    const v0Slider = document.getElementById('v0Slider');
+    const v0Display = document.getElementById('v0Display');
+    const vCommonDisplay = document.getElementById('vCommonDisplay');
+    const resetBtn = document.getElementById('resetButton');
+
+    // ---------- 物理常量 ----------
+    const MASS_BULLET = 1;
+    const MASS_BLOCK = 4;
+    const TOTAL_MASS = MASS_BULLET + MASS_BLOCK;
+
+    const FRICTION_FORCE = 2400;
+    const BULLET_DECEL = FRICTION_FORCE / MASS_BULLET;
+    const BLOCK_ACCEL = FRICTION_FORCE / MASS_BLOCK;
+
+    // ---------- 画布尺寸与几何 ----------
+    const CANVAS_WIDTH = 820;
+    const CANVAS_HEIGHT = 340;
+    const GROUND_Y = 270;
+    const BLOCK_WIDTH = 130;
+    const BLOCK_HEIGHT = 68;
+    const BLOCK_INITIAL_X = 440;
+    const BLOCK_Y = GROUND_Y - BLOCK_HEIGHT;
+
+    const BULLET_WIDTH = 26;
+    const BULLET_HEIGHT = 14;
+    const BULLET_Y = BLOCK_Y + (BLOCK_HEIGHT / 2) - (BULLET_HEIGHT / 2);
+
+    // ---------- 动画状态变量 ----------
+    let v0 = 400;
+    let state = 'flying';          // 'flying' | 'embedding' | 'together' | 'penetrated'
+    let bulletX = -90;
+    let blockX = BLOCK_INITIAL_X;
+
+    let bulletVelocity = v0;
+    let blockVelocity = 0;
+
+    let vCommon = (MASS_BULLET / TOTAL_MASS) * v0;
+    let currentDepth = 0;          // 嵌入深度（穿透后固定为木块宽度）
+
+    let lastTimestamp = 0;
+    let animationId = null;
+
+    // ---------- 科技感背景粒子 ----------
+    const particles = [];
+    const NUM_PARTICLES = 45;
+    function initParticles() {
+      for (let i = 0; i < NUM_PARTICLES; i++) {
+        particles.push({
+          x: Math.random() * CANVAS_WIDTH,
+          y: Math.random() * CANVAS_HEIGHT,
+          vx: (Math.random() - 0.5) * 18,
+          vy: (Math.random() - 0.5) * 12,
+          size: Math.random() * 2.6 + 0.6,
+          alpha: Math.random() * 0.6 + 0.2,
+        });
+      }
+    }
+    initParticles();
+
+    function updateParticles(dt) {
+      for (let p of particles) {
+        p.x += p.vx * dt;
+        p.y += p.vy * dt;
+        if (p.x < -15) p.x = CANVAS_WIDTH + 10;
+        if (p.x > CANVAS_WIDTH + 15) p.x = -10;
+        if (p.y < -15) p.y = CANVAS_HEIGHT + 10;
+        if (p.y > CANVAS_HEIGHT + 15) p.y = -10;
+      }
+    }
+
+    function drawBackground() {
+      const grad = ctx.createLinearGradient(0, 0, 0, CANVAS_HEIGHT);
+      grad.addColorStop(0, '#060f1c');
+      grad.addColorStop(0.8, '#0a1829');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+
+      ctx.save();
+      ctx.strokeStyle = 'rgba(0, 180, 255, 0.08)';
+      ctx.lineWidth = 0.7;
+      const gridSize = 38;
+      for (let x = gridSize; x < CANVAS_WIDTH; x += gridSize) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, CANVAS_HEIGHT);
+        ctx.stroke();
+      }
+      for (let y = gridSize; y < CANVAS_HEIGHT; y += gridSize) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(CANVAS_WIDTH, y);
+        ctx.stroke();
+      }
+      ctx.strokeStyle = 'rgba(0, 230, 200, 0.25)';
+      ctx.lineWidth = 1.3;
+      ctx.beginPath();
+      ctx.moveTo(0, GROUND_Y);
+      ctx.lineTo(CANVAS_WIDTH, GROUND_Y);
+      ctx.stroke();
+      ctx.restore();
+
+      ctx.save();
+      for (let p of particles) {
+        ctx.globalAlpha = p.alpha;
+        ctx.fillStyle = '#b0f2ff';
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#ffffff';
+        ctx.arc(p.x - 0.4, p.y - 0.4, p.size * 0.45, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+
+    function updateReadouts() {
+      v0Display.textContent = v0;
+      vCommon = (MASS_BULLET / TOTAL_MASS) * v0;
+      vCommonDisplay.textContent = vCommon.toFixed(1);
+    }
+
+    function resetScene() {
+      if (animationId) {
+        cancelAnimationFrame(animationId);
+        animationId = null;
+      }
+      v0 = Number(v0Slider.value);
+      state = 'flying';
+      bulletX = -90;
+      blockX = BLOCK_INITIAL_X;
+      bulletVelocity = v0;
+      blockVelocity = 0;
+      currentDepth = 0;
+      updateReadouts();
+      lastTimestamp = 0;
+      animationId = requestAnimationFrame(animate);
+    }
+
+    function checkAndStartEmbedding() {
+      if (state !== 'flying') return;
+      if (bulletX + BULLET_WIDTH >= blockX) {
+        bulletX = blockX - BULLET_WIDTH;
+        state = 'embedding';
+        bulletVelocity = v0;
+        blockVelocity = 0;
+        currentDepth = 0;
+      }
+    }
+
+    function animate(timestamp) {
+      if (lastTimestamp === 0) {
+        lastTimestamp = timestamp;
+        animationId = requestAnimationFrame(animate);
+        drawFrame();
+        return;
+      }
+
+      let dt = (timestamp - lastTimestamp) / 1000;
+      if (dt > 0.05) dt = 0.05;
+      if (dt <= 0) dt = 0.016;
+
+      updateParticles(dt);
+
+      // 物理更新
+      if (state === 'flying') {
+        bulletX += v0 * dt;
+        checkAndStartEmbedding();
+      } else if (state === 'embedding') {
+        let vRel = bulletVelocity - blockVelocity;
+        if (vRel > 0.2) {
+          const deltaVB = BULLET_DECEL * dt;
+          const deltaVM = BLOCK_ACCEL * dt;
+
+          if (deltaVB >= vRel) {
+            // 相对速度归零 → 共同运动
+            bulletVelocity = vCommon;
+            blockVelocity = vCommon;
+            state = 'together';
+            const move = vCommon * dt;
+            blockX += move;
+            bulletX = blockX - BULLET_WIDTH + currentDepth;
+          } else {
+            bulletVelocity -= deltaVB;
+            blockVelocity += deltaVM;
+            bulletX += bulletVelocity * dt;
+            blockX += blockVelocity * dt;
+            currentDepth = Math.max(0, (bulletX + BULLET_WIDTH) - blockX);
+
+            // 检查穿透
+            if (currentDepth >= BLOCK_WIDTH) {
+              state = 'penetrated';
+              currentDepth = BLOCK_WIDTH;   // 洞贯穿木块
+              // 调整子弹位置，使其刚好脱离木块右端
+              bulletX = blockX + BLOCK_WIDTH - BULLET_WIDTH;
+            }
+          }
+        } else {
+          // 相对速度已极小
+          bulletVelocity = vCommon;
+          blockVelocity = vCommon;
+          state = 'together';
+          currentDepth = Math.max(0, (bulletX + BULLET_WIDTH) - blockX);
+          if (currentDepth >= BLOCK_WIDTH) {
+            state = 'penetrated';
+            currentDepth = BLOCK_WIDTH;
+            bulletX = blockX + BLOCK_WIDTH - BULLET_WIDTH;
+          }
+        }
+      } else if (state === 'together') {
+        const move = vCommon * dt;
+        blockX += move;
+        bulletX = blockX - BULLET_WIDTH + currentDepth;
+        // 理论上不会出现，但安全起见再检查
+        if (currentDepth >= BLOCK_WIDTH) {
+          state = 'penetrated';
+          bulletX = blockX + BLOCK_WIDTH - BULLET_WIDTH;
+        }
+      } else if (state === 'penetrated') {
+        // 穿透后各自匀速运动
+        bulletX += bulletVelocity * dt;
+        blockX += blockVelocity * dt;
+      }
+
+      drawFrame();
+
+      lastTimestamp = timestamp;
+      animationId = requestAnimationFrame(animate);
+    }
+
+    function drawFrame() {
+      ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+      drawBackground();
+
+      ctx.save();
+      ctx.font = 'italic 11px "Segoe UI", sans-serif';
+      ctx.fillStyle = '#5b8aa8';
+      ctx.fillText('光滑地面 (无摩擦)', 670, GROUND_Y - 16);
+      ctx.restore();
+
+      // ---------- 绘制木块 ----------
+      ctx.save();
+      ctx.shadowColor = 'rgba(0, 180, 255, 0.25)';
+      ctx.shadowBlur = 14;
+      const woodGrad = ctx.createLinearGradient(blockX, BLOCK_Y, blockX, BLOCK_Y + BLOCK_HEIGHT);
+      woodGrad.addColorStop(0, '#c49a6c');
+      woodGrad.addColorStop(0.5, '#a56e3a');
+      woodGrad.addColorStop(1, '#5e3c1f');
+      ctx.fillStyle = woodGrad;
+      ctx.beginPath();
+      ctx.roundRect(blockX, BLOCK_Y, BLOCK_WIDTH, BLOCK_HEIGHT, 9);
+      ctx.fill();
+      ctx.shadowColor = 'transparent';
+      ctx.shadowBlur = 0;
+      ctx.strokeStyle = '#4b351d';
+      ctx.lineWidth = 1.8;
+      ctx.stroke();
+
+      ctx.strokeStyle = '#704e2c';
+      ctx.lineWidth = 1.1;
+      for (let i = 0; i < 5; i++) {
+        const yLine = BLOCK_Y + 14 + i * 12;
+        ctx.beginPath();
+        ctx.moveTo(blockX + 8, yLine);
+        ctx.lineTo(blockX + BLOCK_WIDTH - 8, yLine + (i % 2 === 0 ? 1 : -1));
+        ctx.stroke();
+      }
+      ctx.restore();
+
+      // ---------- 绘制弹孔（贯穿洞）----------
+      if (currentDepth > 0.5 && (state === 'embedding' || state === 'together' || state === 'penetrated')) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.roundRect(blockX, BLOCK_Y, BLOCK_WIDTH, BLOCK_HEIGHT, 9);
+        ctx.clip();
+
+        const holeLeft = blockX;
+        // 如果穿透，洞宽度为整个木块宽度；否则为当前深度
+        const holeWidth = (state === 'penetrated') ? BLOCK_WIDTH : currentDepth;
+        const holeY = BULLET_Y;
+        const holeH = BULLET_HEIGHT;
+
+        ctx.fillStyle = '#0a0502';
+        ctx.shadowColor = 'rgba(0,0,0,0.8)';
+        ctx.shadowBlur = 8;
+        ctx.beginPath();
+        ctx.rect(holeLeft, holeY, holeWidth, holeH);
+        ctx.fill();
+
+        ctx.shadowColor = 'transparent';
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = '#3a281a';
+        ctx.beginPath();
+        ctx.rect(holeLeft, holeY, holeWidth, 2);
+        ctx.fill();
+        ctx.fillStyle = '#2d1c0f';
+        ctx.beginPath();
+        ctx.rect(holeLeft, holeY + holeH - 2, holeWidth, 2);
+        ctx.fill();
+
+        ctx.strokeStyle = '#ffaa33';
+        ctx.lineWidth = 1.8;
+        ctx.setLineDash([3, 4]);
+        ctx.beginPath();
+        ctx.moveTo(holeLeft, holeY);
+        ctx.lineTo(holeLeft + holeWidth, holeY);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(holeLeft, holeY + holeH);
+        ctx.lineTo(holeLeft + holeWidth, holeY + holeH);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        ctx.restore();
+      }
+
+      // ---------- 绘制子弹（穿透后不再画透视）----------
+      const bulletRight = bulletX + BULLET_WIDTH;
+      const blockRight = blockX + BLOCK_WIDTH;
+
+      if (state === 'penetrated') {
+        // 穿透后，子弹完全可见，不受木块遮挡
+        ctx.save();
+        const metalGrad = ctx.createLinearGradient(bulletX, BULLET_Y, bulletX, BULLET_Y + BULLET_HEIGHT);
+        metalGrad.addColorStop(0, '#f0f4f8');
+        metalGrad.addColorStop(0.4, '#b8c0c8');
+        metalGrad.addColorStop(0.8, '#6e7882');
+        metalGrad.addColorStop(1, '#3d444c');
+        ctx.fillStyle = metalGrad;
+        ctx.shadowColor = 'rgba(0,0,0,0.55)';
+        ctx.shadowBlur = 9;
+        ctx.beginPath();
+        ctx.roundRect(bulletX, BULLET_Y, BULLET_WIDTH, BULLET_HEIGHT, 5);
+        ctx.fill();
+        ctx.shadowColor = 'transparent';
+        ctx.shadowBlur = 0;
+
+        ctx.fillStyle = '#ffffffdd';
+        ctx.beginPath();
+        ctx.roundRect(bulletX + 3, BULLET_Y + 1, BULLET_WIDTH - 6, 3, 2);
+        ctx.fill();
+
+        // 弹头锥形（穿透后依然绘制）
+        ctx.fillStyle = '#99a2ab';
+        ctx.beginPath();
+        ctx.moveTo(bulletX + BULLET_WIDTH - 2, BULLET_Y + BULLET_HEIGHT/2);
+        ctx.lineTo(bulletX + BULLET_WIDTH + 8, BULLET_Y + 2);
+        ctx.lineTo(bulletX + BULLET_WIDTH + 8, BULLET_Y + BULLET_HEIGHT - 2);
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = '#4f565e';
+        ctx.lineWidth = 0.9;
+        ctx.stroke();
+
+        ctx.restore();
+      } else {
+        // 嵌入或共同运动状态：绘制子弹可见部分 + 木块内半透明子弹
+        const visibleLeft = bulletX;
+        const visibleRight = Math.min(bulletRight, blockX);
+        // 木块左侧可见部分
+        if (visibleRight > visibleLeft && visibleRight > 0 && bulletX < CANVAS_WIDTH) {
+          ctx.save();
+          ctx.beginPath();
+          ctx.rect(visibleLeft, BULLET_Y, visibleRight - visibleLeft, BULLET_HEIGHT);
+          ctx.clip();
+
+          const metalGrad = ctx.createLinearGradient(bulletX, BULLET_Y, bulletX, BULLET_Y + BULLET_HEIGHT);
+          metalGrad.addColorStop(0, '#f0f4f8');
+          metalGrad.addColorStop(0.4, '#b8c0c8');
+          metalGrad.addColorStop(0.8, '#6e7882');
+          metalGrad.addColorStop(1, '#3d444c');
+          ctx.fillStyle = metalGrad;
+          ctx.shadowColor = 'rgba(0,0,0,0.55)';
+          ctx.shadowBlur = 9;
+          ctx.beginPath();
+          ctx.roundRect(bulletX, BULLET_Y, BULLET_WIDTH, BULLET_HEIGHT, 5);
+          ctx.fill();
+          ctx.shadowColor = 'transparent';
+          ctx.shadowBlur = 0;
+
+          ctx.fillStyle = '#ffffffdd';
+          ctx.beginPath();
+          ctx.roundRect(bulletX + 3, BULLET_Y + 1, BULLET_WIDTH - 6, 3, 2);
+          ctx.fill();
+
+          if (state === 'flying') {
+            ctx.fillStyle = '#99a2ab';
+            ctx.beginPath();
+            ctx.moveTo(bulletX + BULLET_WIDTH - 2, BULLET_Y + BULLET_HEIGHT/2);
+            ctx.lineTo(bulletX + BULLET_WIDTH + 8, BULLET_Y + 2);
+            ctx.lineTo(bulletX + BULLET_WIDTH + 8, BULLET_Y + BULLET_HEIGHT - 2);
+            ctx.closePath();
+            ctx.fill();
+            ctx.strokeStyle = '#4f565e';
+            ctx.lineWidth = 0.9;
+            ctx.stroke();
+          }
+          ctx.restore();
+        }
+
+        // 木块内半透明子弹
+        const overlapLeft = Math.max(bulletX, blockX);
+        const overlapRight = Math.min(bulletRight, blockRight);
+        if (overlapRight > overlapLeft && (state === 'embedding' || state === 'together')) {
+          ctx.save();
+          ctx.beginPath();
+          ctx.roundRect(blockX, BLOCK_Y, BLOCK_WIDTH, BLOCK_HEIGHT, 9);
+          ctx.clip();
+
+          ctx.globalAlpha = 0.5;
+          const metalGradTrans = ctx.createLinearGradient(bulletX, BULLET_Y, bulletX, BULLET_Y + BULLET_HEIGHT);
+          metalGradTrans.addColorStop(0, '#f0f4f8');
+          metalGradTrans.addColorStop(0.4, '#b8c0c8');
+          metalGradTrans.addColorStop(0.8, '#6e7882');
+          metalGradTrans.addColorStop(1, '#3d444c');
+          ctx.fillStyle = metalGradTrans;
+          ctx.shadowColor = 'rgba(0,0,0,0.4)';
+          ctx.shadowBlur = 6;
+          ctx.beginPath();
+          ctx.roundRect(bulletX, BULLET_Y, BULLET_WIDTH, BULLET_HEIGHT, 5);
+          ctx.fill();
+
+          ctx.shadowColor = 'transparent';
+          ctx.shadowBlur = 0;
+          ctx.fillStyle = '#ffffffcc';
+          ctx.beginPath();
+          ctx.roundRect(bulletX + 3, BULLET_Y + 1, BULLET_WIDTH - 6, 3, 2);
+          ctx.fill();
+
+          ctx.strokeStyle = '#ffffff';
+          ctx.lineWidth = 1.6;
+          ctx.setLineDash([3, 3]);
+          ctx.beginPath();
+          ctx.roundRect(bulletX, BULLET_Y, BULLET_WIDTH, BULLET_HEIGHT, 5);
+          ctx.stroke();
+          ctx.setLineDash([]);
+          ctx.restore();
+        }
+      }
+
+      // 状态文字
+      ctx.save();
+      ctx.font = '500 15px "Segoe UI", "Noto Sans", sans-serif';
+      ctx.fillStyle = '#cceeff';
+      if (state === 'flying') {
+        ctx.fillText('⚡ 子弹飞行中...', 20, 40);
+      } else if (state === 'embedding') {
+        ctx.fillText('🔥 嵌入中 (摩擦力减速)', 20, 40);
+      } else if (state === 'together') {
+        ctx.fillText('🔒 共同运动', 20, 40);
+      } else if (state === 'penetrated') {
+        ctx.fillText('💥 子弹穿透木块', 20, 40);
+      }
+      ctx.restore();
+    }
+
+    CanvasRenderingContext2D.prototype.roundRect = function (x, y, w, h, r) {
+      if (w < 2 * r) r = w / 2;
+      if (h < 2 * r) r = h / 2;
+      this.moveTo(x + r, y);
+      this.lineTo(x + w - r, y);
+      this.quadraticCurveTo(x + w, y, x + w, y + r);
+      this.lineTo(x + w, y + h - r);
+      this.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+      this.lineTo(x + r, y + h);
+      this.quadraticCurveTo(x, y + h, x, y + h - r);
+      this.lineTo(x, y + r);
+      this.quadraticCurveTo(x, y, x + r, y);
+      this.closePath();
+      return this;
+    };
+
+    v0Slider.addEventListener('input', () => {
+      v0 = Number(v0Slider.value);
+      v0Display.textContent = v0;
+      resetScene();
+    });
+
+    resetBtn.addEventListener('click', resetScene);
+
+    window.addEventListener('load', () => {
+      v0 = Number(v0Slider.value);
+      updateReadouts();
+      resetScene();
+    });
+
+    window.addEventListener('beforeunload', () => {
+      if (animationId) cancelAnimationFrame(animationId);
+    });
+  })();
+</script>
+
+    <!-- 齐老师动画 - 水印 -->
+    <div class="qilaoshi-watermark">
+        QQ 3398528250<br>
+        抖音 35320300542
+    </div>
+
+
+    <!-- 齐老师动画 - 安全保护脚本 -->
+    <script>
+    (function() {
+        // 禁用右键菜单
+        document.addEventListener('contextmenu', function(e) {
+            e.preventDefault();
+            return false;
+        });
+        
+        // ESC键返回主页
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' || e.keyCode === 27) {
+                window.location.href = '../index.html';
+            }
+        });
+        
+        // 禁用开发者工具快捷键
+        document.addEventListener('keydown', function(e) {
+            // F12
+            if (e.key === 'F12' || e.keyCode === 123) {
+                e.preventDefault();
+                return false;
+            }
+            // Ctrl+U
+            if ((e.ctrlKey || e.metaKey) && (e.key === 'u' || e.keyCode === 85)) {
+                e.preventDefault();
+                return false;
+            }
+            // Ctrl+Shift+I
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'i' || e.keyCode === 73)) {
+                e.preventDefault();
+                return false;
+            }
+            // Ctrl+Shift+J
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'j' || e.keyCode === 74)) {
+                e.preventDefault();
+                return false;
+            }
+            // Ctrl+Shift+C
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'c' || e.keyCode === 67)) {
+                e.preventDefault();
+                return false;
+            }
+        });
+        
+        // 检测开发者工具打开（简单检测）
+        var devtoolsOpen = false;
+        var threshold = 160;
+        setInterval(function() {
+            var widthThreshold = window.outerWidth - window.innerWidth > threshold;
+            var heightThreshold = window.outerHeight - window.innerHeight > threshold;
+            if (widthThreshold || heightThreshold) {
+                if (!devtoolsOpen) {
+                    devtoolsOpen = true;
+                    // 可以选择跳转或其他操作
+                }
+            } else {
+                devtoolsOpen = false;
+            }
+        }, 1000);
+    })();
+    </script>
+
+</body>
+</html>
