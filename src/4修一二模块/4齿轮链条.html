@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>传动演示：齿轮啮合 & 链条传动</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background-color: #1a1a1a;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-family: "Microsoft YaHei", sans-serif;
+            color: #fff;
+            padding: 20px;
+        }
+        h2 {
+            margin-bottom: 20px;
+            color: #e0e0e0;
+            font-weight: normal;
+        }
+        .btn-group {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        .mode-btn {
+            padding: 9px 24px;
+            border: none;
+            border-radius: 6px;
+            background: #333;
+            color: #ccc;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s ease;
+        }
+        .mode-btn.active {
+            background: #f1c40f;
+            color: #222;
+            font-weight: bold;
+        }
+        .mode-btn:hover:not(.active) {
+            background: #444;
+            color: #fff;
+        }
+        #canvas {
+            background-color: #222;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+        }
+        .control-panel {
+            margin-top: 25px;
+            background: #2a2a2a;
+            padding: 20px 30px;
+            border-radius: 8px;
+            width: 560px;
+        }
+        .control-row {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        .control-row:last-child {
+            margin-bottom: 0;
+        }
+        label {
+            min-width: 150px;
+            color: #ccc;
+            font-size: 14px;
+        }
+        input[type="range"] {
+            flex: 1;
+            height: 6px;
+            border-radius: 3px;
+            background: #444;
+            outline: none;
+            -webkit-appearance: none;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #f1c40f;
+            cursor: pointer;
+        }
+        .value-display {
+            min-width: 70px;
+            text-align: right;
+            color: #f1c40f;
+            font-weight: bold;
+        }
+        .info-panel {
+            margin-top: 20px;
+            width: 560px;
+            background: #2a2a2a;
+            border-radius: 8px;
+            padding: 15px 20px;
+        }
+        .info-row {
+            display: flex;
+            justify-content: space-around;
+            font-size: 13px;
+            color: #aaa;
+        }
+        .info-row + .info-row {
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid #333;
+        }
+        .info-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .note-text {
+            font-size: 13px;
+            color: #bbb;
+            text-align: center;
+            line-height: 1.6;
+        }
+        .color-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+        .yellow { background: #f1c40f; }
+        .blue { background: #3498db; }
+        .red { background: #e74c3c; }
+        .orange { background: #e67e22; }
+        .cyan { background: #1abc9c; }
+        .hidden {
+            display: none;
+        }
+    </style>
+<style>
+    /* 齐老师动画 - 统一样式 */
+    body {
+        background: #1a2332 !important;
+    }
+    
+    /* 顶部标题栏 */
+    .qilaoshi-header {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 50px;
+        background: #1a2332;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 99999 !important;
+        border-bottom: 1px solid #2a3a50;
+    }
+    
+    .qilaoshi-title {
+        font-size: 20px;
+        font-weight: 600;
+        color: #8ab4f8;
+        letter-spacing: 2px;
+        font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif;
+    }
+    
+    /* 返回按钮 */
+    .qilaoshi-back-btn {
+        position: fixed;
+        top: 10px;
+        right: 15px;
+        z-index: 999999 !important;
+        background: linear-gradient(135deg, #3a5a80, #2a4a70);
+        color: #ffffff;
+        border: 1px solid #5a8ab0;
+        padding: 8px 18px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        font-family: 'Microsoft YaHei', sans-serif;
+        transition: all 0.2s;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+    }
+    
+    .qilaoshi-back-btn:hover {
+        background: linear-gradient(135deg, #4a6a90, #3a5a80);
+        color: #ffffff;
+        box-shadow: 0 4px 15px rgba(90, 138, 176, 0.4);
+        transform: translateY(-1px);
+    }
+    
+    /* 水印 */
+    .qilaoshi-watermark {
+        position: fixed;
+        bottom: 10px;
+        right: 15px;
+        z-index: 9999;
+        font-size: 11px;
+        color: rgba(138, 180, 248, 0.4);
+        font-family: 'Microsoft YaHei', sans-serif;
+        line-height: 1.5;
+        text-align: right;
+        pointer-events: none;
+    }
+    
+    /* 调整主内容区域，给顶部标题栏留出空间 */
+    body {
+        padding-top: 50px !important;
+    }
+</style>
+</head>
+<body>
+
+    <!-- 齐老师动画 - 顶部导航 -->
+    <div class="qilaoshi-header">
+        <div class="qilaoshi-title">齐老师动画</div>
+    </div>
+    <button class="qilaoshi-back-btn" onclick="window.location.href='../index.html'">← 返回主页</button>
+
+    <h2>传动物理演示</h2>
+    
+    <div class="btn-group">
+        <button class="mode-btn active" id="gearBtn">齿轮传动</button>
+        <button class="mode-btn" id="chainBtn">链条传动</button>
+    </div>
+
+    <canvas id="canvas" width="600" height="400"></canvas>
+    
+    <div class="control-panel">
+        <div class="control-row">
+            <label id="speedLabel">黄色齿轮角速度</label>
+            <input type="range" id="speedSlider" min="0.1" max="3" step="0.1" value="1">
+            <span class="value-display" id="speedValue">1.0 rad/s</span>
+        </div>
+    </div>
+    
+    <!-- 齿轮模式信息 -->
+    <div class="info-panel" id="gearInfo">
+        <div class="info-row">
+            <div class="info-item">
+                <span class="color-dot yellow"></span>
+                <span>主动轮 Z=60 · r=3k</span>
+            </div>
+            <div class="info-item">
+                <span class="color-dot blue"></span>
+                <span>从动轮 Z=40 · r=2k</span>
+            </div>
+            <div class="info-item">
+                <span class="color-dot red"></span>
+                <span>从动轮 Z=20 · r=1k</span>
+            </div>
+        </div>
+        <div class="info-row">
+            <div class="note-text">
+                黑点轨道半径 = 黄轮半径的 1/2
+            </div>
+        </div>
+        <div class="info-row">
+            <div class="note-text">
+                齿轮半径比 黄:蓝:红 = 3 : 2 : 1
+            </div>
+        </div>
+    </div>
+
+    <!-- 链条模式信息 -->
+    <div class="info-panel hidden" id="chainInfo">
+        <div class="info-row">
+            <div class="info-item">
+                <span class="color-dot orange"></span>
+                <span>主动链轮 Z=30 · r=2k</span>
+            </div>
+            <div class="info-item">
+                <span class="color-dot cyan"></span>
+                <span>从动链轮 Z=15 · r=1k</span>
+            </div>
+            <div class="info-item">
+                <span>轮子边缘处线速度大小相等</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const speedSlider = document.getElementById('speedSlider');
+        const speedValue = document.getElementById('speedValue');
+        const speedLabel = document.getElementById('speedLabel');
+        const gearBtn = document.getElementById('gearBtn');
+        const chainBtn = document.getElementById('chainBtn');
+        const gearInfo = document.getElementById('gearInfo');
+        const chainInfo = document.getElementById('chainInfo');
+
+        // 当前演示模式
+        let currentMode = 'gear';
+
+        // ==================== 齿轮传动参数 ====================
+        const module = 3;
+        const teeth1 = 60, teeth2 = 40, teeth3 = 20;
+        const r1 = module * teeth1 / 2;
+        const r2 = module * teeth2 / 2;
+        const r3 = module * teeth3 / 2;
+
+        const gearCenterY = 200;
+        const gearX1 = 150;
+        const gearX2 = gearX1 + r1 + r2;
+        const gearX3 = gearX2 + r2 + r3;
+
+        let gearAngle1 = 0;
+        let gearOmega = 1;
+
+        // ==================== 链条传动参数 ====================
+        const sprocketModule = 4;
+        const zBig = 30;
+        const zSmall = 15;
+        const rBig = sprocketModule * zBig / 2;
+        const rSmall = sprocketModule * zSmall / 2;
+
+        const chainCenterY = 200;
+        const chainXBig = 160;
+        const chainXSmall = 440;
+        const centerDistance = chainXSmall - chainXBig;
+
+        const dr = rBig - rSmall;
+        const cosTheta = dr / centerDistance;
+        const sinTheta = Math.sqrt(1 - cosTheta * cosTheta);
+
+        const p1 = {
+            x: chainXBig - rBig * cosTheta,
+            y: chainCenterY - rBig * sinTheta
+        };
+        const p4 = {
+            x: chainXBig - rBig * cosTheta,
+            y: chainCenterY + rBig * sinTheta
+        };
+        const p2 = {
+            x: chainXSmall + rSmall * cosTheta,
+            y: chainCenterY - rSmall * sinTheta
+        };
+        const p3 = {
+            x: chainXSmall + rSmall * cosTheta,
+            y: chainCenterY + rSmall * sinTheta
+        };
+
+        const arcBigLength = 2 * rBig * Math.asin(sinTheta);
+        const arcSmallLength = 2 * rSmall * Math.asin(sinTheta);
+        const lineTopLength = Math.hypot(p2.x - p1.x, p2.y - p1.y);
+        const lineBottomLength = Math.hypot(p3.x - p4.x, p3.y - p4.y);
+        const totalChainLength = arcBigLength + arcSmallLength + lineTopLength + lineBottomLength;
+
+        const linkLength = 12;
+        const linkCount = Math.floor(totalChainLength / linkLength);
+
+        let chainAngleBig = 0;
+        let chainOmega = 1;
+        let chainOffset = 0;
+
+        let lastTime = performance.now();
+
+        // ==================== 模式切换 ====================
+        gearBtn.addEventListener('click', () => {
+            currentMode = 'gear';
+            gearBtn.classList.add('active');
+            chainBtn.classList.remove('active');
+            gearInfo.classList.remove('hidden');
+            chainInfo.classList.add('hidden');
+            speedLabel.textContent = '黄色齿轮角速度';
+            speedSlider.value = gearOmega;
+            speedValue.textContent = gearOmega.toFixed(1) + ' rad/s';
+        });
+
+        chainBtn.addEventListener('click', () => {
+            currentMode = 'chain';
+            chainBtn.classList.add('active');
+            gearBtn.classList.remove('active');
+            chainInfo.classList.remove('hidden');
+            gearInfo.classList.add('hidden');
+            speedLabel.textContent = '大链轮角速度';
+            speedSlider.value = chainOmega;
+            speedValue.textContent = chainOmega.toFixed(1) + ' rad/s';
+        });
+
+        speedSlider.addEventListener('input', function() {
+            const val = parseFloat(this.value);
+            if (currentMode === 'gear') {
+                gearOmega = val;
+            } else {
+                chainOmega = val;
+            }
+            speedValue.textContent = val.toFixed(1) + ' rad/s';
+        });
+
+        // ==================== 绘制标准齿轮 ====================
+        function drawGear(cx, cy, r, teeth, color, angle, showBlackDot = false) {
+            const m = 2 * r / teeth;
+            const ha = m;
+            const hf = 1.25 * m;
+            const ra = r + ha;
+            const rf = r - hf;
+            const toothAngle = 2 * Math.PI / teeth;
+            const halfToothAngle = toothAngle / 4;
+
+            ctx.save();
+            ctx.translate(cx, cy);
+            ctx.rotate(angle);
+
+            ctx.beginPath();
+            for (let i = 0; i < teeth; i++) {
+                const baseAngle = i * toothAngle;
+                const xRootLeft = rf * Math.cos(baseAngle - halfToothAngle * 1.5);
+                const yRootLeft = rf * Math.sin(baseAngle - halfToothAngle * 1.5);
+                const xTopLeft = ra * Math.cos(baseAngle - halfToothAngle);
+                const yTopLeft = ra * Math.sin(baseAngle - halfToothAngle);
+                const xTopRight = ra * Math.cos(baseAngle + halfToothAngle);
+                const yTopRight = ra * Math.sin(baseAngle + halfToothAngle);
+                const xRootRight = rf * Math.cos(baseAngle + halfToothAngle * 1.5);
+                const yRootRight = rf * Math.sin(baseAngle + halfToothAngle * 1.5);
+
+                if (i === 0) ctx.moveTo(xRootLeft, yRootLeft);
+                ctx.lineTo(xTopLeft, yTopLeft);
+                ctx.lineTo(xTopRight, yTopRight);
+                ctx.lineTo(xRootRight, yRootRight);
+            }
+            ctx.closePath();
+            ctx.fillStyle = color;
+            ctx.fill();
+            ctx.strokeStyle = 'rgba(0,0,0,0.35)';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+
+            // 轮毂
+            ctx.beginPath();
+            ctx.arc(0, 0, r * 0.35, 0, Math.PI * 2);
+            ctx.fillStyle = '#333';
+            ctx.fill();
+            ctx.strokeStyle = 'rgba(0,0,0,0.5)';
+            ctx.stroke();
+
+            // 中心轴
+            ctx.beginPath();
+            ctx.arc(0, 0, 5, 0, Math.PI * 2);
+            ctx.fillStyle = '#555';
+            ctx.fill();
+
+            // 半径标记线
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(0, -r * 0.85);
+            ctx.strokeStyle = 'rgba(255,255,255,0.7)';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // 黄色齿轮专属黑点：距圆心 r/2
+            if (showBlackDot) {
+                ctx.beginPath();
+                ctx.arc(0, -r / 2, 8, 0, Math.PI * 2);
+                ctx.fillStyle = '#000000';
+                ctx.fill();
+                ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+            }
+
+            ctx.restore();
+        }
+
+        // ==================== 绘制链轮 ====================
+        function drawSprocket(cx, cy, r, teeth, color, angle) {
+            const m = 2 * r / teeth;
+            const ha = m * 0.8;
+            const hf = m * 1.0;
+            const ra = r + ha;
+            const rf = r - hf;
+            const toothAngle = 2 * Math.PI / teeth;
+            const halfToothAngle = toothAngle / 4.5;
+
+            ctx.save();
+            ctx.translate(cx, cy);
+            ctx.rotate(angle);
+
+            ctx.beginPath();
+            for (let i = 0; i < teeth; i++) {
+                const baseAngle = i * toothAngle;
+                const xRootLeft = rf * Math.cos(baseAngle - halfToothAngle * 1.6);
+                const yRootLeft = rf * Math.sin(baseAngle - halfToothAngle * 1.6);
+                const xTopLeft = ra * Math.cos(baseAngle - halfToothAngle);
+                const yTopLeft = ra * Math.sin(baseAngle - halfToothAngle);
+                const xTopRight = ra * Math.cos(baseAngle + halfToothAngle);
+                const yTopRight = ra * Math.sin(baseAngle + halfToothAngle);
+                const xRootRight = rf * Math.cos(baseAngle + halfToothAngle * 1.6);
+                const yRootRight = rf * Math.sin(baseAngle + halfToothAngle * 1.6);
+
+                if (i === 0) ctx.moveTo(xRootLeft, yRootLeft);
+                ctx.lineTo(xTopLeft, yTopLeft);
+                ctx.lineTo(xTopRight, yTopRight);
+                ctx.lineTo(xRootRight, yRootRight);
+            }
+            ctx.closePath();
+            ctx.fillStyle = color;
+            ctx.fill();
+            ctx.strokeStyle = 'rgba(0,0,0,0.4)';
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.arc(0, 0, r * 0.35, 0, Math.PI * 2);
+            ctx.fillStyle = '#2c3e50';
+            ctx.fill();
+            ctx.strokeStyle = 'rgba(0,0,0,0.5)';
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.arc(0, 0, 6, 0, Math.PI * 2);
+            ctx.fillStyle = '#7f8c8d';
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(0, -r * 0.85);
+            ctx.strokeStyle = 'rgba(255,255,255,0.8)';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.arc(0, -r * 0.85, 4, 0, Math.PI * 2);
+            ctx.fillStyle = '#fff';
+            ctx.fill();
+
+            ctx.restore();
+        }
+
+        // ==================== 链条坐标计算 ====================
+        function getChainPoint(s) {
+            s = ((s % totalChainLength) + totalChainLength) % totalChainLength;
+            
+            if (s < arcBigLength) {
+                const t = s / arcBigLength;
+                const startAngle = Math.atan2(p1.y - chainCenterY, p1.x - chainXBig);
+                const endAngle = Math.atan2(p4.y - chainCenterY, p4.x - chainXBig);
+                const angle = startAngle + (endAngle - startAngle) * t;
+                return {
+                    x: chainXBig + rBig * Math.cos(angle),
+                    y: chainCenterY + rBig * Math.sin(angle),
+                    angle: angle + Math.PI / 2
+                };
+            }
+            s -= arcBigLength;
+
+            if (s < lineBottomLength) {
+                const t = s / lineBottomLength;
+                const dx = p3.x - p4.x;
+                const dy = p3.y - p4.y;
+                return {
+                    x: p4.x + dx * t,
+                    y: p4.y + dy * t,
+                    angle: Math.atan2(dy, dx)
+                };
+            }
+            s -= lineBottomLength;
+
+            if (s < arcSmallLength) {
+                const t = s / arcSmallLength;
+                const startAngle = Math.atan2(p3.y - chainCenterY, p3.x - chainXSmall);
+                const endAngle = Math.atan2(p2.y - chainCenterY, p2.x - chainXSmall);
+                const angle = startAngle + (endAngle - startAngle) * t;
+                return {
+                    x: chainXSmall + rSmall * Math.cos(angle),
+                    y: chainCenterY + rSmall * Math.sin(angle),
+                    angle: angle + Math.PI / 2
+                };
+            }
+            s -= arcSmallLength;
+
+            const t = s / lineTopLength;
+            const dx = p1.x - p2.x;
+            const dy = p1.y - p2.y;
+            return {
+                x: p2.x + dx * t,
+                y: p2.y + dy * t,
+                angle: Math.atan2(dy, dx)
+            };
+        }
+
+        // ==================== 绘制链条 ====================
+        function drawChain(offset) {
+            ctx.save();
+            
+            ctx.strokeStyle = '#444';
+            ctx.lineWidth = 6;
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            ctx.moveTo(p1.x, p1.y);
+            ctx.arc(chainXBig, chainCenterY, rBig, 
+                Math.atan2(p1.y - chainCenterY, p1.x - chainXBig),
+                Math.atan2(p4.y - chainCenterY, p4.x - chainXBig),
+                false);
+            ctx.lineTo(p3.x, p3.y);
+            ctx.arc(chainXSmall, chainCenterY, rSmall,
+                Math.atan2(p3.y - chainCenterY, p3.x - chainXSmall),
+                Math.atan2(p2.y - chainCenterY, p2.x - chainXSmall),
+                true);
+            ctx.closePath();
+            ctx.stroke();
+
+            ctx.fillStyle = '#666';
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 1;
+
+            for (let i = 0; i < linkCount; i++) {
+                const s = i * linkLength + offset;
+                const point = getChainPoint(s);
+                
+                ctx.save();
+                ctx.translate(point.x, point.y);
+                ctx.rotate(point.angle);
+                
+                ctx.fillRect(-linkLength/2 + 2, -3, linkLength - 4, 6);
+                ctx.strokeRect(-linkLength/2 + 2, -3, linkLength - 4, 6);
+                
+                ctx.fillStyle = '#888';
+                ctx.beginPath();
+                ctx.arc(-linkLength/2 + 4, 0, 2, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.arc(linkLength/2 - 4, 0, 2, 0, Math.PI * 2);
+                ctx.fill();
+                
+                ctx.restore();
+            }
+            
+            ctx.restore();
+        }
+
+        function drawCenterMark(cx, cy, label) {
+            ctx.beginPath();
+            ctx.arc(cx, cy, 3, 0, Math.PI * 2);
+            ctx.fillStyle = '#fff';
+            ctx.fill();
+            ctx.font = '12px Arial';
+            ctx.fillStyle = '#888';
+            ctx.textAlign = 'center';
+            ctx.fillText(label, cx, cy + 25);
+        }
+
+        // ==================== 主动画循环 ====================
+        function animate(currentTime) {
+            const dt = (currentTime - lastTime) / 1000;
+            lastTime = currentTime;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            if (currentMode === 'gear') {
+                gearAngle1 += gearOmega * dt;
+                const angle2 = -gearAngle1 * teeth1 / teeth2 + Math.PI / teeth2;
+                const angle3 = -angle2 * teeth2 / teeth3 + Math.PI / teeth3;
+
+                ctx.setLineDash([5, 5]);
+                ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+                ctx.lineWidth = 1;
+                [ [gearX1, r1], [gearX2, r2], [gearX3, r3] ].forEach(([x, r]) => {
+                    ctx.beginPath();
+                    ctx.arc(x, gearCenterY, r, 0, Math.PI * 2);
+                    ctx.stroke();
+                });
+                ctx.setLineDash([]);
+
+                drawGear(gearX3, gearCenterY, r3, teeth3, '#e74c3c', angle3);
+                drawGear(gearX2, gearCenterY, r2, teeth2, '#3498db', angle2);
+                drawGear(gearX1, gearCenterY, r1, teeth1, '#f1c40f', gearAngle1, true);
+
+                drawCenterMark(gearX1, gearCenterY, 'O₁');
+                drawCenterMark(gearX2, gearCenterY, 'O₂');
+                drawCenterMark(gearX3, gearCenterY, 'O₃');
+
+            } else {
+                chainAngleBig += chainOmega * dt;
+                const angleSmall = chainAngleBig * rBig / rSmall;
+                
+                const linearSpeed = chainOmega * rBig;
+                chainOffset -= linearSpeed * dt;
+
+                ctx.setLineDash([5, 5]);
+                ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.arc(chainXBig, chainCenterY, rBig, 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.arc(chainXSmall, chainCenterY, rSmall, 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.setLineDash([]);
+
+                drawChain(chainOffset);
+
+                drawSprocket(chainXSmall, chainCenterY, rSmall, zSmall, '#1abc9c', angleSmall);
+                drawSprocket(chainXBig, chainCenterY, rBig, zBig, '#e67e22', chainAngleBig);
+
+                drawCenterMark(chainXBig, chainCenterY, 'O₁');
+                drawCenterMark(chainXSmall, chainCenterY, 'O₂');
+            }
+
+            requestAnimationFrame(animate);
+        }
+
+        requestAnimationFrame(animate);
+    </script>
+
+    <!-- 齐老师动画 - 水印 -->
+    <div class="qilaoshi-watermark">
+        QQ 3398528250<br>
+        抖音 35320300542
+    </div>
+
+
+    <!-- 齐老师动画 - 安全保护脚本 -->
+    <script>
+    (function() {
+        // 禁用右键菜单
+        document.addEventListener('contextmenu', function(e) {
+            e.preventDefault();
+            return false;
+        });
+        
+        // ESC键返回主页
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' || e.keyCode === 27) {
+                window.location.href = '../index.html';
+            }
+        });
+        
+        // 禁用开发者工具快捷键
+        document.addEventListener('keydown', function(e) {
+            // F12
+            if (e.key === 'F12' || e.keyCode === 123) {
+                e.preventDefault();
+                return false;
+            }
+            // Ctrl+U
+            if ((e.ctrlKey || e.metaKey) && (e.key === 'u' || e.keyCode === 85)) {
+                e.preventDefault();
+                return false;
+            }
+            // Ctrl+Shift+I
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'i' || e.keyCode === 73)) {
+                e.preventDefault();
+                return false;
+            }
+            // Ctrl+Shift+J
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'j' || e.keyCode === 74)) {
+                e.preventDefault();
+                return false;
+            }
+            // Ctrl+Shift+C
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'c' || e.keyCode === 67)) {
+                e.preventDefault();
+                return false;
+            }
+        });
+        
+        // 检测开发者工具打开（简单检测）
+        var devtoolsOpen = false;
+        var threshold = 160;
+        setInterval(function() {
+            var widthThreshold = window.outerWidth - window.innerWidth > threshold;
+            var heightThreshold = window.outerHeight - window.innerHeight > threshold;
+            if (widthThreshold || heightThreshold) {
+                if (!devtoolsOpen) {
+                    devtoolsOpen = true;
+                    // 可以选择跳转或其他操作
+                }
+            } else {
+                devtoolsOpen = false;
+            }
+        }, 1000);
+    })();
+    </script>
+
+</body>
+</html>
