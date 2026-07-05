@@ -1,0 +1,806 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>地球绕太阳 · 月球绕地球 - 匀速圆周运动 | 红色虚线：月球绝对轨迹</title>
+    <style>
+        :root {
+            --bg: #0b0d21;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: var(--bg);
+            overflow: hidden;
+            font-family: 'PingFang SC', 'Microsoft YaHei', 'Helvetica Neue', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+            -webkit-user-select: none;
+            cursor: grab;
+        }
+        body:active {
+            cursor: grabbing;
+        }
+
+        #canvas-container {
+            position: fixed;
+            inset: 0;
+            z-index: 1;
+        }
+        canvas {
+            display: block;
+        }
+
+        .info-panel {
+            position: fixed;
+            top: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10;
+            pointer-events: none;
+            text-align: center;
+        }
+        .info-title {
+            font-size: clamp(1.1rem, 2.2vw, 1.5rem);
+            font-weight: 600;
+            color: #e8e8f0;
+            letter-spacing: 0.06em;
+            text-shadow: 0 0 20px rgba(140, 160, 220, 0.5), 0 0 60px rgba(100, 140, 210, 0.25);
+            margin-bottom: 2px;
+        }
+        .info-subtitle {
+            font-size: 0.78rem;
+            color: #8899cc;
+            letter-spacing: 0.04em;
+            opacity: 0.85;
+        }
+
+        /* 轨迹控制按钮 */
+        .trail-toggle-btn {
+            position: fixed;
+            top: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 20;
+            pointer-events: auto;
+            padding: 8px 20px;
+            background: rgba(20, 25, 50, 0.85);
+            border: 1px solid rgba(255, 77, 77, 0.6);
+            border-radius: 20px;
+            color: #ff4d4d;
+            font-size: 0.82rem;
+            font-weight: 500;
+            letter-spacing: 0.04em;
+            cursor: pointer;
+            backdrop-filter: blur(8px);
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .trail-toggle-btn:hover {
+            background: rgba(255, 77, 77, 0.15);
+            border-color: rgba(255, 77, 77, 0.9);
+            box-shadow: 0 0 20px rgba(255, 77, 77, 0.3);
+        }
+        .trail-toggle-btn.hidden {
+            color: #8899cc;
+            border-color: rgba(136, 153, 204, 0.5);
+        }
+        .trail-toggle-btn.hidden:hover {
+            background: rgba(136, 153, 204, 0.15);
+            border-color: rgba(136, 153, 204, 0.8);
+            box-shadow: 0 0 20px rgba(136, 153, 204, 0.3);
+        }
+        .trail-dot-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #ff4d4d;
+            box-shadow: 0 0 6px #ff3333;
+            transition: all 0.3s ease;
+        }
+        .trail-toggle-btn.hidden .trail-dot-indicator {
+            background: #8899cc;
+            box-shadow: 0 0 6px rgba(136, 153, 204, 0.5);
+        }
+
+        .legend {
+            position: fixed;
+            bottom: 28px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10;
+            pointer-events: none;
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            font-size: 0.8rem;
+            color: #c0c8dd;
+            letter-spacing: 0.03em;
+        }
+        .legend-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            flex-shrink: 0;
+            box-shadow: 0 0 8px currentColor;
+        }
+        .legend-dot.sun {
+            background: #ffb833;
+            box-shadow: 0 0 14px #ffa726, 0 0 28px #ff9800;
+        }
+        .legend-dot.earth {
+            background: #4da6e8;
+            box-shadow: 0 0 10px #4da6e8;
+        }
+        .legend-dot.moon {
+            background: #c8c8d0;
+            box-shadow: 0 0 6px #aaa;
+        }
+        .legend-dot.earth-orbit {
+            background: rgba(130, 170, 220, 0.55);
+            box-shadow: 0 0 6px rgba(130, 170, 220, 0.3);
+        }
+        .legend-dot.moon-orbit-abs {
+            background: #ff4d4d;
+            box-shadow: 0 0 8px #ff3333;
+        }
+
+        .hint {
+            position: fixed;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10;
+            pointer-events: none;
+            font-size: 0.72rem;
+            color: #667799;
+            letter-spacing: 0.04em;
+            transition: opacity 2s ease;
+        }
+
+        @media (max-width: 600px) {
+            .legend {
+                gap: 10px;
+                bottom: 16px;
+            }
+            .legend-item {
+                font-size: 0.7rem;
+                gap: 4px;
+            }
+            .legend-dot {
+                width: 7px;
+                height: 7px;
+            }
+            .hint {
+                bottom: 60px;
+                font-size: 0.65rem;
+            }
+            .info-title {
+                font-size: 1rem;
+            }
+            .info-subtitle {
+                font-size: 0.68rem;
+            }
+            .trail-toggle-btn {
+                top: 90px;
+                padding: 6px 16px;
+                font-size: 0.75rem;
+            }
+        }
+    </style>
+<style>
+    /* 齐老师动画 - 统一样式 */
+    body {
+        background: #1a2332 !important;
+    }
+    
+    /* 顶部标题栏 */
+    .qilaoshi-header {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 50px;
+        background: #1a2332;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 99999 !important;
+        border-bottom: 1px solid #2a3a50;
+    }
+    
+    .qilaoshi-title {
+        font-size: 20px;
+        font-weight: 600;
+        color: #8ab4f8;
+        letter-spacing: 2px;
+        font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif;
+    }
+    
+    /* 返回按钮 */
+    .qilaoshi-back-btn {
+        position: fixed;
+        top: 10px;
+        right: 15px;
+        z-index: 999999 !important;
+        background: linear-gradient(135deg, #3a5a80, #2a4a70);
+        color: #ffffff;
+        border: 1px solid #5a8ab0;
+        padding: 8px 18px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        font-family: 'Microsoft YaHei', sans-serif;
+        transition: all 0.2s;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+    }
+    
+    .qilaoshi-back-btn:hover {
+        background: linear-gradient(135deg, #4a6a90, #3a5a80);
+        color: #ffffff;
+        box-shadow: 0 4px 15px rgba(90, 138, 176, 0.4);
+        transform: translateY(-1px);
+    }
+    
+    /* 水印 */
+    .qilaoshi-watermark {
+        position: fixed;
+        bottom: 10px;
+        right: 15px;
+        z-index: 9999;
+        font-size: 11px;
+        color: rgba(138, 180, 248, 0.4);
+        font-family: 'Microsoft YaHei', sans-serif;
+        line-height: 1.5;
+        text-align: right;
+        pointer-events: none;
+    }
+    
+    /* 调整主内容区域，给顶部标题栏留出空间 */
+    body {
+        padding-top: 50px !important;
+    }
+</style>
+</head>
+<body>
+
+    <!-- 齐老师动画 - 顶部导航 -->
+    <div class="qilaoshi-header">
+        <div class="qilaoshi-title">齐老师动画</div>
+    </div>
+    <button class="qilaoshi-back-btn" onclick="window.location.href='../index.html'">← 返回主页</button>
+
+
+    <div id="canvas-container"></div>
+
+    <div class="info-panel">
+        <div class="info-title">太阳 · 地球 · 月球</div>
+        <div class="info-subtitle">匀速圆周运动模型 · 红色虚线：月球相对太阳的绝对轨迹</div>
+    </div>
+
+    <!-- 轨迹显示/隐藏按钮 -->
+    <button class="trail-toggle-btn" id="trailToggleBtn">
+        <span class="trail-dot-indicator"></span>
+        <span id="trailBtnText">隐藏轨迹</span>
+    </button>
+
+    <div class="legend">
+        <span class="legend-item"><span class="legend-dot sun"></span> 太阳</span>
+        <span class="legend-item"><span class="legend-dot earth"></span> 地球</span>
+        <span class="legend-item"><span class="legend-dot moon"></span> 月球</span>
+        <span class="legend-item"><span class="legend-dot earth-orbit"></span> 地球轨道</span>
+        <span class="legend-item"><span class="legend-dot moon-orbit-abs"></span> 月球绝对轨迹</span>
+    </div>
+
+    <div class="hint" id="hint">🖱 拖拽旋转 &nbsp;|&nbsp; 滚轮缩放 &nbsp;|&nbsp; 右键平移</div>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+        // ==================== DOM 元素 ====================
+        const container = document.getElementById('canvas-container');
+        const hintEl = document.getElementById('hint');
+        const trailToggleBtn = document.getElementById('trailToggleBtn');
+        const trailBtnText = document.getElementById('trailBtnText');
+
+        // ==================== 场景初始化 ====================
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color('#0d1029');
+        scene.fog = new THREE.FogExp2('#0d1029', 0.000025);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.2;
+        container.appendChild(renderer.domElement);
+
+        const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.15, 200);
+        camera.position.set(6, 9.5, 16);
+        camera.lookAt(0, 0, 0);
+
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.target.set(0, 0, 0);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.12;
+        controls.minDistance = 3.5;
+        controls.maxDistance = 55;
+        controls.maxPolarAngle = Math.PI * 0.78;
+        controls.minPolarAngle = 0.08;
+        controls.autoRotate = true;
+        controls.autoRotateSpeed = 0.25;
+        controls.update();
+
+        setTimeout(() => {
+            hintEl.style.opacity = '0';
+            setTimeout(() => { hintEl.remove(); }, 2000);
+        }, 8000);
+
+        let autoRotateTimeout;
+        const resetAutoRotate = () => {
+            controls.autoRotate = false;
+            clearTimeout(autoRotateTimeout);
+            autoRotateTimeout = setTimeout(() => {
+                controls.autoRotate = true;
+                controls.autoRotateSpeed = 0.25;
+            }, 2500);
+        };
+        renderer.domElement.addEventListener('pointerdown', resetAutoRotate);
+        renderer.domElement.addEventListener('wheel', resetAutoRotate);
+
+        // ==================== 光照 ====================
+        const ambientLight = new THREE.AmbientLight('#334466', 1.8);
+        scene.add(ambientLight);
+        const hemisphereLight = new THREE.HemisphereLight('#8899cc', '#1a1a33', 0.7);
+        scene.add(hemisphereLight);
+        const sunLight = new THREE.PointLight('#fffef5', 180, 0, 0.6);
+        sunLight.position.set(0, 0, 0);
+        sunLight.castShadow = true;
+        sunLight.shadow.mapSize.width = 2048;
+        sunLight.shadow.mapSize.height = 2048;
+        sunLight.shadow.camera.near = 0.2;
+        sunLight.shadow.camera.far = 60;
+        sunLight.shadow.bias = -0.0001;
+        sunLight.shadow.normalBias = 0.02;
+        scene.add(sunLight);
+        const sunLight2 = new THREE.PointLight('#ffe8c8', 35, 0, 0.8);
+        sunLight2.position.set(0.15, 0.1, 0.05);
+        scene.add(sunLight2);
+
+        // ==================== 纹理生成 ====================
+        function createSunTexture(size = 512) {
+            const canvas = document.createElement('canvas');
+            canvas.width = size; canvas.height = size;
+            const ctx = canvas.getContext('2d');
+            const gradient = ctx.createRadialGradient(size/2, size/2, size*0.02, size/2, size/2, size*0.5);
+            gradient.addColorStop(0, '#fffef0'); gradient.addColorStop(0.08, '#fff8c0');
+            gradient.addColorStop(0.2, '#ffe070'); gradient.addColorStop(0.38, '#ffb830');
+            gradient.addColorStop(0.6, '#ff7d10'); gradient.addColorStop(0.82, '#e8450c');
+            gradient.addColorStop(1, '#b81800');
+            ctx.fillStyle = gradient; ctx.fillRect(0, 0, size, size);
+            const rng = seedRandom(42);
+            for (let i = 0; i < 300; i++) {
+                const x = rng() * size, y = rng() * size, r = rng() * size * 0.04 + 1, alpha = rng() * 0.35;
+                if (rng() < 0.45) {
+                    ctx.fillStyle = `rgba(120,25,5,${alpha*0.7})`; ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI*2); ctx.fill();
+                    ctx.fillStyle = `rgba(180,60,20,${alpha*0.4})`; ctx.beginPath(); ctx.arc(x, y, r*1.6, 0, Math.PI*2); ctx.fill();
+                } else if (rng() > 0.7) {
+                    ctx.fillStyle = `rgba(255,252,220,${alpha*0.5})`; ctx.beginPath(); ctx.arc(x, y, r*0.7, 0, Math.PI*2); ctx.fill();
+                }
+            }
+            const edgeGrad = ctx.createRadialGradient(size/2, size/2, size*0.42, size/2, size/2, size*0.5);
+            edgeGrad.addColorStop(0, 'rgba(0,0,0,0)'); edgeGrad.addColorStop(1, 'rgba(0,0,0,0.18)');
+            ctx.fillStyle = edgeGrad; ctx.fillRect(0, 0, size, size);
+            return new THREE.CanvasTexture(canvas);
+        }
+
+        function createEarthTexture(size = 512) {
+            const canvas = document.createElement('canvas');
+            canvas.width = size; canvas.height = size;
+            const ctx = canvas.getContext('2d');
+            const oceanGrad = ctx.createLinearGradient(0, 0, 0, size);
+            oceanGrad.addColorStop(0, '#e8f4fa'); oceanGrad.addColorStop(0.08, '#d4eaf6');
+            oceanGrad.addColorStop(0.25, '#2188c4'); oceanGrad.addColorStop(0.5, '#145f8a');
+            oceanGrad.addColorStop(0.75, '#1a78b2'); oceanGrad.addColorStop(0.92, '#c8e4f2');
+            oceanGrad.addColorStop(1, '#eaf6fb');
+            ctx.fillStyle = oceanGrad; ctx.fillRect(0, 0, size, size);
+            const rng = seedRandom(137);
+            for (let i = 0; i < 600; i++) {
+                const x = rng() * size, y = rng() * size, r = rng() * size * 0.025 + 0.5, alpha = rng() * 0.12;
+                const shade = 100 + rng() * 90;
+                ctx.fillStyle = `rgba(${shade*0.3},${shade*0.55},${shade*0.85},${alpha})`;
+                ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI*2); ctx.fill();
+            }
+            const continents = [
+                { cx:0.22,cy:0.35,rx:0.15,ry:0.19,rot:-0.2,color:'#5a8c3e' }, { cx:0.28,cy:0.30,rx:0.09,ry:0.13,rot:0.15,color:'#6b9e4a' },
+                { cx:0.18,cy:0.42,rx:0.11,ry:0.08,rot:-0.3,color:'#7aaa55' }, { cx:0.35,cy:0.28,rx:0.07,ry:0.10,rot:0.4,color:'#4d7a30' },
+                { cx:0.15,cy:0.25,rx:0.12,ry:0.14,rot:-0.1,color:'#689944' }, { cx:0.40,cy:0.40,rx:0.06,ry:0.08,rot:0.55,color:'#7cb050' },
+                { cx:0.72,cy:0.32,rx:0.17,ry:0.20,rot:0.1,color:'#5c8e3f' }, { cx:0.78,cy:0.36,rx:0.10,ry:0.12,rot:-0.25,color:'#6fa04d' },
+                { cx:0.68,cy:0.27,rx:0.08,ry:0.11,rot:0.3,color:'#4e7c32' }, { cx:0.76,cy:0.44,rx:0.09,ry:0.07,rot:-0.4,color:'#7dae52' },
+                { cx:0.55,cy:0.33,rx:0.14,ry:0.17,rot:0.05,color:'#5f9042' }, { cx:0.50,cy:0.38,rx:0.08,ry:0.10,rot:-0.15,color:'#6c9c48' },
+                { cx:0.60,cy:0.25,rx:0.06,ry:0.09,rot:0.6,color:'#53803a' }, { cx:0.82,cy:0.50,rx:0.07,ry:0.06,rot:0.35,color:'#689646' },
+                { cx:0.88,cy:0.34,rx:0.05,ry:0.08,rot:-0.5,color:'#71a34e' }, { cx:0.30,cy:0.55,rx:0.09,ry:0.07,rot:0.2,color:'#5d8d40' },
+                { cx:0.45,cy:0.52,rx:0.11,ry:0.09,rot:-0.35,color:'#649245' }, { cx:0.62,cy:0.48,rx:0.08,ry:0.10,rot:0.45,color:'#6b9b49' },
+            ];
+            continents.forEach(cont => {
+                ctx.save(); const cx = cont.cx*size, cy = cont.cy*size, rx = cont.rx*size, ry = cont.ry*size;
+                ctx.translate(cx, cy); ctx.rotate(cont.rot); ctx.fillStyle = cont.color;
+                ctx.beginPath(); ctx.ellipse(0, 0, rx, ry, 0, 0, Math.PI*2); ctx.fill();
+                for (let j=0; j<40; j++) {
+                    const sx = (rng()-0.5)*rx*1.8, sy = (rng()-0.5)*ry*1.8, sr = rng()*rx*0.25+1;
+                    const shade = rng()*30-15, base = cont.color.match(/\d+/g);
+                    if(base && base.length>=3) {
+                        const r=Math.min(255,Math.max(0,parseInt(base[0])+shade)), g=Math.min(255,Math.max(0,parseInt(base[1])+shade)), b=Math.min(255,Math.max(0,parseInt(base[2])+shade));
+                        ctx.fillStyle = `rgba(${r},${g},${b},0.5)`;
+                    }
+                    ctx.beginPath(); ctx.arc(sx, sy, sr, 0, Math.PI*2); ctx.fill();
+                }
+                ctx.restore();
+            });
+            for (let i=0; i<500; i++) {
+                const x=rng()*size, y=rng()*size, r=rng()*size*0.03+0.6, alpha=rng()*0.22;
+                ctx.fillStyle = `rgba(255,255,255,${alpha})`; ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fill();
+            }
+            const iceTop = ctx.createLinearGradient(0,0,0,size*0.12); iceTop.addColorStop(0,'rgba(240,248,255,0.75)'); iceTop.addColorStop(1,'rgba(240,248,255,0)');
+            ctx.fillStyle=iceTop; ctx.fillRect(0,0,size,size*0.12);
+            const iceBottom = ctx.createLinearGradient(0,size,0,size*0.88); iceBottom.addColorStop(0,'rgba(240,248,255,0.7)'); iceBottom.addColorStop(1,'rgba(240,248,255,0)');
+            ctx.fillStyle=iceBottom; ctx.fillRect(0,size*0.88,size,size*0.12);
+            return new THREE.CanvasTexture(canvas);
+        }
+
+        function createMoonTexture(size = 512) {
+            const canvas = document.createElement('canvas');
+            canvas.width = size; canvas.height = size;
+            const ctx = canvas.getContext('2d');
+            const baseGrad = ctx.createRadialGradient(size/2,size/2,0,size/2,size/2,size*0.5);
+            baseGrad.addColorStop(0,'#e2e0da'); baseGrad.addColorStop(0.5,'#ccc9c2'); baseGrad.addColorStop(1,'#a8a59e');
+            ctx.fillStyle=baseGrad; ctx.fillRect(0,0,size,size);
+            const rng = seedRandom(271);
+            const marias = [
+                {cx:0.35,cy:0.40,rx:0.18,ry:0.16,rot:0.1},{cx:0.55,cy:0.35,rx:0.14,ry:0.12,rot:-0.2},
+                {cx:0.48,cy:0.48,rx:0.16,ry:0.13,rot:0.35},{cx:0.30,cy:0.32,rx:0.11,ry:0.09,rot:-0.15},
+                {cx:0.60,cy:0.42,rx:0.10,ry:0.11,rot:0.5},{cx:0.42,cy:0.28,rx:0.13,ry:0.10,rot:-0.3},
+            ];
+            marias.forEach(m=>{
+                ctx.save(); ctx.translate(m.cx*size,m.cy*size); ctx.rotate(m.rot);
+                ctx.fillStyle='rgba(130,125,118,0.55)'; ctx.beginPath(); ctx.ellipse(0,0,m.rx*size,m.ry*size,0,0,Math.PI*2); ctx.fill();
+                const soft = ctx.createRadialGradient(0,0,m.rx*size*0.6,0,0,m.rx*size*1.05);
+                soft.addColorStop(0,'rgba(130,125,118,0)'); soft.addColorStop(1,'rgba(130,125,118,0.3)');
+                ctx.fillStyle=soft; ctx.beginPath(); ctx.ellipse(0,0,m.rx*size*1.05,m.ry*size*1.05,0,0,Math.PI*2); ctx.fill();
+                ctx.restore();
+            });
+            for (let i=0;i<900;i++) {
+                const x=rng()*size, y=rng()*size, r=rng()*size*0.028+1.2, alpha=rng()*0.5+0.15;
+                ctx.fillStyle=`rgba(80,78,72,${alpha*0.7})`; ctx.beginPath(); ctx.arc(x+r*0.25,y+r*0.25,r,0,Math.PI*2); ctx.fill();
+                ctx.fillStyle=`rgba(220,215,205,${alpha*0.55})`; ctx.beginPath(); ctx.arc(x-r*0.2,y-r*0.2,r*0.85,0,Math.PI*2); ctx.fill();
+                ctx.fillStyle=`rgba(155,150,140,${alpha*0.45})`; ctx.beginPath(); ctx.arc(x,y,r*0.7,0,Math.PI*2); ctx.fill();
+            }
+            for (let i=0;i<2000;i++) {
+                const x=rng()*size, y=rng()*size, r=rng()*1.8+0.3, alpha=rng()*0.15, shade=140+rng()*80;
+                ctx.fillStyle=`rgba(${shade},${shade-5},${shade-10},${alpha})`; ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fill();
+            }
+            return new THREE.CanvasTexture(canvas);
+        }
+
+        function createGlowTexture(size, inner, outer) {
+            const canvas = document.createElement('canvas'); canvas.width=size; canvas.height=size;
+            const ctx = canvas.getContext('2d');
+            const grad = ctx.createRadialGradient(size/2,size/2,0,size/2,size/2,size/2);
+            grad.addColorStop(0,inner); grad.addColorStop(0.25,inner); grad.addColorStop(0.7,outer); grad.addColorStop(1,'rgba(0,0,0,0)');
+            ctx.fillStyle=grad; ctx.fillRect(0,0,size,size);
+            return new THREE.CanvasTexture(canvas);
+        }
+
+        function createStarSpriteTexture(size=32) {
+            const canvas = document.createElement('canvas'); canvas.width=size; canvas.height=size;
+            const ctx = canvas.getContext('2d');
+            const grad = ctx.createRadialGradient(size/2,size/2,0,size/2,size/2,size/2);
+            grad.addColorStop(0,'rgba(255,255,255,1)'); grad.addColorStop(0.06,'rgba(255,255,255,0.9)');
+            grad.addColorStop(0.2,'rgba(255,250,240,0.5)'); grad.addColorStop(0.5,'rgba(200,210,240,0.08)');
+            grad.addColorStop(1,'rgba(0,0,0,0)'); ctx.fillStyle=grad; ctx.fillRect(0,0,size,size);
+            return new THREE.CanvasTexture(canvas);
+        }
+
+        function seedRandom(seed) { let s=seed; return function(){ s=(s*1664525+1013904223)&0xffffffff; return (s>>>0)/0xffffffff; }; }
+
+        // ==================== 纹理 ====================
+        const sunTexture = createSunTexture(); sunTexture.colorSpace = THREE.SRGBColorSpace;
+        const earthTexture = createEarthTexture(); earthTexture.colorSpace = THREE.SRGBColorSpace;
+        const moonTexture = createMoonTexture(); moonTexture.colorSpace = THREE.SRGBColorSpace;
+        const glowTexOrange = createGlowTexture(256,'rgba(255,200,60,0.9)','rgba(255,100,10,0)');
+        const glowTexYellow = createGlowTexture(256,'rgba(255,240,180,0.7)','rgba(255,160,30,0)');
+        const starSpriteTex = createStarSpriteTexture();
+
+        // ==================== 太阳 ====================
+        const sunRadius = 2.0;
+        const sunGeom = new THREE.SphereGeometry(sunRadius, 96, 96);
+        const sunMat = new THREE.MeshBasicMaterial({ map: sunTexture, color: new THREE.Color('#fffef5') });
+        const sunMesh = new THREE.Mesh(sunGeom, sunMat); sunMesh.name='太阳'; scene.add(sunMesh);
+
+        const glowLayers = [
+            { scale:1.25, color:'#ffe880', opacity:0.28, tex:glowTexYellow },
+            { scale:1.45, color:'#ffc040', opacity:0.18, tex:glowTexOrange },
+            { scale:1.7, color:'#ff8018', opacity:0.09, tex:glowTexOrange },
+            { scale:2.1, color:'#ff5000', opacity:0.04, tex:glowTexOrange },
+        ];
+        const glowSprites = [];
+        glowLayers.forEach(l=>{
+            const mat = new THREE.SpriteMaterial({ map:l.tex, color:new THREE.Color(l.color), blending:THREE.AdditiveBlending, depthWrite:false, depthTest:true, transparent:true, opacity:l.opacity });
+            const sprite = new THREE.Sprite(mat); sprite.scale.set(sunRadius*2*l.scale, sunRadius*2*l.scale, 1); sprite.position.set(0,0,0); sprite.renderOrder=-1;
+            scene.add(sprite); glowSprites.push(sprite);
+        });
+
+        const coronaParticleCount = 400;
+        const coronaGeom = new THREE.BufferGeometry();
+        const coronaPos = new Float32Array(coronaParticleCount*3);
+        const coronaSizes = new Float32Array(coronaParticleCount);
+        const rngCorona = seedRandom(999);
+        for(let i=0;i<coronaParticleCount;i++){
+            const theta=rngCorona()*Math.PI*2, phi=rngCorona()*Math.PI, r=sunRadius*(1.02+rngCorona()*0.55);
+            coronaPos[i*3]=r*Math.sin(phi)*Math.cos(theta); coronaPos[i*3+1]=r*Math.sin(phi)*Math.sin(theta); coronaPos[i*3+2]=r*Math.cos(phi);
+            coronaSizes[i]=rngCorona()*2.5+0.5;
+        }
+        coronaGeom.setAttribute('position', new THREE.BufferAttribute(coronaPos,3));
+        coronaGeom.setAttribute('size', new THREE.BufferAttribute(coronaSizes,1));
+        const coronaMat = new THREE.PointsMaterial({ map:starSpriteTex, color:new THREE.Color('#ffcc66'), blending:THREE.AdditiveBlending, depthWrite:false, depthTest:true, transparent:true, opacity:0.5, sizeAttenuation:true, size:0.18 });
+        const coronaPoints = new THREE.Points(coronaGeom, coronaMat); coronaPoints.renderOrder=-1; scene.add(coronaPoints);
+
+        // ==================== 地球轨道系统 ====================
+        const earthOrbitRadius = 8.0;
+        const earthRadius = 0.5;
+        const moonOrbitRadius = 1.5;
+        const moonRadius = 0.15;
+
+        const earthOrbitPivot = new THREE.Group(); earthOrbitPivot.name='地球公转轴心'; scene.add(earthOrbitPivot);
+
+        // 地球轨道环（实线）
+        const earthOrbitRingGeom = new THREE.TorusGeometry(earthOrbitRadius, 0.035, 16, 256);
+        const earthOrbitRingMat = new THREE.MeshStandardMaterial({ color: new THREE.Color('#5588bb'), roughness:0.5, metalness:0.2, transparent:true, opacity:0.5, depthWrite:true });
+        const earthOrbitRing = new THREE.Mesh(earthOrbitRingGeom, earthOrbitRingMat);
+        earthOrbitRing.rotation.x = Math.PI/2; earthOrbitRing.receiveShadow=true; earthOrbitRing.name='地球轨道'; scene.add(earthOrbitRing);
+
+        const earthTiltGroup = new THREE.Group(); earthTiltGroup.name='地球轴倾斜';
+        earthTiltGroup.position.set(earthOrbitRadius, 0, 0); earthTiltGroup.rotation.z = 23.44 * (Math.PI/180);
+        earthOrbitPivot.add(earthTiltGroup);
+
+        const earthGeom = new THREE.SphereGeometry(earthRadius, 64, 64);
+        const earthMat = new THREE.MeshStandardMaterial({ map: earthTexture, roughness:0.65, metalness:0.05, color:new THREE.Color('#ffffff') });
+        const earthMesh = new THREE.Mesh(earthGeom, earthMat); earthMesh.castShadow=true; earthMesh.receiveShadow=true; earthMesh.name='地球';
+        earthTiltGroup.add(earthMesh);
+
+        // 月球轨道轴心（相对地球）
+        const moonOrbitPivot = new THREE.Group(); moonOrbitPivot.name='月球公转轴心';
+        moonOrbitPivot.position.set(earthOrbitRadius, 0, 0); moonOrbitPivot.rotation.x = 5.1 * (Math.PI/180);
+        earthOrbitPivot.add(moonOrbitPivot);
+
+        // 月球绕地球的轨道环（半透明，原本样式）
+        const moonOrbitRingGeom = new THREE.TorusGeometry(moonOrbitRadius, 0.022, 12, 128);
+        const moonOrbitRingMat = new THREE.MeshStandardMaterial({ color: new THREE.Color('#9999aa'), roughness:0.5, metalness:0.15, transparent:true, opacity:0.4, depthWrite:true });
+        const moonOrbitRing = new THREE.Mesh(moonOrbitRingGeom, moonOrbitRingMat);
+        moonOrbitRing.rotation.x = Math.PI/2; moonOrbitRing.receiveShadow=true; moonOrbitRing.name='月球轨道'; moonOrbitPivot.add(moonOrbitRing);
+
+        const moonGeom = new THREE.SphereGeometry(moonRadius, 48, 48);
+        const moonMat = new THREE.MeshStandardMaterial({ map: moonTexture, roughness:0.8, metalness:0.02, color:new THREE.Color('#f5f5f0') });
+        const moonMesh = new THREE.Mesh(moonGeom, moonMat); moonMesh.castShadow=true; moonMesh.receiveShadow=true; moonMesh.name='月球';
+        moonMesh.position.set(moonOrbitRadius, 0, 0); moonOrbitPivot.add(moonMesh);
+
+        // ★ 动态绘制的月球绝对轨迹 ★
+        const maxTrailPoints = 5000;
+        const absTrailPositions = new Float32Array(maxTrailPoints * 3);
+        const absTrailGeom = new THREE.BufferGeometry();
+        absTrailGeom.setAttribute('position', new THREE.BufferAttribute(absTrailPositions, 3));
+        absTrailGeom.setDrawRange(0, 0); // 初始不绘制
+        const absTrailMat = new THREE.LineDashedMaterial({
+            color: 0xff3333,
+            dashSize: 0.35,
+            gapSize: 0.2,
+            linewidth: 1,
+        });
+        const absTrailLine = new THREE.Line(absTrailGeom, absTrailMat);
+        absTrailLine.name = '月球绝对轨迹 (红色虚线·动态)';
+        absTrailLine.visible = true; // 初始可见
+        scene.add(absTrailLine);
+
+        let trailPointCount = 0;
+        let lastTrailTime = -0.02;
+        const trailInterval = 0.02;
+        let trailVisible = true; // 轨迹可见状态
+
+        // ==================== 轨迹显示/隐藏按钮逻辑 ====================
+        trailToggleBtn.addEventListener('click', () => {
+            trailVisible = !trailVisible;
+            absTrailLine.visible = trailVisible;
+            
+            if (trailVisible) {
+                trailBtnText.textContent = '隐藏轨迹';
+                trailToggleBtn.classList.remove('hidden');
+            } else {
+                trailBtnText.textContent = '显示轨迹';
+                trailToggleBtn.classList.add('hidden');
+            }
+        });
+
+        // ==================== 动画 ====================
+        const earthOrbitSpeed = (2*Math.PI)/16;
+        const moonOrbitSpeed = (2*Math.PI)/3.6;
+        const sunRotSpeed = (2*Math.PI)/7;
+        const earthRotSpeed = (2*Math.PI)/2.2;
+        const moonRotSpeed = moonOrbitSpeed;
+
+        const clock = new THREE.Clock();
+        let elapsedTotal = 0;
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const dt = Math.min(clock.getDelta(), 0.15);
+            elapsedTotal += dt;
+
+            // 公转
+            earthOrbitPivot.rotation.y += earthOrbitSpeed * dt;
+            moonOrbitPivot.rotation.y += moonOrbitSpeed * dt;
+
+            // 自转
+            sunMesh.rotation.y += sunRotSpeed * dt;
+            earthMesh.rotation.y += earthRotSpeed * dt;
+            moonMesh.rotation.y += moonRotSpeed * dt;
+
+            // 动态添加轨迹点（无论是否可见都继续记录）
+            if (elapsedTotal - lastTrailTime >= trailInterval && trailPointCount < maxTrailPoints) {
+                lastTrailTime = elapsedTotal;
+                
+                // 获取当前月球的世界位置
+                const moonWorldPos = new THREE.Vector3();
+                moonMesh.getWorldPosition(moonWorldPos);
+                
+                // 存储绝对位置
+                const idx = trailPointCount * 3;
+                absTrailPositions[idx] = moonWorldPos.x;
+                absTrailPositions[idx + 1] = moonWorldPos.y;
+                absTrailPositions[idx + 2] = moonWorldPos.z;
+
+                trailPointCount++;
+                absTrailGeom.attributes.position.needsUpdate = true;
+                absTrailGeom.setDrawRange(0, trailPointCount);
+                absTrailLine.computeLineDistances();
+            }
+
+            // 太阳光晕脉动
+            const pulse = 1 + Math.sin(elapsedTotal*1.8)*0.03 + Math.sin(elapsedTotal*3.1)*0.02;
+            glowSprites.forEach((sprite, i)=>{
+                const base = glowLayers[i].scale * sunRadius * 2;
+                sprite.scale.set(base*pulse, base*pulse, 1);
+                sprite.material.opacity = glowLayers[i].opacity * (0.9 + Math.sin(elapsedTotal*2.5+i)*0.1);
+            });
+            coronaPoints.rotation.y += dt*0.25; coronaPoints.rotation.x += dt*0.12;
+            coronaMat.opacity = 0.45 + Math.sin(elapsedTotal*2.2)*0.08;
+
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        window.addEventListener('resize', ()=>{
+            camera.aspect = window.innerWidth/window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+        window.addEventListener('keydown', (e)=>{
+            switch(e.key.toLowerCase()){
+                case 'r': camera.position.set(6,9.5,16); controls.target.set(0,0,0); controls.update(); break;
+                case 't': camera.position.set(0,18,0.5); controls.target.set(0,0,0); controls.update(); break;
+                case 'f': camera.position.set(0,1.5,15); controls.target.set(0,0,0); controls.update(); break;
+                case 's': camera.position.set(15,0.5,0); controls.target.set(0,0,0); controls.update(); break;
+                case 'a': controls.autoRotate=!controls.autoRotate; if(controls.autoRotate) controls.autoRotateSpeed=0.25; break;
+                case 'h': // 按 H 键也可以切换轨迹显示
+                    trailToggleBtn.click();
+                    break;
+            }
+        });
+        renderer.domElement.addEventListener('dblclick', ()=>{
+            camera.position.set(6,9.5,16); controls.target.set(0,0,0); controls.update();
+        });
+
+        console.log('🌌 太阳·地球·月球 — 动态绘制月球绝对轨迹（红色虚线）');
+        console.log('   🖱 点击"隐藏轨迹"按钮或按 H 键切换轨迹显示');
+        renderer.render(scene, camera);
+        requestAnimationFrame(animate);
+    </script>
+
+    <!-- 齐老师动画 - 水印 -->
+    <div class="qilaoshi-watermark">
+        QQ 3398528250<br>
+        抖音 35320300542
+    </div>
+
+
+    <!-- 齐老师动画 - 安全保护脚本 -->
+    <script>
+    (function() {
+        // 禁用右键菜单
+        document.addEventListener('contextmenu', function(e) {
+            e.preventDefault();
+            return false;
+        });
+        
+        // ESC键返回主页
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' || e.keyCode === 27) {
+                window.location.href = '../index.html';
+            }
+        });
+        
+        // 禁用开发者工具快捷键
+        document.addEventListener('keydown', function(e) {
+            // F12
+            if (e.key === 'F12' || e.keyCode === 123) {
+                e.preventDefault();
+                return false;
+            }
+            // Ctrl+U
+            if ((e.ctrlKey || e.metaKey) && (e.key === 'u' || e.keyCode === 85)) {
+                e.preventDefault();
+                return false;
+            }
+            // Ctrl+Shift+I
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'i' || e.keyCode === 73)) {
+                e.preventDefault();
+                return false;
+            }
+            // Ctrl+Shift+J
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'j' || e.keyCode === 74)) {
+                e.preventDefault();
+                return false;
+            }
+            // Ctrl+Shift+C
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'c' || e.keyCode === 67)) {
+                e.preventDefault();
+                return false;
+            }
+        });
+        
+        // 检测开发者工具打开（简单检测）
+        var devtoolsOpen = false;
+        var threshold = 160;
+        setInterval(function() {
+            var widthThreshold = window.outerWidth - window.innerWidth > threshold;
+            var heightThreshold = window.outerHeight - window.innerHeight > threshold;
+            if (widthThreshold || heightThreshold) {
+                if (!devtoolsOpen) {
+                    devtoolsOpen = true;
+                    // 可以选择跳转或其他操作
+                }
+            } else {
+                devtoolsOpen = false;
+            }
+        }, 1000);
+    })();
+    </script>
+
+</body>
+</html>
