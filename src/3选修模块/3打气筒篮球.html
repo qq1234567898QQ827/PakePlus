@@ -1,0 +1,906 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <title>高中物理动画：打气筒给篮球打气 | 气体分子模型</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 20px;
+      background: linear-gradient(135deg, #1e2a38 0%, #0f1a24 100%);
+      font-family: 'Segoe UI', 'Roboto', system-ui, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      box-sizing: border-box;
+    }
+    .container {
+      background: rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(20px);
+      border-radius: 48px;
+      padding: 20px 28px 28px;
+      box-shadow: 0 35px 55px rgba(0,0,0,0.7), inset 0 1px 3px rgba(255,255,255,0.3);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      border: 1px solid rgba(255,255,255,0.2);
+    }
+    canvas {
+      display: block;
+      width: 800px;
+      height: 500px;
+      border-radius: 32px;
+      background: radial-gradient(circle at 25% 25%, #f0f3f5, #cfd9e3);
+      box-shadow: inset 0 0 35px rgba(0,0,0,0.4), 0 20px 30px rgba(0,0,0,0.8);
+      margin-bottom: 16px;
+    }
+    .control-panel {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 35px;
+      flex-wrap: wrap;
+      color: #eef3f9;
+    }
+    button {
+      background: #ff6b4a;
+      border: none;
+      font-weight: bold;
+      font-size: 1.4rem;
+      padding: 14px 38px;
+      border-radius: 60px;
+      letter-spacing: 2px;
+      color: white;
+      background: linear-gradient(180deg, #ff7b5a 0%, #e04e2f 100%);
+      box-shadow: 0 10px 20px rgba(0,0,0,0.6), 0 4px 0 #a3321c;
+      cursor: pointer;
+      transition: all 0.08s ease;
+      text-transform: uppercase;
+      border: 1px solid #ffab8e;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    button:active {
+      transform: translateY(3px);
+      box-shadow: 0 5px 10px rgba(0,0,0,0.6), 0 2px 0 #a3321c;
+      background: linear-gradient(180deg, #e06a4a 0%, #c0392b 100%);
+    }
+    button:disabled {
+      opacity: 0.55;
+      transform: translateY(2px);
+      box-shadow: 0 4px 8px rgba(0,0,0,0.4);
+      cursor: not-allowed;
+      background: #7f8c8d;
+      border-color: #bdc3c7;
+    }
+    .info-board {
+      background: rgba(8, 18, 28, 0.75);
+      backdrop-filter: blur(16px);
+      border-radius: 50px;
+      padding: 12px 30px;
+      display: flex;
+      gap: 42px;
+      font-size: 1.2rem;
+      font-weight: 500;
+      border: 1px solid rgba(255,255,255,0.25);
+      color: #ecf0f1;
+    }
+    .info-board span {
+      color: #ffb347;
+      font-weight: 700;
+      font-size: 1.6rem;
+      margin-left: 6px;
+    }
+    .pump-indicator {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .led {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: #e74c3c;
+      box-shadow: 0 0 14px #e74c3c;
+    }
+    .led.active {
+      background: #2ecc71;
+      box-shadow: 0 0 22px #2ecc71;
+    }
+    .legend {
+      color: #cddae6;
+      font-size: 0.9rem;
+      margin-top: 8px;
+      display: flex;
+      gap: 25px;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .dot-black {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #1a1a1a;
+      display: inline-block;
+    }
+    .dot-blue {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #3a6ea5;
+      display: inline-block;
+    }
+  </style>
+<style>
+    /* 齐老师动画 - 统一样式 */
+    body {
+        background: #1a2332 !important;
+    }
+    
+    /* 顶部标题栏 */
+    .qilaoshi-header {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 50px;
+        background: #1a2332;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 99999 !important;
+        border-bottom: 1px solid #2a3a50;
+    }
+    
+    .qilaoshi-title {
+        font-size: 20px;
+        font-weight: 600;
+        color: #8ab4f8;
+        letter-spacing: 2px;
+        font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif;
+    }
+    
+    /* 返回按钮 */
+    .qilaoshi-back-btn {
+        position: fixed;
+        top: 10px;
+        right: 15px;
+        z-index: 999999 !important;
+        background: linear-gradient(135deg, #3a5a80, #2a4a70);
+        color: #ffffff;
+        border: 1px solid #5a8ab0;
+        padding: 8px 18px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        font-family: 'Microsoft YaHei', sans-serif;
+        transition: all 0.2s;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+    }
+    
+    .qilaoshi-back-btn:hover {
+        background: linear-gradient(135deg, #4a6a90, #3a5a80);
+        color: #ffffff;
+        box-shadow: 0 4px 15px rgba(90, 138, 176, 0.4);
+        transform: translateY(-1px);
+    }
+    
+    /* 水印 */
+    .qilaoshi-watermark {
+        position: fixed;
+        bottom: 10px;
+        right: 15px;
+        z-index: 9999;
+        font-size: 11px;
+        color: rgba(138, 180, 248, 0.4);
+        font-family: 'Microsoft YaHei', sans-serif;
+        line-height: 1.5;
+        text-align: right;
+        pointer-events: none;
+    }
+    
+    /* 调整主内容区域，给顶部标题栏留出空间 */
+    body {
+        padding-top: 50px !important;
+    }
+</style>
+</head>
+<body>
+
+    <!-- 齐老师动画 - 顶部导航 -->
+    <div class="qilaoshi-header">
+        <div class="qilaoshi-title">齐老师动画</div>
+    </div>
+    <button class="qilaoshi-back-btn" onclick="window.location.href='../index.html'">← 返回主页</button>
+
+<div style="display: flex; flex-direction: column; align-items: center;">
+  <div class="container">
+    <canvas id="physicsCanvas" width="800" height="500"></canvas>
+    <div class="control-panel">
+      <button id="pumpBtn">
+        <span>⛽</span> 打气
+      </button>
+      <div class="info-board">
+        <div>🏀 总分子 <span id="moleculeCount">10</span></div>
+        <div class="pump-indicator">
+          <span>⚫ 原有分子</span>
+          <span id="blackCount" style="color:#cccccc;">10</span>
+        </div>
+        <div class="pump-indicator">
+          <span>🔵 打入分子</span>
+          <span id="blueCount" style="color:#5d9cec;">0</span>
+        </div>
+        <div class="pump-indicator">
+          <span>⚡ 状态</span>
+          <div class="led" id="statusLed"></div>
+        </div>
+      </div>
+    </div>
+    <div class="legend">
+      <span class="legend-item"><span class="dot-black"></span> 原有空气分子(黑色)</span>
+      <span class="legend-item"><span class="dot-blue"></span> 打入气体分子(蓝色)</span>
+    </div>
+  </div>
+</div>
+
+<script>
+  (function() {
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    const pumpBtn = document.getElementById('pumpBtn');
+    const moleculeCountSpan = document.getElementById('moleculeCount');
+    const blackCountSpan = document.getElementById('blackCount');
+    const blueCountSpan = document.getElementById('blueCount');
+    const statusLed = document.getElementById('statusLed');
+
+    const W = 800, H = 500;
+
+    // 篮球
+    const ballCenterX = 570;
+    const ballCenterY = 255;
+    const ballRadius = 150;
+
+    // 打气筒
+    const pumpBody = {
+      x: 160,
+      yTop: 90,
+      yBottom: 350,
+      radius: 40
+    };
+
+    // 初始活塞在顶部
+    let pistonY = pumpBody.yTop + 18;
+    
+    // 导管
+    const pipeStart = { x: pumpBody.x, y: pumpBody.yBottom };
+    const pipeEnd = { x: ballCenterX - ballRadius * 0.8, y: ballCenterY + ballRadius * 0.28 };
+
+    // 分子数组
+    let molecules = [];
+    
+    const INIT_BALL_COUNT = 10;
+    const INIT_PUMP_BELOW = 5;
+    const INIT_PUMP_ABOVE = 5;
+    const INJECT_PER_PUMP = 5;
+    
+    const BALL_FRICTION = 0.998;
+    const PUMP_FRICTION = 0.991;
+    const MOLECULE_SPEED = 1.7;
+
+    let animationId = null;
+    let isPumping = false;
+    let pumpProgress = 0;
+    
+    let flowingMolecules = [];
+    
+    // 单向阀状态
+    let valveOpen = false;
+    
+    // 阶段标记
+    let phaseHandled = { down: false, up: false };
+    
+    // 活塞上移时分子依次通过的队列
+    let aboveToBelowQueue = [];
+    let aboveTransferTimer = 0;
+    const TRANSFER_INTERVAL = 6;
+
+    function randomVelocity(baseSpeed = MOLECULE_SPEED) {
+      const angle = Math.random() * Math.PI * 2;
+      const speed = baseSpeed * (0.7 + Math.random() * 0.9);
+      return { vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed };
+    }
+
+    function createInitialMolecules() {
+      const mols = [];
+      
+      // 篮球内黑色分子
+      for (let i = 0; i < INIT_BALL_COUNT; i++) {
+        let placed = false;
+        for (let attempt = 0; attempt < 400; attempt++) {
+          const angle = Math.random() * Math.PI * 2;
+          const dist = Math.random() * (ballRadius - 7);
+          const px = ballCenterX + Math.cos(angle) * dist;
+          const py = ballCenterY + Math.sin(angle) * dist;
+          if (Math.hypot(px - ballCenterX, py - ballCenterY) < ballRadius - 5) {
+            const vel = randomVelocity();
+            mols.push({ x: px, y: py, vx: vel.vx, vy: vel.vy, location: 'ball', type: 'black' });
+            placed = true;
+            break;
+          }
+        }
+        if (!placed) {
+          mols.push({
+            x: ballCenterX + (Math.random()-0.5)*25,
+            y: ballCenterY + (Math.random()-0.5)*25,
+            vx: (Math.random()-0.5)*2.2,
+            vy: (Math.random()-0.5)*2.2,
+            location: 'ball',
+            type: 'black'
+          });
+        }
+      }
+      
+      // 活塞下方蓝色分子 (初始5个)
+      for (let i = 0; i < INIT_PUMP_BELOW; i++) {
+        const px = pumpBody.x + (Math.random() - 0.5) * (pumpBody.radius * 1.6);
+        const py = pistonY + 20 + Math.random() * (pumpBody.yBottom - pistonY - 40);
+        mols.push({
+          x: px,
+          y: py,
+          vx: (Math.random() - 0.5) * 2.5,
+          vy: (Math.random() - 0.5) * 2.5,
+          location: 'pump_below',
+          type: 'blue'
+        });
+      }
+      
+      // 活塞上方蓝色分子 (初始5个)
+      for (let i = 0; i < INIT_PUMP_ABOVE; i++) {
+        const px = pumpBody.x + (Math.random() - 0.5) * (pumpBody.radius * 1.6);
+        const py = pumpBody.yTop + 10 + Math.random() * (pistonY - pumpBody.yTop - 25);
+        mols.push({
+          x: px,
+          y: py,
+          vx: (Math.random() - 0.5) * 2.0,
+          vy: (Math.random() - 0.5) * 1.5,
+          location: 'pump_above',
+          type: 'blue'
+        });
+      }
+      
+      return mols;
+    }
+
+    function resetSimulation() {
+      molecules = createInitialMolecules();
+      flowingMolecules = [];
+      aboveToBelowQueue = [];
+      aboveTransferTimer = 0;
+      pistonY = pumpBody.yTop + 18;
+      isPumping = false;
+      pumpProgress = 0;
+      valveOpen = false;
+      phaseHandled = { down: false, up: false };
+      updateCounts();
+    }
+
+    function updateCounts() {
+      const ballMols = molecules.filter(m => m.location === 'ball');
+      const blackCount = ballMols.filter(m => m.type === 'black').length;
+      const blueCount = ballMols.filter(m => m.type === 'blue').length;
+      moleculeCountSpan.textContent = ballMols.length;
+      blackCountSpan.textContent = blackCount;
+      blueCountSpan.textContent = blueCount;
+    }
+
+    function constrainToBall(mol) {
+      const dx = mol.x - ballCenterX;
+      const dy = mol.y - ballCenterY;
+      const dist = Math.sqrt(dx*dx + dy*dy);
+      const limit = ballRadius - 3.5;
+      if (dist >= limit) {
+        const nx = dx / dist;
+        const ny = dy / dist;
+        mol.x = ballCenterX + nx * limit;
+        mol.y = ballCenterY + ny * limit;
+        const vn = mol.vx * nx + mol.vy * ny;
+        mol.vx -= 2 * vn * nx;
+        mol.vy -= 2 * vn * ny;
+        mol.vx *= BALL_FRICTION;
+        mol.vy *= BALL_FRICTION;
+      }
+    }
+
+    function constrainToPumpBelow(mol) {
+      const left = pumpBody.x - pumpBody.radius + 3;
+      const right = pumpBody.x + pumpBody.radius - 3;
+      const topLimit = pistonY + 8;
+      const bottomLimit = pumpBody.yBottom - 5;
+      
+      if (mol.x < left) { mol.x = left; mol.vx = Math.abs(mol.vx)*0.9; }
+      else if (mol.x > right) { mol.x = right; mol.vx = -Math.abs(mol.vx)*0.9; }
+      if (mol.y < topLimit) { mol.y = topLimit; mol.vy = Math.abs(mol.vy)*0.9; }
+      else if (mol.y > bottomLimit) { mol.y = bottomLimit; mol.vy = -Math.abs(mol.vy)*0.9; }
+      
+      mol.vx *= PUMP_FRICTION;
+      mol.vy *= PUMP_FRICTION;
+    }
+
+    function constrainToPumpAbove(mol) {
+      const left = pumpBody.x - pumpBody.radius + 3;
+      const right = pumpBody.x + pumpBody.radius - 3;
+      const topLimit = pumpBody.yTop + 5;
+      const bottomLimit = pistonY - 8;
+      
+      if (mol.x < left) { mol.x = left; mol.vx = Math.abs(mol.vx)*0.9; }
+      else if (mol.x > right) { mol.x = right; mol.vx = -Math.abs(mol.vx)*0.9; }
+      if (mol.y < topLimit) { mol.y = topLimit; mol.vy = Math.abs(mol.vy)*0.9; }
+      else if (mol.y > bottomLimit) { mol.y = bottomLimit; mol.vy = -Math.abs(mol.vy)*0.9; }
+      
+      mol.vx *= PUMP_FRICTION;
+      mol.vy *= PUMP_FRICTION;
+    }
+
+    function moveMolecules() {
+      for (let mol of molecules) {
+        mol.x += mol.vx;
+        mol.y += mol.vy;
+        if (mol.location === 'ball') constrainToBall(mol);
+        else if (mol.location === 'pump_below') constrainToPumpBelow(mol);
+        else if (mol.location === 'pump_above') constrainToPumpAbove(mol);
+      }
+      
+      // 更新流动分子
+      for (let i = flowingMolecules.length-1; i >= 0; i--) {
+        const fm = flowingMolecules[i];
+        fm.progress += 0.04;
+        if (fm.progress >= 1.0) {
+          const angle = Math.random() * Math.PI*2;
+          const dist = Math.random() * (ballRadius*0.55);
+          molecules.push({
+            x: ballCenterX + Math.cos(angle)*dist,
+            y: ballCenterY + Math.sin(angle)*dist,
+            vx: (Math.random()-0.5)*2.6,
+            vy: (Math.random()-0.5)*2.6,
+            location: 'ball',
+            type: 'blue'
+          });
+          flowingMolecules.splice(i,1);
+          updateCounts();
+        } else {
+          fm.x = pipeStart.x + (pipeEnd.x - pipeStart.x) * fm.progress;
+          fm.y = pipeStart.y + (pipeEnd.y - pipeStart.y) * fm.progress;
+        }
+      }
+      
+      // 处理活塞上方的分子依次通过单向阀进入下方
+      if (aboveToBelowQueue.length > 0) {
+        aboveTransferTimer++;
+        if (aboveTransferTimer >= TRANSFER_INTERVAL) {
+          aboveTransferTimer = 0;
+          const mol = aboveToBelowQueue.shift();
+          if (mol && molecules.includes(mol)) {
+            mol.location = 'pump_below';
+            // 设置位置在活塞下方
+            mol.y = pistonY + 20 + Math.random() * 30;
+            mol.vy = Math.abs(mol.vy) * 0.8 + 0.5;
+            mol.vx = (Math.random() - 0.5) * 2.0;
+            updateCounts();
+          }
+        }
+      }
+    }
+
+    function startPumpCycle() {
+      if (isPumping) return;
+      isPumping = true;
+      pumpProgress = 0;
+      pumpBtn.disabled = true;
+      statusLed.classList.add('active');
+      phaseHandled = { down: false, up: false };
+      aboveToBelowQueue = [];
+      aboveTransferTimer = 0;
+    }
+
+    function updatePumpAnimation() {
+      if (!isPumping) return;
+      const cycleFrames = 60;
+      pumpProgress += 1 / cycleFrames;
+      
+      // 活塞下压阶段 (0 ~ 0.5)
+      if (pumpProgress < 0.5) {
+        const normalized = pumpProgress * 2;
+        pistonY = pumpBody.yTop + 18 + normalized * 220;
+        valveOpen = normalized > 0.12;
+        
+        // 当下压到一定程度，将下方分子依次推入导管
+        if (normalized > 0.6 && !phaseHandled.down) {
+          phaseHandled.down = true;
+          const belowMols = molecules.filter(m => m.location === 'pump_below');
+          const toSend = Math.min(INJECT_PER_PUMP, belowMols.length);
+          for (let i = 0; i < toSend; i++) {
+            const idx = molecules.findIndex(m => m.location === 'pump_below');
+            if (idx !== -1) {
+              molecules.splice(idx, 1);
+              flowingMolecules.push({
+                x: pipeStart.x,
+                y: pipeStart.y,
+                progress: 0.02 + i * 0.12,
+              });
+            }
+          }
+          updateCounts();
+        }
+      }
+      // 活塞上提阶段 (0.5 ~ 1.0)
+      else {
+        const normalized = (pumpProgress - 0.5) * 2;
+        pistonY = pumpBody.yTop + 18 + 220 - normalized * 220;
+        valveOpen = false;
+        
+        // 当上提到一定程度，上方分子依次通过单向阀进入下方
+        if (normalized > 0.2 && !phaseHandled.up) {
+          phaseHandled.up = true;
+          
+          // 收集所有活塞上方的分子到队列
+          const aboveMols = molecules.filter(m => m.location === 'pump_above');
+          const toMove = Math.min(INJECT_PER_PUMP, aboveMols.length);
+          
+          // 将这些分子加入队列
+          let added = 0;
+          for (let i = molecules.length - 1; i >= 0 && added < toMove; i--) {
+            if (molecules[i].location === 'pump_above') {
+              aboveToBelowQueue.push(molecules[i]);
+              added++;
+            }
+          }
+          
+          // 同时补充上方分子（从外部吸入新气体）
+          for (let i = 0; i < toMove; i++) {
+            molecules.push({
+              x: pumpBody.x + (Math.random() - 0.5) * (pumpBody.radius * 1.6),
+              y: pumpBody.yTop + 10 + Math.random() * 20,
+              vx: (Math.random() - 0.5) * 2.0,
+              vy: Math.random() * 1.8,
+              location: 'pump_above',
+              type: 'blue'
+            });
+          }
+          updateCounts();
+        }
+      }
+      
+      pistonY = Math.min(pumpBody.yBottom - 8, Math.max(pumpBody.yTop + 10, pistonY));
+      
+      // 动画结束
+      if (pumpProgress >= 1.0) {
+        // 确保队列中所有分子都转移到下方
+        while (aboveToBelowQueue.length > 0) {
+          const mol = aboveToBelowQueue.shift();
+          if (mol && molecules.includes(mol)) {
+            mol.location = 'pump_below';
+            mol.y = pumpBody.yTop + 30 + Math.random() * (pumpBody.yBottom - pumpBody.yTop - 60);
+            mol.vy = Math.abs(mol.vy) * 0.8 + 0.5;
+            mol.vx = (Math.random() - 0.5) * 2.0;
+          }
+        }
+        
+        pumpProgress = 0;
+        isPumping = false;
+        pumpBtn.disabled = false;
+        statusLed.classList.remove('active');
+        pistonY = pumpBody.yTop + 18;
+        valveOpen = false;
+        aboveToBelowQueue = [];
+        aboveTransferTimer = 0;
+        updateCounts();
+      }
+    }
+
+    function drawBasketball() {
+      ctx.save();
+      ctx.shadowColor = '#1e1e1e';
+      ctx.shadowBlur = 18;
+      
+      const grad = ctx.createRadialGradient(ballCenterX-25, ballCenterY-25, ballRadius*0.2, ballCenterX, ballCenterY, ballRadius);
+      grad.addColorStop(0, '#e67e22');
+      grad.addColorStop(0.7, '#c0560c');
+      grad.addColorStop(1, '#8b3a0a');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(ballCenterX, ballCenterY, ballRadius, 0, Math.PI*2);
+      ctx.fill();
+      
+      ctx.save();
+      ctx.clip();
+      ctx.beginPath();
+      ctx.arc(ballCenterX, ballCenterY, ballRadius, 0, Math.PI*2);
+      ctx.clip();
+      
+      ctx.strokeStyle = '#2d1c0c';
+      ctx.lineWidth = 4.5;
+      ctx.shadowBlur = 0;
+      
+      for (let i = -1; i <= 1; i+=2) {
+        ctx.beginPath();
+        ctx.moveTo(ballCenterX + i*42, ballCenterY - ballRadius-2);
+        ctx.quadraticCurveTo(ballCenterX + i*48, ballCenterY, ballCenterX + i*42, ballCenterY + ballRadius+2);
+        ctx.strokeStyle = '#3b2b1a';
+        ctx.lineWidth = 4.8;
+        ctx.stroke();
+      }
+      
+      for (let i = -1; i <= 1; i+=2) {
+        ctx.beginPath();
+        ctx.moveTo(ballCenterX - ballRadius-2, ballCenterY + i*38);
+        ctx.quadraticCurveTo(ballCenterX, ballCenterY + i*44, ballCenterX + ballRadius+2, ballCenterY + i*38);
+        ctx.strokeStyle = '#3b2b1a';
+        ctx.lineWidth = 4.8;
+        ctx.stroke();
+      }
+      
+      ctx.beginPath();
+      ctx.arc(ballCenterX, ballCenterY, ballRadius*0.72, -0.5, 0.5);
+      ctx.strokeStyle = '#4a3820';
+      ctx.lineWidth = 3.2;
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(ballCenterX, ballCenterY, ballRadius*0.72, Math.PI-0.5, Math.PI+0.5);
+      ctx.stroke();
+      
+      ctx.restore();
+      
+      ctx.fillStyle = '#2c2c2c';
+      ctx.shadowBlur = 5;
+      ctx.beginPath();
+      ctx.arc(pipeEnd.x, pipeEnd.y, 8.5, 0, 2*Math.PI);
+      ctx.fill();
+      ctx.fillStyle = '#5a5a5a';
+      ctx.arc(pipeEnd.x, pipeEnd.y, 4.5, 0, 2*Math.PI);
+      ctx.fill();
+      
+      ctx.restore();
+    }
+
+    function drawPump() {
+      ctx.save();
+      
+      // 半透明打气筒主体
+      const gradient = ctx.createLinearGradient(pumpBody.x-35, 0, pumpBody.x+35, 0);
+      gradient.addColorStop(0, 'rgba(160, 180, 200, 0.55)');
+      gradient.addColorStop(0.4, 'rgba(200, 215, 230, 0.65)');
+      gradient.addColorStop(0.7, 'rgba(170, 190, 210, 0.6)');
+      gradient.addColorStop(1, 'rgba(130, 150, 170, 0.5)');
+      ctx.fillStyle = gradient;
+      ctx.shadowColor = 'rgba(0,0,0,0.3)';
+      ctx.shadowBlur = 8;
+      
+      const rx = pumpBody.x - pumpBody.radius;
+      const ry = pumpBody.yTop;
+      const rw = pumpBody.radius*2;
+      const rh = pumpBody.yBottom - pumpBody.yTop;
+      ctx.beginPath();
+      ctx.moveTo(rx+12, ry);
+      ctx.lineTo(rx+rw-12, ry);
+      ctx.quadraticCurveTo(rx+rw, ry, rx+rw, ry+12);
+      ctx.lineTo(rx+rw, ry+rh-12);
+      ctx.quadraticCurveTo(rx+rw, ry+rh, rx+rw-12, ry+rh);
+      ctx.lineTo(rx+12, ry+rh);
+      ctx.quadraticCurveTo(rx, ry+rh, rx, ry+rh-12);
+      ctx.lineTo(rx, ry+12);
+      ctx.quadraticCurveTo(rx, ry, rx+12, ry);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+      ctx.lineWidth = 2.5;
+      ctx.stroke();
+      
+      // 活塞杆 (黑色)
+      ctx.beginPath();
+      ctx.strokeStyle = '#1a1a1a';
+      ctx.lineWidth = 11;
+      ctx.shadowBlur = 4;
+      ctx.moveTo(pumpBody.x, pistonY);
+      ctx.lineTo(pumpBody.x, pistonY-68);
+      ctx.stroke();
+      
+      // 活塞头 (黑色)
+      ctx.fillStyle = 'rgba(30, 40, 50, 0.9)';
+      ctx.shadowBlur = 6;
+      ctx.beginPath();
+      ctx.ellipse(pumpBody.x, pistonY, pumpBody.radius-5, 11, 0, 0, Math.PI*2);
+      ctx.fill();
+      
+      // 单向阀
+      ctx.fillStyle = valveOpen ? 'rgba(76, 175, 80, 0.9)' : 'rgba(139, 0, 0, 0.9)';
+      ctx.shadowBlur = 8;
+      ctx.beginPath();
+      ctx.arc(pumpBody.x, pistonY, 11, 0, Math.PI*2);
+      ctx.fill();
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 14px Arial';
+      ctx.textAlign = 'center';
+      ctx.fillText(valveOpen ? '↑' : '↓', pumpBody.x, pistonY + 5);
+      
+      // 手柄
+      ctx.fillStyle = '#b03a2e';
+      ctx.shadowBlur = 6;
+      ctx.beginPath();
+      ctx.ellipse(pumpBody.x, pistonY-70, 19, 12, 0, 0, Math.PI*2);
+      ctx.fill();
+      
+      // 半透明导管
+      ctx.beginPath();
+      ctx.strokeStyle = 'rgba(180, 200, 220, 0.65)';
+      ctx.lineWidth = 14;
+      ctx.lineCap = 'round';
+      ctx.shadowBlur = 8;
+      ctx.moveTo(pipeStart.x, pipeStart.y);
+      ctx.lineTo(pipeEnd.x, pipeEnd.y);
+      ctx.stroke();
+      ctx.strokeStyle = 'rgba(210, 225, 240, 0.75)';
+      ctx.lineWidth = 7;
+      ctx.stroke();
+      
+      ctx.restore();
+    }
+
+    function drawMolecules() {
+      ctx.save();
+      for (let mol of molecules) {
+        if (mol.type === 'black') {
+          ctx.shadowColor = '#333333';
+          ctx.shadowBlur = 8;
+          ctx.beginPath();
+          ctx.fillStyle = '#1a1a1a';
+          ctx.arc(mol.x, mol.y, 3.8, 0, 2*Math.PI);
+          ctx.fill();
+          ctx.fillStyle = '#555555';
+          ctx.arc(mol.x, mol.y, 2.0, 0, 2*Math.PI);
+          ctx.fill();
+        } else {
+          ctx.shadowColor = '#3377ff';
+          ctx.shadowBlur = 11;
+          ctx.beginPath();
+          ctx.fillStyle = '#3a6ea5';
+          ctx.arc(mol.x, mol.y, 3.9, 0, 2*Math.PI);
+          ctx.fill();
+          ctx.fillStyle = '#aac9ff';
+          ctx.arc(mol.x, mol.y, 2.1, 0, 2*Math.PI);
+          ctx.fill();
+        }
+      }
+      
+      // 流动分子
+      for (let fm of flowingMolecules) {
+        ctx.shadowColor = '#5588ff';
+        ctx.shadowBlur = 10;
+        ctx.beginPath();
+        ctx.fillStyle = '#3a6ea5';
+        ctx.arc(fm.x, fm.y, 3.5, 0, 2*Math.PI);
+        ctx.fill();
+        ctx.fillStyle = '#aac9ff';
+        ctx.arc(fm.x, fm.y, 1.9, 0, 2*Math.PI);
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+
+    function animationLoop() {
+      moveMolecules();
+      if (isPumping) updatePumpAnimation();
+      
+      ctx.clearRect(0,0,W,H);
+      drawPump();
+      drawBasketball();
+      drawMolecules();
+      
+      ctx.font = "bold 12px 'Segoe UI'";
+      ctx.fillStyle = "#2c3e50";
+      ctx.fillText("打气筒 (半透明)", 95, 50);
+      ctx.fillText("篮球", 670, 115);
+      ctx.fillText("单向阀", pumpBody.x - 25, pistonY - 15);
+      
+      // 显示活塞上下方分子数量
+      const belowCount = molecules.filter(m => m.location === 'pump_below').length;
+      const aboveCount = molecules.filter(m => m.location === 'pump_above').length;
+      ctx.fillText(`下方: ${belowCount}`, pumpBody.x + 45, pistonY + 40);
+      ctx.fillText(`上方: ${aboveCount}`, pumpBody.x + 45, pistonY - 30);
+      
+      animationId = requestAnimationFrame(animationLoop);
+    }
+
+    pumpBtn.addEventListener('click', () => {
+      if (isPumping) return;
+      startPumpCycle();
+    });
+
+    resetSimulation();
+    animationLoop();
+
+    window.addEventListener('beforeunload', () => {
+      if (animationId) cancelAnimationFrame(animationId);
+    });
+  })();
+</script>
+
+    <!-- 齐老师动画 - 水印 -->
+    <div class="qilaoshi-watermark">
+        QQ 3398528250<br>
+        抖音 35320300542
+    </div>
+
+
+    <!-- 齐老师动画 - 安全保护脚本 -->
+    <script>
+    (function() {
+        // 禁用右键菜单
+        document.addEventListener('contextmenu', function(e) {
+            e.preventDefault();
+            return false;
+        });
+        
+        // ESC键返回主页
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' || e.keyCode === 27) {
+                window.location.href = '../index.html';
+            }
+        });
+        
+        // 禁用开发者工具快捷键
+        document.addEventListener('keydown', function(e) {
+            // F12
+            if (e.key === 'F12' || e.keyCode === 123) {
+                e.preventDefault();
+                return false;
+            }
+            // Ctrl+U
+            if ((e.ctrlKey || e.metaKey) && (e.key === 'u' || e.keyCode === 85)) {
+                e.preventDefault();
+                return false;
+            }
+            // Ctrl+Shift+I
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'i' || e.keyCode === 73)) {
+                e.preventDefault();
+                return false;
+            }
+            // Ctrl+Shift+J
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'j' || e.keyCode === 74)) {
+                e.preventDefault();
+                return false;
+            }
+            // Ctrl+Shift+C
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'c' || e.keyCode === 67)) {
+                e.preventDefault();
+                return false;
+            }
+        });
+        
+        // 检测开发者工具打开（简单检测）
+        var devtoolsOpen = false;
+        var threshold = 160;
+        setInterval(function() {
+            var widthThreshold = window.outerWidth - window.innerWidth > threshold;
+            var heightThreshold = window.outerHeight - window.innerHeight > threshold;
+            if (widthThreshold || heightThreshold) {
+                if (!devtoolsOpen) {
+                    devtoolsOpen = true;
+                    // 可以选择跳转或其他操作
+                }
+            } else {
+                devtoolsOpen = false;
+            }
+        }, 1000);
+    })();
+    </script>
+
+</body>
+</html>
