@@ -1,0 +1,770 @@
+<!doctype html>
+<html lang="zh-CN">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>带电粒子在磁场中的螺旋运动</title>
+  <style>
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #000515;
+        }
+        /* 增强星空背景 */
+        #stars-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            pointer-events: none;
+        }
+        .star {
+            position: absolute;
+            background: #fff;
+            border-radius: 50%;
+            animation: twinkle 3s infinite ease-in-out;
+        }
+        @keyframes twinkle {
+            0%, 100% { opacity: 0.2; transform: scale(0.8); }
+            50% { opacity: 1; transform: scale(1.2); }
+        }
+        /* 星云效果 */
+        .nebula {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(60px);
+            opacity: 0.15;
+        }
+        /* 3D 画布区域 - 占满上部 */
+        #canvas-container {
+            flex: 1; 
+            position: relative;
+            background: transparent;
+            z-index: 1;
+        }
+        #axes-info {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            pointer-events: none;
+            color: #fff;
+            font-weight: bold;
+            font-size: 12px; 
+            background: rgba(0, 50, 100, 0.85);
+            padding: 8px 12px; 
+            border-radius: 8px;
+            box-shadow: 0 0 20px rgba(0, 150, 255, 0.5);
+            z-index: 10;
+            line-height: 1.5;
+            border: 1px solid rgba(100, 200, 255, 0.5);
+        }
+        /* 底部控制面板 - 一行排列 */
+        #control-panel {
+            background: linear-gradient(180deg, rgba(0, 30, 60, 0.98), rgba(0, 50, 100, 0.98));
+            box-shadow: 0 -5px 30px rgba(0, 150, 255, 0.3);
+            padding: 12px 20px; 
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: center;
+            gap: 20px; 
+            z-index: 10;
+            border-top: 2px solid rgba(100, 200, 255, 0.4);
+        }
+        .control-group {
+            background: linear-gradient(135deg, rgba(0, 80, 150, 0.9), rgba(50, 120, 200, 0.9));
+            padding: 10px 15px;
+            border-radius: 10px;
+            border: 1px solid rgba(100, 200, 255, 0.5);
+            box-shadow: 0 4px 15px rgba(0, 100, 200, 0.4), inset 0 1px 0 rgba(255,255,255,0.1);
+            display: flex;
+            flex-direction: column;
+            min-width: 280px;
+        }
+        .control-group h3 {
+            margin: 0 0 10px 0;
+            font-size: 13px;
+            color: #fff;
+            border-bottom: 2px solid #4da6ff;
+            padding-bottom: 4px;
+            display: inline-block;
+            text-shadow: 0 0 10px rgba(100, 200, 255, 0.8);
+        }
+        .slider-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+            font-size: 12px;
+        }
+        .slider-row:last-child {
+            margin-bottom: 0;
+        }
+        .slider-row label {
+            width: 85px; 
+            color: #e0f0ff;
+            font-weight: bold;
+            text-shadow: 0 0 5px rgba(100, 200, 255, 0.5);
+        }
+        input[type=range] {
+            flex: 1;
+            margin: 0 6px;
+            accent-color: #4da6ff;
+            height: 5px;
+            border-radius: 3px;
+        }
+        .value-display {
+            width: 35px;
+            text-align: right;
+            font-family: monospace;
+            color: #ff6b6b;
+            font-weight: bold;
+            font-size: 13px;
+            text-shadow: 0 0 8px rgba(255, 100, 100, 0.6);
+        }
+        /* 按钮组 */
+        .btn-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        button {
+            padding: 10px 18px;
+            font-size: 13px;
+            font-weight: bold;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+            min-width: 120px;
+        }
+        button:hover { 
+            transform: translateY(-2px);
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
+        }
+        #btn-play { 
+            background: linear-gradient(135deg, #2ecc71, #27ae60);
+            box-shadow: 0 4px 12px rgba(46, 204, 113, 0.4);
+        }
+        #btn-play:hover { 
+            background: linear-gradient(135deg, #27ae60, #219a52);
+        }
+        #btn-reset { 
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+            box-shadow: 0 4px 12px rgba(231, 76, 60, 0.4);
+        }
+        #btn-reset:hover { 
+            background: linear-gradient(135deg, #c0392b, #a93226);
+        }
+        #btn-rotate { 
+            background: linear-gradient(135deg, #9b59b6, #8e44ad);
+            box-shadow: 0 4px 12px rgba(155, 89, 182, 0.4);
+        }
+        #btn-rotate:hover { 
+            background: linear-gradient(135deg, #8e44ad, #7d3c98);
+        }
+        .btn-active {
+            background: linear-gradient(135deg, #f39c12, #e67e22) !important;
+            box-shadow: 0 4px 12px rgba(243, 156, 18, 0.5) !important;
+        }
+        /* 水印 */
+        .watermark {
+            position: fixed;
+            bottom: 85px;
+            right: 20px;
+            color: rgba(100, 200, 255, 0.6);
+            font-size: 11px;
+            z-index: 1000;
+            pointer-events: none;
+            text-shadow: 0 0 8px rgba(100, 200, 255, 0.4);
+        }
+        /* 手机端自适应 */
+        @media screen and (max-width: 1000px) {
+            #control-panel { 
+                flex-wrap: wrap; 
+                padding: 10px;
+                gap: 10px;
+            }
+            .control-group { min-width: 240px; }
+        }
+    </style><!-- 引入 Three.js -->
+  <script src="https://static.zxxk.com/h5/static/eb8549863a97355411c3259a3f93b8e1.js"></script>
+  <script src="https://static.zxxk.com/h5/static/98d0f30d2f372eb8ddd748a23a6763c8.js"></script>
+ <style>
+    /* 齐老师动画 - 统一样式 */
+    body {
+        background: #1a2332 !important;
+    }
+    
+    /* 顶部标题栏 */
+    .qilaoshi-header {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 50px;
+        background: #1a2332;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 99999 !important;
+        border-bottom: 1px solid #2a3a50;
+    }
+    
+    .qilaoshi-title {
+        font-size: 20px;
+        font-weight: 600;
+        color: #8ab4f8;
+        letter-spacing: 2px;
+        font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif;
+    }
+    
+    /* 返回按钮 */
+    .qilaoshi-back-btn {
+        position: fixed;
+        top: 10px;
+        right: 15px;
+        z-index: 999999 !important;
+        background: linear-gradient(135deg, #3a5a80, #2a4a70);
+        color: #ffffff;
+        border: 1px solid #5a8ab0;
+        padding: 8px 18px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        font-family: 'Microsoft YaHei', sans-serif;
+        transition: all 0.2s;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+    }
+    
+    .qilaoshi-back-btn:hover {
+        background: linear-gradient(135deg, #4a6a90, #3a5a80);
+        color: #ffffff;
+        box-shadow: 0 4px 15px rgba(90, 138, 176, 0.4);
+        transform: translateY(-1px);
+    }
+    
+    /* 水印 */
+    .qilaoshi-watermark {
+        position: fixed;
+        bottom: 10px;
+        right: 15px;
+        z-index: 9999;
+        font-size: 11px;
+        color: rgba(138, 180, 248, 0.4);
+        font-family: 'Microsoft YaHei', sans-serif;
+        line-height: 1.5;
+        text-align: right;
+        pointer-events: none;
+    }
+    
+    /* 调整主内容区域，给顶部标题栏留出空间 */
+    body {
+        padding-top: 50px !important;
+    }
+</style>
+</head>
+ <body>
+
+    <!-- 齐老师动画 - 顶部导航 -->
+    <div class="qilaoshi-header">
+        <div class="qilaoshi-title">齐老师动画</div>
+    </div>
+    <button class="qilaoshi-back-btn" onclick="window.location.href='../index.html'">← 返回主页</button>
+
+  <!-- 增强星空背景 -->
+  <div id="stars-container"></div>
+  
+  <!-- 3D 画布 -->
+  <div id="canvas-container">
+   <div id="axes-info">
+    <span style="color:#ff6b6b">红线:X轴(向右)</span> | <span style="color:#ffd93d">黄线:Y轴(向上)</span> | <span style="color:#6bcfff">蓝线:Z轴(向外)</span>
+    <br>
+     磁场方向: <span style="color:#00ffff">青色箭头</span> | 初速度方向: <span style="color:#6bff6b">绿色箭头</span>
+   </div>
+  </div>
+  
+  <!-- 底部控制面板 - 一行排列 -->
+  <div id="control-panel">
+   <div class="control-group">
+    <h3>粒子初速度 (v) 调节</h3>
+    <div class="slider-row">
+     <label>速度 v (m/s)</label><input type="range" id="v-mag" min="1" max="20" step="0.5" value="10"><span class="value-display" id="val-v-mag">10</span>
+    </div>
+    <div class="slider-row">
+     <label>角 θ(°)</label><input type="range" id="v-theta" min="0" max="180" step="1" value="30"><span class="value-display" id="val-v-theta">30</span>
+    </div>
+    <div class="slider-row">
+     <label>角 φ(°)</label><input type="range" id="v-phi" min="0" max="360" step="1" value="90"><span class="value-display" id="val-v-phi">90</span>
+    </div>
+   </div>
+   
+   <div class="control-group">
+    <h3>匀强磁场 (B) 调节</h3>
+    <div class="slider-row">
+     <label>磁场 B (T)</label><input type="range" id="b-mag" min="0.5" max="5" step="0.1" value="2"><span class="value-display" id="val-b-mag">2.0</span>
+    </div>
+    <div class="slider-row">
+     <label>角 θ(°)</label><input type="range" id="b-theta" min="0" max="180" step="1" value="90"><span class="value-display" id="val-b-theta">90</span>
+    </div>
+    <div class="slider-row">
+     <label>角 φ(°)</label><input type="range" id="b-phi" min="0" max="360" step="1" value="90"><span class="value-display" id="val-b-phi">90</span>
+    </div>
+   </div>
+   
+   <div class="btn-group">
+    <button id="btn-play">播放运动 ▶</button>
+    <button id="btn-reset">重置位置 ↺</button>
+    <button id="btn-rotate">自动旋转 ⟳</button>
+   </div>
+  </div>
+  
+  <!-- 水印 -->
+  <div class="watermark">齐老师动画</div>
+  
+  <script>
+        // 生成增强星空背景 + 星云效果
+        function createStars() {
+            const container = document.getElementById('stars-container');
+            const starCount = 400;
+            
+            // 添加星云
+            const nebula1 = document.createElement('div');
+            nebula1.className = 'nebula';
+            nebula1.style.width = '400px';
+            nebula1.style.height = '400px';
+            nebula1.style.left = '10%';
+            nebula1.style.top = '20%';
+            nebula1.style.background = 'radial-gradient(circle, #4488ff, transparent)';
+            container.appendChild(nebula1);
+            
+            const nebula2 = document.createElement('div');
+            nebula2.className = 'nebula';
+            nebula2.style.width = '350px';
+            nebula2.style.height = '350px';
+            nebula2.style.right = '15%';
+            nebula2.style.bottom = '30%';
+            nebula2.style.background = 'radial-gradient(circle, #8844ff, transparent)';
+            container.appendChild(nebula2);
+            
+            const nebula3 = document.createElement('div');
+            nebula3.className = 'nebula';
+            nebula3.style.width = '300px';
+            nebula3.style.height = '300px';
+            nebula3.style.left = '50%';
+            nebula3.style.top = '10%';
+            nebula3.style.background = 'radial-gradient(circle, #ff4488, transparent)';
+            container.appendChild(nebula3);
+            
+            // 生成星星
+            for (let i = 0; i < starCount; i++) {
+                const star = document.createElement('div');
+                star.className = 'star';
+                
+                const size = Math.random() * 3 + 1;
+                star.style.width = size + 'px';
+                star.style.height = size + 'px';
+                star.style.left = Math.random() * 100 + '%';
+                star.style.top = Math.random() * 100 + '%';
+                star.style.animationDelay = Math.random() * 3 + 's';
+                star.style.animationDuration = (Math.random() * 2 + 2) + 's';
+                
+                // 随机颜色：白、蓝、紫
+                const colors = ['#ffffff', '#aaccff', '#ccaaff', '#ffaacc'];
+                star.style.background = colors[Math.floor(Math.random() * colors.length)];
+                star.style.boxShadow = `0 0 ${size * 2}px ${star.style.background}`;
+                
+                container.appendChild(star);
+            }
+        }
+        createStars();
+        
+        /* ================= 防盗与安全机制 ================= */
+        document.addEventListener('contextmenu', event => event.preventDefault());
+        document.addEventListener('keydown', event => {
+            if (event.key === 'F12' || (event.ctrlKey && event.shiftKey && event.key === 'I') || 
+               (event.ctrlKey && (event.key === 'u' || event.key === 'U')) ||
+               (event.ctrlKey && (event.key === 's' || event.key === 'S')) ||
+               (event.ctrlKey && (event.key === 'c' || event.key === 'C'))) {
+                event.preventDefault();
+            }
+        });
+        
+        /* ================= 3D场景初始化 ================= */
+        const container = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color('#000818'); 
+        const camera = new THREE.PerspectiveCamera(55, container.clientWidth / container.clientHeight, 0.1, 1000);
+        
+        // 稍微俯视视角
+        camera.position.set(0, 50, 100); // Y=50，轻微俯视
+        
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(container.clientWidth, container.clientHeight);
+        container.appendChild(renderer.domElement);
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        
+        // 旋转中心改为左边原点
+        const rotateCenter = new THREE.Vector3(-25, 0, 0);
+        controls.target.copy(rotateCenter);
+        
+        // ========== 限制视角：只能水平调节，轻微俯视 ==========
+        // 固定轻微俯视角度，约75度
+        controls.minPolarAngle = Math.PI / 2.4;  // 约75度，轻微俯视
+        controls.maxPolarAngle = Math.PI / 2.4;  // 固定角度
+        
+        // 禁止缩放
+        controls.enableZoom = false;
+        
+        // 禁止平移
+        controls.enablePan = false;
+        
+        controls.update();
+        
+        // 自动旋转开关和当前角度
+        let autoRotate = false;
+        let currentAngle = 0; // 记录当前旋转角度
+        
+        /* ======= 绘制高级实体箭头函数 ======= */
+        function createSolidArrow(dir, origin, length, colorHex, thickness) {
+            const group = new THREE.Group();
+            
+            const headLength = Math.max(length * 0.08, 2);
+            const shaftLength = length - headLength;         
+            const shaftRadius = thickness;                   
+            const headRadius = thickness * 2.0;              
+            const material = new THREE.MeshPhongMaterial({ color: colorHex, shininess: 100, emissive: colorHex, emissiveIntensity: 0.4 });
+            const shaftGeo = new THREE.CylinderGeometry(shaftRadius, shaftRadius, shaftLength, 16);
+            const shaft = new THREE.Mesh(shaftGeo, material);
+            shaft.position.y = shaftLength / 2;
+            group.add(shaft);
+            const headGeo = new THREE.ConeGeometry(headRadius, headLength, 16);
+            const head = new THREE.Mesh(headGeo, material);
+            head.position.y = shaftLength + headLength / 2;
+            group.add(head);
+            group.position.copy(origin);
+            const axisY = new THREE.Vector3(0, 1, 0);
+            group.quaternion.setFromUnitVectors(axisY, dir.clone().normalize());
+            return group;
+        }
+        /* ======= 坐标轴 ======= */
+        const axisOrigin = new THREE.Vector3(-25, 0, 0);
+        const xAxisLength = 150;
+        const yzAxisLength = 45;
+        
+        // X轴（红色，向右）
+        const arrowX = createSolidArrow(new THREE.Vector3(1, 0, 0), axisOrigin, xAxisLength, 0xff4444, 0.35);
+        // Y轴（黄色，向上）
+        const arrowY = createSolidArrow(new THREE.Vector3(0, 1, 0), axisOrigin, yzAxisLength, 0xffdd44, 0.3);
+        // Z轴（蓝色，向外）
+        const arrowZ = createSolidArrow(new THREE.Vector3(0, 0, 1), axisOrigin, yzAxisLength, 0x44aaff, 0.3);
+        
+        scene.add(arrowX, arrowY, arrowZ);
+
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+        scene.add(ambientLight);
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 1.2);
+        directionalLight.position.set(100, 80, 100);
+        scene.add(directionalLight);
+        // 点光源
+        const pointLight1 = new THREE.PointLight(0x4488ff, 1.8, 250);
+        pointLight1.position.set(60, 50, 60);
+        scene.add(pointLight1);
+        const pointLight2 = new THREE.PointLight(0xff4488, 1.2, 200);
+        pointLight2.position.set(-40, 40, -40);
+        scene.add(pointLight2);
+        
+        /* ================= 红色发光粒子（加大） ================= */
+        const particleGeo = new THREE.SphereGeometry(0.75, 32, 32); // 粒子加大
+        // 超强红色发光粒子
+        const particleMat = new THREE.MeshPhongMaterial({ 
+            color: 0xff2222, 
+            emissive: 0xff0000, 
+            emissiveIntensity: 2.0,
+            shininess: 200
+        });
+        const particle = new THREE.Mesh(particleGeo, particleMat);
+        scene.add(particle);
+        
+        // 三层光晕效果 - 同步加大
+        const glowGeo1 = new THREE.SphereGeometry(1.1, 32, 32);
+        const glowMat1 = new THREE.MeshBasicMaterial({ 
+            color: 0xff3333, 
+            transparent: true, 
+            opacity: 0.5 
+        });
+        const glow1 = new THREE.Mesh(glowGeo1, glowMat1);
+        particle.add(glow1);
+        
+        const glowGeo2 = new THREE.SphereGeometry(1.5, 32, 32);
+        const glowMat2 = new THREE.MeshBasicMaterial({ 
+            color: 0xff5555, 
+            transparent: true, 
+            opacity: 0.3 
+        });
+        const glow2 = new THREE.Mesh(glowGeo2, glowMat2);
+        particle.add(glow2);
+        
+        const glowGeo3 = new THREE.SphereGeometry(1.9, 32, 32);
+        const glowMat3 = new THREE.MeshBasicMaterial({ 
+            color: 0xff7777, 
+            transparent: true, 
+            opacity: 0.15 
+        });
+        const glow3 = new THREE.Mesh(glowGeo3, glowMat3);
+        particle.add(glow3);
+        
+        const maxTrailPoints = 6000;
+        let trailPositions = new Float32Array(maxTrailPoints * 3);
+        const trailGeo = new THREE.BufferGeometry();
+        trailGeo.setAttribute('position', new THREE.BufferAttribute(trailPositions, 3));
+        
+        // 蓝色发光轨迹 - 加粗三层
+        const trailMat1 = new THREE.LineBasicMaterial({ 
+            color: 0x4488ff, 
+            linewidth: 5,
+            transparent: true,
+            opacity: 0.9
+        });
+        const trailLine1 = new THREE.Line(trailGeo, trailMat1);
+        scene.add(trailLine1);
+        
+        const trailMat2 = new THREE.LineBasicMaterial({ 
+            color: 0x66aaff, 
+            linewidth: 3,
+            transparent: true,
+            opacity: 0.7
+        });
+        const trailLine2 = new THREE.Line(trailGeo, trailMat2);
+        scene.add(trailLine2);
+        
+        const trailMat3 = new THREE.LineBasicMaterial({ 
+            color: 0xaaddff, 
+            linewidth: 1,
+            transparent: true,
+            opacity: 0.5
+        });
+        const trailLine3 = new THREE.Line(trailGeo, trailMat3);
+        scene.add(trailLine3);
+        
+        let trailCount = 0;
+        let vArrowMesh = null;
+        let bArrowMesh = null;
+        /* ================= 物理引擎 ================= */
+        let isPlaying = false;
+        const q = 1.0, m = 1.0; 
+        
+        let pos = new THREE.Vector3(-25, 0, 0); 
+        let vel = new THREE.Vector3();
+        let B_field = new THREE.Vector3();
+        function sphericalToCustomCartesian(r, thetaDeg, phiDeg) {
+            const theta = THREE.MathUtils.degToRad(thetaDeg);
+            const phi = THREE.MathUtils.degToRad(phiDeg);
+            const px = r * Math.sin(theta) * Math.cos(phi);
+            const py = r * Math.sin(theta) * Math.sin(phi);
+            const pz = r * Math.cos(theta);
+            return new THREE.Vector3(py, pz, px);
+        }
+        const inputs = {
+            vMag: document.getElementById('v-mag'), vTheta: document.getElementById('v-theta'), vPhi: document.getElementById('v-phi'),
+            bMag: document.getElementById('b-mag'), bTheta: document.getElementById('b-theta'), bPhi: document.getElementById('b-phi')
+        };
+        const displays = {
+            vMag: document.getElementById('val-v-mag'), vTheta: document.getElementById('val-v-theta'), vPhi: document.getElementById('val-v-phi'),
+            bMag: document.getElementById('val-b-mag'), bTheta: document.getElementById('val-b-theta'), bPhi: document.getElementById('val-b-phi')
+        };
+        function updatePhysicsParams() {
+            for (let key in inputs) displays[key].innerText = inputs[key].value;
+            const v0 = parseFloat(inputs.vMag.value);
+            const b0 = parseFloat(inputs.bMag.value);
+            
+            vel = sphericalToCustomCartesian(v0, parseFloat(inputs.vTheta.value), parseFloat(inputs.vPhi.value));
+            B_field = sphericalToCustomCartesian(b0, parseFloat(inputs.bTheta.value), parseFloat(inputs.bPhi.value));
+            if (vArrowMesh) scene.remove(vArrowMesh);
+            vArrowMesh = createSolidArrow(vel, axisOrigin, v0 * 1.0, 0x44ff44, 0.25); 
+            scene.add(vArrowMesh);
+            if (bArrowMesh) scene.remove(bArrowMesh);
+            bArrowMesh = createSolidArrow(B_field, axisOrigin, b0 * 5, 0x00ffff, 0.3); 
+            scene.add(bArrowMesh);
+            
+            if(!isPlaying && trailCount === 0) particle.position.copy(pos);
+        }
+        for(let key in inputs) {
+            inputs[key].addEventListener('input', () => { isPlaying ? updatePhysicsParams() : resetSimulation(); });
+        }
+        const btnPlay = document.getElementById('btn-play');
+        const btnReset = document.getElementById('btn-reset');
+        const btnRotate = document.getElementById('btn-rotate');
+        
+        btnPlay.addEventListener('click', () => {
+            isPlaying = !isPlaying;
+            btnPlay.innerText = isPlaying ? "暂停运动 ❚❚" : "播放运动 ▶";
+            btnPlay.style.background = isPlaying ? "linear-gradient(135deg, #f39c12, #e67e22)" : "linear-gradient(135deg, #2ecc71, #27ae60)";
+            if(isPlaying && trailCount===0) updatePhysicsParams();
+        });
+        btnReset.addEventListener('click', resetSimulation);
+        btnRotate.addEventListener('click', () => {
+            autoRotate = !autoRotate;
+            btnRotate.classList.toggle('btn-active', autoRotate);
+            btnRotate.innerText = autoRotate ? "停止旋转 ⟳" : "自动旋转 ⟳";
+            
+            // 点击开始旋转时，从当前相机位置计算起始角度
+            if (autoRotate) {
+                const dx = camera.position.x - rotateCenter.x;
+                const dz = camera.position.z - rotateCenter.z;
+                currentAngle = Math.atan2(dz, dx);
+            }
+        });
+        
+        function resetSimulation() {
+            isPlaying = false;
+            btnPlay.innerText = "播放运动 ▶";
+            btnPlay.style.background = "linear-gradient(135deg, #2ecc71, #27ae60)";
+            pos.set(-25, 0, 0);
+            particle.position.copy(pos);
+            trailCount = 0;
+            trailGeo.setDrawRange(0, 0);
+            updatePhysicsParams();
+        }
+        /* ================= 渲染循环 ================= */
+        const dt = 0.016, subSteps = 5; 
+        const rotateRadius = 110; // 旋转半径
+        
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            // 自动水平旋转视角 - 从当前位置开始
+            if (autoRotate) {
+                currentAngle += 0.003;
+                camera.position.x = rotateCenter.x + Math.cos(currentAngle) * rotateRadius;
+                camera.position.z = rotateCenter.z + Math.sin(currentAngle) * rotateRadius;
+                camera.lookAt(rotateCenter);
+            }
+            
+            if (isPlaying) {
+                const subDt = dt / subSteps;
+                for (let i = 0; i < subSteps; i++) {
+                    const force = new THREE.Vector3().crossVectors(vel, B_field).multiplyScalar(q);
+                    vel.addScaledVector(force.divideScalar(m), subDt);
+                    pos.addScaledVector(vel, subDt);
+                }
+                particle.position.copy(pos);
+                if (trailCount < maxTrailPoints) {
+                    trailPositions[trailCount * 3] = pos.x;
+                    trailPositions[trailCount * 3 + 1] = pos.y;
+                    trailPositions[trailCount * 3 + 2] = pos.z;
+                    trailCount++;
+                    trailGeo.attributes.position.needsUpdate = true;
+                    trailGeo.setDrawRange(0, trailCount);
+                } else {
+                    for(let i=0; i<maxTrailPoints-1; i++) {
+                        trailPositions[i*3] = trailPositions[(i+1)*3];
+                        trailPositions[i*3+1] = trailPositions[(i+1)*3+1];
+                        trailPositions[i*3+2] = trailPositions[(i+1)*3+2];
+                    }
+                    trailPositions[(maxTrailPoints-1)*3] = pos.x;
+                    trailPositions[(maxTrailPoints-1)*3+1] = pos.y;
+                    trailPositions[(maxTrailPoints-1)*3+2] = pos.z;
+                    trailGeo.attributes.position.needsUpdate = true;
+                }
+            }
+            if (!autoRotate) controls.update();
+            renderer.render(scene, camera);
+        }
+        window.addEventListener('resize', () => {
+            camera.aspect = container.clientWidth / container.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(container.clientWidth, container.clientHeight);
+        });
+        updatePhysicsParams();
+        animate();
+    </script>
+ 
+    <!-- 齐老师动画 - 水印 -->
+    <div class="qilaoshi-watermark">
+        QQ 3398528250<br>
+        抖音 35320300542
+    </div>
+
+
+    <!-- 齐老师动画 - 安全保护脚本 -->
+    <script>
+    (function() {
+        // 禁用右键菜单
+        document.addEventListener('contextmenu', function(e) {
+            e.preventDefault();
+            return false;
+        });
+        
+        // ESC键返回主页
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' || e.keyCode === 27) {
+                window.location.href = '../index.html';
+            }
+        });
+        
+        // 禁用开发者工具快捷键
+        document.addEventListener('keydown', function(e) {
+            // F12
+            if (e.key === 'F12' || e.keyCode === 123) {
+                e.preventDefault();
+                return false;
+            }
+            // Ctrl+U
+            if ((e.ctrlKey || e.metaKey) && (e.key === 'u' || e.keyCode === 85)) {
+                e.preventDefault();
+                return false;
+            }
+            // Ctrl+Shift+I
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'i' || e.keyCode === 73)) {
+                e.preventDefault();
+                return false;
+            }
+            // Ctrl+Shift+J
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'j' || e.keyCode === 74)) {
+                e.preventDefault();
+                return false;
+            }
+            // Ctrl+Shift+C
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'c' || e.keyCode === 67)) {
+                e.preventDefault();
+                return false;
+            }
+        });
+        
+        // 检测开发者工具打开（简单检测）
+        var devtoolsOpen = false;
+        var threshold = 160;
+        setInterval(function() {
+            var widthThreshold = window.outerWidth - window.innerWidth > threshold;
+            var heightThreshold = window.outerHeight - window.innerHeight > threshold;
+            if (widthThreshold || heightThreshold) {
+                if (!devtoolsOpen) {
+                    devtoolsOpen = true;
+                    // 可以选择跳转或其他操作
+                }
+            } else {
+                devtoolsOpen = false;
+            }
+        }, 1000);
+    })();
+    </script>
+
+</body>
+</html>
