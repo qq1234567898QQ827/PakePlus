@@ -1,0 +1,425 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>圆锥摆对比动画演示</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #0a192f; /* 科技感深色背景 */
+            margin: 0;
+            padding: 20px;
+        }
+        h1 {
+            color: #ffffff;
+            margin-bottom: 10px;
+        }
+        #periodDisplay {
+            font-size: 24px;
+            color: #66ccff; /* 科技感浅蓝色文字 */
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+        .info-text {
+            color: #66ccff;
+            font-size: 16px;
+            text-align: center;
+            line-height: 1.5;
+            margin-bottom: 10px;
+        }
+        .slider-container {
+            margin-top: 5px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: #66ccff;
+            font-size: 18px;
+        }
+        input[type="range"] {
+            width: 600px;
+            margin-top: 10px;
+            accent-color: #66ccff;
+        }
+        canvas {
+            border: 1px solid #66ccff; /* 浅蓝色边框 */
+            background-color: #0a192f;
+            border-radius: 8px;
+            box-shadow: 0 0 20px rgba(102, 204, 255, 0.2); /* 外发光阴影 */
+            margin-top: 20px;
+        }
+    </style>
+<style>
+    /* 齐老师动画 - 统一样式 */
+    body {
+        background: #1a2332 !important;
+    }
+    
+    /* 顶部标题栏 */
+    .qilaoshi-header {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 50px;
+        background: #1a2332;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 99999 !important;
+        border-bottom: 1px solid #2a3a50;
+    }
+    
+    .qilaoshi-title {
+        font-size: 20px;
+        font-weight: 600;
+        color: #8ab4f8;
+        letter-spacing: 2px;
+        font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif;
+    }
+    
+    /* 返回按钮 */
+    .qilaoshi-back-btn {
+        position: fixed;
+        top: 10px;
+        right: 15px;
+        z-index: 999999 !important;
+        background: linear-gradient(135deg, #3a5a80, #2a4a70);
+        color: #ffffff;
+        border: 1px solid #5a8ab0;
+        padding: 8px 18px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        font-family: 'Microsoft YaHei', sans-serif;
+        transition: all 0.2s;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+    }
+    
+    .qilaoshi-back-btn:hover {
+        background: linear-gradient(135deg, #4a6a90, #3a5a80);
+        color: #ffffff;
+        box-shadow: 0 4px 15px rgba(90, 138, 176, 0.4);
+        transform: translateY(-1px);
+    }
+    
+    /* 水印 */
+    .qilaoshi-watermark {
+        position: fixed;
+        bottom: 10px;
+        right: 15px;
+        z-index: 9999;
+        font-size: 11px;
+        color: rgba(138, 180, 248, 0.4);
+        font-family: 'Microsoft YaHei', sans-serif;
+        line-height: 1.5;
+        text-align: right;
+        pointer-events: none;
+    }
+    
+    /* 调整主内容区域，给顶部标题栏留出空间 */
+    body {
+        padding-top: 50px !important;
+    }
+</style>
+</head>
+<body>
+
+    <!-- 齐老师动画 - 顶部导航 -->
+    <div class="qilaoshi-header">
+        <div class="qilaoshi-title">齐老师动画</div>
+    </div>
+    <button class="qilaoshi-back-btn" onclick="window.location.href='../index.html'">← 返回主页</button>
+
+    <h1>高中物理圆锥摆对比动画演示</h1>
+    <div id="periodDisplay">周期：计算中...</div>
+    <div class="info-text">
+        左侧摆长：1.0米 | 右侧摆长：1.5米
+    </div>
+    <div class="slider-container">
+        <label>悬挂点到圆周运动圆心的竖直距离 h：<span id="hValue">0.87</span> 米</label>
+        <input type="range" id="hSlider" min="0.1" max="1.0" step="0.01" value="0.87">
+    </div>
+    <canvas id="pendulumCanvas" width="800" height="500"></canvas>
+
+    <script>
+        const canvas = document.getElementById('pendulumCanvas');
+        const ctx = canvas.getContext('2d');
+        const periodDisplay = document.getElementById('periodDisplay');
+        const hSlider = document.getElementById('hSlider');
+        const hValueDisplay = document.getElementById('hValue');
+
+        // 物理参数
+        const L1 = 1.0; // 左侧摆长，单位：米
+        const L2 = 1.5; // 右侧摆长，单位：米
+        const initialTheta = Math.PI / 6; // 初始摆角
+        const g = 9.8; // 重力加速度，m/s²
+        const zScale = 0.3; // Z轴投影比例，越小轨迹越扁
+
+        // 像素比例：1米对应150像素
+        const scale = 150;
+
+        // 悬点坐标（模拟天花板悬挂点）
+        const anchor1X = 200; // 左侧悬点
+        const anchor1Y = 60;
+        const anchor2X = 600; // 右侧悬点
+        const anchor2Y = 60;
+
+        // 初始计算参数
+        let h = L1 * Math.cos(initialTheta); // 两个摆的h相同
+        let r1 = Math.sqrt(L1*L1 - h*h); // 左侧圆周半径
+        let r2 = Math.sqrt(L2*L2 - h*h); // 右侧圆周半径
+        let T = 2 * Math.PI * Math.sqrt(h / g); // 周期（两个摆相同）
+        let omega = 2 * Math.PI / T; // 角速度（两个摆相同）
+
+        // 实时周期计算变量
+        let lastCrossTime = 0;
+        let currentPeriod = T;
+
+        // 动画变量
+        let angle = 0;
+        let lastTime = 0;
+
+        // 滑块调节事件
+        hSlider.addEventListener('input', function() {
+            h = parseFloat(this.value);
+            hValueDisplay.textContent = h.toFixed(2);
+            // 重新计算两个摆的运动参数
+            r1 = Math.sqrt(L1*L1 - h*h);
+            r2 = Math.sqrt(L2*L2 - h*h);
+            T = 2 * Math.PI * Math.sqrt(h / g);
+            omega = 2 * Math.PI / T;
+            // 重置实时周期检测
+            lastCrossTime = 0;
+            currentPeriod = T;
+        });
+
+        // 绘制函数
+        function draw(timestamp) {
+            // 计算时间差，单位：秒
+            const dt = lastTime ? (timestamp - lastTime) / 1000 : 0;
+            lastTime = timestamp;
+
+            // 更新角度（两个摆角速度相同，同步转动）
+            const prevAngle = angle;
+            angle += omega * dt;
+            if (angle > 2 * Math.PI) {
+                angle -= 2 * Math.PI;
+            }
+
+            // 清空画布
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // 绘制科技感网格背景
+            ctx.strokeStyle = '#172a45';
+            ctx.lineWidth = 1;
+            for (let x = 0; x <= canvas.width; x += 50) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, canvas.height);
+                ctx.stroke();
+            }
+            for (let y = 0; y <= canvas.height; y += 50) {
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(canvas.width, y);
+                ctx.stroke();
+            }
+
+            // ========== 左侧圆锥摆 ==========
+            // 绘制h的标记线（白色虚线）
+            ctx.beginPath();
+            ctx.setLineDash([5, 5]);
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 1;
+            ctx.moveTo(anchor1X, anchor1Y);
+            ctx.lineTo(anchor1X, anchor1Y + h * scale);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // 绘制运动轨迹（椭圆，虚线）
+            ctx.beginPath();
+            ctx.setLineDash([5, 5]);
+            ctx.strokeStyle = '#66ccff';
+            ctx.lineWidth = 1;
+            const ellipse1CenterX = anchor1X;
+            const ellipse1CenterY = anchor1Y + h * scale;
+            ctx.ellipse(ellipse1CenterX, ellipse1CenterY, r1*scale, r1*scale*zScale, 0, 0, 2*Math.PI);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // ========== 右侧圆锥摆 ==========
+            // 绘制h的标记线（白色虚线）
+            ctx.beginPath();
+            ctx.setLineDash([5, 5]);
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 1;
+            ctx.moveTo(anchor2X, anchor2Y);
+            ctx.lineTo(anchor2X, anchor2Y + h * scale);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // 绘制运动轨迹（椭圆，虚线）
+            ctx.beginPath();
+            ctx.setLineDash([5, 5]);
+            ctx.strokeStyle = '#66ffcc';
+            ctx.lineWidth = 1;
+            const ellipse2CenterX = anchor2X;
+            const ellipse2CenterY = anchor2Y + h * scale;
+            ctx.ellipse(ellipse2CenterX, ellipse2CenterY, r2*scale, r2*scale*zScale, 0, 0, 2*Math.PI);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // 计算小球的坐标
+            // 左侧小球
+            const ball1_3DX = r1 * Math.cos(angle);
+            const ball1_3DZ = r1 * Math.sin(angle);
+            const ball1_X = anchor1X + ball1_3DX * scale;
+            const ball1_Y = anchor1Y + h * scale + ball1_3DZ * scale * zScale;
+            // 右侧小球
+            const ball2_3DX = r2 * Math.cos(angle);
+            const ball2_3DZ = r2 * Math.sin(angle);
+            const ball2_X = anchor2X + ball2_3DX * scale;
+            const ball2_Y = anchor2Y + h * scale + ball2_3DZ * scale * zScale;
+
+            // 实时周期计算：检测小球经过z=0的位置（从后向前运动）
+            const prevZ = Math.sin(prevAngle);
+            const currentZ = Math.sin(angle);
+            if (prevZ < 0 && currentZ >= 0) {
+                if (lastCrossTime > 0) {
+                    currentPeriod = (timestamp - lastCrossTime) / 1000;
+                }
+                lastCrossTime = timestamp;
+            }
+
+            // 更新周期显示
+            periodDisplay.textContent = `理论周期：${T.toFixed(2)} 秒 | 实际运动周期：${currentPeriod.toFixed(2)} 秒`;
+
+            // ========== 绘制绳子和小球 ==========
+            // 左侧绳子
+            ctx.beginPath();
+            ctx.moveTo(anchor1X, anchor1Y);
+            ctx.lineTo(ball1_X, ball1_Y);
+            ctx.strokeStyle = '#ff4444';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // 左侧发光钢球
+            ctx.shadowColor = '#ffffff';
+            ctx.shadowBlur = 20;
+            const gradient1 = ctx.createRadialGradient(ball1_X - 3, ball1_Y - 3, 0, ball1_X, ball1_Y, 12);
+            gradient1.addColorStop(0, '#ffffff');
+            gradient1.addColorStop(0.5, '#dddddd');
+            gradient1.addColorStop(1, '#888888');
+            ctx.beginPath();
+            ctx.arc(ball1_X, ball1_Y, 12, 0, 2 * Math.PI);
+            ctx.fillStyle = gradient1;
+            ctx.fill();
+            ctx.shadowBlur = 0;
+
+            // 右侧绳子
+            ctx.beginPath();
+            ctx.moveTo(anchor2X, anchor2Y);
+            ctx.lineTo(ball2_X, ball2_Y);
+            ctx.strokeStyle = '#4444ff';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // 右侧发光铜球
+            ctx.shadowColor = '#ffdd88';
+            ctx.shadowBlur = 20;
+            const gradient2 = ctx.createRadialGradient(ball2_X - 3, ball2_Y - 3, 0, ball2_X, ball2_Y, 12);
+            gradient2.addColorStop(0, '#ffffff');
+            gradient2.addColorStop(0.5, '#ffdd88');
+            gradient2.addColorStop(1, '#aa8844');
+            ctx.beginPath();
+            ctx.arc(ball2_X, ball2_Y, 12, 0, 2 * Math.PI);
+            ctx.fillStyle = gradient2;
+            ctx.fill();
+            ctx.shadowBlur = 0;
+
+            // 继续动画循环
+            requestAnimationFrame(draw);
+        }
+
+        // 启动动画
+        requestAnimationFrame(draw);
+    </script>
+
+    <!-- 齐老师动画 - 水印 -->
+    <div class="qilaoshi-watermark">
+        QQ 3398528250<br>
+        抖音 35320300542
+    </div>
+
+
+    <!-- 齐老师动画 - 安全保护脚本 -->
+    <script>
+    (function() {
+        // 禁用右键菜单
+        document.addEventListener('contextmenu', function(e) {
+            e.preventDefault();
+            return false;
+        });
+        
+        // ESC键返回主页
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' || e.keyCode === 27) {
+                window.location.href = '../index.html';
+            }
+        });
+        
+        // 禁用开发者工具快捷键
+        document.addEventListener('keydown', function(e) {
+            // F12
+            if (e.key === 'F12' || e.keyCode === 123) {
+                e.preventDefault();
+                return false;
+            }
+            // Ctrl+U
+            if ((e.ctrlKey || e.metaKey) && (e.key === 'u' || e.keyCode === 85)) {
+                e.preventDefault();
+                return false;
+            }
+            // Ctrl+Shift+I
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'i' || e.keyCode === 73)) {
+                e.preventDefault();
+                return false;
+            }
+            // Ctrl+Shift+J
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'j' || e.keyCode === 74)) {
+                e.preventDefault();
+                return false;
+            }
+            // Ctrl+Shift+C
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'c' || e.keyCode === 67)) {
+                e.preventDefault();
+                return false;
+            }
+        });
+        
+        // 检测开发者工具打开（简单检测）
+        var devtoolsOpen = false;
+        var threshold = 160;
+        setInterval(function() {
+            var widthThreshold = window.outerWidth - window.innerWidth > threshold;
+            var heightThreshold = window.outerHeight - window.innerHeight > threshold;
+            if (widthThreshold || heightThreshold) {
+                if (!devtoolsOpen) {
+                    devtoolsOpen = true;
+                    // 可以选择跳转或其他操作
+                }
+            } else {
+                devtoolsOpen = false;
+            }
+        }, 1000);
+    })();
+    </script>
+
+</body>
+</html>
