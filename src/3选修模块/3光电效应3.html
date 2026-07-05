@@ -1,0 +1,864 @@
+<!doctype html>
+<html lang="zh-CN">
+ <head>
+  <meta charset="UTF-8">
+  <title>光电效应演示</title>
+  <style>
+        body {
+            margin: 0;
+            padding: 10px;
+            background-color: #f8fafc;
+            font-family: "SimSun", "STSong", "Times New Roman", serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            user-select: text; 
+        }
+        /* 单栏布局 */
+        .main-container {
+            display: flex;
+            width: 750px;
+            margin: 0 auto;
+            align-items: flex-start;
+            justify-content: center;
+        }
+        /* 左栏 */
+        .left-column {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        /* 控制面板 */
+        .control-panel {
+            display: flex;
+            width: 100%;
+            gap: 15px;
+            background-color: #ffffff;
+            padding: 8px 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            margin-bottom: 8px;
+            align-items: center;
+            justify-content: space-between;
+            border: 1px solid #e2e8f0;
+            box-sizing: border-box;
+            user-select: none;
+            flex-wrap: wrap;
+        }
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 14px;
+            font-weight: bold;
+            color: #334155;
+            flex-wrap: wrap;
+        }
+        .btn {
+            padding: 5px 8px;
+            border: 2px solid #cbd5e1;
+            background-color: #f1f5f9;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.2s;
+            font-size: 12px;
+        }
+        .btn-red.active {
+            background-color: #ef4444;
+            color: #ffffff;
+            border-color: #b91c1c;
+        }
+        .btn-orange.active {
+            background-color: #f97316;
+            color: #ffffff;
+            border-color: #c2410c;
+        }
+        .btn-yellow.active {
+            background-color: #eab308;
+            color: #0f172a;
+            border-color: #ca8a04;
+        }
+        .btn-green.active {
+            background-color: #22c55e;
+            color: #ffffff;
+            border-color: #15803d;
+        }
+        .btn-cyan.active {
+            background-color: #06b6d4;
+            color: #ffffff;
+            border-color: #0e7490;
+        }
+        .btn-blue.active {
+            background-color: #3b82f6;
+            color: #ffffff;
+            border-color: #1d4ed8;
+        }
+        .btn-purple.active {
+            background-color: #a855f7;
+            color: #ffffff;
+            border-color: #7e22ce;
+        }
+        /* 画布容器 */
+        #canvas-container {
+            position: relative;
+            background-color: #ffffff;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            border-radius: 6px;
+            width: 750px;
+            height: 703px;
+            border: 1px solid #e2e8f0;
+            user-select: none;
+        }
+        svg {
+            width: 100%;
+            height: 100%;
+        }
+        .interactive {
+            cursor: pointer;
+        }
+        .draggable {
+            cursor: ew-resize;
+        }
+        /* 罗马学术字体 */
+        .math-sym {
+            font-family: "Times New Roman", Times, serif;
+            font-style: italic;
+        }
+    </style>
+ <style>
+    /* 齐老师动画 - 统一样式 */
+    body {
+        background: #1a2332 !important;
+    }
+    
+    /* 顶部标题栏 */
+    .qilaoshi-header {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 50px;
+        background: #1a2332;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 99999 !important;
+        border-bottom: 1px solid #2a3a50;
+    }
+    
+    .qilaoshi-title {
+        font-size: 20px;
+        font-weight: 600;
+        color: #8ab4f8;
+        letter-spacing: 2px;
+        font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif;
+    }
+    
+    /* 返回按钮 */
+    .qilaoshi-back-btn {
+        position: fixed;
+        top: 10px;
+        right: 15px;
+        z-index: 999999 !important;
+        background: linear-gradient(135deg, #3a5a80, #2a4a70);
+        color: #ffffff;
+        border: 1px solid #5a8ab0;
+        padding: 8px 18px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        font-family: 'Microsoft YaHei', sans-serif;
+        transition: all 0.2s;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+    }
+    
+    .qilaoshi-back-btn:hover {
+        background: linear-gradient(135deg, #4a6a90, #3a5a80);
+        color: #ffffff;
+        box-shadow: 0 4px 15px rgba(90, 138, 176, 0.4);
+        transform: translateY(-1px);
+    }
+    
+    /* 水印 */
+    .qilaoshi-watermark {
+        position: fixed;
+        bottom: 10px;
+        right: 15px;
+        z-index: 9999;
+        font-size: 11px;
+        color: rgba(138, 180, 248, 0.4);
+        font-family: 'Microsoft YaHei', sans-serif;
+        line-height: 1.5;
+        text-align: right;
+        pointer-events: none;
+    }
+    
+    /* 调整主内容区域，给顶部标题栏留出空间 */
+    body {
+        padding-top: 50px !important;
+    }
+</style>
+</head>
+ <body>
+
+    <!-- 齐老师动画 - 顶部导航 -->
+    <div class="qilaoshi-header">
+        <div class="qilaoshi-title">齐老师动画</div>
+    </div>
+    <button class="qilaoshi-back-btn" onclick="window.location.href='../index.html'">← 返回主页</button>
+
+  <div class="main-container">
+   <!-- 左侧实验区 -->
+   <div class="left-column">
+    <!-- 控制面板 -->
+    <div class="control-panel">
+     <div class="control-group">
+      <label for="freq-range">入射光波长：</label> <input type="range" id="freq-range" min="400" max="680" value="450" oninput="setLightWavelength(this.value)" style="width: 200px;"> <span id="wavelength-display" style="width: 70px; font-family: 'Times New Roman';">450 nm</span>
+     </div>
+     <div class="control-group">
+      <label for="intensity-range">光照强度：</label> <input type="range" id="intensity-range" min="10" max="100" value="50" oninput="setLightIntensity(this.value)"> <span id="intensity-display" style="width: 40px; font-family: 'Times New Roman';">50%</span>
+     </div>
+    </div><!-- 主仿真图 -->
+    <div id="canvas-container">
+     <svg id="schematic" viewBox="0 0 800 750">
+      <defs>
+       <!-- 微型光线箭头 -->
+       <marker id="arrow-red" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="3.5" markerHeight="3.5" orient="auto">
+        <path d="M 0 2 L 6 5 L 0 8 Z" fill="#ef4444" />
+       </marker>
+       <marker id="arrow-orange" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="3.5" markerHeight="3.5" orient="auto">
+        <path d="M 0 2 L 6 5 L 0 8 Z" fill="#f97316" />
+       </marker>
+       <marker id="arrow-yellow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="3.5" markerHeight="3.5" orient="auto">
+        <path d="M 0 2 L 6 5 L 0 8 Z" fill="#eab308" />
+       </marker>
+       <marker id="arrow-green" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="3.5" markerHeight="3.5" orient="auto">
+        <path d="M 0 2 L 6 5 L 0 8 Z" fill="#22c55e" />
+       </marker>
+       <marker id="arrow-cyan" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="3.5" markerHeight="3.5" orient="auto">
+        <path d="M 0 2 L 6 5 L 0 8 Z" fill="#06b6d4" />
+       </marker>
+       <marker id="arrow-blue" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="3.5" markerHeight="3.5" orient="auto">
+        <path d="M 0 2 L 6 5 L 0 8 Z" fill="#3b82f6" />
+       </marker>
+       <marker id="arrow-purple" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="3.5" markerHeight="3.5" orient="auto">
+        <path d="M 0 2 L 6 5 L 0 8 Z" fill="#a855f7" />
+       </marker>
+       <marker id="needle-arrow" viewBox="0 0 10 10" refX="5" refY="3" markerWidth="4.5" markerHeight="4.5" orient="auto-start-reverse">
+        <path d="M 0 0 L 10 5 L 0 10 Z" fill="#ef4444" />
+       </marker> <!-- 渐变质感 -->
+       <linearGradient id="metal-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#ffffff" />
+        <stop offset="30%" stop-color="#e2e8f0" />
+        <stop offset="70%" stop-color="#94a3b8" />
+        <stop offset="100%" stop-color="#475569" />
+       </linearGradient>
+       <linearGradient id="knob-gradient" x1="0%" y1="0%" x2="0%" y2="100%">
+        <stop offset="0%" stop-color="#ef4444" />
+        <stop offset="100%" stop-color="#991b1b" />
+       </linearGradient>
+       <pattern id="coil-pattern" width="3" height="16" patternUnits="userSpaceOnUse">
+        <rect x="0" y="0" width="1.5" height="16" fill="#b45309" />
+        <rect x="1.5" y="0" width="1.5" height="16" fill="#451a03" />
+       </pattern> <!-- 光晕径向滤镜 -->
+       <radialGradient id="beam-glow" cx="315" cy="100" r="140" fx="315" fy="100">
+        <stop offset="0%" stop-color="#3b82f6" stop-opacity="1" />
+        <stop offset="100%" stop-color="#3b82f6" stop-opacity="0" />
+       </radialGradient> <!-- 光子的波粒二象性波包 -->
+       <g id="photon-wave-red">
+        <path d="M 0 0 Q 4 -4 8 0 T 16 0 T 24 0 T 32 0" fill="none" stroke="#ef4444" stroke-width="1.8" />
+        <circle cx="32" cy="0" r="2" fill="#ffffff" filter="drop-shadow(0 0 2px #ef4444)" />
+       </g>
+       <g id="photon-wave-orange">
+        <path d="M 0 0 Q 3.8 -3.8 7.6 0 T 15.2 0 T 22.8 0 T 30.4 0" fill="none" stroke="#f97316" stroke-width="1.8" />
+        <circle cx="30.4" cy="0" r="2" fill="#ffffff" filter="drop-shadow(0 0 2px #f97316)" />
+       </g>
+       <g id="photon-wave-yellow">
+        <path d="M 0 0 Q 3 -3 6 0 T 12 0 T 18 0 T 24 0" fill="none" stroke="#eab308" stroke-width="1.8" />
+        <circle cx="24" cy="0" r="2" fill="#ffffff" filter="drop-shadow(0 0 2px #eab308)" />
+       </g>
+       <g id="photon-wave-green">
+        <path d="M 0 0 Q 2.8 -2.8 5.6 0 T 11.2 0 T 16.8 0 T 22.4 0" fill="none" stroke="#22c55e" stroke-width="1.8" />
+        <circle cx="22.4" cy="0" r="2" fill="#ffffff" filter="drop-shadow(0 0 2px #22c55e)" />
+       </g>
+       <g id="photon-wave-cyan">
+        <path d="M 0 0 Q 2.5 -2.5 5 0 T 10 0 T 15 0 T 20 0" fill="none" stroke="#06b6d4" stroke-width="1.8" />
+        <circle cx="20" cy="0" r="2" fill="#ffffff" filter="drop-shadow(0 0 2px #06b6d4)" />
+       </g>
+       <g id="photon-wave-blue">
+        <path d="M 0 0 Q 2 -3 4 0 T 8 0 T 12 0 T 16 0 T 20 0" fill="none" stroke="#3b82f6" stroke-width="1.8" />
+        <circle cx="20" cy="0" r="2" fill="#ffffff" filter="drop-shadow(0 0 2px #3b82f6)" />
+       </g>
+       <g id="photon-wave-purple">
+        <path d="M 0 0 Q 1.8 -2.8 3.6 0 T 7.2 0 T 10.8 0 T 14.4 0 T 18 0" fill="none" stroke="#a855f7" stroke-width="1.8" />
+        <circle cx="18" cy="0" r="2" fill="#ffffff" filter="drop-shadow(0 0 2px #a855f7)" />
+       </g>
+      </defs> <!-- 重构几何坐标：外壳扩大容纳长极板 --> <path d="M 280,180 
+                             H 404 
+                             L 285,100 
+                             H 345 
+                             L 464,180 
+                             H 520 
+                             A 12,12 0 0,1 532,192 
+                             V 348 
+                             A 12,12 0 0,1 520,360 
+                             H 280 
+                             A 12,12 0 0,1 268,348 
+                             V 192 
+                             A 12,12 0 0,1 280,180 Z" fill="none" stroke="#000000" stroke-width="2.5" /> <!-- 石英界面顶端 --> <line x1="285" y1="100" x2="345" y2="100" stroke="#94a3b8" stroke-width="4" /> <!-- 完美覆盖K极（40度倾角）的光束 --> <polygon id="light-beam-area" points="285,100 345,100 506,235 506,285" fill="rgba(59, 130, 246, 0.03)" /> <g id="light-rays" stroke-width="1.2" fill="none" opacity="0.15">
+       <line x1="295" y1="105" x2="506" y2="282" stroke="#3b82f6" />
+       <line x1="315" y1="105" x2="506" y2="265" stroke="#3b82f6" />
+       <line x1="335" y1="105" x2="506" y2="248" stroke="#3b82f6" />
+      </g> <!-- 动态光子流容器 --> <g id="photon-container"></g> <!-- 极板（160px长，不碰上下黑线） --> <rect x="282" y="185" width="12" height="160" fill="#facc15" stroke="#000" stroke-width="1.5" /> <rect x="506" y="185" width="12" height="160" fill="#facc15" stroke="#000" stroke-width="1.5" /> <text x="315" y="85" font-size="16" font-weight="bold" text-anchor="middle">W石英窗</text> <text x="288" y="340" font-size="15" font-style="italic" font-family="Times New Roman" font-weight="bold" text-anchor="middle">A</text> <text x="512" y="340" font-size="15" font-style="italic" font-family="Times New Roman" font-weight="bold" text-anchor="middle">K</text> <!-- 电路无接缝无缝连接 --> <line x1="282" y1="260" x2="100" y2="260" stroke="#000" stroke-width="2" /> <line x1="518" y1="260" x2="700" y2="260" stroke="#000" stroke-width="2" /> <line x1="100" y1="260" x2="100" y2="670" stroke="#000" stroke-width="2" /> <!-- 电压表V并联支路 (导线坐标完全贴合半径35、圆心400表盘边缘，确保0接缝) --> <line x1="100" y1="440" x2="365" y2="440" stroke="#000" stroke-width="2" /> <line x1="435" y1="440" x2="700" y2="440" stroke="#000" stroke-width="2" /> <!-- 电流表G主干垂线 (导线坐标完全贴合半径35、圆心350表盘边缘，确保0接缝) --> <line x1="700" y1="260" x2="700" y2="315" stroke="#000" stroke-width="2" /> <line x1="700" y1="385" x2="700" y2="440" stroke="#000" stroke-width="2" /> <!-- 仪表与滑阻 --> <rect x="360" y="375" width="80" height="20" rx="3" fill="#f8fafc" stroke="#cbd5e1" /> <text id="v-display" x="400" y="390" font-size="13" font-weight="bold" fill="#0f172a" text-anchor="middle" font-family="Arial, Helvetica, sans-serif">0.00 V</text> <g transform="translate(400, 440)">
+       <circle cx="0" cy="0" r="35" fill="#ffffff" stroke="#000000" stroke-width="2" />
+       <path d="M -24,-8 A 25,25 0 0,1 24,-8" fill="none" stroke="#475569" stroke-width="1.2" stroke-dasharray="2 2" />
+       <text x="0" y="-2" font-size="14" font-family="Times New Roman" font-weight="bold" text-anchor="middle">V</text>
+       <text x="-21" y="-12" font-size="8" font-family="Arial" text-anchor="middle" fill="#475569">0</text>
+       <text x="21" y="-12" font-size="8" font-family="Arial" text-anchor="middle" fill="#475569">15</text>
+       <g id="v-pointer-group">
+        <line x1="0" y1="15" x2="0" y2="-21" stroke="#ef4444" stroke-width="1.5" stroke-linecap="round" />
+        <polygon points="0,-29 -1.5,-20 1.5,-20" fill="#ef4444" />
+       </g>
+       <circle cx="0" cy="15" r="3.5" fill="#334155" />
+      </g> <rect x="660" y="285" width="80" height="20" rx="3" fill="#f8fafc" stroke="#cbd5e1" /> <text id="g-display" x="700" y="300" font-size="13" font-weight="bold" fill="#0f172a" text-anchor="middle" font-family="Arial, Helvetica, sans-serif">0.0 μA</text> 
+      <!-- 灵敏电流计表盘：0在正中，左右对称刻度 -->
+      <g transform="translate(700, 350)">
+       <circle cx="0" cy="0" r="35" fill="#ffffff" stroke="#000000" stroke-width="2" />
+       <path d="M -24,-8 A 25,25 0 0,1 24,-8" fill="none" stroke="#475569" stroke-width="1.2" stroke-dasharray="2 2" />
+       <text x="0" y="-2" font-size="14" font-family="Times New Roman" font-weight="bold" text-anchor="middle">G</text>
+       <!-- 刻度：左-150，中0，右150 -->
+       <text x="-21" y="-12" font-size="8" font-family="Arial" text-anchor="middle" fill="#475569">-150</text>
+       <text x="0" y="-12" font-size="8" font-family="Arial" text-anchor="middle" fill="#475569">0</text>
+       <text x="21" y="-12" font-size="8" font-family="Arial" text-anchor="middle" fill="#475569">150</text>
+       <!-- 指针组：初始正中0位 -->
+       <g id="g-pointer-group">
+        <line x1="0" y1="15" x2="0" y2="-21" stroke="#ef4444" stroke-width="1.5" stroke-linecap="round" />
+        <polygon points="0,-29 -1.5,-20 1.5,-20" fill="#ef4444" />
+       </g>
+       <circle cx="0" cy="15" r="3.5" fill="#334155" />
+      </g> 
+      <line x1="700" y1="440" x2="700" y2="480" stroke="#000" stroke-width="2" /> <line x1="700" y1="480" x2="260" y2="480" id="slider-horiz-wire" stroke="#000" stroke-width="2" /> <line x1="260" y1="480" x2="260" y2="512" id="slider-vert-wire" stroke="#000" stroke-width="2" /> <!-- 滑动变阻器 --> <line x1="100" y1="520" x2="250" y2="520" stroke="#000" stroke-width="2" /> <rect x="250" y="512" width="300" height="16" fill="url(#coil-pattern)" stroke="#1e1b4b" stroke-width="1.5" /> <rect x="250" y="525" width="300" height="3" fill="#000000" opacity="0.15" /> <line x1="550" y1="520" x2="700" y2="520" stroke="#000" stroke-width="2" /> <line x1="700" y1="520" x2="700" y2="600" stroke="#000" stroke-width="2" /> <g id="slider" class="draggable">
+       <rect x="248" y="508" width="24" height="24" rx="4" fill="url(#metal-gradient)" stroke="#475569" stroke-width="1" />
+       <polygon points="260,535 257,531 263,531" fill="#475569" />
+       <circle cx="260" cy="495" r="9" fill="url(#knob-gradient)" stroke="#991b1b" stroke-width="1" />
+       <circle cx="257" cy="492" r="2.5" fill="#ffffff" opacity="0.6" />
+       <circle cx="260" cy="505" r="22" fill="transparent" />
+      </g> <!-- 电源区 --> <g stroke="#000000">
+       <!-- 第一个电池（上电源，正极在上） -->
+       <line x1="155" y1="585" x2="155" y2="615" stroke-width="1.5" />
+       <line x1="165" y1="590" x2="165" y2="610" stroke-width="4" />
+       <!-- 第二个电池 -->
+       <line x1="180" y1="585" x2="180" y2="615" stroke-width="1.5" />
+       <line x1="190" y1="590" x2="190" y2="610" stroke-width="4" />
+      </g> <line x1="100" y1="600" x2="155" y2="600" stroke="#000" stroke-width="2" /> <line x1="190" y1="600" x2="430" y2="600" stroke="#000" stroke-width="2" /> <g stroke="#000000">
+       <!-- 第一个电池（下电源，正极在下） -->
+       <line x1="155" y1="660" x2="155" y2="680" stroke-width="4" />
+       <line x1="165" y1="655" x2="165" y2="685" stroke-width="1.5" />
+       <!-- 第二个电池 -->
+       <line x1="180" y1="660" x2="180" y2="680" stroke-width="4" />
+       <line x1="190" y1="655" x2="190" y2="685" stroke-width="1.5" />
+      </g> <line x1="100" y1="670" x2="155" y2="670" stroke="#000" stroke-width="2" /> <line x1="190" y1="670" x2="430" y2="670" stroke="#000" stroke-width="2" /> <!-- 开关交互 --> <circle cx="430" cy="600" r="5" fill="#fff" stroke="#000" stroke-width="2" /> <circle cx="430" cy="670" r="5" fill="#fff" stroke="#000" stroke-width="2" /> <circle cx="490" cy="635" r="5" fill="#fff" stroke="#000" stroke-width="2" /> <g id="switch1-group" class="interactive">
+       <line id="switch1-blade" x1="490" y1="635" x2="432" y2="602" stroke="#000" stroke-width="4.5" stroke-linecap="round" />
+       <text x="495" y="605" font-size="11" fill="#475569" font-weight="bold">单击切换电源</text>
+      </g> <line x1="490" y1="635" x2="540" y2="635" stroke="#000" stroke-width="2" /> <circle cx="540" cy="635" r="5" fill="#fff" stroke="#000" stroke-width="2" /> <circle cx="600" cy="635" r="5" fill="#fff" stroke="#000" stroke-width="2" /> <g id="switch2-group" class="interactive">
+       <line id="switch2-blade" x1="540" y1="635" x2="590" y2="605" stroke="#000" stroke-width="4.5" stroke-linecap="round" />
+       <text x="540" y="675" font-size="11" fill="#475569" font-weight="bold">单击控制开关</text>
+      </g> <line x1="600" y1="635" x2="700" y2="635" stroke="#000" stroke-width="2" /> <line x1="700" y1="635" x2="700" y2="600" stroke="#000" stroke-width="2" /> <g id="electron-container"></g>
+     </svg>
+    </div>
+   </div>
+  </div>
+  <script>
+        document.addEventListener('contextmenu', e => e.preventDefault());
+        document.addEventListener('keydown', e => {
+            if (e.key === 'F12' || 
+                (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J' || e.key === 'C')) ||
+                (e.ctrlKey && e.key === 'U') ||
+                (e.ctrlKey && e.key === 'S')) {
+                e.preventDefault();
+                return false;
+            }
+        });
+        const CONFIG = {
+            sliderMinX: 250,
+            sliderMaxX: 550,
+            vMaxHigh: 24.0,      // 正向最大电压
+            vMaxLow: -3.0,       
+            iBaseSaturation: 120.0, 
+            w0: 1.90,            
+            h: 4.1357e-15,       
+            freqRed: 4.41e14,
+            freqOrange: 4.92e14,
+            freqYellow: 5.17e14,
+            freqGreen: 5.45e14,
+            freqCyan: 6.00e14,
+            freqBlue: 6.67e14,
+            freqPurple: 7.50e14,
+            cutoffFreq: 4.59e14
+        };
+        let state = {
+            lightColor: 'blue',
+            lightIntensity: 0.5,
+            isSwitch1Up: true,
+            isSwitch2Closed: false,
+            sliderVal: 0.2,
+            isDragging: false
+        };
+        let electrons = [];
+        let photons = []; 
+        let electronsHitA = 0; // 统计打到A板的电子数
+        let lastSpawnTime = 0;
+        let lastPhotonTime = 0;
+        const svg = document.getElementById('schematic');
+        const slider = document.getElementById('slider');
+        const switch1 = document.getElementById('switch1-group');
+        const switch2 = document.getElementById('switch2-group');
+        const switch1Blade = document.getElementById('switch1-blade');
+        const switch2Blade = document.getElementById('switch2-blade');
+        
+        const vPointerGroup = document.getElementById('v-pointer-group');
+        const gPointerGroup = document.getElementById('g-pointer-group');
+        
+        const vDisplay = document.getElementById('v-display');
+        const gDisplay = document.getElementById('g-display');
+        const lightBeamArea = document.getElementById('light-beam-area');
+        const lightRays = document.getElementById('light-rays');
+        const intensityDisplay = document.getElementById('intensity-display');
+        const electronContainer = document.getElementById('electron-container');
+        const photonContainer = document.getElementById('photon-container');
+        const sliderHorizWire = document.getElementById('slider-horiz-wire');
+        const sliderVertWire = document.getElementById('slider-vert-wire');
+        const windowGlow = document.getElementById('window-glow');
+        
+        const colorMap = {
+            'red': { hex: '#ef4444', freq: CONFIG.freqRed, uCutoff: 0 },
+            'orange': { hex: '#f97316', freq: CONFIG.freqOrange, uCutoff: 0.13 },
+            'yellow': { hex: '#eab308', freq: CONFIG.freqYellow, uCutoff: 0.24 },
+            'green': { hex: '#22c55e', freq: CONFIG.freqGreen, uCutoff: 0.35 },
+            'cyan': { hex: '#06b6d4', freq: CONFIG.freqCyan, uCutoff: 0.58 },
+            'blue': { hex: '#3b82f6', freq: CONFIG.freqBlue, uCutoff: 0.86 },
+            'purple': { hex: '#a855f7', freq: CONFIG.freqPurple, uCutoff: 1.20 }
+        };
+        
+        // 根据波长计算颜色、频率和遏止电压（连续调节）
+        function getLightInfo(wavelength) {
+            const freq = 3e8 / (wavelength * 1e-9);
+            const photonEnergy = CONFIG.h * freq;
+            const uCutoff = Math.max(0, photonEnergy - CONFIG.w0);
+            
+            // 根据波长计算颜色渐变
+            let hex;
+            if (wavelength >= 620) {
+                const t = (wavelength - 620) / 60;
+                const r = 239;
+                const g = Math.floor(117 + (68 - 117) * t);
+                const b = 68;
+                hex = `rgb(${r}, ${g}, ${b})`;
+            } else if (wavelength >= 580) {
+                const t = (wavelength - 580) / 40;
+                const r = 234 + (249 - 234) * t;
+                const g = Math.floor(179 + (115 - 179) * t);
+                const b = Math.floor(8 + (22 - 8) * t);
+                hex = `rgb(${r}, ${g}, ${b})`;
+            } else if (wavelength >= 520) {
+                const t = (wavelength - 520) / 60;
+                const r = 34 + (234 - 34) * t;
+                const g = Math.floor(197 + (179 - 197) * t);
+                const b = Math.floor(94 + (8 - 94) * t);
+                hex = `rgb(${r}, ${g}, ${b})`;
+            } else if (wavelength >= 480) {
+                const t = (wavelength - 480) / 40;
+                const r = 6 + (34 - 6) * t;
+                const g = Math.floor(182 + (197 - 182) * t);
+                const b = Math.floor(212 + (94 - 212) * t);
+                hex = `rgb(${r}, ${g}, ${b})`;
+            } else if (wavelength >= 440) {
+                const t = (wavelength - 440) / 40;
+                const r = 59 + (6 - 59) * t;
+                const g = Math.floor(130 + (182 - 130) * t);
+                const b = Math.floor(246 + (212 - 246) * t);
+                hex = `rgb(${r}, ${g}, ${b})`;
+            } else {
+                const t = (wavelength - 400) / 40;
+                const r = 168 + (59 - 168) * t;
+                const g = Math.floor(85 + (130 - 85) * t);
+                const b = Math.floor(247 + (246 - 247) * t);
+                hex = `rgb(${r}, ${g}, ${b})`;
+            }
+            
+            return { hex, freq, uCutoff, wavelength };
+        }
+        
+        let currentLightInfo = getLightInfo(450);
+        
+        function setLightWavelength(wavelength) {
+            currentLightInfo = getLightInfo(parseInt(wavelength));
+            document.getElementById('wavelength-display').textContent = `${wavelength} nm`;
+            updateLightVisuals();
+        }
+        
+        function setLightIntensity(value) {
+            state.lightIntensity = value / 100;
+            intensityDisplay.textContent = `${value}%`;
+            updateLightVisuals();
+        }
+        
+        function updateLightVisuals() {
+            const opacity = state.lightIntensity * 0.15;
+            const colorInfo = currentLightInfo;
+            
+            lightBeamArea.setAttribute('fill', colorInfo.hex);
+            lightBeamArea.setAttribute('opacity', opacity);
+            const rays = lightRays.querySelectorAll('line');
+            rays.forEach((ray) => {
+                ray.setAttribute('stroke', colorInfo.hex);
+            });
+        }
+        updateLightVisuals();
+        
+        function setSliderPosition(val) {
+            state.sliderVal = Math.max(0, Math.min(1, val));
+            const currentX = CONFIG.sliderMinX + state.sliderVal * (CONFIG.sliderMaxX - CONFIG.sliderMinX);
+            slider.setAttribute('transform', `translate(${currentX - 260}, 0)`);
+            sliderHorizWire.setAttribute('x2', currentX);
+            sliderVertWire.setAttribute('x1', currentX);
+            sliderVertWire.setAttribute('x2', currentX);
+        }
+        setSliderPosition(state.sliderVal);
+        
+        switch1.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            state.isSwitch1Up = !state.isSwitch1Up;
+            updateSwitches();
+        });
+        switch2.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            state.isSwitch2Closed = !state.isSwitch2Closed;
+            updateSwitches();
+        });
+        
+        function updateSwitches() {
+            if (state.isSwitch1Up) {
+                switch1Blade.setAttribute('x2', '432');
+                switch1Blade.setAttribute('y2', '602');
+            } else {
+                switch1Blade.setAttribute('x2', '432');
+                switch1Blade.setAttribute('y2', '668');
+            }
+            if (state.isSwitch2Closed) {
+                switch2Blade.setAttribute('x2', '596');
+                switch2Blade.setAttribute('y2', '635');
+            } else {
+                switch2Blade.setAttribute('x2', '590');
+                switch2Blade.setAttribute('y2', '605');
+            }
+        }
+        
+        function getEventX(e) { return e.touches && e.touches.length > 0 ? e.touches[0].clientX : e.clientX; }
+        function handleDragStart(e) { state.isDragging = true; e.preventDefault(); }
+        function handleDragMove(e) {
+            if (!state.isDragging) return;
+            const rect = svg.getBoundingClientRect();
+            const clientX = getEventX(e);
+            const svgX = ((clientX - rect.left) / rect.width) * 800;
+            const relativeVal = (svgX - CONFIG.sliderMinX) / (CONFIG.sliderMaxX - CONFIG.sliderMinX);
+            setSliderPosition(relativeVal);
+        }
+        function handleDragEnd() { state.isDragging = false; }
+        slider.addEventListener('mousedown', handleDragStart);
+        window.addEventListener('mousemove', handleDragMove);
+        window.addEventListener('mouseup', handleDragEnd);
+        slider.addEventListener('touchstart', handleDragStart, { passive: false });
+        window.addEventListener('touchmove', handleDragMove, { passive: false });
+        window.addEventListener('touchend', handleDragEnd);
+        
+        function setNeedleAngle(pointerGroupElement, value, maxVal) {
+            let angleDeg = -60; 
+            if (state.isSwitch2Closed) {
+                const absMax = Math.abs(maxVal);
+                const fraction = absMax > 0 ? Math.max(0, Math.min(1, Math.abs(value) / absMax)) : 0;
+                angleDeg = -60 + 120 * fraction; 
+            }
+            pointerGroupElement.setAttribute('transform', `rotate(${angleDeg}, 0, 15)`);
+        }
+        
+        // 光子以粒子形式照射到K板
+        function spawnPhotonElement() {
+            const startX = 285 + Math.random() * 60;
+            const startY = 100;
+            const colorInfo = currentLightInfo;
+            
+            const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            circle.setAttribute("r", "4");
+            circle.setAttribute("fill", colorInfo.hex);
+            circle.setAttribute("filter", `drop-shadow(0 0 3px ${colorInfo.hex})`);
+            document.getElementById('photon-container').appendChild(circle);
+            photons.push({ element: circle, x: startX, y: startY });
+        }
+        
+        function spawnElectron() {
+            const colorInfo = currentLightInfo;
+            if (colorInfo.freq <= CONFIG.cutoffFreq || state.lightIntensity <= 0) return;
+            
+            const startX = 504;
+            const startY = 245 + Math.random() * 40;
+            const maxEnergy = Math.max(0.1, colorInfo.uCutoff);
+            const energyFraction = 0.5 + Math.random() * 0.5;
+            const currentEnergy = maxEnergy * energyFraction;
+            
+            // 半球形发射：角度从 -80度 到 +80度
+            const angleRad = (Math.random() * 160 - 80) * Math.PI / 180;
+            const speed = Math.sqrt(5.04 * currentEnergy);
+            const vx0 = -speed * Math.cos(angleRad);
+            const vy0 = speed * Math.sin(angleRad);
+            
+            const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            circle.setAttribute("r", "3");
+            circle.setAttribute("fill", "#000000");
+            electronContainer.appendChild(circle);
+            
+            const tail = document.createElementNS("http://www.w3.org/2000/svg", "line");
+            tail.setAttribute("stroke", "#000000");
+            tail.setAttribute("stroke-width", "1.5");
+            tail.setAttribute("opacity", "0.6");
+            electronContainer.appendChild(tail);
+            
+            electrons.push({
+                element: circle,
+                tail: tail,
+                x: startX,
+                y: startY,
+                vx: vx0,
+                vy: vy0,
+                speed: speed,
+                hasTurnedAround: false,
+                history: [{x: startX, y: startY}]
+            });
+        }
+        
+        function updatePhysics(timestamp) {
+            let voltage = 0.0;
+            let ampere = 0.0;
+            const colorInfo = currentLightInfo;
+            
+            if (state.isSwitch2Closed) {
+                if (state.isSwitch1Up) {
+                    voltage = CONFIG.vMaxHigh * state.sliderVal;
+                } else {
+                    voltage = CONFIG.vMaxLow * state.sliderVal;
+                }
+            }
+            
+            // 光电流计算：与频率、光强、电压相关
+            if (colorInfo.freq <= CONFIG.cutoffFreq) {
+                ampere = 0;
+            } else {
+                const saturationCurrent = state.lightIntensity * 100;
+                let collectionEfficiency = 0;
+                
+                if (voltage >= 0) {
+                    // 正向电压：收集效率随电压升高，8V左右达到饱和
+                    collectionEfficiency = Math.min(1, 0.3 + 0.09 * voltage);
+                } else {
+                    // 反向电压：随反向电压增大，收集效率线性降低，达到遏止电压时严格为0
+                    const reverseVoltage = Math.abs(voltage);
+                    const uCutoff = colorInfo.uCutoff;
+                    if (reverseVoltage < uCutoff - 1e-6) {
+                        collectionEfficiency = 0.3 * (1 - reverseVoltage / uCutoff);
+                    } else {
+                        collectionEfficiency = 0;
+                    }
+                }
+                
+                ampere = saturationCurrent * collectionEfficiency;
+            }
+            
+            setNeedleAngle(vPointerGroup, Math.abs(voltage), 15.0);
+            
+            // 灵敏电流计指针：0位居中，正向电流向右偏
+            const gFraction = Math.max(0, Math.min(1, ampere / 150.0));
+            const gAngleDeg = 60 * gFraction;
+            gPointerGroup.setAttribute('transform', `rotate(${gAngleDeg}, 0, 15)`);
+            
+            vDisplay.textContent = `${voltage.toFixed(2)} V`;
+            gDisplay.textContent = `${ampere.toFixed(1)} μA`;
+            
+            if (state.lightIntensity > 0) {
+                const photonSpawnInterval = Math.max(8, 50 - state.lightIntensity * 40);
+                if (timestamp - lastPhotonTime > photonSpawnInterval) {
+                    spawnPhotonElement();
+                    lastPhotonTime = timestamp;
+                }
+            }
+            
+            for (let i = photons.length - 1; i >= 0; i--) {
+                const p = photons[i];
+                p.x += 4.5; 
+                p.y += 3.8;  
+                p.element.setAttribute("cx", p.x);
+                p.element.setAttribute("cy", p.y);
+                if (p.x > 505) { 
+                    p.element.remove();
+                    photons.splice(i, 1);
+                }
+            }
+            
+            if (state.lightIntensity > 0) {
+                const spawnInterval = Math.max(10, 55 - state.lightIntensity * 40);
+                if (timestamp - lastSpawnTime > spawnInterval) {
+                    spawnElectron();
+                    lastSpawnTime = timestamp;
+                }
+            }
+            
+            // 电场加速度：修正反向电压加速度系数，匹配遏止电压与极板间距
+            let accelX = 0;
+            if (state.isSwitch2Closed) {
+                if (voltage > 0) {
+                    // 正向电压：向左加速
+                    accelX = -0.008 * Math.min(voltage, 10);
+                } else if (voltage < 0) {
+                    // 反向电压：向右减速，修正系数使遏止电压刚好对应电子无法到达A板
+                    accelX = -0.012 * voltage;
+                }
+            }
+            
+            for (let i = electrons.length - 1; i >= 0; i--) {
+                const p = electrons[i];
+                p.vx += accelX;
+                if (p.vx > 0) p.hasTurnedAround = true;
+                p.x += p.vx;
+                p.y += p.vy;
+                
+                // 更新尾巴
+                p.history.unshift({x: p.x, y: p.y});
+                if (p.history.length > 8) p.history.pop();
+                
+                p.element.setAttribute("cx", p.x);
+                p.element.setAttribute("cy", p.y);
+                
+                const tailLength = Math.max(1, Math.min(7, Math.floor(p.speed * 1.5)));
+                if (p.history.length > tailLength && p.tail) {
+                    const endPoint = p.history[tailLength - 1];
+                    p.tail.setAttribute("x1", p.x);
+                    p.tail.setAttribute("y1", p.y);
+                    p.tail.setAttribute("x2", endPoint.x);
+                    p.tail.setAttribute("y2", endPoint.y);
+                }
+                
+                // 边界检测
+                let remove = false;
+                let contributesToCurrent = false;
+                
+                // 到达A板：贡献电流
+                if (p.x <= 295 && p.y >= 185 && p.y <= 345) {
+                    contributesToCurrent = true;
+                    remove = true;
+                }
+                // 打到上下边界：被吸收
+                else if (p.y <= 190 || p.y >= 350) {
+                    remove = true;
+                }
+                // 掉头后回到K板
+                else if (p.hasTurnedAround && p.x >= 505) {
+                    remove = true;
+                }
+                // 超出左右边界
+                else if (p.x < 270 || p.x > 520) {
+                    remove = true;
+                }
+                
+                if (contributesToCurrent) {
+                    electronsHitA++;
+                }
+                
+                if (remove) {
+                    p.element.remove();
+                    if (p.tail) p.tail.remove();
+                    electrons.splice(i, 1);
+                }
+            }
+            
+            electronsHitA = Math.max(0, electronsHitA - 0.3);
+            requestAnimationFrame(updatePhysics);
+        }
+        requestAnimationFrame(updatePhysics);
+    </script>
+ 
+    <!-- 齐老师动画 - 水印 -->
+    <div class="qilaoshi-watermark">
+        QQ 3398528250<br>
+        抖音 35320300542
+    </div>
+
+
+    <!-- 齐老师动画 - 安全保护脚本 -->
+    <script>
+    (function() {
+        // 禁用右键菜单
+        document.addEventListener('contextmenu', function(e) {
+            e.preventDefault();
+            return false;
+        });
+        
+        // ESC键返回主页
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' || e.keyCode === 27) {
+                window.location.href = '../index.html';
+            }
+        });
+        
+        // 禁用开发者工具快捷键
+        document.addEventListener('keydown', function(e) {
+            // F12
+            if (e.key === 'F12' || e.keyCode === 123) {
+                e.preventDefault();
+                return false;
+            }
+            // Ctrl+U
+            if ((e.ctrlKey || e.metaKey) && (e.key === 'u' || e.keyCode === 85)) {
+                e.preventDefault();
+                return false;
+            }
+            // Ctrl+Shift+I
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'i' || e.keyCode === 73)) {
+                e.preventDefault();
+                return false;
+            }
+            // Ctrl+Shift+J
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'j' || e.keyCode === 74)) {
+                e.preventDefault();
+                return false;
+            }
+            // Ctrl+Shift+C
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'c' || e.keyCode === 67)) {
+                e.preventDefault();
+                return false;
+            }
+        });
+        
+        // 检测开发者工具打开（简单检测）
+        var devtoolsOpen = false;
+        var threshold = 160;
+        setInterval(function() {
+            var widthThreshold = window.outerWidth - window.innerWidth > threshold;
+            var heightThreshold = window.outerHeight - window.innerHeight > threshold;
+            if (widthThreshold || heightThreshold) {
+                if (!devtoolsOpen) {
+                    devtoolsOpen = true;
+                    // 可以选择跳转或其他操作
+                }
+            } else {
+                devtoolsOpen = false;
+            }
+        }, 1000);
+    })();
+    </script>
+
+</body>
+</html>
