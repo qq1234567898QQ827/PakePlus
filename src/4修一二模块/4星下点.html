@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>高中物理 · 齐老师星下点动画</title>
+    <style>
+        :root {
+            --bg: #0a0a14;
+            --panel-bg: rgba(16, 16, 30, 0.92);
+            --text: #e0e0e0;
+            --accent: #ff4444;
+            --border: rgba(255, 255, 255, 0.12);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #000;
+            font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            overflow: hidden;
+            height: 100vh;
+            user-select: none;
+            touch-action: pan-x pan-y pinch-zoom;
+        }
+        #canvas-container { position: fixed; inset: 0; z-index: 1; }
+        canvas { display: block; }
+
+        #map-container {
+            position: fixed; top: 16px; left: 16px;
+            width: 480px;
+            height: 240px;
+            background: rgba(0,0,0,0.75);
+            border: 1px solid rgba(255,255,255,0.25);
+            border-radius: 8px; z-index: 15;
+            backdrop-filter: blur(8px);
+            box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+            overflow: hidden;
+        }
+        #map-canvas { width: 100%; height: 100%; display: block; }
+
+        #error-msg {
+            position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+            background: rgba(0,0,0,0.85); color: #ff6666;
+            padding: 10px 24px; border-radius: 8px;
+            border: 1px solid #ff4444; display: none; z-index: 30;
+            font-size: 0.9em; backdrop-filter: blur(8px);
+        }
+
+        #panel {
+            position: fixed; z-index: 10; right: 16px; top: 50%;
+            transform: translateY(-50%);
+            background: var(--panel-bg);
+            border: 1px solid var(--border);
+            border-radius: 16px; padding: 20px 18px;
+            color: var(--text); width: 260px;
+            backdrop-filter: blur(20px);
+            display: flex; flex-direction: column; gap: 12px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+            transition: right 0.3s;
+        }
+        #panel.collapsed { right: -270px; opacity: 0.4; }
+
+        #panel-toggle {
+            position: fixed; z-index: 11; right: 16px; top: 50%;
+            transform: translateY(-50%);
+            width: 32px; height: 64px;
+            background: var(--panel-bg);
+            border: 1px solid var(--border);
+            border-radius: 10px 0 0 10px;
+            cursor: pointer; color: #ccc;
+            display: flex; align-items: center; justify-content: center;
+            writing-mode: vertical-lr; letter-spacing: 2px;
+            transition: right 0.3s; box-shadow: -4px 0 16px rgba(0,0,0,0.3);
+        }
+        #panel-toggle.shifted { right: 268px; }
+
+        .control-group { display: flex; flex-direction: column; gap: 4px; }
+        .control-group label {
+            font-size: 0.75em; color: #bbb;
+            display: flex; justify-content: space-between;
+        }
+        .val { color: #ff8800; font-weight: 600; }
+        button {
+            flex: 1; min-width: 50px; padding: 8px 4px;
+            border-radius: 8px; border: 1px solid var(--border);
+            background: rgba(255,255,255,0.06); color: #ddd;
+            cursor: pointer; font-size: 0.7em; transition: 0.2s;
+            font-family: inherit;
+        }
+        button.active { background: #ff4444; border-color: #ff4444; color: #fff; }
+        button.accent2 { border-color: #ff8800; color: #ff8800; }
+
+        .period-btn-group {
+            display: flex; gap: 4px; flex-wrap: wrap;
+        }
+        .period-btn {
+            flex: 1; min-width: 40px; padding: 6px 2px;
+            font-size: 0.65em; border-radius: 6px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid var(--border);
+            color: #ccc; cursor: pointer; transition: 0.2s;
+        }
+        .period-btn.active {
+            background: #ff8800; border-color: #ff8800; color: #000; font-weight: 600;
+        }
+
+        @media (max-width: 640px) {
+            #panel { right: 6px; width: 230px; padding: 14px 12px; }
+            #panel.collapsed { right: -240px; }
+            #panel-toggle { right: 6px; width: 26px; height: 50px; }
+            #panel-toggle.shifted { right: 238px; }
+            #map-container { width: 360px; height: 180px; top: 8px; left: 8px; }
+        }
+    </style>
+<style>
+    /* 齐老师动画 - 统一样式 */
+    body {
+        background: #1a2332 !important;
+    }
+    
+    /* 顶部标题栏 */
+    .qilaoshi-header {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 50px;
+        background: #1a2332;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 99999 !important;
+        border-bottom: 1px solid #2a3a50;
+    }
+    
+    .qilaoshi-title {
+        font-size: 20px;
+        font-weight: 600;
+        color: #8ab4f8;
+        letter-spacing: 2px;
+        font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif;
+    }
+    
+    /* 返回按钮 */
+    .qilaoshi-back-btn {
+        position: fixed;
+        top: 10px;
+        right: 15px;
+        z-index: 999999 !important;
+        background: linear-gradient(135deg, #3a5a80, #2a4a70);
+        color: #ffffff;
+        border: 1px solid #5a8ab0;
+        padding: 8px 18px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        font-family: 'Microsoft YaHei', sans-serif;
+        transition: all 0.2s;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+    }
+    
+    .qilaoshi-back-btn:hover {
+        background: linear-gradient(135deg, #4a6a90, #3a5a80);
+        color: #ffffff;
+        box-shadow: 0 4px 15px rgba(90, 138, 176, 0.4);
+        transform: translateY(-1px);
+    }
+    
+    /* 水印 */
+    .qilaoshi-watermark {
+        position: fixed;
+        bottom: 10px;
+        right: 15px;
+        z-index: 9999;
+        font-size: 11px;
+        color: rgba(138, 180, 248, 0.4);
+        font-family: 'Microsoft YaHei', sans-serif;
+        line-height: 1.5;
+        text-align: right;
+        pointer-events: none;
+    }
+    
+    /* 调整主内容区域，给顶部标题栏留出空间 */
+    body {
+        padding-top: 50px !important;
+    }
+</style>
+</head>
+<body>
+
+    <!-- 齐老师动画 - 顶部导航 -->
+    <div class="qilaoshi-header">
+        <div class="qilaoshi-title">齐老师动画</div>
+    </div>
+    <button class="qilaoshi-back-btn" onclick="window.location.href='../index.html'">← 返回主页</button>
+
+    <div id="canvas-container"></div>
+    <div id="error-msg">⚠️ 3D引擎加载失败，请刷新重试</div>
+
+    <div id="map-container">
+        <canvas id="map-canvas" width="480" height="240"></canvas>
+    </div>
+
+    <div id="panel-toggle" class="shifted">控 制</div>
+
+    <div id="panel">
+        <h3 style="text-align:center;">齐老师动画</h3>
+        <div class="control-group">
+            <label>轨道倾角 <span class="val" id="val-inclination">35°</span></label>
+            <input type="range" id="slider-inclination" min="0" max="90" value="35" step="1">
+        </div>
+        <div class="control-group">
+            <label>卫星周期</label>
+            <div class="period-btn-group" id="period-buttons">
+                <button class="period-btn" data-hours="4">4h</button>
+                <button class="period-btn" data-hours="8">8h</button>
+                <button class="period-btn" data-hours="12">12h</button>
+                <button class="period-btn active" data-hours="24">24h</button>
+                <button class="period-btn" data-hours="36">36h</button>
+            </div>
+        </div>
+        <div class="control-group">
+            <label>动画速度 <span class="val" id="val-speed">1.0×</span></label>
+            <input type="range" id="slider-speed" min="10" max="300" value="100" step="5">
+        </div>
+        <div style="display:flex; gap:6px;">
+            <button id="btn-pause">⏯ 暂停</button>
+            <button id="btn-earth-rot">🌍 自转(24h)</button>
+            <button id="btn-reverse">↺ 反向</button>
+        </div>
+        <div style="display:flex; gap:6px;">
+            <button id="btn-reset-view" class="accent2">🔄 重置视角</button>
+            <button id="btn-top-view">📐 俯视轨道</button>
+        </div>
+        <div style="display:flex; gap:6px;">
+            <button id="btn-transparent">👁 半透明</button>
+            <button id="btn-line-mode">🔴 连线穿透</button>
+        </div>
+    </div>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+        // 错误处理
+        const errorMsg = document.getElementById('error-msg');
+        function showError(text) { errorMsg.style.display = 'block'; errorMsg.textContent = text; }
+        function hideError() { errorMsg.style.display = 'none'; }
+        window.addEventListener('error', (e) => {
+            if (e.message && (e.message.includes('three') || e.message.includes('THREE')))
+                showError('3D引擎加载失败：' + e.message);
+        });
+        setTimeout(() => { if (typeof THREE === 'undefined' || !THREE.Scene) showError('3D引擎未能初始化'); }, 3000);
+
+        // DOM 元素
+        const container = document.getElementById('canvas-container');
+        const sliderInclination = document.getElementById('slider-inclination');
+        const sliderSpeed = document.getElementById('slider-speed');
+        const valInclination = document.getElementById('val-inclination');
+        const valSpeed = document.getElementById('val-speed');
+        const btnPause = document.getElementById('btn-pause');
+        const btnEarthRot = document.getElementById('btn-earth-rot');
+        const btnReverse = document.getElementById('btn-reverse');
+        const btnResetView = document.getElementById('btn-reset-view');
+        const btnTopView = document.getElementById('btn-top-view');
+        const btnTransparent = document.getElementById('btn-transparent');
+        const btnLineMode = document.getElementById('btn-line-mode');
+        const panel = document.getElementById('panel');
+        const panelToggle = document.getElementById('panel-toggle');
+        const periodButtons = document.getElementById('period-buttons');
+
+        const mapCanvas = document.getElementById('map-canvas');
+        const mapCtx = mapCanvas.getContext('2d');
+        const MAP_WIDTH = 480;
+        const MAP_HEIGHT = 240;
+
+        // 加载2D世界地图纹理
+        const worldMapImage = new Image();
+        let mapImageLoaded = false;
+        worldMapImage.onload = () => { mapImageLoaded = true; };
+        worldMapImage.onerror = () => { mapImageLoaded = false; };
+        // 使用等距矩形投影地图（和地球纹理相同）
+        worldMapImage.src = 'https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg';
+
+        // 场景
+        const scene = new THREE.Scene();
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        container.appendChild(renderer.domElement);
+        hideError();
+
+        const camera = new THREE.PerspectiveCamera(48, window.innerWidth / window.innerHeight, 0.3, 60);
+        camera.position.set(3.8, 2.6, 4.5);
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.target.set(0, 0, 0);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.12;
+        controls.minDistance = 1.8;
+        controls.maxDistance = 14;
+        controls.update();
+
+        scene.add(new THREE.AmbientLight(0x334466, 1.8));
+        const sun = new THREE.DirectionalLight(0xffffff, 3.5);
+        sun.position.set(8, 4, 3);
+        scene.add(sun);
+        const fill = new THREE.DirectionalLight(0x8899cc, 1.2);
+        fill.position.set(-3, -1, -4);
+        scene.add(fill);
+
+        const stars = new THREE.Points(
+            new THREE.BufferGeometry().setFromPoints(Array.from({length:1800}, () => {
+                const theta = Math.random()*Math.PI*2, phi = Math.acos(2*Math.random()-1), r = 25+Math.random()*35;
+                return new THREE.Vector3(r*Math.sin(phi)*Math.cos(theta), r*Math.sin(phi)*Math.sin(theta), r*Math.cos(phi));
+            })),
+            new THREE.PointsMaterial({color:0xffffff, size:0.04, transparent:true, opacity:0.75})
+        );
+        scene.add(stars);
+
+        // 参数
+        const R = 1.0;
+        const EARTH_ROTATION_PERIOD_HOURS = 24;
+        let inclinationDeg = 35;
+        let inclinationRad = THREE.MathUtils.degToRad(inclinationDeg);
+        let satellitePeriodHours = 24;
+        let orbitAltitude = 0.5;
+        let orbitRadius = R + orbitAltitude;
+        let animSpeed = 1.0;
+        let isPaused = false;
+        let earthRotationEnabled = false;
+        let earthTransparent = false;
+        let lineAlwaysVisible = true;
+        let reverseOrbit = false;
+
+        function getSatelliteAngularSpeed() { return (2 * Math.PI) / satellitePeriodHours; }
+        function getEarthAngularSpeed() { return (2 * Math.PI) / EARTH_ROTATION_PERIOD_HOURS; }
+
+        // 地球
+        const earthGroup = new THREE.Group();
+        scene.add(earthGroup);
+        const earthGeom = new THREE.SphereGeometry(R, 72, 54);
+        const earthMat = new THREE.MeshPhongMaterial({ specular: 0x113355, shininess: 12 });
+        const earthMesh = new THREE.Mesh(earthGeom, earthMat);
+        earthGroup.add(earthMesh);
+
+        const loader = new THREE.TextureLoader();
+        const urls = [
+            'https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg',
+            'https://threejs.org/examples/textures/planets/earth_atmos_2048.jpg'
+        ];
+        function tryLoad(i) {
+            if (i >= urls.length) { earthMat.color.set(0x2277cc); earthMat.needsUpdate = true; return; }
+            loader.load(urls[i], tex => {
+                earthMat.map = tex; earthMat.color.set(0xffffff); earthMat.needsUpdate = true;
+            }, undefined, () => tryLoad(i+1));
+        }
+        tryLoad(0);
+
+        const atmosphere = new THREE.Mesh(
+            new THREE.SphereGeometry(R*1.02, 64, 40),
+            new THREE.MeshPhongMaterial({ color:0x88aaff, transparent:true, opacity:0.15, depthWrite:false })
+        );
+        earthGroup.add(atmosphere);
+
+        const eq = new THREE.Line(
+            new THREE.BufferGeometry().setFromPoints(
+                Array.from({length:201}, (_,i) => new THREE.Vector3(R*Math.cos(i/200*Math.PI*2), 0, R*Math.sin(i/200*Math.PI*2)))
+            ), new THREE.LineBasicMaterial({color:0xffffff, transparent:true, opacity:0.3})
+        );
+        earthGroup.add(eq);
+        const axis = new THREE.Line(
+            new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,-1.35,0), new THREE.Vector3(0,1.35,0)]),
+            new THREE.LineBasicMaterial({color:0xcccccc, transparent:true, opacity:0.3})
+        );
+        earthGroup.add(axis);
+
+        // 轨道组
+        const orbitGroup = new THREE.Group();
+        orbitGroup.rotation.x = inclinationRad;
+        scene.add(orbitGroup);
+
+        function ring(radius, color, opacity) {
+            const pts = Array.from({length:257}, (_,i) => {
+                const a = i/256*Math.PI*2;
+                return new THREE.Vector3(radius*Math.cos(a), 0, radius*Math.sin(a));
+            });
+            return new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial({color, transparent:true, opacity}));
+        }
+        const orbitRing = ring(orbitRadius, 0xff9900, 0.8);
+        orbitGroup.add(orbitRing);
+
+        const satellitePivot = new THREE.Group();
+        orbitGroup.add(satellitePivot);
+        const satMesh = new THREE.Mesh(
+            new THREE.SphereGeometry(0.07, 20, 14),
+            new THREE.MeshStandardMaterial({color:0xffffff, emissive:0xff4444, emissiveIntensity:0.7, roughness:0.3})
+        );
+        satMesh.position.set(orbitRadius, 0, 0);
+        satellitePivot.add(satMesh);
+
+        // 星下点标记
+        function createSubpointSprite() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 64; canvas.height = 64;
+            const ctx = canvas.getContext('2d');
+            const gradient = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+            gradient.addColorStop(0, 'rgba(255, 80, 80, 1)');
+            gradient.addColorStop(0.3, 'rgba(255, 50, 50, 0.9)');
+            gradient.addColorStop(0.6, 'rgba(80, 80, 255, 0.6)');
+            gradient.addColorStop(1, 'rgba(30, 30, 255, 0)');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, 64, 64);
+            const texture = new THREE.CanvasTexture(canvas);
+            const material = new THREE.SpriteMaterial({
+                map: texture,
+                blending: THREE.AdditiveBlending,
+                depthTest: true,
+                depthWrite: false,
+                transparent: true,
+                opacity: 0.9,
+            });
+            const sprite = new THREE.Sprite(material);
+            sprite.scale.set(0.28, 0.28, 1);
+            return sprite;
+        }
+
+        const subpointGroup = new THREE.Group();
+        const smallSphere = new THREE.Mesh(
+            new THREE.SphereGeometry(0.04, 8, 6),
+            new THREE.MeshBasicMaterial({ color: 0xff4444 })
+        );
+        subpointGroup.add(smallSphere);
+        subpointGroup.add(createSubpointSprite());
+        scene.add(subpointGroup);
+
+        scene.add(new THREE.Mesh(new THREE.SphereGeometry(0.04, 8, 6), new THREE.MeshBasicMaterial({color:0xffffcc})));
+
+        // 红色两段线：地心→星下点，星下点→卫星
+        const linePositions = new Float32Array(12);
+        const lineGeom = new THREE.BufferGeometry();
+        lineGeom.setAttribute('position', new THREE.BufferAttribute(linePositions, 3));
+        const lineMat = new THREE.LineBasicMaterial({
+            color: 0xff3333, transparent: true, opacity: 0.95,
+            depthTest: !lineAlwaysVisible, depthWrite: !lineAlwaysVisible,
+        });
+        const redLines = new THREE.LineSegments(lineGeom, lineMat);
+        if (lineAlwaysVisible) redLines.renderOrder = 999;
+        scene.add(redLines);
+
+        function setLineVisibility(always) {
+            lineAlwaysVisible = always;
+            lineMat.depthTest = !always;
+            lineMat.depthWrite = !always;
+            lineMat.needsUpdate = true;
+            redLines.renderOrder = always ? 999 : 0;
+        }
+
+        // 地表轨迹
+        const trailPoints = [];
+        const maxTrailPoints = 2000;
+        const trailGeom = new THREE.BufferGeometry();
+        const trailPositionsArr = new Float32Array(maxTrailPoints * 3);
+        trailGeom.setAttribute('position', new THREE.BufferAttribute(trailPositionsArr, 3));
+        trailGeom.setDrawRange(0, 0);
+        const trailLine = new THREE.Line(
+            trailGeom,
+            new THREE.LineBasicMaterial({ color: 0xff4444, transparent: true, opacity: 0.9, depthTest: true })
+        );
+        earthGroup.add(trailLine);
+
+        function clearTrails() {
+            trailPoints.length = 0;
+            trailGeom.setDrawRange(0, 0);
+            historyPoints2D.length = 0;
+        }
+
+        // 辅助函数
+        function updateOrbitRadius() {
+            orbitRadius = R + orbitAltitude;
+            const pts = [];
+            for (let i = 0; i <= 256; i++) {
+                const a = i/256*Math.PI*2;
+                pts.push(new THREE.Vector3(orbitRadius*Math.cos(a), 0, orbitRadius*Math.sin(a)));
+            }
+            orbitRing.geometry.dispose();
+            orbitRing.geometry = new THREE.BufferGeometry().setFromPoints(pts);
+            const a = satellitePivot.rotation.y;
+            satMesh.position.set(orbitRadius*Math.cos(a), 0, orbitRadius*Math.sin(a));
+        }
+
+        function updateInclination() {
+            inclinationRad = THREE.MathUtils.degToRad(inclinationDeg);
+            orbitGroup.rotation.x = inclinationRad;
+        }
+
+        function getSatWorld() {
+            return new THREE.Vector3().copy(satMesh.position).applyMatrix4(satMesh.matrixWorld);
+        }
+
+        function getExactSubpointWorld() {
+            const satPos = getSatWorld();
+            const dir = satPos.clone().normalize();
+            return dir.multiplyScalar(R);
+        }
+
+        function getSubpointInEarthFrame() {
+            const subWorld = getExactSubpointWorld();
+            const rotAngle = -earthGroup.rotation.y;
+            return subWorld.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), rotAngle);
+        }
+
+        function getSubpointLatLon() {
+            const fixedVec = getSubpointInEarthFrame();
+            const lat = Math.asin(fixedVec.y / fixedVec.length()) * 180 / Math.PI;
+            const lon = Math.atan2(fixedVec.z, fixedVec.x) * 180 / Math.PI;
+            return { lat, lon };
+        }
+
+        const historyPoints2D = [];
+        function draw2DMap() {
+            const { lat, lon } = getSubpointLatLon();
+            historyPoints2D.push({ lon, lat });
+            if (historyPoints2D.length > 1000) historyPoints2D.shift();
+
+            const ctx = mapCtx;
+            const w = MAP_WIDTH, h = MAP_HEIGHT;
+            ctx.clearRect(0, 0, w, h);
+
+            // 绘制全球地图底图
+            if (mapImageLoaded) {
+                ctx.drawImage(worldMapImage, 0, 0, w, h);
+            } else {
+                // 如果图像未加载，填充背景色
+                ctx.fillStyle = '#1a3a5c';
+                ctx.fillRect(0, 0, w, h);
+            }
+
+            // 经纬网（半透明，叠加在底图上）
+            ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+            ctx.lineWidth = 0.5;
+            for (let lonDeg = -180; lonDeg <= 180; lonDeg += 30) {
+                const x = ((lonDeg + 180) / 360) * w;
+                ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke();
+            }
+            for (let latDeg = -90; latDeg <= 90; latDeg += 30) {
+                const y = ((90 - latDeg) / 180) * h;
+                ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+            }
+
+            // 轨迹线
+            if (historyPoints2D.length > 1) {
+                ctx.beginPath();
+                ctx.strokeStyle = 'rgba(255, 80, 80, 0.9)';
+                ctx.lineWidth = 1.5;
+                for (let i = 0; i < historyPoints2D.length; i++) {
+                    const pt = historyPoints2D[i];
+                    const x = ((pt.lon + 180) / 360) * w;
+                    const y = ((90 - pt.lat) / 180) * h;
+                    if (i === 0) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+                }
+                ctx.stroke();
+            }
+
+            // 当前位置标记
+            const currentX = ((lon + 180) / 360) * w;
+            const currentY = ((90 - lat) / 180) * h;
+            const gradient = ctx.createRadialGradient(currentX, currentY, 0, currentX, currentY, 7);
+            gradient.addColorStop(0, '#ff3333');
+            gradient.addColorStop(0.6, '#3366ff');
+            ctx.fillStyle = gradient;
+            ctx.beginPath(); ctx.arc(currentX, currentY, 5, 0, Math.PI*2); ctx.fill();
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 0.8;
+            ctx.stroke();
+        }
+
+        // UI 事件
+        sliderInclination.addEventListener('input', () => {
+            inclinationDeg = parseInt(sliderInclination.value);
+            valInclination.textContent = inclinationDeg + '°';
+            updateInclination();
+        });
+
+        sliderSpeed.addEventListener('input', () => {
+            animSpeed = parseInt(sliderSpeed.value) / 100;
+            valSpeed.textContent = animSpeed.toFixed(1) + '×';
+        });
+
+        periodButtons.addEventListener('click', (e) => {
+            if (e.target.classList.contains('period-btn')) {
+                const hours = parseInt(e.target.dataset.hours);
+                if (hours === satellitePeriodHours) return;
+                satellitePeriodHours = hours;
+                document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
+                e.target.classList.add('active');
+                clearTrails();
+            }
+        });
+
+        btnPause.addEventListener('click', () => {
+            isPaused = !isPaused;
+            btnPause.textContent = isPaused ? '▶ 播放' : '⏯ 暂停';
+            btnPause.classList.toggle('active', isPaused);
+        });
+
+        btnEarthRot.addEventListener('click', () => {
+            earthRotationEnabled = !earthRotationEnabled;
+            btnEarthRot.textContent = earthRotationEnabled ? '🌍 自转中' : '🌍 自转(24h)';
+            btnEarthRot.classList.toggle('active', earthRotationEnabled);
+            if (!earthRotationEnabled) clearTrails();
+        });
+
+        btnReverse.addEventListener('click', () => {
+            reverseOrbit = !reverseOrbit;
+            btnReverse.textContent = reverseOrbit ? '↺ 反向中' : '↺ 反向';
+            btnReverse.classList.toggle('active', reverseOrbit);
+            clearTrails();
+        });
+
+        btnTransparent.addEventListener('click', () => {
+            earthTransparent = !earthTransparent;
+            btnTransparent.textContent = earthTransparent ? '👁 透明中' : '👁 半透明';
+            btnTransparent.classList.toggle('active', earthTransparent);
+            earthMat.transparent = true;
+            earthMat.opacity = earthTransparent ? 0.35 : 1.0;
+            earthMat.depthWrite = !earthTransparent;
+            earthMat.needsUpdate = true;
+            atmosphere.visible = !earthTransparent;
+        });
+
+        btnLineMode.addEventListener('click', () => {
+            setLineVisibility(!lineAlwaysVisible);
+            btnLineMode.textContent = lineAlwaysVisible ? '🔴 穿透可见' : '🔴 遮挡模式';
+            btnLineMode.classList.toggle('active', lineAlwaysVisible);
+        });
+
+        btnResetView.addEventListener('click', () => {
+            camera.position.set(3.8, 2.6, 4.5);
+            controls.target.set(0,0,0);
+            controls.update();
+        });
+
+        btnTopView.addEventListener('click', () => {
+            const norm = new THREE.Vector3(0,1,0).applyAxisAngle(new THREE.Vector3(1,0,0), -inclinationRad);
+            camera.position.copy(norm.multiplyScalar(6));
+            controls.target.set(0,0,0);
+            controls.update();
+        });
+
+        panelToggle.addEventListener('click', () => {
+            if (panel.classList.contains('collapsed')) {
+                panel.classList.remove('collapsed');
+                panelToggle.classList.add('shifted');
+                panelToggle.textContent = '控 制';
+            } else {
+                panel.classList.add('collapsed');
+                panelToggle.classList.remove('shifted');
+                panelToggle.textContent = '展 开';
+            }
+        });
+
+        window.addEventListener('keydown', (e) => {
+            if (e.key === ' ') { e.preventDefault(); btnPause.click(); }
+            else if (e.key === 'r') btnResetView.click();
+            else if (e.key === 't') btnTransparent.click();
+            else if (e.key === 'e') btnEarthRot.click();
+            else if (e.key === 'l') btnLineMode.click();
+        });
+
+        window.addEventListener('resize', () => {
+            camera.aspect = innerWidth/innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(innerWidth, innerHeight);
+        });
+
+        // 动画循环
+        const clock = new THREE.Clock();
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const dt = Math.min(clock.getDelta(), 0.15);
+
+            if (!isPaused) {
+                let satAngSpeed = getSatelliteAngularSpeed() * animSpeed;
+                if (reverseOrbit) satAngSpeed = -satAngSpeed;
+                satellitePivot.rotation.y += satAngSpeed * dt;
+
+                if (earthRotationEnabled) {
+                    earthGroup.rotation.y += getEarthAngularSpeed() * animSpeed * dt;
+                }
+            }
+
+            const satWorld = getSatWorld();
+            const subpointWorld = getExactSubpointWorld();
+
+            // 更新红色两段线
+            const positions = lineGeom.attributes.position.array;
+            positions[0] = 0; positions[1] = 0; positions[2] = 0;
+            positions[3] = subpointWorld.x; positions[4] = subpointWorld.y; positions[5] = subpointWorld.z;
+            positions[6] = subpointWorld.x; positions[7] = subpointWorld.y; positions[8] = subpointWorld.z;
+            positions[9] = satWorld.x; positions[10] = satWorld.y; positions[11] = satWorld.z;
+            lineGeom.attributes.position.needsUpdate = true;
+
+            subpointGroup.position.copy(subpointWorld);
+
+            // 地表轨迹
+            const fixedPt = getSubpointInEarthFrame();
+            const ptOnSurface = fixedPt.clone().normalize().multiplyScalar(R * 1.002);
+            trailPoints.push(ptOnSurface);
+            if (trailPoints.length > maxTrailPoints) trailPoints.shift();
+
+            const posArray = trailGeom.attributes.position.array;
+            for (let i = 0; i < trailPoints.length; i++) {
+                const p = trailPoints[i];
+                posArray[i * 3] = p.x;
+                posArray[i * 3 + 1] = p.y;
+                posArray[i * 3 + 2] = p.z;
+            }
+            trailGeom.attributes.position.needsUpdate = true;
+            trailGeom.setDrawRange(0, trailPoints.length);
+
+            draw2DMap();
+
+            controls.update();
+            renderer.render(scene, camera);
+            stars.rotation.y += dt * 0.01;
+        }
+
+        // 启动
+        updateInclination();
+        updateOrbitRadius();
+        satellitePivot.rotation.y = 0.3;
+        btnLineMode.classList.add('active');
+        animate();
+    </script>
+
+    <!-- 齐老师动画 - 水印 -->
+    <div class="qilaoshi-watermark">
+        QQ 3398528250<br>
+        抖音 35320300542
+    </div>
+
+
+    <!-- 齐老师动画 - 安全保护脚本 -->
+    <script>
+    (function() {
+        // 禁用右键菜单
+        document.addEventListener('contextmenu', function(e) {
+            e.preventDefault();
+            return false;
+        });
+        
+        // ESC键返回主页
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' || e.keyCode === 27) {
+                window.location.href = '../index.html';
+            }
+        });
+        
+        // 禁用开发者工具快捷键
+        document.addEventListener('keydown', function(e) {
+            // F12
+            if (e.key === 'F12' || e.keyCode === 123) {
+                e.preventDefault();
+                return false;
+            }
+            // Ctrl+U
+            if ((e.ctrlKey || e.metaKey) && (e.key === 'u' || e.keyCode === 85)) {
+                e.preventDefault();
+                return false;
+            }
+            // Ctrl+Shift+I
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'i' || e.keyCode === 73)) {
+                e.preventDefault();
+                return false;
+            }
+            // Ctrl+Shift+J
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'j' || e.keyCode === 74)) {
+                e.preventDefault();
+                return false;
+            }
+            // Ctrl+Shift+C
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'c' || e.keyCode === 67)) {
+                e.preventDefault();
+                return false;
+            }
+        });
+        
+        // 检测开发者工具打开（简单检测）
+        var devtoolsOpen = false;
+        var threshold = 160;
+        setInterval(function() {
+            var widthThreshold = window.outerWidth - window.innerWidth > threshold;
+            var heightThreshold = window.outerHeight - window.innerHeight > threshold;
+            if (widthThreshold || heightThreshold) {
+                if (!devtoolsOpen) {
+                    devtoolsOpen = true;
+                    // 可以选择跳转或其他操作
+                }
+            } else {
+                devtoolsOpen = false;
+            }
+        }, 1000);
+    })();
+    </script>
+
+</body>
+</html>
