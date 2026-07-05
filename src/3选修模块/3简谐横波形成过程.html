@@ -1,0 +1,817 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta charset="UTF-8">
+    <meta charset="UTF-8">
+    <meta charset="UTF-8">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>简谐横波的形成过程 · 可调波速</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            user-select: none;
+        }
+        body {
+            background: #0f1b2b;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Segoe UI', Roboto, system-ui, sans-serif;
+            margin: 0;
+            padding: 16px;
+        }
+        .card {
+            max-width: 950px;
+            width: 100%;
+            background: #1c2d42;
+            border-radius: 40px;
+            padding: 28px 24px 32px;
+            box-shadow: 0 25px 40px rgba(0, 0, 0, 0.8), inset 0 1px 2px rgba(255,255,255,0.1);
+            border: 1px solid #3a557a;
+        }
+        h2 {
+            text-align: center;
+            margin: 0 0 5px 0;
+            font-weight: 400;
+            color: #c6deff;
+            font-size: 2.2rem;
+            letter-spacing: 2px;
+            text-shadow: 0 0 10px #3f7ad0;
+        }
+        .sub {
+            text-align: center;
+            color: #98b3d9;
+            margin-bottom: 20px;
+            font-size: 1rem;
+            border-bottom: 1px dashed #385e88;
+            padding-bottom: 12px;
+        }
+        .canvas-wrapper {
+            background: #102338;
+            border-radius: 30px;
+            padding: 15px;
+            border: 1px solid #36547b;
+            box-shadow: inset 0 0 15px #050b14;
+        }
+        canvas {
+            display: block;
+            width: 100%;
+            height: auto;
+            background: #0d1b2b;
+            border-radius: 20px;
+            cursor: pointer;
+            box-shadow: 0 8px 18px black;
+        }
+        .control-panel {
+            background: #1b3148;
+            border-radius: 34px;
+            padding: 22px 22px 18px;
+            margin-top: 22px;
+            border: 1px solid #3d5f86;
+        }
+        .slider-row {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px 20px;
+            margin-bottom: 20px;
+        }
+        .slider-label {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: #d0e2ff;
+            font-weight: 500;
+            min-width: 200px;
+        }
+        .slider-label span {
+            color: #ffcf9a;
+            min-width: 45px;
+            text-align: right;
+        }
+        input[type=range] {
+            flex: 2;
+            min-width: 240px;
+            height: 7px;
+            background: #2b4568;
+            border-radius: 10px;
+            -webkit-appearance: none;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 24px;
+            height: 24px;
+            background: #ffb571;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 0 16px #f90;
+            border: 2px solid #fff0cc;
+        }
+        .stats {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px 18px;
+            background: #12273f;
+            border-radius: 40px;
+            padding: 14px 22px;
+            border: 1px solid #325a81;
+            color: #bcd3ff;
+            font-size: 1rem;
+        }
+        .badge {
+            background: #21486b;
+            border-radius: 30px;
+            padding: 6px 18px;
+            box-shadow: inset 0 2px 6px #0e1a28;
+        }
+        .badge strong {
+            color: #ffcf8a;
+            font-weight: 500;
+            margin-right: 6px;
+        }
+        .button-group {
+            display: flex;
+            gap: 14px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        button {
+            background: #315f88;
+            border: none;
+            color: white;
+            padding: 10px 30px;
+            border-radius: 60px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            border: 1px solid #89b4f0;
+            box-shadow: 0 6px 14px black;
+            transition: 0.15s;
+            letter-spacing: 0.5px;
+        }
+        button:hover {
+            background: #4280b5;
+            border-color: #c4ddff;
+            transform: scale(1.02);
+        }
+        .footnote {
+            text-align: center;
+            color: #6e8bb0;
+            margin-top: 18px;
+            font-size: 0.9rem;
+        }
+        .highlight {
+            color: #ffc491;
+        }
+    </style>
+<style>
+    /* 齐老师动画 - 统一样式 */
+    body {
+        background: #1a2332 !important;
+    }
+    
+    /* 顶部标题栏 */
+    .qilaoshi-header {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 50px;
+        background: #1a2332;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 99999 !important;
+        border-bottom: 1px solid #2a3a50;
+    }
+    
+    .qilaoshi-title {
+        font-size: 20px;
+        font-weight: 600;
+        color: #8ab4f8;
+        letter-spacing: 2px;
+        font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif;
+    }
+    
+    /* 返回按钮 */
+    .qilaoshi-back-btn {
+        position: fixed;
+        top: 10px;
+        right: 15px;
+        z-index: 999999 !important;
+        background: linear-gradient(135deg, #3a5a80, #2a4a70);
+        color: #ffffff;
+        border: 1px solid #5a8ab0;
+        padding: 8px 18px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        font-family: 'Microsoft YaHei', sans-serif;
+        transition: all 0.2s;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+    }
+    
+    .qilaoshi-back-btn:hover {
+        background: linear-gradient(135deg, #4a6a90, #3a5a80);
+        color: #ffffff;
+        box-shadow: 0 4px 15px rgba(90, 138, 176, 0.4);
+        transform: translateY(-1px);
+    }
+    
+    /* 水印 */
+    .qilaoshi-watermark {
+        position: fixed;
+        bottom: 10px;
+        right: 15px;
+        z-index: 9999;
+        font-size: 11px;
+        color: rgba(138, 180, 248, 0.4);
+        font-family: 'Microsoft YaHei', sans-serif;
+        line-height: 1.5;
+        text-align: right;
+        pointer-events: none;
+    }
+    
+    /* 调整主内容区域，给顶部标题栏留出空间 */
+    body {
+        padding-top: 50px !important;
+    }
+</style>
+</head>
+<body>
+
+    <!-- 齐老师动画 - 顶部导航 -->
+    <div class="qilaoshi-header">
+        <div class="qilaoshi-title">齐老师动画</div>
+    </div>
+    <button class="qilaoshi-back-btn" onclick="window.location.href='../index.html'">← 返回主页</button>
+
+<div class="card">
+    <h2>🌊 简谐横波 · 形成过程</h2>
+    <div class="sub">左侧波源起振 · 向右传播 · 波速可调</div>
+
+    <div class="canvas-wrapper">
+        <canvas id="waveCanvas" width="880" height="380"></canvas>
+    </div>
+
+    <div class="control-panel">
+        <!-- 波速滑块 -->
+        <div class="slider-row">
+            <div class="slider-label">
+                <span style="color:#a2d0ff;">⚡ 波速 v</span>
+                <span id="vValue">80.0</span> px/s
+            </div>
+            <input type="range" id="vSlider" min="15" max="220" value="80" step="0.5">
+        </div>
+
+        <div class="stats">
+            <div class="badge"><strong>波长 λ</strong> 200 px</div>
+            <div class="badge"><strong>振幅 A</strong> 50 px</div>
+            <div class="badge"><strong>当前波前</strong> <span id="wavefrontPos">50</span> px</div>
+            <div class="badge"><strong>波源频率 f</strong> <span id="freqDisplay">0.40</span> Hz</div>
+        </div>
+
+        <div class="button-group">
+            <button id="pauseBtn">⏸️ 暂停</button>
+            <button id="resetBtn">⟲ 重新开始</button>
+        </div>
+        <div class="footnote">
+            <span class="highlight">● 红色质点</span> 已起振 · 灰色质点尚未振动 · 波以速度 v 向右推进
+        </div>
+    </div>
+</div>
+
+<script>
+    (function() {
+        // 获取元素
+        const canvas = document.getElementById('waveCanvas');
+        const ctx = canvas.getContext('2d');
+        const vSlider = document.getElementById('vSlider');
+        const vSpan = document.getElementById('vValue');
+        const wavefrontSpan = document.getElementById('wavefrontPos');
+        const freqSpan = document.getElementById('freqDisplay');
+        const pauseBtn = document.getElementById('pauseBtn');
+        const resetBtn = document.getElementById('resetBtn');
+
+        // 固定参数
+        const A = 50;                 // 振幅 (px)
+        const lambda = 200;            // 波长 (px)
+        const k = (2 * Math.PI) / lambda; // 波数
+        const xStart = 50;             // 波源位置 (最左边质点)
+        const xEnd = 800;               // 最右边显示范围
+        const numPoints = 18;           // 质点数量
+        const pointSpacing = (xEnd - xStart) / (numPoints - 1); // 约44.1px
+
+        // 可调波速 (px/s)
+        let v = 80.0;
+
+        // 动画控制
+        let startTime = performance.now() / 1000;   // 起始绝对时间 (秒)
+        let paused = false;
+        let pauseAccum = 0;              // 暂停期间累积的暂停时长 (备用，我们用另一种方式)
+        // 为了简单：在暂停时停止更新时间，我们使用一个 lastTimestamp 来手动控制累计时间。
+        // 更稳健：用变量 elapsed 表示从开始经过的时间(秒)，每次根据是否暂停来增加。
+        let elapsed = 0;                  // 从开始经过的秒数 (暂停时不增加)
+        let lastTimestamp = null;
+
+        // 滑块显示更新
+        function updateSliderDisplay() {
+            v = parseFloat(vSlider.value);
+            vSpan.textContent = v.toFixed(1);
+            // 频率 f = v / λ
+            const freq = v / lambda;
+            freqSpan.textContent = freq.toFixed(2);
+        }
+        vSlider.addEventListener('input', () => {
+            updateSliderDisplay();
+            // 重置时间 (重新开始形成) 让新波速立即生效且重新开始
+            resetSimulation();
+        });
+
+        // 重置函数：重置时间到0
+        function resetSimulation() {
+            startTime = performance.now() / 1000;
+            elapsed = 0;
+            lastTimestamp = null;   // 强制重新同步
+            // 如果暂停中，也重置并保持暂停状态 (暂停但时间为0)
+        }
+
+        // 按钮事件
+        resetBtn.addEventListener('click', () => {
+            resetSimulation();
+            // 如果当前是暂停状态，重置后画面应该静止在t=0，所以没问题
+        });
+
+        pauseBtn.addEventListener('click', () => {
+            paused = !paused;
+            pauseBtn.textContent = paused ? '▶️ 继续' : '⏸️ 暂停';
+            // 不用额外操作，动画循环会检查 paused
+        });
+
+        // 初始化显示
+        updateSliderDisplay();
+
+        // ---------- 动画循环 ----------
+        function draw(now) {
+            now = now / 1000; // 转为秒
+
+            // 时间管理
+            if (lastTimestamp === null) {
+                lastTimestamp = now;
+                requestAnimationFrame(draw);
+                return;
+            }
+
+            if (!paused) {
+                // 非暂停状态：计算时间增量，累加 elapsed
+                const delta = Math.min(now - lastTimestamp, 0.1); // 限制最大步长0.1秒避免跳变
+                elapsed += delta;
+            }
+            lastTimestamp = now;
+
+            // 当前时刻 t = elapsed (从0开始)
+            const t = elapsed;
+
+            // 计算波前位置 (最远已起振的位置) = xStart + v * t，但不能超过 xEnd
+            let wavefront = xStart + v * t;
+            if (wavefront > xEnd) wavefront = xEnd;
+            wavefrontSpan.textContent = wavefront.toFixed(1);
+
+            // 清空画布
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // 绘制半透明网格 (辅助线)
+            ctx.strokeStyle = '#2f4965';
+            ctx.lineWidth = 0.8;
+            ctx.setLineDash([5, 6]);
+            // 水平中线 (平衡位置)
+            ctx.beginPath();
+            ctx.moveTo(0, canvas.height/2);
+            ctx.lineTo(canvas.width, canvas.height/2);
+            ctx.strokeStyle = '#3f5f85';
+            ctx.stroke();
+            // 几条垂直辅助线
+            ctx.setLineDash([3, 8]);
+            for (let x = 100; x < canvas.width; x += 100) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, canvas.height);
+                ctx.strokeStyle = '#2f4a6b';
+                ctx.stroke();
+            }
+            ctx.setLineDash([]);
+
+            // 绘制波源标记 (左侧竖线)
+            ctx.strokeStyle = '#f5c27b';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(xStart, canvas.height/2 - 70);
+            ctx.lineTo(xStart, canvas.height/2 + 70);
+            ctx.stroke();
+            ctx.fillStyle = '#f5c27b';
+            ctx.font = 'bold 14px "Segoe UI"';
+            ctx.fillText('波源', xStart-35, canvas.height/2-80);
+
+            // 绘制连续的波形曲线 (只画已起振的部分 x ∈ [xStart, wavefront])
+            if (wavefront > xStart) {
+                ctx.beginPath();
+                ctx.strokeStyle = '#70c8ff';
+                ctx.lineWidth = 3;
+                const steps = 200;
+                const stepX = (wavefront - xStart) / steps;
+                for (let i = 0; i <= steps; i++) {
+                    const x = xStart + i * stepX;
+                    // 延迟时间 delay = (x - xStart) / v
+                    const delay = (x - xStart) / v;
+                    let y;
+                    if (t >= delay) {
+                        // 已起振，位移 = A * sin( ω * (t - delay) ) ，其中 ω = 2π * f = 2π * v/λ = k * v
+                        const omega = k * v;   // 角频率
+                        const phase = omega * (t - delay);
+                        y = canvas.height/2 - A * Math.sin(phase);   // 注意向上为正，canvas y向下，所以减去
+                    } else {
+                        // 未起振，位移为0 (平衡位置)
+                        y = canvas.height/2;
+                    }
+                    if (i === 0) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+                }
+                ctx.stroke();
+            }
+
+            // 绘制质点 (小圆)
+            for (let i = 0; i < numPoints; i++) {
+                const x = xStart + i * pointSpacing;
+                // 该质点的延迟时间
+                const delay = (x - xStart) / v;
+                let y;
+                let isVibrating = (t >= delay);
+                if (isVibrating) {
+                    const omega = k * v;
+                    const phase = omega * (t - delay);
+                    y = canvas.height/2 - A * Math.sin(phase);
+                } else {
+                    y = canvas.height/2; // 平衡位置
+                }
+
+                // 绘制小球
+                ctx.beginPath();
+                ctx.arc(x, y, 7, 0, 2 * Math.PI);
+                // 已起振用亮橙色，未起振用灰色
+                if (isVibrating) {
+                    ctx.fillStyle = '#ff8a5c';
+                    ctx.shadowColor = '#f90';
+                    ctx.shadowBlur = 18;
+                } else {
+                    ctx.fillStyle = '#6883a0';
+                    ctx.shadowColor = '#33495e';
+                    ctx.shadowBlur = 12;
+                }
+                ctx.fill();
+                // 内层高光
+                ctx.shadowBlur = 8;
+                ctx.beginPath();
+                ctx.arc(x, y, 3, 0, 2 * Math.PI);
+                ctx.fillStyle = '#fff9e6';
+                ctx.fill();
+
+                // 如果是波前附近 (刚刚起振) 可以加个小标记？不用
+            }
+            // 关闭阴影
+            ctx.shadowBlur = 0;
+            ctx.shadowColor = 'transparent';
+
+            // 绘制波前竖线 (浅绿色虚线)
+            if (wavefront < xEnd) {
+                ctx.strokeStyle = '#a0f0b0';
+                ctx.lineWidth = 2.5;
+                ctx.setLineDash([8, 6]);
+                ctx.beginPath();
+                ctx.moveTo(wavefront, canvas.height/2 - 80);
+                ctx.lineTo(wavefront, canvas.height/2 + 80);
+                ctx.stroke();
+                ctx.setLineDash([]);
+                ctx.fillStyle = '#b0ffc0';
+                ctx.font = 'bold 14px "Segoe UI"';
+                ctx.fillText('波前', wavefront+5, canvas.height/2-90);
+            }
+
+            // 显示当前波速数值
+            ctx.font = 'bold 16px monospace';
+            ctx.fillStyle = '#ddeeff';
+            ctx.fillText(`v = ${v.toFixed(1)} px/s`, 660, 50);
+
+            requestAnimationFrame(draw);
+        }
+
+        // 启动动画
+        requestAnimationFrame(draw);
+    })();
+</script>
+
+<style>
+.back-btn {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    padding: 10px 20px;
+    background: rgba(0, 150, 200, 0.3);
+    border: 1px solid #00ffff;
+    color: white;
+    font-size: 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    z-index: 9999;
+    transition: 0.3s;
+    backdrop-filter: blur(5px);
+}
+.back-btn:hover {
+    background: rgba(0, 150, 200, 0.6);
+    box-shadow: 0 0 15px #00ffff;
+}
+</style>
+<button class="back-btn" onclick="goBack()">⬅️ 返回</button>
+<script>
+function goBack() {
+    history.back();
+}
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        goBack();
+    }
+});
+</script>
+
+
+<div class="watermark">齐老师动画</div>
+<style>
+.watermark {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    font-size: 14px;
+    color: rgba(0, 255, 255, 0.3);
+    z-index: 9998;
+    pointer-events: none;
+    user-select: none;
+}
+</style>
+
+
+<script>
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+});
+</script>
+
+
+<style>
+.back-btn {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    padding: 10px 20px;
+    background: rgba(0, 150, 200, 0.3);
+    border: 1px solid #00ffff;
+    color: white;
+    font-size: 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    z-index: 9999;
+    transition: 0.3s;
+    backdrop-filter: blur(5px);
+}
+.back-btn:hover {
+    background: rgba(0, 150, 200, 0.6);
+    box-shadow: 0 0 15px #00ffff;
+}
+</style>
+<button class="back-btn" onclick="goBack()">⬅️ 返回</button>
+<script>
+function goBack() {
+    history.back();
+}
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        goBack();
+    }
+});
+</script>
+
+
+<div class="watermark">齐老师动画</div>
+<style>
+.watermark {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    font-size: 14px;
+    color: rgba(0, 255, 255, 0.3);
+    z-index: 9998;
+    pointer-events: none;
+    user-select: none;
+}
+</style>
+
+
+<script>
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+});
+</script>
+
+
+<style>
+.back-btn {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    padding: 10px 20px;
+    background: rgba(0, 150, 200, 0.3);
+    border: 1px solid #00ffff;
+    color: white;
+    font-size: 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    z-index: 9999;
+    transition: 0.3s;
+    backdrop-filter: blur(5px);
+}
+.back-btn:hover {
+    background: rgba(0, 150, 200, 0.6);
+    box-shadow: 0 0 15px #00ffff;
+}
+</style>
+<button class="back-btn" onclick="goBack()">⬅️ 返回</button>
+<script>
+function goBack() {
+    history.back();
+}
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        goBack();
+    }
+});
+</script>
+
+
+<div class="watermark">齐老师动画</div>
+<style>
+.watermark {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    font-size: 14px;
+    color: rgba(0, 255, 255, 0.3);
+    z-index: 9998;
+    pointer-events: none;
+    user-select: none;
+}
+</style>
+
+
+<script>
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+});
+</script>
+
+
+<style>
+.back-btn {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    padding: 10px 20px;
+    background: rgba(0, 150, 200, 0.3);
+    border: 1px solid #00ffff;
+    color: white;
+    font-size: 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    z-index: 9999;
+    transition: 0.3s;
+    backdrop-filter: blur(5px);
+}
+.back-btn:hover {
+    background: rgba(0, 150, 200, 0.6);
+    box-shadow: 0 0 15px #00ffff;
+}
+</style>
+<button class="back-btn" onclick="goBack()">⬅️ 返回</button>
+<script>
+function goBack() {
+    history.back();
+}
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        goBack();
+    }
+});
+</script>
+
+
+<div class="watermark">齐老师动画</div>
+<style>
+.watermark {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    font-size: 14px;
+    color: rgba(0, 255, 255, 0.3);
+    z-index: 9998;
+    pointer-events: none;
+    user-select: none;
+}
+</style>
+
+
+<script>
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+});
+</script>
+
+
+    <!-- 齐老师动画 - 水印 -->
+    <div class="qilaoshi-watermark">
+        QQ 3398528250<br>
+        抖音 35320300542
+    </div>
+
+
+    <!-- 齐老师动画 - 安全保护脚本 -->
+    <script>
+    (function() {
+        // 禁用右键菜单
+        document.addEventListener('contextmenu', function(e) {
+            e.preventDefault();
+            return false;
+        });
+        
+        // ESC键返回主页
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' || e.keyCode === 27) {
+                window.location.href = '../index.html';
+            }
+        });
+        
+        // 禁用开发者工具快捷键
+        document.addEventListener('keydown', function(e) {
+            // F12
+            if (e.key === 'F12' || e.keyCode === 123) {
+                e.preventDefault();
+                return false;
+            }
+            // Ctrl+U
+            if ((e.ctrlKey || e.metaKey) && (e.key === 'u' || e.keyCode === 85)) {
+                e.preventDefault();
+                return false;
+            }
+            // Ctrl+Shift+I
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'i' || e.keyCode === 73)) {
+                e.preventDefault();
+                return false;
+            }
+            // Ctrl+Shift+J
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'j' || e.keyCode === 74)) {
+                e.preventDefault();
+                return false;
+            }
+            // Ctrl+Shift+C
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'c' || e.keyCode === 67)) {
+                e.preventDefault();
+                return false;
+            }
+        });
+        
+        // 检测开发者工具打开（简单检测）
+        var devtoolsOpen = false;
+        var threshold = 160;
+        setInterval(function() {
+            var widthThreshold = window.outerWidth - window.innerWidth > threshold;
+            var heightThreshold = window.outerHeight - window.innerHeight > threshold;
+            if (widthThreshold || heightThreshold) {
+                if (!devtoolsOpen) {
+                    devtoolsOpen = true;
+                    // 可以选择跳转或其他操作
+                }
+            } else {
+                devtoolsOpen = false;
+            }
+        }, 1000);
+    })();
+    </script>
+
+</body>
+</html>
