@@ -1,0 +1,865 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>波的衍射动画</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #101418;
+      --panel: #182128;
+      --panel-2: #202c34;
+      --text: #eef5f4;
+      --muted: #aab8b7;
+      --line: #34464f;
+      --cyan: #57d1c9;
+      --amber: #f0b95b;
+      --red: #ef6d67;
+      --blue: #4f8ee8;
+      --green: #6bcf8e;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      margin: 0;
+      min-height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: "Microsoft YaHei", "PingFang SC", system-ui, sans-serif;
+      letter-spacing: 0;
+    }
+
+    body {
+      display: grid;
+      place-items: center;
+      padding: 18px;
+    }
+
+    .app {
+      width: min(1180px, 100%);
+      min-height: min(760px, calc(100vh - 36px));
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      gap: 14px;
+    }
+
+    header {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 14px;
+      align-items: end;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(24px, 4vw, 42px);
+      line-height: 1.05;
+      font-weight: 800;
+    }
+
+    .subtitle {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.7;
+      max-width: 760px;
+    }
+
+    .badge {
+      justify-self: end;
+      display: inline-grid;
+      grid-template-columns: 12px auto;
+      align-items: center;
+      gap: 8px;
+      min-width: 172px;
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      color: var(--muted);
+      font-size: 14px;
+      white-space: nowrap;
+    }
+
+    .badge-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 0 4px rgba(107, 207, 142, 0.13);
+    }
+
+    main {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 290px;
+      gap: 14px;
+      min-height: 0;
+    }
+
+    .stage {
+      position: relative;
+      min-height: 420px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+      background: #091015;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      min-height: 420px;
+    }
+
+    .legend {
+      position: absolute;
+      left: 14px;
+      right: 14px;
+      bottom: 14px;
+      display: grid;
+      grid-template-columns: repeat(4, max-content);
+      gap: 10px;
+      align-items: center;
+      pointer-events: none;
+      color: rgba(238, 245, 244, 0.86);
+      font-size: 13px;
+    }
+
+    .legend span {
+      display: inline-grid;
+      grid-template-columns: 18px auto;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 9px;
+      border-radius: 8px;
+      background: rgba(9, 16, 21, 0.72);
+      border: 1px solid rgba(255, 255, 255, 0.09);
+      backdrop-filter: blur(6px);
+      white-space: nowrap;
+    }
+
+    .key {
+      width: 18px;
+      height: 8px;
+      border-radius: 99px;
+    }
+
+    .key.blue {
+      background: var(--blue);
+    }
+
+    .key.red {
+      background: var(--red);
+    }
+
+    .key.amber {
+      background: var(--amber);
+    }
+
+    .key.cyan {
+      background: var(--cyan);
+    }
+
+    aside {
+      display: grid;
+      align-content: start;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .panel {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      padding: 16px;
+    }
+
+    .readout {
+      display: grid;
+      gap: 10px;
+    }
+
+    .readout-title {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .ratio {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 10px;
+      align-items: baseline;
+    }
+
+    .ratio strong {
+      font-size: 36px;
+      line-height: 1;
+    }
+
+    .ratio span {
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.4;
+    }
+
+    .meter {
+      height: 12px;
+      border-radius: 99px;
+      background: #0f171d;
+      border: 1px solid #2f424c;
+      overflow: hidden;
+    }
+
+    .meter-fill {
+      width: 50%;
+      height: 100%;
+      background: linear-gradient(90deg, var(--green), var(--amber), var(--red));
+      transition: width 140ms ease;
+    }
+
+    .status {
+      color: var(--text);
+      font-size: 15px;
+      line-height: 1.6;
+      min-height: 50px;
+    }
+
+    .control {
+      display: grid;
+      gap: 9px;
+      margin-top: 14px;
+    }
+
+    .control:first-child {
+      margin-top: 0;
+    }
+
+    .label-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+      align-items: center;
+      font-size: 14px;
+      color: var(--muted);
+    }
+
+    .value {
+      color: var(--text);
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--cyan);
+      cursor: pointer;
+    }
+
+    .buttons {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    button {
+      min-height: 42px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel-2);
+      color: var(--text);
+      font: inherit;
+      cursor: pointer;
+    }
+
+    button:hover {
+      border-color: var(--cyan);
+    }
+
+    button:focus-visible,
+    input[type="range"]:focus-visible {
+      outline: 2px solid var(--amber);
+      outline-offset: 3px;
+    }
+
+    .note {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.75;
+    }
+
+    footer {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+
+    .fact {
+      border-left: 3px solid var(--cyan);
+      padding: 10px 12px;
+      background: rgba(24, 33, 40, 0.7);
+      border-radius: 0 8px 8px 0;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .fact strong {
+      color: var(--text);
+    }
+
+    @media (max-width: 900px) {
+      body {
+        padding: 12px;
+      }
+
+      .app {
+        min-height: auto;
+      }
+
+      header,
+      main,
+      footer {
+        grid-template-columns: 1fr;
+      }
+
+      .badge {
+        justify-self: start;
+      }
+
+      .stage,
+      canvas {
+        min-height: 390px;
+      }
+
+      aside {
+        grid-template-columns: 1fr;
+      }
+
+      .legend {
+        grid-template-columns: repeat(2, max-content);
+      }
+    }
+
+    @media (max-width: 520px) {
+      h1 {
+        font-size: 28px;
+      }
+
+      .stage,
+      canvas {
+        min-height: 360px;
+      }
+
+      .legend {
+        left: 10px;
+        right: 10px;
+        bottom: 10px;
+        grid-template-columns: 1fr 1fr;
+        font-size: 12px;
+      }
+
+      .legend span {
+        min-width: 0;
+        white-space: normal;
+      }
+
+      .buttons {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+
+  <style>
+  body {
+    background-color: #1a2332 !important;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+  }
+  
+  .qilai-back-btn {
+    position: fixed;
+    top: 10px;
+    left: 15px;
+    z-index: 100000;
+    padding: 8px 16px;
+    background: rgba(0, 150, 200, 0.2);
+    border: 1px solid rgba(100, 180, 255, 0.5);
+    color: #8ab4f8;
+    font-size: 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.3s;
+    backdrop-filter: blur(5px);
+    font-family: "Microsoft YaHei", sans-serif;
+  }
+  
+  .qilai-back-btn:hover {
+    background: rgba(0, 150, 200, 0.4);
+    box-shadow: 0 0 15px rgba(100, 180, 255, 0.3);
+    color: #fff;
+  }
+  
+  .qilai-watermark {
+    position: fixed;
+    bottom: 15px;
+    right: 15px;
+    z-index: 99998;
+    font-size: 12px;
+    color: rgba(138, 180, 248, 0.35);
+    text-align: right;
+    line-height: 1.8;
+    pointer-events: none;
+    user-select: none;
+    font-family: "Microsoft YaHei", sans-serif;
+  }
+  
+  .qilai-watermark .title {
+    font-size: 14px;
+    font-weight: bold;
+    color: rgba(138, 180, 248, 0.45);
+    margin-bottom: 4px;
+    letter-spacing: 1px;
+  }
+  </style>
+</head>
+<body>
+  <a href="javascript:void(0);" class="qilai-back-btn" onclick="saveScrollAndReturn();">← 返回主页</a>
+  
+  <div class="qilai-watermark">
+    <div class="title">齐老师动画</div>
+    QQ 3398528250<br>
+    抖音 35320300542
+  </div>
+
+  <div class="app">
+    <header>
+      <div>
+        <h1>波的衍射</h1>
+        <p class="subtitle">波绕过障碍物继续传播。调节孔的尺寸，观察孔宽与波长接近或更小时，波面如何更明显地向两侧展开。</p>
+      </div>
+      <div class="badge" aria-live="polite">
+        <span class="badge-dot" id="badgeDot"></span>
+        <span id="badgeText">明显衍射</span>
+      </div>
+    </header>
+
+    <main>
+      <section class="stage" aria-label="波的衍射动画">
+        <canvas id="waveCanvas"></canvas>
+        <div class="legend" aria-hidden="true">
+          <span><i class="key blue"></i>波谷</span>
+          <span><i class="key red"></i>波峰</span>
+          <span><i class="key amber"></i>障碍物</span>
+          <span><i class="key cyan"></i>孔</span>
+        </div>
+      </section>
+
+      <aside>
+        <section class="panel readout">
+          <p class="readout-title">孔宽 / 波长</p>
+          <div class="ratio">
+            <strong id="ratioValue">1.00</strong>
+            <span id="ratioHint">孔宽与波长相近，衍射清晰可见。</span>
+          </div>
+          <div class="meter" aria-hidden="true">
+            <div class="meter-fill" id="meterFill"></div>
+          </div>
+          <div class="status" id="statusText">波通过小孔后会像从孔口重新发出一样向外弯曲。</div>
+        </section>
+
+        <section class="panel">
+          <div class="control">
+            <div class="label-row">
+              <label for="apertureSlider">孔的尺寸</label>
+              <span class="value" id="apertureValue">80 px</span>
+            </div>
+            <input id="apertureSlider" type="range" min="28" max="230" value="80" step="2" />
+          </div>
+
+          <div class="control">
+            <div class="label-row">
+              <label for="wavelengthSlider">波长</label>
+              <span class="value" id="wavelengthValue">78 px</span>
+            </div>
+            <input id="wavelengthSlider" type="range" min="44" max="130" value="78" step="2" />
+          </div>
+
+          <div class="buttons">
+            <button id="pauseButton" type="button">暂停</button>
+            <button id="resetButton" type="button">重置</button>
+          </div>
+        </section>
+
+        <section class="panel">
+          <p class="note">发生明显衍射现象的条件：缝、孔的宽度或障碍物的尺寸跟波长相差不多，或者比波长更小。</p>
+        </section>
+      </aside>
+    </main>
+
+    <footer>
+      <div class="fact"><strong>孔较小：</strong>出射波面近似圆弧，向两侧扩展明显。</div>
+      <div class="fact"><strong>孔相近：</strong>衍射仍然清楚，中央波束较强。</div>
+      <div class="fact"><strong>孔较大：</strong>波主要沿原方向传播，绕射效果变弱。</div>
+    </footer>
+  </div>
+
+  <script>
+    const canvas = document.getElementById("waveCanvas");
+    const ctx = canvas.getContext("2d", { alpha: false });
+
+    const apertureSlider = document.getElementById("apertureSlider");
+    const wavelengthSlider = document.getElementById("wavelengthSlider");
+    const apertureValue = document.getElementById("apertureValue");
+    const wavelengthValue = document.getElementById("wavelengthValue");
+    const ratioValue = document.getElementById("ratioValue");
+    const ratioHint = document.getElementById("ratioHint");
+    const statusText = document.getElementById("statusText");
+    const meterFill = document.getElementById("meterFill");
+    const badgeText = document.getElementById("badgeText");
+    const badgeDot = document.getElementById("badgeDot");
+    const pauseButton = document.getElementById("pauseButton");
+    const resetButton = document.getElementById("resetButton");
+
+    let width = 0;
+    let height = 0;
+    let pixelRatio = 1;
+    let time = 0;
+    let paused = false;
+    let sampleStep = 5;
+    let imageData;
+    const fieldCanvas = document.createElement("canvas");
+    const fieldCtx = fieldCanvas.getContext("2d");
+
+    const state = {
+      aperture: Number(apertureSlider.value),
+      wavelength: Number(wavelengthSlider.value)
+    };
+
+    function resize() {
+      const rect = canvas.getBoundingClientRect();
+      pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
+      width = Math.max(320, Math.floor(rect.width));
+      height = Math.max(320, Math.floor(rect.height));
+      canvas.width = Math.floor(width * pixelRatio);
+      canvas.height = Math.floor(height * pixelRatio);
+      ctx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+      fieldCanvas.width = Math.ceil(width / sampleStep);
+      fieldCanvas.height = Math.ceil(height / sampleStep);
+      imageData = fieldCtx.createImageData(fieldCanvas.width, fieldCanvas.height);
+    }
+
+    function mix(a, b, t) {
+      return a + (b - a) * t;
+    }
+
+    function clamp(value, min, max) {
+      return Math.max(min, Math.min(max, value));
+    }
+
+    function colorFor(value, intensity) {
+      const v = clamp(value, -1, 1);
+      const boost = clamp(intensity, 0, 1);
+      const base = 15 + 18 * boost;
+
+      if (v >= 0) {
+        const t = v * (0.55 + boost * 0.45);
+        return [
+          Math.round(mix(base, 239, t)),
+          Math.round(mix(base + 8, 109, t)),
+          Math.round(mix(base + 12, 103, t))
+        ];
+      }
+
+      const t = -v * (0.55 + boost * 0.45);
+      return [
+        Math.round(mix(base, 79, t)),
+        Math.round(mix(base + 8, 142, t)),
+        Math.round(mix(base + 12, 232, t))
+      ];
+    }
+
+    function drawWaveField() {
+      const smallW = imageData.width;
+      const smallH = imageData.height;
+      const data = imageData.data;
+      const barrierX = width * 0.39;
+      const centerY = height * 0.5;
+      const aperture = state.aperture;
+      const wavelength = state.wavelength;
+      const k = (Math.PI * 2) / wavelength;
+      const apertureRatio = aperture / wavelength;
+      const diffractionStrength = clamp((1.7 - apertureRatio) / 0.95, 0, 1);
+      const sourceCount = clamp(Math.round(aperture / 8), 5, 34);
+      const sourceSpacing = sourceCount === 1 ? 0 : aperture / (sourceCount - 1);
+      const sourceStart = centerY - aperture / 2;
+
+      let i = 0;
+      for (let sy = 0; sy < smallH; sy += 1) {
+        const y = sy * sampleStep;
+        for (let sx = 0; sx < smallW; sx += 1) {
+          const x = sx * sampleStep;
+          let wave = 0;
+          let intensity = 0;
+
+          if (x < barrierX) {
+            const incident = Math.sin(k * x - time);
+            const shadow = Math.abs(y - centerY) < aperture / 2 ? 0.95 : 0.8;
+            wave = incident * shadow;
+            intensity = 0.74;
+          } else {
+            let sum = 0;
+            let amp = 0;
+            const dx = x - barrierX;
+            for (let n = 0; n < sourceCount; n += 1) {
+              const sourceY = sourceStart + n * sourceSpacing;
+              const dy = y - sourceY;
+              const distance = Math.sqrt(dx * dx + dy * dy) + 1;
+              const envelope = Math.exp(-distance / (width * 0.88)) / Math.sqrt(distance / 45);
+              const angle = Math.abs(Math.atan2(dy, dx));
+              const directivity = 0.52 + 0.48 * Math.cos(clamp(angle, 0, Math.PI / 2));
+              sum += Math.sin(k * distance - time) * envelope * directivity;
+              amp += envelope * directivity;
+            }
+
+            const norm = Math.max(1.2, Math.sqrt(sourceCount) * 0.72);
+            const spread = clamp(wavelength / aperture, 0.22, 2.4);
+            wave = (sum / norm) * (0.82 + spread * 0.2);
+            intensity = clamp(amp / (sourceCount * 0.36), 0.08, 1);
+
+            const behindWall = Math.abs(y - centerY) > aperture / 2 && x - barrierX < 22;
+            if (behindWall) {
+              intensity *= 0.62;
+            }
+
+            const straightHalfWidth = aperture / 2 + 5;
+            const diffractedHalfWidth = straightHalfWidth + dx * 0.52;
+            const visibleHalfWidth = mix(straightHalfWidth, diffractedHalfWidth, diffractionStrength);
+            const edgeSoftness = mix(4, 28, diffractionStrength);
+            const outside = Math.abs(y - centerY) - visibleHalfWidth;
+            if (outside > 0) {
+              const edgeFade = clamp(1 - outside / edgeSoftness, 0, 1);
+              const sideVisibility = diffractionStrength * edgeFade;
+              wave *= sideVisibility;
+              intensity *= sideVisibility;
+            }
+          }
+
+          const [r, g, b] = colorFor(wave, intensity);
+          data[i] = r;
+          data[i + 1] = g;
+          data[i + 2] = b;
+          data[i + 3] = 255;
+          i += 4;
+        }
+      }
+
+      fieldCtx.putImageData(imageData, 0, 0);
+      ctx.imageSmoothingEnabled = true;
+      ctx.drawImage(fieldCanvas, 0, 0, width, height);
+    }
+
+    function drawBarrier() {
+      const barrierX = width * 0.39;
+      const centerY = height * 0.5;
+      const aperture = state.aperture;
+      const topGap = centerY - aperture / 2;
+      const bottomGap = centerY + aperture / 2;
+
+      ctx.save();
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = "rgba(240, 185, 91, 0.95)";
+      ctx.fillStyle = "rgba(240, 185, 91, 0.94)";
+      ctx.shadowColor = "rgba(240, 185, 91, 0.35)";
+      ctx.shadowBlur = 16;
+      ctx.fillRect(barrierX - 7, 0, 14, topGap);
+      ctx.fillRect(barrierX - 7, bottomGap, 14, height - bottomGap);
+      ctx.strokeRect(barrierX - 7, 0, 14, topGap);
+      ctx.strokeRect(barrierX - 7, bottomGap, 14, height - bottomGap);
+
+      ctx.shadowBlur = 0;
+      ctx.strokeStyle = "rgba(87, 209, 201, 0.95)";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(barrierX - 11, topGap);
+      ctx.lineTo(barrierX + 11, topGap);
+      ctx.moveTo(barrierX - 11, bottomGap);
+      ctx.lineTo(barrierX + 11, bottomGap);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function drawGuides() {
+      const barrierX = width * 0.39;
+      const centerY = height * 0.5;
+      const aperture = state.aperture;
+      const wavelength = state.wavelength;
+
+      ctx.save();
+      ctx.font = "13px Microsoft YaHei, sans-serif";
+      ctx.textBaseline = "middle";
+      ctx.fillStyle = "rgba(238, 245, 244, 0.78)";
+      ctx.strokeStyle = "rgba(238, 245, 244, 0.34)";
+      ctx.lineWidth = 1;
+      ctx.setLineDash([5, 6]);
+
+      ctx.beginPath();
+      ctx.moveTo(barrierX - wavelength, 34);
+      ctx.lineTo(barrierX, 34);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.beginPath();
+      ctx.moveTo(barrierX - wavelength, 28);
+      ctx.lineTo(barrierX - wavelength, 40);
+      ctx.moveTo(barrierX, 28);
+      ctx.lineTo(barrierX, 40);
+      ctx.stroke();
+      ctx.fillText("波长", Math.max(12, barrierX - wavelength + 8), 54);
+
+      ctx.strokeStyle = "rgba(87, 209, 201, 0.76)";
+      ctx.beginPath();
+      ctx.moveTo(barrierX + 22, centerY - aperture / 2);
+      ctx.lineTo(barrierX + 22, centerY + aperture / 2);
+      ctx.stroke();
+      ctx.fillStyle = "rgba(87, 209, 201, 0.92)";
+      ctx.fillText("孔宽", barrierX + 30, centerY);
+      ctx.restore();
+    }
+
+    function updateText() {
+      state.aperture = Number(apertureSlider.value);
+      state.wavelength = Number(wavelengthSlider.value);
+      const ratio = state.aperture / state.wavelength;
+      const meter = clamp((2.4 - ratio) / 2.15, 0.05, 1);
+
+      apertureValue.textContent = `${state.aperture} px`;
+      wavelengthValue.textContent = `${state.wavelength} px`;
+      ratioValue.textContent = ratio.toFixed(2);
+      meterFill.style.width = `${meter * 100}%`;
+
+      if (ratio <= 0.75) {
+        ratioHint.textContent = "孔宽小于波长，衍射非常明显。";
+        statusText.textContent = "波穿过孔后强烈向两侧展开，障碍物后的阴影区也能收到波。";
+        badgeText.textContent = "强衍射";
+        badgeDot.style.background = "var(--red)";
+        badgeDot.style.boxShadow = "0 0 0 4px rgba(239, 109, 103, 0.16)";
+      } else if (ratio <= 1.45) {
+        ratioHint.textContent = "孔宽与波长相近，衍射清晰可见。";
+        statusText.textContent = "出射波面明显弯曲，中央方向最强，两侧也有持续传播。";
+        badgeText.textContent = "明显衍射";
+        badgeDot.style.background = "var(--green)";
+        badgeDot.style.boxShadow = "0 0 0 4px rgba(107, 207, 142, 0.16)";
+      } else {
+        ratioHint.textContent = "孔宽远大于波长，衍射变弱。";
+        statusText.textContent = "波主要沿直线方向通过孔，向两侧绕射的效果不够显著。";
+        badgeText.textContent = "弱衍射";
+        badgeDot.style.background = "var(--amber)";
+        badgeDot.style.boxShadow = "0 0 0 4px rgba(240, 185, 91, 0.16)";
+      }
+    }
+
+    function render() {
+      if (!paused) {
+        time += 0.115;
+      }
+      drawWaveField();
+      drawBarrier();
+      drawGuides();
+      requestAnimationFrame(render);
+    }
+
+    apertureSlider.addEventListener("input", updateText);
+    wavelengthSlider.addEventListener("input", updateText);
+
+    pauseButton.addEventListener("click", () => {
+      paused = !paused;
+      pauseButton.textContent = paused ? "继续" : "暂停";
+    });
+
+    resetButton.addEventListener("click", () => {
+      apertureSlider.value = 80;
+      wavelengthSlider.value = 78;
+      paused = false;
+      pauseButton.textContent = "暂停";
+      updateText();
+    });
+
+    window.addEventListener("resize", resize);
+    resize();
+    updateText();
+    render();
+  </script>
+
+  <script>
+  // 返回主页（滚动位置已在主页点击链接时保存）
+  function saveScrollAndReturn() {
+    window.location.href = '../index.html';
+  }
+  
+  // 禁用右键菜单
+  document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+  });
+  
+  // 禁用开发者工具快捷键
+  document.addEventListener('keydown', function(e) {
+    // ESC返回主页 - 保存滚动位置
+    if (e.keyCode === 27) {
+      saveScrollAndReturn();
+      return false;
+    }
+    // F12
+    if (e.keyCode === 123) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+U
+    if (e.ctrlKey && e.keyCode === 85) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+I
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 73) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+J
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 74) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+C
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 67) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+S
+    if (e.ctrlKey && e.keyCode === 83) {
+      e.preventDefault();
+      return false;
+    }
+  });
+  
+  // 禁用选择
+  document.addEventListener('selectstart', function(e) {
+    // 允许输入框选择
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+      return true;
+    }
+    e.preventDefault();
+    return false;
+  });
+  </script>
+</body>
+</html>
