@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>齐老师动画 · 多质子电场磁场运动</title>
+    <style>
+        :root {
+            --bg: #060d1a;
+            --panel-bg: rgba(8, 18, 36, 0.85);
+            --accent: #00e5ff;
+            --accent2: #ff4081;
+            --slider-track: #1a3050;
+            --border: #2a4a6a;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: radial-gradient(ellipse at 30% 40%, #0d1a30, #040a16, #020510);
+            font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            height: 100vh; overflow: hidden; display: flex; justify-content: center; align-items: stretch;
+            padding: 8px; user-select: none; -webkit-user-select: none;
+        }
+        .container {
+            background: var(--panel-bg); backdrop-filter: blur(16px); border-radius: 20px;
+            box-shadow: 0 0 50px rgba(0, 180, 255, 0.15), 0 0 0 1px var(--border);
+            width: 100%; max-width: 1400px; display: flex; flex-direction: column; gap: 8px;
+            padding: 14px 18px 10px; height: 100%;
+        }
+        .header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; flex-shrink: 0; }
+        .header h1 {
+            font-size: 1.5rem; font-weight: 700; color: #00e5ff;
+            text-shadow: 0 0 14px #00e5ff, 0 0 28px #00b8d4, 0 0 40px #0088aa;
+            letter-spacing: 3px; margin: 0;
+        }
+        .phase-badge {
+            font-size: 0.8rem; padding: 5px 12px; border-radius: 18px;
+            background: rgba(0, 229, 255, 0.08); border: 1px solid rgba(0, 229, 255, 0.3);
+            color: #00e5ff; white-space: nowrap; letter-spacing: 0.5px;
+        }
+        .canvas-wrap {
+            position: relative; background: #030a16; border-radius: 14px; overflow: hidden;
+            border: 1px solid rgba(0, 180, 255, 0.2); box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.7);
+            flex: 1 1 auto; min-height: 0;
+        }
+        canvas { display: block; width: 100%; height: 100%; }
+        .legend-mini {
+            position: absolute; bottom: 8px; left: 12px; display: flex; gap: 14px;
+            font-size: 0.7rem; color: #aac; pointer-events: none; flex-wrap: wrap;
+        }
+        .legend-mini span { display: flex; align-items: center; gap: 5px; }
+        .legend-mini .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+        .controls { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; flex-shrink: 0; }
+        .control-group { display: flex; flex-direction: column; gap: 2px; min-width: 110px; flex: 1 1 120px; max-width: 200px; }
+        .control-group label { font-size: 0.72rem; color: #bcc; display: flex; justify-content: space-between; letter-spacing: 0.3px; }
+        .control-group label .cur-val { color: #00e5ff; font-weight: 700; font-size: 0.75rem; }
+        input[type="range"] { width: 100%; height: 6px; border-radius: 4px; background: var(--slider-track); -webkit-appearance: none; cursor: pointer; }
+        input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 22px; height: 22px; border-radius: 50%; background: #00e5ff; border: 2px solid #fff; box-shadow: 0 0 10px #00e5ff; cursor: pointer; }
+        .btn-row { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; flex-shrink: 0; }
+        button { font-size: 0.8rem; font-weight: 600; padding: 7px 16px; border-radius: 20px; border: none; cursor: pointer; font-family: inherit; transition: all 0.2s; letter-spacing: 0.4px; }
+        .btn-reset { background: #ff4081; color: #fff; box-shadow: 0 0 14px rgba(255, 64, 129, 0.45); }
+        .btn-reset:hover { background: #ff6090; transform: translateY(-1px); }
+        .btn-pause { background: #2a4a60; color: #ddd; border: 1px solid rgba(255, 255, 255, 0.15); }
+        .btn-pause:hover { background: #3a5a70; }
+        .btn-pause.paused { background: #00b860; box-shadow: 0 0 10px rgba(0, 180, 90, 0.5); }
+        .btn-speed { background: #3a4070; color: #ddd; border: 1px solid rgba(255, 255, 255, 0.2); }
+        .btn-speed:hover { background: #4a5080; }
+        .btn-swap { background: #b08040; color: #fff; border: 1px solid rgba(255, 255, 255, 0.2); }
+        .btn-swap:hover { background: #c09050; }
+        .btn-relaunch { background: #2080c0; color: #fff; border: 1px solid rgba(255, 255, 255, 0.2); }
+        .btn-relaunch:hover { background: #3090d0; }
+        .btn-relaunch:disabled { background: #3a5060; color: #888; cursor: not-allowed; opacity: 0.7; }
+        @media (max-width: 700px) {
+            .container { padding: 8px 10px 6px; gap: 5px; }
+            .header h1 { font-size: 1.2rem; }
+            .controls { gap: 6px; }
+            .control-group { min-width: 80px; max-width: none; flex: 1 1 40%; }
+            button { padding: 5px 12px; font-size: 0.75rem; }
+        }
+    </style>
+
+  <style>
+  body {
+    background-color: #1a2332 !important;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+  }
+  
+  .qilai-back-btn {
+    position: fixed;
+    top: 10px;
+    left: 15px;
+    z-index: 100000;
+    padding: 8px 16px;
+    background: rgba(0, 150, 200, 0.2);
+    border: 1px solid rgba(100, 180, 255, 0.5);
+    color: #8ab4f8;
+    font-size: 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.3s;
+    backdrop-filter: blur(5px);
+    font-family: "Microsoft YaHei", sans-serif;
+  }
+  
+  .qilai-back-btn:hover {
+    background: rgba(0, 150, 200, 0.4);
+    box-shadow: 0 0 15px rgba(100, 180, 255, 0.3);
+    color: #fff;
+  }
+  
+  .qilai-watermark {
+    position: fixed;
+    bottom: 15px;
+    right: 15px;
+    z-index: 99998;
+    font-size: 12px;
+    color: rgba(138, 180, 248, 0.35);
+    text-align: right;
+    line-height: 1.8;
+    pointer-events: none;
+    user-select: none;
+    font-family: "Microsoft YaHei", sans-serif;
+  }
+  
+  .qilai-watermark .title {
+    font-size: 14px;
+    font-weight: bold;
+    color: rgba(138, 180, 248, 0.45);
+    margin-bottom: 4px;
+    letter-spacing: 1px;
+  }
+  </style>
+</head>
+<body>
+  <a href="javascript:void(0);" class="qilai-back-btn" onclick="saveScrollAndReturn();">← 返回主页</a>
+  
+  <div class="qilai-watermark">
+    <div class="title">齐老师动画</div>
+    QQ 3398528250<br>
+    抖音 35320300542
+  </div>
+
+<div class="container">
+    <div class="header">
+        <h1>⚛️ 齐老师动画</h1>
+        <span class="phase-badge" id="phaseBadge">🔴 质子运动</span>
+    </div>
+    <div class="canvas-wrap">
+        <canvas id="mainCanvas"></canvas>
+        <div class="legend-mini">
+            <span><span class="dot" style="background:#ff3030;"></span> 活动质子</span>
+            <span><span class="dot" style="background:#a03030;"></span> 历史轨迹</span>
+            <span id="legendUpper"><span class="dot" style="background:rgba(60,140,240,0.7);"></span> 电场区域</span>
+            <span id="legendLower"><span class="dot" style="background:rgba(220,180,80,0.7);"></span> 磁场区域</span>
+        </div>
+    </div>
+    <div class="controls">
+        <div class="control-group">
+            <label>⚡ 电场强度 <span class="cur-val" id="valE">2.00</span></label>
+            <input type="range" id="sliderE" min="0.3" max="6" step="0.05" value="2">
+        </div>
+        <div class="control-group">
+            <label>🧲 磁场强度 <span class="cur-val" id="valB">2.00</span></label>
+            <input type="range" id="sliderB" min="0.3" max="6" step="0.05" value="2">
+        </div>
+        <div class="control-group">
+            <label>🚀 初速度大小 <span class="cur-val" id="valV0">2.00</span></label>
+            <input type="range" id="sliderV0" min="1" max="3" step="0.1" value="2">
+        </div>
+        <div class="control-group">
+            <label>📐 初速度角度 <span class="cur-val" id="valAngle">0°</span></label>
+            <input type="range" id="sliderAngle" min="-180" max="180" step="1" value="0">
+        </div>
+    </div>
+    <div class="btn-row">
+        <button class="btn-reset" id="btnReset">🔄 重置模拟</button>
+        <button class="btn-pause" id="btnPause">⏯️ 暂停</button>
+        <button class="btn-relaunch" id="btnRelaunch">🚀 继续发射</button>
+        <button class="btn-speed" id="btnSpeed">⏩ 1× 速度</button>
+        <button class="btn-swap" id="btnSwap">🔄 互换电场/磁场</button>
+    </div>
+</div>
+
+<script>
+    (function() {
+        const canvas = document.getElementById('mainCanvas');
+        const ctx = canvas.getContext('2d');
+        const phaseBadge = document.getElementById('phaseBadge');
+        const sliderE = document.getElementById('sliderE');
+        const sliderB = document.getElementById('sliderB');
+        const sliderV0 = document.getElementById('sliderV0');
+        const sliderAngle = document.getElementById('sliderAngle');
+        const valE = document.getElementById('valE');
+        const valB = document.getElementById('valB');
+        const valV0 = document.getElementById('valV0');
+        const valAngle = document.getElementById('valAngle');
+        const btnReset = document.getElementById('btnReset');
+        const btnPause = document.getElementById('btnPause');
+        const btnSpeed = document.getElementById('btnSpeed');
+        const btnSwap = document.getElementById('btnSwap');
+        const btnRelaunch = document.getElementById('btnRelaunch');
+        const legendUpper = document.getElementById('legendUpper');
+        const legendLower = document.getElementById('legendLower');
+
+        const q = 1.0, m = 1.0, P_Y = 1.6;
+        let Efield = 2.0, Bfield = 2.0, v0 = 2.0, angleDeg = 0, paused = false;
+        let simSpeed = 1.0;
+        let activeProtons = [];
+        let historyTrails = [];
+        const MAX_ACTIVE_PROTONS = 8;
+        const MAX_HISTORY_TRAILS = 10;
+        const MAX_TRAIL_LENGTH = 4000;
+        const PHYS_SCALE = 58;
+        let displayW, displayH, originXPx, originYPx;
+        let swapped = false;
+
+        const BOUND_X = 14;
+        const BOUND_Y_TOP = 12;
+        const BOUND_Y_BOTTOM = -8;
+
+        function updateDimensions() {
+            const rect = canvas.parentElement.getBoundingClientRect();
+            displayW = rect.width || 850; displayH = rect.height || 500;
+            const dpr = Math.min(window.devicePixelRatio || 1, 2);
+            canvas.width = displayW * dpr; canvas.height = displayH * dpr;
+            canvas.style.width = displayW + 'px'; canvas.style.height = displayH + 'px';
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+            ctx.scale(dpr, dpr);
+            originXPx = displayW * 0.35;
+            originYPx = displayH * 0.48;
+        }
+
+        function toPxX(px) { return originXPx + px * PHYS_SCALE; }
+        function toPxY(py) { return originYPx - py * PHYS_SCALE; }
+
+        function createProton() {
+            const angRad = angleDeg * Math.PI / 180;
+            return {
+                x: 0, y: P_Y,
+                vx: v0 * Math.cos(angRad),
+                vy: v0 * Math.sin(angRad),
+                trail: [{ x: 0, y: P_Y }],
+                active: true
+            };
+        }
+
+        function launchProton() {
+            if (activeProtons.length >= MAX_ACTIVE_PROTONS) return;
+            activeProtons.push(createProton());
+            updatePhaseBadge();
+            updateRelaunchButton();
+        }
+
+        function resetSim() {
+            activeProtons = [];
+            historyTrails = [];
+            launchProton();
+        }
+
+        function updatePhaseBadge() {
+            if (activeProtons.length === 0) {
+                phaseBadge.textContent = '⏹️ 无活动质子';
+            } else if (activeProtons.length === 1) {
+                phaseBadge.textContent = '🔴 质子运动';
+            } else {
+                phaseBadge.textContent = `🔴 ${activeProtons.length}个质子在运动`;
+            }
+        }
+
+        function updateRelaunchButton() {
+            btnRelaunch.disabled = activeProtons.length >= MAX_ACTIVE_PROTONS;
+            if (activeProtons.length >= MAX_ACTIVE_PROTONS) {
+                btnRelaunch.textContent = '🚫 已达上限';
+            } else {
+                btnRelaunch.textContent = '🚀 继续发射';
+            }
+        }
+
+        function getAcceleration(x, y, vx, vy) {
+            const isUpperElectric = !swapped;
+            if (y > 0) {
+                if (isUpperElectric) return { ax: 0, ay: -q * Efield / m };
+                else { const omega = q * Bfield / m; return { ax: omega * vy, ay: -omega * vx }; }
+            } else {
+                if (isUpperElectric) { const omega = q * Bfield / m; return { ax: omega * vy, ay: -omega * vx }; }
+                else return { ax: 0, ay: q * Efield / m };
+            }
+        }
+
+        function stepProton(p, dt) {
+            const maxSubDt = 0.00025;
+            const steps = Math.ceil(dt / maxSubDt);
+            const subDt = dt / steps;
+            for (let i = 0; i < steps; i++) {
+                const acc = getAcceleration(p.x, p.y, p.vx, p.vy);
+                const midX = p.x + p.vx * subDt * 0.5, midY = p.y + p.vy * subDt * 0.5;
+                const midAcc = getAcceleration(midX, midY, p.vx + acc.ax * subDt * 0.5, p.vy + acc.ay * subDt * 0.5);
+                p.x += p.vx * subDt + 0.5 * acc.ax * subDt * subDt;
+                p.y += p.vy * subDt + 0.5 * acc.ay * subDt * subDt;
+                p.vx += midAcc.ax * subDt;
+                p.vy += midAcc.ay * subDt;
+            }
+        }
+
+        function physicsUpdate(rawDt) {
+            if (paused || activeProtons.length === 0) return;
+            const dt = Math.min(rawDt * simSpeed, 0.03);
+            const remainingProtons = [];
+            for (const p of activeProtons) {
+                stepProton(p, dt);
+                if (Math.abs(p.x) > BOUND_X || p.y > BOUND_Y_TOP || p.y < BOUND_Y_BOTTOM) {
+                    if (p.trail.length > 1) {
+                        historyTrails.push([...p.trail]);
+                        if (historyTrails.length > MAX_HISTORY_TRAILS) historyTrails.shift();
+                    }
+                } else {
+                    remainingProtons.push(p);
+                }
+            }
+            activeProtons = remainingProtons;
+            updatePhaseBadge();
+            updateRelaunchButton();
+        }
+
+        function updateLegend() {
+            if (!swapped) {
+                legendUpper.innerHTML = '<span class="dot" style="background:rgba(60,140,240,0.7);"></span> 电场区域';
+                legendLower.innerHTML = '<span class="dot" style="background:rgba(220,180,80,0.7);"></span> 磁场区域';
+            } else {
+                legendUpper.innerHTML = '<span class="dot" style="background:rgba(220,180,80,0.7);"></span> 磁场区域';
+                legendLower.innerHTML = '<span class="dot" style="background:rgba(60,140,240,0.7);"></span> 电场区域';
+            }
+        }
+
+        function renderBackground() {
+            const bgGrad = ctx.createRadialGradient(displayW * 0.35, displayH * 0.4, displayW * 0.1, displayW * 0.5,
+                displayH * 0.5, displayW * 1.1);
+            bgGrad.addColorStop(0, '#0a1628'); bgGrad.addColorStop(0.5, '#050d1a'); bgGrad.addColorStop(1, '#020810');
+            ctx.fillStyle = bgGrad; ctx.fillRect(0, 0, displayW, displayH);
+
+            ctx.strokeStyle = 'rgba(40,80,140,0.05)'; ctx.lineWidth = 0.4; const gs = PHYS_SCALE * 2.5;
+            for (let px = 0; px < displayW; px += gs) { ctx.beginPath(); ctx.moveTo(px, 0); ctx.lineTo(px, displayH); ctx.stroke(); }
+            for (let py = 0; py < displayH; py += gs) { ctx.beginPath(); ctx.moveTo(0, py); ctx.lineTo(displayW, py); ctx.stroke(); }
+
+            const upperIsElectric = !swapped;
+            const upperColor = upperIsElectric ? 'rgba(30,100,200,0.22)' : 'rgba(200,160,60,0.18)';
+            const lowerColor = upperIsElectric ? 'rgba(200,160,60,0.18)' : 'rgba(30,100,200,0.22)';
+            const upperGrad = ctx.createLinearGradient(0, originYPx, 0, 0);
+            upperGrad.addColorStop(0, upperColor.replace('0.22', '0.06').replace('0.18', '0.06'));
+            upperGrad.addColorStop(1, upperColor);
+            ctx.fillStyle = upperGrad; ctx.fillRect(0, 0, displayW, originYPx);
+            const lowerGrad = ctx.createLinearGradient(0, originYPx, 0, displayH);
+            lowerGrad.addColorStop(0, lowerColor.replace('0.22', '0.06').replace('0.18', '0.06'));
+            lowerGrad.addColorStop(1, lowerColor);
+            ctx.fillStyle = lowerGrad; ctx.fillRect(0, originYPx, displayW, displayH - originYPx);
+
+            ctx.strokeStyle = 'rgba(200,200,220,0.5)'; ctx.lineWidth = 1.5; ctx.setLineDash([8, 6]);
+            ctx.beginPath(); ctx.moveTo(0, originYPx); ctx.lineTo(displayW, originYPx); ctx.stroke(); ctx.setLineDash([]);
+            ctx.strokeStyle = 'rgba(200,200,220,0.35)'; ctx.lineWidth = 1; ctx.setLineDash([5, 7]);
+            ctx.beginPath(); ctx.moveTo(originXPx, 0); ctx.lineTo(originXPx, displayH); ctx.stroke(); ctx.setLineDash([]);
+
+            ctx.fillStyle = 'rgba(180,200,230,0.45)'; ctx.font = '11px "PingFang SC","Microsoft YaHei",sans-serif';
+            ctx.fillText('Ⅰ', originXPx + 14, originYPx - 16); ctx.fillText('Ⅱ', originXPx - 30, originYPx - 16);
+            ctx.fillText('Ⅲ', originXPx - 30, originYPx + 22); ctx.fillText('Ⅳ', originXPx + 14, originYPx + 22);
+
+            const lineSpacing = PHYS_SCALE * 2.5;
+            if (upperIsElectric) {
+                for (let px = lineSpacing / 2; px < displayW; px += lineSpacing) {
+                    ctx.strokeStyle = 'rgba(80,160,240,0.3)'; ctx.lineWidth = 1; ctx.setLineDash([4, 5]);
+                    ctx.beginPath(); ctx.moveTo(px, 12); ctx.lineTo(px, originYPx - 10); ctx.stroke(); ctx.setLineDash([]);
+                    ctx.fillStyle = 'rgba(80,160,240,0.5)'; ctx.beginPath(); ctx.moveTo(px, originYPx - 10);
+                    ctx.lineTo(px - 3, originYPx - 15); ctx.lineTo(px + 3, originYPx - 15); ctx.closePath(); ctx.fill();
+                }
+                const dotSpacing = PHYS_SCALE * 2.5, startY = originYPx + dotSpacing;
+                for (let px = dotSpacing / 2; px < displayW; px += dotSpacing) {
+                    for (let py = startY; py < displayH - 10; py += dotSpacing) {
+                        ctx.strokeStyle = 'rgba(220,180,80,0.4)'; ctx.lineWidth = 0.8; ctx.beginPath(); ctx.arc(px, py, 4, 0, Math.PI * 2); ctx.stroke();
+                        ctx.fillStyle = 'rgba(220,180,80,0.6)'; ctx.beginPath(); ctx.arc(px, py, 1.8, 0, Math.PI * 2); ctx.fill();
+                    }
+                }
+                ctx.fillStyle = 'rgba(120,180,240,0.7)'; ctx.font = '10px "PingFang SC","Microsoft YaHei",sans-serif';
+                ctx.fillText('匀强电场 E↓', 10, originYPx - 18); ctx.fillStyle = 'rgba(220,180,80,0.7)'; ctx.fillText('匀强磁场 B⊙', 10, originYPx + 20);
+            } else {
+                const dotSpacing = PHYS_SCALE * 2.5;
+                for (let px = dotSpacing / 2; px < displayW; px += dotSpacing) {
+                    for (let py = dotSpacing; py < originYPx - 10; py += dotSpacing) {
+                        ctx.strokeStyle = 'rgba(220,180,80,0.4)'; ctx.lineWidth = 0.8; ctx.beginPath(); ctx.arc(px, py, 4, 0, Math.PI * 2); ctx.stroke();
+                        ctx.fillStyle = 'rgba(220,180,80,0.6)'; ctx.beginPath(); ctx.arc(px, py, 1.8, 0, Math.PI * 2); ctx.fill();
+                    }
+                }
+                for (let px = lineSpacing / 2; px < displayW; px += lineSpacing) {
+                    const startY2 = originYPx + 14;
+                    ctx.strokeStyle = 'rgba(80,160,240,0.3)'; ctx.lineWidth = 1; ctx.setLineDash([4, 5]);
+                    ctx.beginPath(); ctx.moveTo(px, startY2); ctx.lineTo(px, displayH - 16); ctx.stroke(); ctx.setLineDash([]);
+                    ctx.fillStyle = 'rgba(80,160,240,0.5)'; ctx.beginPath(); ctx.moveTo(px, startY2);
+                    ctx.lineTo(px - 3, startY2 + 5); ctx.lineTo(px + 3, startY2 + 5); ctx.closePath(); ctx.fill();
+                }
+                ctx.fillStyle = 'rgba(220,180,80,0.7)'; ctx.font = '10px "PingFang SC","Microsoft YaHei",sans-serif';
+                ctx.fillText('匀强磁场 B⊙', 10, originYPx - 18); ctx.fillStyle = 'rgba(120,180,240,0.7)'; ctx.fillText('匀强电场 E↑', 10, originYPx + 20);
+            }
+
+            const pPx = toPxX(0), pPy = toPxY(P_Y);
+            ctx.fillStyle = '#ff4040'; ctx.beginPath(); ctx.arc(pPx, pPy, 6, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = 'rgba(255,60,60,0.5)'; ctx.beginPath(); ctx.arc(pPx, pPy, 12, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = '#fff'; ctx.font = 'bold 11px "PingFang SC","Microsoft YaHei",sans-serif'; ctx.fillText('P', pPx + 10, pPy - 6);
+        }
+
+        function drawTrail(trail, color, lineWidth) {
+            if (trail.length < 2) return;
+            ctx.strokeStyle = color; ctx.lineWidth = lineWidth; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+            ctx.beginPath(); ctx.moveTo(toPxX(trail[0].x), toPxY(trail[0].y));
+            for (let i = 1; i < trail.length; i++) ctx.lineTo(toPxX(trail[i].x), toPxY(trail[i].y));
+            ctx.stroke();
+        }
+
+        function renderAllTrails() {
+            for (const trail of historyTrails) drawTrail(trail, 'rgba(180,40,40,0.65)', 1.8);
+            for (const p of activeProtons) drawTrail(p.trail, 'rgba(255,50,50,0.85)', 2.2);
+        }
+
+        function renderProtons() {
+            for (const p of activeProtons) {
+                const bx = toPxX(p.x), by = toPxY(p.y), br = 7;
+                const glow = ctx.createRadialGradient(bx, by, br * 0.3, bx, by, br * 2.5);
+                glow.addColorStop(0, 'rgba(255,100,80,0.6)'); glow.addColorStop(1, 'rgba(255,20,10,0)');
+                ctx.fillStyle = glow; ctx.beginPath(); ctx.arc(bx, by, br * 2.5, 0, Math.PI * 2); ctx.fill();
+                const ballGrad = ctx.createRadialGradient(bx - br * 0.3, by - br * 0.35, br * 0.1, bx, by, br);
+                ballGrad.addColorStop(0, '#ff9090'); ballGrad.addColorStop(0.35, '#ff3030'); ballGrad.addColorStop(0.7, '#c01010'); ballGrad.addColorStop(1, '#600808');
+                ctx.fillStyle = ballGrad; ctx.beginPath(); ctx.arc(bx, by, br, 0, Math.PI * 2); ctx.fill();
+                ctx.fillStyle = 'rgba(255,255,255,0.55)'; ctx.beginPath(); ctx.arc(bx - br * 0.3, by - br * 0.35, br * 0.25, 0, Math.PI * 2); ctx.fill();
+
+                const speed = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
+                if (speed > 1e-6) {
+                    const arrowLen = 24, angle = Math.atan2(p.vy, p.vx);
+                    const ex = bx + arrowLen * Math.cos(angle), ey = by - arrowLen * Math.sin(angle);
+                    ctx.strokeStyle = '#ff2020'; ctx.lineWidth = 2.5; ctx.lineCap = 'round';
+                    ctx.beginPath(); ctx.moveTo(bx, by); ctx.lineTo(ex, ey); ctx.stroke();
+                    const headLen = 8, headAngle = 0.45;
+                    ctx.fillStyle = '#ff2020'; ctx.beginPath(); ctx.moveTo(ex, ey);
+                    ctx.lineTo(ex - headLen * Math.cos(angle - headAngle), ey + headLen * Math.sin(angle - headAngle));
+                    ctx.lineTo(ex - headLen * Math.cos(angle + headAngle), ey + headLen * Math.sin(angle + headAngle));
+                    ctx.closePath(); ctx.fill();
+                }
+            }
+        }
+
+        function render() {
+            updateDimensions();
+            ctx.clearRect(0, 0, displayW, displayH);
+            renderBackground();
+            renderAllTrails();
+            renderProtons();
+        }
+
+        const speedOptions = [0.5, 1.0, 2.0, 3.0]; let speedIndex = 1;
+        function updateSpeedButton() { btnSpeed.textContent = `⏩ ${speedOptions[speedIndex]}× 速度`; }
+        btnSpeed.addEventListener('click', () => { speedIndex = (speedIndex + 1) % speedOptions.length; simSpeed = speedOptions[speedIndex]; updateSpeedButton(); });
+
+        btnSwap.addEventListener('click', () => {
+            swapped = !swapped;
+            btnSwap.textContent = swapped ? '🔄 还原电场/磁场' : '🔄 互换电场/磁场';
+            updateLegend();
+            resetSim();
+        });
+
+        btnRelaunch.addEventListener('click', () => {
+            launchProton();
+            if (paused) {
+                paused = false;
+                btnPause.textContent = '⏯️ 暂停';
+                btnPause.classList.remove('paused');
+            }
+            lastTime = null;
+            trailRecordTimer = 0;
+        });
+
+        let trailRecordTimer = 0; const TRAIL_RECORD_INTERVAL = 0.008; let lastTime = null;
+        function animate(ts) {
+            if (lastTime === null) lastTime = ts;
+            let dt = (ts - lastTime) / 1000; lastTime = ts;
+            if (dt > 0.1) dt = 0.016; if (dt <= 0) dt = 0.016;
+            physicsUpdate(dt);
+            if (!paused) {
+                trailRecordTimer += dt * simSpeed;
+                if (trailRecordTimer >= TRAIL_RECORD_INTERVAL) {
+                    trailRecordTimer -= TRAIL_RECORD_INTERVAL;
+                    for (const p of activeProtons) {
+                        const last = p.trail[p.trail.length - 1];
+                        if (!last || Math.hypot(p.x - last.x, p.y - last.y) > 0.003) {
+                            p.trail.push({ x: p.x, y: p.y });
+                            if (p.trail.length > MAX_TRAIL_LENGTH) p.trail.shift();
+                        }
+                    }
+                }
+            }
+            render();
+            requestAnimationFrame(animate);
+        }
+
+        sliderE.oninput = () => { Efield = +sliderE.value; valE.textContent = Efield.toFixed(2); resetSim(); };
+        sliderB.oninput = () => { Bfield = +sliderB.value; valB.textContent = Bfield.toFixed(2); resetSim(); };
+        sliderV0.oninput = () => { v0 = +sliderV0.value; valV0.textContent = v0.toFixed(2); resetSim(); };
+        sliderAngle.oninput = () => { angleDeg = +sliderAngle.value; valAngle.textContent = angleDeg + '°'; resetSim(); };
+        btnReset.onclick = () => { resetSim(); lastTime = null; paused = false; btnPause.textContent = '⏯️ 暂停'; btnPause.classList.remove('paused'); trailRecordTimer = 0; };
+        btnPause.onclick = () => { paused = !paused; btnPause.textContent = paused ? '▶️ 播放' : '⏯️ 暂停'; btnPause.classList.toggle('paused', paused); if (!paused) lastTime = null; };
+        document.addEventListener('keydown', e => { if (e.code === 'Space') { e.preventDefault(); btnPause.click(); } if (e.code === 'KeyR') btnReset.click(); if (e.code === 'KeyL') { e.preventDefault(); btnRelaunch.click(); } });
+        window.addEventListener('resize', () => { updateDimensions(); render(); });
+
+        updateDimensions(); resetSim(); updateSpeedButton(); updateLegend(); updateRelaunchButton();
+        valE.textContent = Efield.toFixed(2); valB.textContent = Bfield.toFixed(2); valV0.textContent = v0.toFixed(2); valAngle.textContent = angleDeg + '°';
+        sliderE.value = Efield; sliderB.value = Bfield; sliderV0.value = v0; sliderAngle.value = angleDeg;
+        btnSwap.textContent = '🔄 互换电场/磁场';
+        requestAnimationFrame(animate);
+    })();
+</script>
+
+  <script>
+  // 返回主页（滚动位置已在主页点击链接时保存）
+  function saveScrollAndReturn() {
+    window.location.href = '../index.html';
+  }
+  
+  // 禁用右键菜单
+  document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+  });
+  
+  // 禁用开发者工具快捷键
+  document.addEventListener('keydown', function(e) {
+    // ESC返回主页 - 保存滚动位置
+    if (e.keyCode === 27) {
+      saveScrollAndReturn();
+      return false;
+    }
+    // F12
+    if (e.keyCode === 123) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+U
+    if (e.ctrlKey && e.keyCode === 85) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+I
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 73) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+J
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 74) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+C
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 67) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+S
+    if (e.ctrlKey && e.keyCode === 83) {
+      e.preventDefault();
+      return false;
+    }
+  });
+  
+  // 禁用选择
+  document.addEventListener('selectstart', function(e) {
+    // 允许输入框选择
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+      return true;
+    }
+    e.preventDefault();
+    return false;
+  });
+  </script>
+</body>
+</html>
