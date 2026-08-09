@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>挖穿地球隧道 · 齐老师动画</title>
+    <style>
+        * {
+            user-select: none;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(145deg, #0a1022 0%, #03070f 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Segoe UI', 'Roboto', 'Poppins', system-ui, sans-serif;
+            padding: 16px;
+            margin: 0;
+        }
+
+        .card {
+            background: rgba(10, 20, 35, 0.75);
+            backdrop-filter: blur(6px);
+            border-radius: 2rem;
+            padding: 0.9rem 1.2rem 1.2rem 1.2rem;
+            box-shadow: 0 20px 32px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(72, 187, 255, 0.35);
+            transition: all 0.2s;
+        }
+
+        canvas {
+            display: block;
+            margin: 0 auto;
+            border-radius: 24px;
+            box-shadow: 0 10px 24px rgba(0, 0, 0, 0.5);
+            cursor: pointer;
+            background: radial-gradient(ellipse at 30% 25%, #101c30, #03070f);
+        }
+
+        #earthCanvas {
+            width: 100%;
+            height: auto;
+        }
+
+        .title-section {
+            text-align: center;
+            margin-bottom: 0.4rem;
+        }
+
+        .title-main {
+            font-size: 1.4rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #ffe0a3, #7bc5ff);
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .sub {
+            font-size: 0.7rem;
+            color: #aaccee;
+            border-top: 1px dashed #3a7799;
+            display: inline-block;
+            padding-top: 4px;
+            margin-top: 3px;
+        }
+
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 0.8rem;
+            align-items: center;
+            margin: 0.8rem 0 0.6rem 0;
+            background: #07121ece;
+            padding: 0.4rem 1rem;
+            border-radius: 48px;
+            backdrop-filter: blur(8px);
+        }
+
+        button {
+            background: #1f4058;
+            border: none;
+            font-weight: 600;
+            font-size: 0.8rem;
+            padding: 0.35rem 1rem;
+            border-radius: 40px;
+            color: #f0f9ff;
+            cursor: pointer;
+            transition: 0.2s;
+            font-family: inherit;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+            border: 1px solid #4682b0;
+        }
+
+        button:hover {
+            background: #2e6a8a;
+            transform: scale(1.02);
+            border-color: #7ac7ff;
+        }
+
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: #0a1a28aa;
+            padding: 0.15rem 0.8rem;
+            border-radius: 40px;
+            font-size: 0.75rem;
+            color: #c2e2ff;
+        }
+
+        input[type="range"] {
+            width: 140px;
+            cursor: pointer;
+            background: #2c5a70;
+            height: 3px;
+            border-radius: 10px;
+        }
+
+        .legend {
+            display: flex;
+            justify-content: center;
+            gap: 1.2rem;
+            margin-top: 6px;
+            font-size: 0.65rem;
+            flex-wrap: wrap;
+        }
+
+        .legend span {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .color-badge {
+            width: 16px;
+            height: 3px;
+            border-radius: 4px;
+            display: inline-block;
+        }
+    </style>
+
+  <style>
+  body {
+    background-color: #1a2332 !important;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+  }
+  
+  .qilai-back-btn {
+    position: fixed;
+    top: 10px;
+    left: 15px;
+    z-index: 100000;
+    padding: 8px 16px;
+    background: rgba(0, 150, 200, 0.2);
+    border: 1px solid rgba(100, 180, 255, 0.5);
+    color: #8ab4f8;
+    font-size: 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.3s;
+    backdrop-filter: blur(5px);
+    font-family: "Microsoft YaHei", sans-serif;
+  }
+  
+  .qilai-back-btn:hover {
+    background: rgba(0, 150, 200, 0.4);
+    box-shadow: 0 0 15px rgba(100, 180, 255, 0.3);
+    color: #fff;
+  }
+  
+  .qilai-watermark {
+    position: fixed;
+    bottom: 15px;
+    right: 15px;
+    z-index: 99998;
+    font-size: 12px;
+    color: rgba(138, 180, 248, 0.35);
+    text-align: right;
+    line-height: 1.8;
+    pointer-events: none;
+    user-select: none;
+    font-family: "Microsoft YaHei", sans-serif;
+  }
+  
+  .qilai-watermark .title {
+    font-size: 14px;
+    font-weight: bold;
+    color: rgba(138, 180, 248, 0.45);
+    margin-bottom: 4px;
+    letter-spacing: 1px;
+  }
+  </style>
+</head>
+<body>
+  <a href="javascript:void(0);" class="qilai-back-btn" onclick="saveScrollAndReturn();">← 返回主页</a>
+  
+  <div class="qilai-watermark">
+    <div class="title">齐老师动画</div>
+    QQ 3398528250<br>
+    抖音 35320300542
+  </div>
+
+<div>
+    <div class="card">
+        <div class="title-section">
+            <div class="title-main">
+                🌍 挖穿地球隧道 · 齐老师动画 🌌
+            </div>
+            <div class="sub">均匀地球模型 | 隧道可水平偏移 (不过地心) | 不计阻力 | 小球简谐运动</div>
+        </div>
+
+        <!-- 画布尺寸优化为 580x580，地球半径160，减少无效空白 -->
+        <canvas id="earthCanvas" width="580" height="580" style="width:100%; height:auto; max-width:580px; aspect-ratio:580/580"></canvas>
+
+        <div class="controls">
+            <button id="playPauseBtn">⏸️ 暂停</button>
+            <button id="resetBtn">🔄 重新释放</button>
+            <div class="slider-container">
+                <span>📌 偏移 Δx = </span>
+                <input type="range" id="offsetSlider" min="-148" max="148" step="1" value="0">
+                <span id="offsetValue">0 px</span>
+            </div>
+        </div>
+
+        <div class="legend">
+            <span><div class="color-badge" style="background: #ffaa44; box-shadow:0 0 3px #ffaa66;"></div> 小球 (简谐)</span>
+            <span><div class="color-badge" style="background: #3ea5ff; width:10px; height:10px; border-radius:10px;"></div> 隧道</span>
+            <span><div class="color-badge" style="background: #6effa8; width:10px; height:10px; border-radius:10px;"></div> 平衡位置</span>
+            <span><span style="color:#ffbb88">⚡ 偏移量≠0 → 不过地心，仍为简谐</span></span>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function(){
+        // ---------- 画布与地球参数 (紧凑布局) ----------
+        const canvas = document.getElementById('earthCanvas');
+        const ctx = canvas.getContext('2d');
+        const size = 580;            // 580x580 紧凑画布
+        canvas.width = size;
+        canvas.height = size;
+        
+        // 地球几何 (半径160，留出合理边距)
+        const centerX = size / 2;    // 290
+        const centerY = size / 2;    // 290
+        const R = 160;               // 地球半径 (px) 适应580画布，上下左右有空间
+        
+        // 物理常数: 周期 T = 4.0 秒
+        const T = 4.0;
+        const omega = (2 * Math.PI) / T;
+        
+        // 隧道参数: 竖直隧道，水平偏移量 offsetX (相对于地心)
+        let offsetX = 0;             // 范围限制 ±(R-12) 滑块限制 -148 ~ 148
+        let halfLen = R;             // 隧道半长 L = sqrt(R^2 - offsetX^2)
+        let tunnelTopY = 0, tunnelBottomY = 0;
+        let equilibriumX = centerX;
+        let equilibriumY = centerY;
+        
+        // 动画状态
+        let animationId = null;
+        let isPlaying = true;
+        let animationStartTime = null;
+        let pausedElapsed = 0;
+        
+        // UI元素
+        const playPauseBtn = document.getElementById('playPauseBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const offsetSlider = document.getElementById('offsetSlider');
+        const offsetValueSpan = document.getElementById('offsetValue');
+        
+        // 更新隧道几何
+        function updateTunnelGeometry() {
+            let rawOffset = offsetX;
+            const maxOffset = R - 8;
+            if (Math.abs(rawOffset) > maxOffset) {
+                rawOffset = (rawOffset > 0) ? maxOffset : -maxOffset;
+                offsetX = rawOffset;
+                offsetSlider.value = offsetX;
+                offsetValueSpan.innerText = offsetX.toFixed(0) + ' px';
+            }
+            halfLen = Math.sqrt(Math.max(0, R * R - offsetX * offsetX));
+            equilibriumX = centerX + offsetX;
+            tunnelTopY = centerY - halfLen;
+            tunnelBottomY = centerY + halfLen;
+        }
+        
+        function getTunnelEndpoints() {
+            return { x: equilibriumX, yTop: tunnelTopY, yBottom: tunnelBottomY };
+        }
+        
+        function getDisplacementFromTime(elapsed) {
+            const phase = omega * elapsed;
+            let s = -halfLen * Math.cos(phase);
+            if (s > halfLen) s = halfLen;
+            if (s < -halfLen) s = -halfLen;
+            return s;
+        }
+        
+        function getBallPosition(s) {
+            return { x: equilibriumX, y: equilibriumY + s };
+        }
+        
+        // 绘制地球、隧道 (精简空白区域，所有元素比例协调)
+        function drawEarthAndWell() {
+            ctx.save();
+            ctx.shadowBlur = 0;
+            
+            // 地球外圈微光
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, R + 2, 0, Math.PI * 2);
+            ctx.fillStyle = "#0a2540aa";
+            ctx.fill();
+            
+            // 地球主体
+            const grad = ctx.createLinearGradient(centerX - R*0.3, centerY - R*0.3, centerX + R*0.4, centerY + R*0.5);
+            grad.addColorStop(0, '#2f7fa0');
+            grad.addColorStop(0.5, '#1a4b6e');
+            grad.addColorStop(1, '#0a2a44');
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, R, 0, Math.PI * 2);
+            ctx.fillStyle = grad;
+            ctx.fill();
+            ctx.strokeStyle = '#7fc9ff';
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+            
+            // 内部稀疏网格
+            ctx.beginPath();
+            ctx.setLineDash([4, 6]);
+            ctx.lineWidth = 0.6;
+            ctx.strokeStyle = "#3c98c780";
+            for(let ang = 0; ang < 360; ang += 45) {
+                let rad = ang * Math.PI/180;
+                let dx = Math.cos(rad) * R;
+                let dy = Math.sin(rad) * R;
+                ctx.beginPath();
+                ctx.moveTo(centerX, centerY);
+                ctx.lineTo(centerX + dx, centerY + dy);
+                ctx.stroke();
+            }
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, R*0.5, 0, Math.PI*2);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, R*0.25, 0, Math.PI*2);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            
+            // 地心标记
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, 6, 0, 2 * Math.PI);
+            ctx.fillStyle = "#ffaa44dd";
+            ctx.shadowBlur = 8;
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, 2.5, 0, 2 * Math.PI);
+            ctx.fillStyle = "#ff7700";
+            ctx.fill();
+            ctx.shadowBlur = 0;
+            
+            // 隧道
+            const endpoints = getTunnelEndpoints();
+            ctx.beginPath();
+            ctx.moveTo(endpoints.x - 4, endpoints.yTop);
+            ctx.lineTo(endpoints.x + 4, endpoints.yTop);
+            ctx.lineTo(endpoints.x + 4, endpoints.yBottom);
+            ctx.lineTo(endpoints.x - 4, endpoints.yBottom);
+            ctx.fillStyle = "#9bc9ff20";
+            ctx.fill();
+            ctx.beginPath();
+            ctx.moveTo(endpoints.x - 4, endpoints.yTop);
+            ctx.lineTo(endpoints.x + 4, endpoints.yTop);
+            ctx.lineTo(endpoints.x + 4, endpoints.yBottom);
+            ctx.lineTo(endpoints.x - 4, endpoints.yBottom);
+            ctx.strokeStyle = "#8ccbffbb";
+            ctx.lineWidth = 1.8;
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(endpoints.x - 2, endpoints.yTop);
+            ctx.lineTo(endpoints.x - 2, endpoints.yBottom);
+            ctx.strokeStyle = "#c3eaff";
+            ctx.lineWidth = 1;
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(endpoints.x + 2, endpoints.yTop);
+            ctx.lineTo(endpoints.x + 2, endpoints.yBottom);
+            ctx.stroke();
+            
+            // 平衡位置标记
+            ctx.beginPath();
+            ctx.arc(endpoints.x, equilibriumY, 5, 0, 2 * Math.PI);
+            ctx.fillStyle = "#6effa8aa";
+            ctx.shadowBlur = 5;
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(endpoints.x, equilibriumY, 2.5, 0, 2 * Math.PI);
+            ctx.fillStyle = "#ffffff";
+            ctx.fill();
+            ctx.shadowBlur = 0;
+            
+            // 井口文字 (紧凑)
+            ctx.font = "bold 9px 'Segoe UI'";
+            ctx.fillStyle = "#bbddff";
+            ctx.fillText("释放点", endpoints.x + 8, endpoints.yTop - 4);
+            ctx.fillText("对侧", endpoints.x + 8, endpoints.yBottom + 10);
+            ctx.font = "italic 8px monospace";
+            ctx.fillStyle = "#f5bc70";
+            if (Math.abs(offsetX) > 1) {
+                ctx.fillText(`偏移 ${Math.abs(offsetX).toFixed(0)} px`, endpoints.x - 42, equilibriumY - 12);
+            } else {
+                ctx.fillText("穿过地心", endpoints.x - 32, equilibriumY - 12);
+            }
+            
+            // 地心连线（偏移时虚线）
+            if (Math.abs(offsetX) > 3) {
+                ctx.beginPath();
+                ctx.setLineDash([3, 5]);
+                ctx.moveTo(centerX, centerY);
+                ctx.lineTo(endpoints.x, equilibriumY);
+                ctx.strokeStyle = "#ffbb88aa";
+                ctx.lineWidth = 1;
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
+            
+            // 少量星光点缀（减少数量）
+            for(let i=0;i<40;i++) {
+                let starX = (i*131)%size, starY = (i*253)%size;
+                if(Math.hypot(starX-centerX, starY-centerY) > R-5) {
+                    ctx.fillStyle = `rgba(255,240,200,${0.2+Math.sin(Date.now()*0.003+i)*0.1})`;
+                    ctx.beginPath();
+                    ctx.arc(starX, starY, 1, 0, Math.PI*2);
+                    ctx.fill();
+                }
+            }
+            ctx.restore();
+        }
+        
+        function drawBall(ballX, ballY) {
+            ctx.save();
+            ctx.shadowBlur = 12;
+            ctx.shadowColor = "#f0a030";
+            ctx.beginPath();
+            ctx.arc(ballX, ballY, 8, 0, 2 * Math.PI);
+            const gradBall = ctx.createRadialGradient(ballX-2, ballY-2, 2, ballX, ballY, 10);
+            gradBall.addColorStop(0, '#ffe5a3');
+            gradBall.addColorStop(0.7, '#e08030');
+            gradBall.addColorStop(1, '#b04510');
+            ctx.fillStyle = gradBall;
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(ballX, ballY, 5, 0, 2 * Math.PI);
+            ctx.fillStyle = "#ffc285";
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(ballX-1.5, ballY-1.5, 2, 0, 2*Math.PI);
+            ctx.fillStyle = "#fff9e0";
+            ctx.fill();
+            ctx.shadowBlur = 0;
+            // 简易粒子
+            for(let i=0;i<2;i++) {
+                let off = (Date.now()*0.012 + i) % (Math.PI*2);
+                let trailX = ballX + Math.sin(off)*5;
+                let trailY = ballY + Math.cos(off*1.3)*4;
+                ctx.beginPath();
+                ctx.arc(trailX, trailY, 1.5, 0, Math.PI*2);
+                ctx.fillStyle = `rgba(255, 180, 80, 0.6)`;
+                ctx.fill();
+            }
+            ctx.restore();
+        }
+        
+        function renderFrame(elapsed) {
+            if (!canvas.isConnected) return;
+            const s = getDisplacementFromTime(elapsed);
+            const ballPos = getBallPosition(s);
+            ctx.clearRect(0, 0, size, size);
+            drawEarthAndWell();
+            drawBall(ballPos.x, ballPos.y);
+            
+            // 简洁的物理参数显示
+            ctx.font = "500 9px 'Segoe UI'";
+            ctx.fillStyle = "#cce6ff";
+            ctx.fillText(`ω = ${omega.toFixed(2)} rad/s  |  T = ${T.toFixed(1)} s`, 12, 32);
+            ctx.fillStyle = "#ffcf9a";
+            ctx.fillText(`偏移 Δx = ${offsetX.toFixed(1)} px  |  半长 L = ${halfLen.toFixed(1)} px`, 12, 52);
+        }
+        
+        // 时间控制
+        function getCurrentElapsed() {
+            if (!isPlaying) return pausedElapsed;
+            if (animationStartTime === null) return 0;
+            const now = performance.now() / 1000;
+            return now - animationStartTime;
+        }
+        
+        function startAnimationLoop() {
+            if (animationId) cancelAnimationFrame(animationId);
+            function animateFrame(nowMs) {
+                if (!isPlaying) {
+                    animationId = null;
+                    return;
+                }
+                if (animationStartTime === null) {
+                    const nowSec = performance.now() / 1000;
+                    animationStartTime = nowSec - pausedElapsed;
+                }
+                const elapsed = getCurrentElapsed();
+                renderFrame(elapsed);
+                animationId = requestAnimationFrame(animateFrame);
+            }
+            animationId = requestAnimationFrame(animateFrame);
+        }
+        
+        function pauseMotion() {
+            if (!isPlaying) return;
+            if (animationStartTime !== null) {
+                const nowSec = performance.now() / 1000;
+                pausedElapsed = nowSec - animationStartTime;
+            } else {
+                pausedElapsed = 0;
+            }
+            isPlaying = false;
+            if (animationId) cancelAnimationFrame(animationId);
+            animationId = null;
+            renderFrame(pausedElapsed);
+            playPauseBtn.innerHTML = "▶️ 启动";
+        }
+        
+        function resumeMotion() {
+            if (isPlaying) return;
+            isPlaying = true;
+            const nowSec = performance.now() / 1000;
+            animationStartTime = nowSec - pausedElapsed;
+            startAnimationLoop();
+            playPauseBtn.innerHTML = "⏸️ 暂停";
+        }
+        
+        function togglePlayPause() {
+            if (isPlaying) pauseMotion();
+            else resumeMotion();
+        }
+        
+        function resetMotion() {
+            pausedElapsed = 0;
+            if (isPlaying) {
+                const nowSec = performance.now() / 1000;
+                animationStartTime = nowSec;
+                if (animationId) cancelAnimationFrame(animationId);
+                startAnimationLoop();
+            } else {
+                animationStartTime = null;
+                renderFrame(0);
+            }
+        }
+        
+        function onOffsetChange() {
+            let newOffset = parseFloat(offsetSlider.value);
+            const maxOffset = R - 8;
+            if (Math.abs(newOffset) > maxOffset) {
+                newOffset = (newOffset > 0) ? maxOffset : -maxOffset;
+                offsetSlider.value = newOffset;
+            }
+            offsetX = newOffset;
+            offsetValueSpan.innerText = offsetX.toFixed(0) + ' px';
+            updateTunnelGeometry();
+            resetMotion();
+        }
+        
+        // 事件绑定
+        playPauseBtn.addEventListener('click', togglePlayPause);
+        resetBtn.addEventListener('click', resetMotion);
+        offsetSlider.addEventListener('input', (e) => {
+            offsetX = parseFloat(e.target.value);
+            offsetValueSpan.innerText = offsetX.toFixed(0) + ' px';
+            updateTunnelGeometry();
+            resetMotion();
+        });
+        
+        function init() {
+            offsetX = 0;
+            offsetSlider.value = 0;
+            offsetValueSpan.innerText = '0 px';
+            updateTunnelGeometry();
+            isPlaying = true;
+            pausedElapsed = 0;
+            const nowSec = performance.now() / 1000;
+            animationStartTime = nowSec;
+            startAnimationLoop();
+            playPauseBtn.innerHTML = "⏸️ 暂停";
+        }
+        
+        init();
+    })();
+</script>
+
+  <script>
+  // 返回主页（滚动位置已在主页点击链接时保存）
+  function saveScrollAndReturn() {
+    window.location.href = '../index.html';
+  }
+  
+  // 禁用右键菜单
+  document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+  });
+  
+  // 禁用开发者工具快捷键
+  document.addEventListener('keydown', function(e) {
+    // ESC返回主页 - 保存滚动位置
+    if (e.keyCode === 27) {
+      saveScrollAndReturn();
+      return false;
+    }
+    // F12
+    if (e.keyCode === 123) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+U
+    if (e.ctrlKey && e.keyCode === 85) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+I
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 73) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+J
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 74) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+C
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 67) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+S
+    if (e.ctrlKey && e.keyCode === 83) {
+      e.preventDefault();
+      return false;
+    }
+  });
+  
+  // 禁用选择
+  document.addEventListener('selectstart', function(e) {
+    // 允许输入框选择
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+      return true;
+    }
+    e.preventDefault();
+    return false;
+  });
+  </script>
+</body>
+</html>
