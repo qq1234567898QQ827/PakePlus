@@ -1,0 +1,890 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>光的偏振 · 半透明蓝黑偏振片</title>
+    <style>
+        :root {
+            --bg: #1a1a2e;
+            --panel-bg: rgba(20, 20, 40, 0.95);
+            --text: #e0e0e0;
+            --slider-track: #333;
+            --border: rgba(255, 255, 255, 0.15);
+        }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background: var(--bg);
+            font-family: 'PingFang SC', 'Microsoft YaHei', 'Helvetica Neue', sans-serif;
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: pan-x pan-y pinch-zoom;
+        }
+        #canvas-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            cursor: grab;
+        }
+        #canvas-container:active {
+            cursor: grabbing;
+        }
+        #title-bar {
+            position: fixed;
+            top: 16px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--panel-bg);
+            border: 1px solid var(--border);
+            border-radius: 40px;
+            padding: 8px 24px;
+            z-index: 10;
+            pointer-events: none;
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            white-space: nowrap;
+        }
+        #title-bar h1 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #fff;
+            letter-spacing: 0.04em;
+            margin: 0;
+        }
+        .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+        .dot.red { background: #ff4d4d; animation-delay: 0s; }
+        .dot.blue { background: #4da6ff; animation-delay: 0.4s; }
+        .dot.yellow { background: #ffd633; animation-delay: 0.8s; }
+        @keyframes pulse {
+            0%, 100% { opacity: 0.4; transform: scale(0.8); }
+            50% { opacity: 1; transform: scale(1.4); }
+        }
+        #control-panel {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--panel-bg);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 16px 20px;
+            z-index: 10;
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 16px;
+            max-width: 95vw;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+        }
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            min-width: 80px;
+        }
+        .control-group label {
+            font-size: 0.7rem;
+            color: #aaa;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            white-space: nowrap;
+            text-align: center;
+        }
+        .value-display {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #fff;
+            text-align: center;
+            white-space: nowrap;
+        }
+        .slider-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        input[type="range"] {
+            -webkit-appearance: none;
+            width: 100px;
+            height: 6px;
+            border-radius: 3px;
+            background: var(--slider-track);
+            outline: none;
+            cursor: pointer;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            background: #fff;
+            border: 2px solid #888;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+        #slider-p1::-webkit-slider-thumb { border-color: #4da6ff; }
+        #slider-p2::-webkit-slider-thumb { border-color: #ff6b6b; }
+        .angle-preset {
+            display: flex;
+            gap: 4px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .angle-preset button {
+            font-size: 0.65rem;
+            padding: 4px 8px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            background: rgba(255,255,255,0.06);
+            color: #ccc;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.2s;
+        }
+        .angle-preset button:hover {
+            background: rgba(255,255,255,0.18);
+            color: #fff;
+        }
+        .angle-preset button.active {
+            background: rgba(255,255,255,0.22);
+            color: #fff;
+            border-color: #fff;
+            font-weight: 600;
+        }
+        #info-tooltip {
+            position: fixed;
+            top: 100px;
+            right: 20px;
+            background: var(--panel-bg);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 12px 16px;
+            z-index: 10;
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            font-size: 0.78rem;
+            color: #ccc;
+            pointer-events: none;
+            transition: opacity 0.5s;
+            max-width: 200px;
+            text-align: center;
+            line-height: 1.5;
+        }
+        .highlight {
+            color: #ffb347;
+            font-weight: 600;
+        }
+        @media (max-width: 768px) {
+            #control-panel { gap: 10px; padding: 12px 14px; }
+            input[type="range"] { width: 70px; }
+            #info-tooltip { display: none; }
+        }
+    </style>
+
+  <style>
+  body {
+    background-color: #1a2332 !important;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+  }
+  
+  .qilai-back-btn {
+    position: fixed;
+    top: 10px;
+    left: 15px;
+    z-index: 100000;
+    padding: 8px 16px;
+    background: rgba(0, 150, 200, 0.2);
+    border: 1px solid rgba(100, 180, 255, 0.5);
+    color: #8ab4f8;
+    font-size: 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.3s;
+    backdrop-filter: blur(5px);
+    font-family: "Microsoft YaHei", sans-serif;
+  }
+  
+  .qilai-back-btn:hover {
+    background: rgba(0, 150, 200, 0.4);
+    box-shadow: 0 0 15px rgba(100, 180, 255, 0.3);
+    color: #fff;
+  }
+  
+  .qilai-watermark {
+    position: fixed;
+    bottom: 15px;
+    right: 15px;
+    z-index: 99998;
+    font-size: 12px;
+    color: rgba(138, 180, 248, 0.35);
+    text-align: right;
+    line-height: 1.8;
+    pointer-events: none;
+    user-select: none;
+    font-family: "Microsoft YaHei", sans-serif;
+  }
+  
+  .qilai-watermark .title {
+    font-size: 14px;
+    font-weight: bold;
+    color: rgba(138, 180, 248, 0.45);
+    margin-bottom: 4px;
+    letter-spacing: 1px;
+  }
+  </style>
+</head>
+<body>
+  <a href="javascript:void(0);" class="qilai-back-btn" onclick="saveScrollAndReturn();">← 返回主页</a>
+  
+  <div class="qilai-watermark">
+    <div class="title">齐老师动画</div>
+    QQ 3398528250<br>
+    抖音 35320300542
+  </div>
+
+    <div id="canvas-container"></div>
+    <div id="title-bar">
+        <span class="dot red"></span>
+        <span class="dot blue"></span>
+        <span class="dot yellow"></span>
+        <h1>光的偏振 · 半透明蓝黑偏振片</h1>
+    </div>
+    <div id="info-tooltip">
+        透射光强度 <span class="formula">I = I₀ · cos²θ</span>
+        夹角 <span class="highlight" id="angle-display-tip">0°</span>
+        <br>相对强度 <span class="highlight" id="intensity-display-tip">100%</span>
+    </div>
+    <div id="control-panel">
+        <div class="control-group">
+            <label>🔵 起偏器 P₁</label>
+            <div class="slider-row">
+                <input type="range" id="slider-p1" min="0" max="180" value="90" step="1">
+                <span class="value-display" id="val-p1">90°</span>
+            </div>
+            <div class="angle-preset" id="presets-p1">
+                <button data-angle="0">0°</button>
+                <button data-angle="45">45°</button>
+                <button data-angle="90" class="active">90°</button>
+                <button data-angle="135">135°</button>
+            </div>
+        </div>
+        <div class="control-group">
+            <label>🔴 检偏器 P₂</label>
+            <div class="slider-row">
+                <input type="range" id="slider-p2" min="0" max="180" value="90" step="1">
+                <span class="value-display" id="val-p2">90°</span>
+            </div>
+            <div class="angle-preset" id="presets-p2">
+                <button data-angle="0">0°</button>
+                <button data-angle="45">45°</button>
+                <button data-angle="90" class="active">90°</button>
+                <button data-angle="135">135°</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+        // DOM元素
+        const container = document.getElementById('canvas-container');
+        const sliderP1 = document.getElementById('slider-p1');
+        const sliderP2 = document.getElementById('slider-p2');
+        const valP1 = document.getElementById('val-p1');
+        const valP2 = document.getElementById('val-p2');
+        const presetsP1 = document.getElementById('presets-p1');
+        const presetsP2 = document.getElementById('presets-p2');
+        const angleTip = document.getElementById('angle-display-tip');
+        const intensityTip = document.getElementById('intensity-display-tip');
+
+        // 场景初始化
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color('#1a1a2e');
+        scene.fog = new THREE.Fog('#1a1a2e', 20, 50);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.2;
+        container.appendChild(renderer.domElement);
+
+        const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.5, 60);
+        camera.position.set(5, 3.5, 9);
+        camera.lookAt(3.5, 0, 0);
+
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.target.set(3.5, 0, 0);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.08;
+        controls.minDistance = 4;
+        controls.maxDistance = 22;
+        controls.maxPolarAngle = Math.PI * 0.75;
+        controls.autoRotate = true;
+        controls.autoRotateSpeed = 0.3;
+        controls.update();
+
+        // 光照
+        scene.add(new THREE.AmbientLight('#8899bb', 1.8));
+        const keyLight = new THREE.DirectionalLight('#ffffff', 3.5);
+        keyLight.position.set(8, 10, 6);
+        keyLight.castShadow = true;
+        keyLight.shadow.mapSize.set(1024, 1024);
+        scene.add(keyLight);
+        scene.add(new THREE.DirectionalLight('#8899cc', 1.2).position.set(-3, 2, -4));
+        scene.add(new THREE.DirectionalLight('#ffccaa', 1.5).position.set(0, -1, 8));
+
+        // 地面参考
+        scene.add(new THREE.PolarGridHelper(10, 32, 24, 64, '#333355', '#222244').translateY(-3));
+
+        // 轴参考线
+        const axisGeom = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(-5.5, 0, 0), new THREE.Vector3(13, 0, 0)]);
+        scene.add(new THREE.Line(axisGeom, new THREE.LineBasicMaterial({ color: '#444466', transparent: true, opacity: 0.5 })));
+
+        // 波管理组
+        const dashedLineGroup = new THREE.Group();
+        scene.add(dashedLineGroup);
+        const particleGroup = new THREE.Group();
+        scene.add(particleGroup);
+
+        // 存储所有波数据
+        const naturalWaves = [];
+        let polarizedWave = null;
+        let transmittedWave = null;
+        const allParticles = [];
+
+        // 参数
+        const NATURAL_START = -5, NATURAL_END = 3.8;
+        const POLARIZED_START = 4.2, POLARIZED_END = 7.8;
+        const TRANSMITTED_START = 8.2, TRANSMITTED_END = 12;
+        const NATURAL_AMPLITUDE = 0.28;
+        const POLARIZED_AMPLITUDE = 0.55;
+        const naturalAngles = [0, Math.PI/4, Math.PI/2, 3*Math.PI/4];
+        
+        // 颜色定义
+        const RED = '#ff4d4d';
+        const BLUE = '#4da6ff';
+        const YELLOW = '#ffd633';
+        const PARTICLE_COLORS = [RED, BLUE, YELLOW];
+
+        // 正弦波曲线类
+        class SineWaveCurve extends THREE.Curve {
+            constructor(startX, endX, amplitude, numCycles, angleInYZ) {
+                super();
+                this.startX = startX;
+                this.endX = endX;
+                this.amplitude = amplitude;
+                this.numCycles = numCycles;
+                this.angleInYZ = angleInYZ;
+            }
+            getPoint(t) {
+                const x = this.startX + t * (this.endX - this.startX);
+                const phase = 2 * Math.PI * this.numCycles * t;
+                const displacement = this.amplitude * Math.sin(phase);
+                const y = displacement * Math.cos(this.angleInYZ);
+                const z = displacement * Math.sin(this.angleInYZ);
+                return new THREE.Vector3(x, y, z);
+            }
+        }
+
+        // 创建虚线路径
+        function createDashedPath(curve, color) {
+            const points = curve.getPoints(200);
+            const geom = new THREE.BufferGeometry().setFromPoints(points);
+            const mat = new THREE.LineDashedMaterial({
+                color: color,
+                dashSize: 0.5,
+                gapSize: 0.3,
+                linewidth: 1,
+            });
+            const line = new THREE.Line(geom, mat);
+            line.computeLineDistances();
+            return line;
+        }
+
+        // 创建彩色光子
+        function createParticlesForWave(curve, count, colors) {
+            const particles = [];
+            const particleGeom = new THREE.SphereGeometry(0.09, 12, 8);
+            for (let i = 0; i < count; i++) {
+                const colorHex = colors[i % colors.length];
+                const particleMat = new THREE.MeshStandardMaterial({
+                    color: new THREE.Color(colorHex),
+                    emissive: new THREE.Color(colorHex),
+                    emissiveIntensity: 1.8,
+                    roughness: 0.1,
+                    metalness: 0.05,
+                });
+                const mesh = new THREE.Mesh(particleGeom, particleMat);
+                mesh.castShadow = false;
+                mesh.receiveShadow = false;
+                particleGroup.add(mesh);
+                particles.push(mesh);
+                allParticles.push({
+                    mesh,
+                    curve,
+                    phaseOffset: i / count,
+                    speed: 0.12 + Math.random() * 0.04,
+                });
+            }
+            return particles;
+        }
+
+        function removeWaveData(waveData) {
+            if (!waveData) return;
+            if (waveData.dashedLine) {
+                waveData.dashedLine.geometry.dispose();
+                waveData.dashedLine.material.dispose();
+                dashedLineGroup.remove(waveData.dashedLine);
+            }
+            if (waveData.particles) {
+                waveData.particles.forEach(p => {
+                    p.material.dispose();
+                    p.geometry.dispose();
+                    particleGroup.remove(p);
+                    const idx = allParticles.findIndex(ap => ap.mesh === p);
+                    if (idx >= 0) allParticles.splice(idx, 1);
+                });
+            }
+        }
+
+        function clearAllWaves() {
+            naturalWaves.forEach(w => removeWaveData(w));
+            naturalWaves.length = 0;
+            removeWaveData(polarizedWave);
+            polarizedWave = null;
+            removeWaveData(transmittedWave);
+            transmittedWave = null;
+            while(particleGroup.children.length > 0) {
+                const c = particleGroup.children[0];
+                c.material.dispose();
+                c.geometry.dispose();
+                particleGroup.remove(c);
+            }
+            allParticles.length = 0;
+        }
+
+        function buildAllWaves(angleP1, angleP2) {
+            clearAllWaves();
+
+            // 自然光波 (4条虚线路径，红蓝黄红)
+            const naturalDashColors = [RED, BLUE, YELLOW, RED];
+            naturalAngles.forEach((ang, i) => {
+                const curve = new SineWaveCurve(NATURAL_START, NATURAL_END, NATURAL_AMPLITUDE, 4.5, ang);
+                const dashedLine = createDashedPath(curve, naturalDashColors[i]);
+                dashedLineGroup.add(dashedLine);
+                const particles = createParticlesForWave(curve, 3, PARTICLE_COLORS);
+                naturalWaves.push({ curve, dashedLine, particles, angle: ang });
+            });
+
+            // 偏振光波 (蓝色虚线)
+            const curveP = new SineWaveCurve(POLARIZED_START, POLARIZED_END, POLARIZED_AMPLITUDE, 2.2, angleP1);
+            const dashedLineP = createDashedPath(curveP, BLUE);
+            dashedLineGroup.add(dashedLineP);
+            const particlesP = createParticlesForWave(curveP, 4, PARTICLE_COLORS);
+            polarizedWave = { curve: curveP, dashedLine: dashedLineP, particles: particlesP, angle: angleP1 };
+
+            // 透射光波 (红色虚线)
+            const deltaAngle = angleP2 - angleP1;
+            const transmittedAmplitude = POLARIZED_AMPLITUDE * Math.abs(Math.cos(deltaAngle));
+            const curveT = new SineWaveCurve(TRANSMITTED_START, TRANSMITTED_END, Math.max(transmittedAmplitude, 0.005), 2.2, angleP2);
+            const dashedLineT = createDashedPath(curveT, RED);
+            dashedLineGroup.add(dashedLineT);
+            const particlesT = createParticlesForWave(curveT, 4, PARTICLE_COLORS);
+            transmittedWave = { curve: curveT, dashedLine: dashedLineT, particles: particlesT, angle: angleP2 };
+        }
+
+        function updatePolarizedWave(angleP1) {
+            if (!polarizedWave) return;
+            polarizedWave.dashedLine.geometry.dispose();
+            polarizedWave.dashedLine.material.dispose();
+            dashedLineGroup.remove(polarizedWave.dashedLine);
+            polarizedWave.particles.forEach(p => {
+                p.material.dispose();
+                p.geometry.dispose();
+                particleGroup.remove(p);
+                const idx = allParticles.findIndex(ap => ap.mesh === p);
+                if (idx >= 0) allParticles.splice(idx, 1);
+            });
+
+            const curve = new SineWaveCurve(POLARIZED_START, POLARIZED_END, POLARIZED_AMPLITUDE, 2.2, angleP1);
+            const dashedLine = createDashedPath(curve, BLUE);
+            dashedLineGroup.add(dashedLine);
+            const particles = createParticlesForWave(curve, 4, PARTICLE_COLORS);
+            polarizedWave = { curve, dashedLine, particles, angle: angleP1 };
+        }
+
+        function updateTransmittedWave(angleP1, angleP2) {
+            if (!transmittedWave) return;
+            transmittedWave.dashedLine.geometry.dispose();
+            transmittedWave.dashedLine.material.dispose();
+            dashedLineGroup.remove(transmittedWave.dashedLine);
+            transmittedWave.particles.forEach(p => {
+                p.material.dispose();
+                p.geometry.dispose();
+                particleGroup.remove(p);
+                const idx = allParticles.findIndex(ap => ap.mesh === p);
+                if (idx >= 0) allParticles.splice(idx, 1);
+            });
+
+            const deltaAngle = angleP2 - angleP1;
+            const transmittedAmplitude = POLARIZED_AMPLITUDE * Math.abs(Math.cos(deltaAngle));
+            const curve = new SineWaveCurve(TRANSMITTED_START, TRANSMITTED_END, Math.max(transmittedAmplitude, 0.003), 2.2, angleP2);
+            const dashedLine = createDashedPath(curve, RED);
+            dashedLineGroup.add(dashedLine);
+            const particles = createParticlesForWave(curve, 4, PARTICLE_COLORS);
+            transmittedWave = { curve, dashedLine, particles, angle: angleP2 };
+        }
+
+        // 偏振片模型（关键修改：薄膜改为半透明蓝黑色）
+        function createPolarizerGroup(colorHex, positionX) {
+            const group = new THREE.Group();
+            group.position.set(positionX, 0, 0);
+            
+            // 圆环框架保持不变
+            const torus = new THREE.Mesh(
+                new THREE.TorusGeometry(1.15, 0.06, 24, 48),
+                new THREE.MeshStandardMaterial({ color: '#3a3a4a', roughness: 0.3, metalness: 0.8 })
+            );
+            torus.rotation.y = Math.PI/2;
+            group.add(torus);
+            
+            // 主体薄膜：半透明蓝黑色
+            const film = new THREE.Mesh(
+                new THREE.CircleGeometry(1.08, 48),
+                new THREE.MeshStandardMaterial({
+                    color: '#0a1128',        // 深蓝黑色
+                    roughness: 0.7,
+                    metalness: 0.1,
+                    transparent: true,
+                    opacity: 0.65,           // 半透明，可见背后光线
+                    depthWrite: false,
+                })
+            );
+            film.rotation.y = Math.PI/2;
+            group.add(film);
+            
+            // 透振方向指示器（代表缝隙）
+            const indicatorGroup = new THREE.Group();
+            const indicatorBar = new THREE.Mesh(
+                new THREE.BoxGeometry(0.08, 2.4, 0.1),
+                new THREE.MeshStandardMaterial({
+                    color: colorHex,
+                    emissive: colorHex,
+                    emissiveIntensity: 1.2,
+                    roughness: 0.2,
+                    metalness: 0.2,
+                })
+            );
+            indicatorBar.rotation.y = Math.PI/2;
+            indicatorGroup.add(indicatorBar);
+            
+            // 缝隙两端高亮小球
+            const tipGeom = new THREE.SphereGeometry(0.1, 16, 12);
+            const tipMat = new THREE.MeshStandardMaterial({
+                color: colorHex,
+                emissive: colorHex,
+                emissiveIntensity: 1.5,
+                roughness: 0.1,
+            });
+            const tip1 = new THREE.Mesh(tipGeom, tipMat);
+            tip1.position.y = 1.2;
+            const tip2 = new THREE.Mesh(tipGeom, tipMat);
+            tip2.position.y = -1.2;
+            indicatorGroup.add(tip1);
+            indicatorGroup.add(tip2);
+            
+            group.add(indicatorGroup);
+            group.userData = { indicatorGroup };
+            return group;
+        }
+
+        const polarizerGroup1 = createPolarizerGroup('#4da6ff', 4.0);
+        const polarizerGroup2 = createPolarizerGroup('#ff6b6b', 8.0);
+        scene.add(polarizerGroup1);
+        scene.add(polarizerGroup2);
+
+        function setPolarizerAngle(group, angleRad) {
+            group.userData.indicatorGroup.rotation.x = angleRad;
+        }
+
+        // 光源
+        const sourceGroup = new THREE.Group();
+        sourceGroup.position.set(-5.2, 0, 0);
+        const sourceMat = new THREE.MeshStandardMaterial({ color: '#ffffff', emissive: '#ffffff', emissiveIntensity: 2.5 });
+        const sourceSphere = new THREE.Mesh(new THREE.SphereGeometry(0.3, 32, 24), sourceMat);
+        sourceGroup.add(sourceSphere);
+        const halo = new THREE.Mesh(new THREE.SphereGeometry(0.45, 32, 24), new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: 0.25, depthWrite: false }));
+        sourceGroup.add(halo);
+        scene.add(sourceGroup);
+
+        // 接收屏
+        const screenGroup = new THREE.Group();
+        screenGroup.position.set(12.3, 0, 0);
+        screenGroup.add(new THREE.Mesh(new THREE.TorusGeometry(0.7, 0.05, 16, 32), new THREE.MeshStandardMaterial({ color: '#444455', roughness: 0.3, metalness: 0.7 })).rotateY(Math.PI/2));
+        const screenFilm = new THREE.Mesh(new THREE.CircleGeometry(0.64, 40), new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 0.95, emissive: '#ffffff', emissiveIntensity: 0.5 }));
+        screenFilm.rotation.y = Math.PI/2;
+        screenFilm.name = 'screenFilm';
+        screenGroup.add(screenFilm);
+        scene.add(screenGroup);
+
+        // 标签
+        function createLabel(text, pos, color) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 256; canvas.height = 64;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = color;
+            ctx.font = 'bold 22px "PingFang SC","Microsoft YaHei"';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(text, 128, 32);
+            const texture = new THREE.CanvasTexture(canvas);
+            const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: texture, depthTest: false, depthWrite: false }));
+            sprite.position.copy(pos);
+            sprite.scale.set(2.5, 0.625, 1);
+            return sprite;
+        }
+        scene.add(createLabel('自然光', new THREE.Vector3(-0.5, 0.9, 0.55), '#aad4f0'));
+        scene.add(createLabel('线偏振光', new THREE.Vector3(6, 1.0, 0.55), '#ffcc66'));
+        scene.add(createLabel('透射光', new THREE.Vector3(10.1, 0.8, 0.55), '#ff8888'));
+        scene.add(createLabel('P₁', new THREE.Vector3(4, -1.6, 0), '#4da6ff'));
+        scene.add(createLabel('P₂', new THREE.Vector3(8, -1.6, 0), '#ff6b6b'));
+
+        // 状态变量
+        let currentAngleP1 = Math.PI/2;
+        let currentAngleP2 = Math.PI/2;
+        let needsUpdate = false;
+
+        function initializeScene() {
+            buildAllWaves(currentAngleP1, currentAngleP2);
+            setPolarizerAngle(polarizerGroup1, currentAngleP1);
+            setPolarizerAngle(polarizerGroup2, currentAngleP2);
+            updateScreenBrightness();
+            updateTooltip();
+        }
+
+        function updateScreenBrightness() {
+            const delta = currentAngleP2 - currentAngleP1;
+            const intensity = Math.cos(delta) * Math.cos(delta);
+            const film = screenGroup.getObjectByName('screenFilm');
+            if (film) {
+                film.material.emissiveIntensity = 0.08 + intensity * 0.9;
+                const col = new THREE.Color().setHSL(0.08, 0.05, 0.15 + intensity * 0.8);
+                film.material.emissive.copy(col);
+                film.material.color.copy(col);
+            }
+        }
+
+        function updateTooltip() {
+            const delta = ((currentAngleP2 - currentAngleP1) * 180 / Math.PI) % 180;
+            const absDelta = Math.abs(delta);
+            const displayAngle = absDelta > 90 ? 180 - absDelta : absDelta;
+            const intensity = Math.cos(displayAngle * Math.PI / 180) ** 2;
+            angleTip.textContent = `${Math.round(displayAngle)}°`;
+            intensityTip.textContent = intensity < 0.01 ? '≈ 0% (消光)' : `${Math.round(intensity * 100)}%`;
+        }
+
+        function onSliderChange() {
+            currentAngleP1 = parseFloat(sliderP1.value) * Math.PI / 180;
+            currentAngleP2 = parseFloat(sliderP2.value) * Math.PI / 180;
+            valP1.textContent = `${Math.round(parseFloat(sliderP1.value))}°`;
+            valP2.textContent = `${Math.round(parseFloat(sliderP2.value))}°`;
+            setPolarizerAngle(polarizerGroup1, currentAngleP1);
+            setPolarizerAngle(polarizerGroup2, currentAngleP2);
+            needsUpdate = true;
+            updateTooltip();
+            updatePresets();
+        }
+
+        function updatePresets() {
+            const v1 = parseInt(sliderP1.value);
+            const v2 = parseInt(sliderP2.value);
+            presetsP1.querySelectorAll('button').forEach(b => {
+                const a = parseInt(b.dataset.angle);
+                b.classList.toggle('active', a === v1 || (v1 === 180 && a === 0) || (v1 === 0 && a === 180));
+            });
+            presetsP2.querySelectorAll('button').forEach(b => {
+                const a = parseInt(b.dataset.angle);
+                b.classList.toggle('active', a === v2 || (v2 === 180 && a === 0) || (v2 === 0 && a === 180));
+            });
+        }
+
+        sliderP1.addEventListener('input', onSliderChange);
+        sliderP2.addEventListener('input', onSliderChange);
+        presetsP1.addEventListener('click', e => {
+            if (e.target.tagName === 'BUTTON') {
+                sliderP1.value = e.target.dataset.angle;
+                onSliderChange();
+            }
+        });
+        presetsP2.addEventListener('click', e => {
+            if (e.target.tagName === 'BUTTON') {
+                sliderP2.value = e.target.dataset.angle;
+                onSliderChange();
+            }
+        });
+
+        window.addEventListener('keydown', (e) => {
+            const step = e.shiftKey ? 15 : 5;
+            switch(e.key.toLowerCase()) {
+                case 'q': sliderP1.value = Math.max(0, parseFloat(sliderP1.value) - step); onSliderChange(); break;
+                case 'w': sliderP1.value = Math.min(180, parseFloat(sliderP1.value) + step); onSliderChange(); break;
+                case 'a': sliderP2.value = Math.max(0, parseFloat(sliderP2.value) - step); onSliderChange(); break;
+                case 's': sliderP2.value = Math.min(180, parseFloat(sliderP2.value) + step); onSliderChange(); break;
+                case 'r': sliderP1.value = 90; sliderP2.value = 90; onSliderChange(); camera.position.set(5, 3.5, 9); controls.target.set(3.5, 0, 0); break;
+                case '0': sliderP2.value = sliderP1.value; onSliderChange(); break;
+                case '9': sliderP2.value = (parseFloat(sliderP1.value) + 90) % 180; onSliderChange(); break;
+            }
+        });
+
+        // 动画循环
+        const clock = new THREE.Clock();
+        let timeAccum = 0;
+        function animate() {
+            requestAnimationFrame(animate);
+            const dt = Math.min(clock.getDelta(), 0.1);
+            timeAccum += dt;
+            controls.update();
+
+            if (needsUpdate) {
+                updatePolarizedWave(currentAngleP1);
+                updateTransmittedWave(currentAngleP1, currentAngleP2);
+                updateScreenBrightness();
+                needsUpdate = false;
+            }
+
+            allParticles.forEach(ap => {
+                if (!ap.curve) return;
+                const t = ((timeAccum * ap.speed + ap.phaseOffset) % 1 + 1) % 1;
+                const pt = ap.curve.getPoint(t);
+                ap.mesh.position.copy(pt);
+            });
+
+            const pulse = 1 + 0.06 * Math.sin(timeAccum * 3.5);
+            sourceSphere.scale.setScalar(pulse);
+            halo.scale.setScalar(pulse * 1.3);
+            sourceMat.emissiveIntensity = 2.5 + 0.4 * Math.sin(timeAccum * 3.5);
+
+            renderer.render(scene, camera);
+        }
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        initializeScene();
+        updatePresets();
+        animate();
+
+        // 双击重置视角
+        let lastTap = 0;
+        renderer.domElement.addEventListener('pointerdown', (e) => {
+            const now = Date.now();
+            if (now - lastTap < 300 && e.pointerType === 'touch') {
+                camera.position.set(5, 3.5, 9);
+                controls.target.set(3.5, 0, 0);
+                controls.update();
+            }
+            lastTap = now;
+        });
+        renderer.domElement.addEventListener('pointerenter', () => controls.autoRotate = false);
+        renderer.domElement.addEventListener('pointerleave', () => controls.autoRotate = true);
+    </script>
+
+  <script>
+  // 返回主页（滚动位置已在主页点击链接时保存）
+  function saveScrollAndReturn() {
+    window.location.href = '../index.html';
+  }
+  
+  // 禁用右键菜单
+  document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+  });
+  
+  // 禁用开发者工具快捷键
+  document.addEventListener('keydown', function(e) {
+    // ESC返回主页 - 保存滚动位置
+    if (e.keyCode === 27) {
+      saveScrollAndReturn();
+      return false;
+    }
+    // F12
+    if (e.keyCode === 123) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+U
+    if (e.ctrlKey && e.keyCode === 85) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+I
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 73) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+J
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 74) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+C
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 67) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+S
+    if (e.ctrlKey && e.keyCode === 83) {
+      e.preventDefault();
+      return false;
+    }
+  });
+  
+  // 禁用选择
+  document.addEventListener('selectstart', function(e) {
+    // 允许输入框选择
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+      return true;
+    }
+    e.preventDefault();
+    return false;
+  });
+  </script>
+</body>
+</html>
