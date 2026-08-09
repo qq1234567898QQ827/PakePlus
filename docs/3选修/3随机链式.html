@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>铀-235核裂变链式反应</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background: #0a1628;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            font-family: "Microsoft YaHei", sans-serif;
+            color: #fff;
+            padding: 20px;
+        }
+        h2 {
+            margin-bottom: 10px;
+            color: #8ec5fc;
+            font-weight: 500;
+        }
+        .equation {
+            margin-bottom: 15px;
+            font-size: 18px;
+            color: #ffd700;
+            letter-spacing: 1px;
+        }
+        .equation sub, .equation sup {
+            font-size: 12px;
+        }
+        #canvas {
+            background: #0d1f35;
+            border: 2px solid #2a4a73;
+            border-radius: 8px;
+            box-shadow: 0 0 30px rgba(142, 197, 252, 0.2);
+        }
+        .controls {
+            margin-top: 20px;
+            display: flex;
+            gap: 15px;
+        }
+        button {
+            padding: 10px 25px;
+            font-size: 15px;
+            border: none;
+            border-radius: 5px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        .info {
+            margin-top: 15px;
+            font-size: 14px;
+            color: #a0c4e8;
+        }
+        .legend {
+            margin-top: 12px;
+            display: flex;
+            gap: 30px;
+            font-size: 13px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+        .proton { background: #3742fa; }
+        .neutron { background: #ff4757; }
+    </style>
+
+  <style>
+  body {
+    background-color: #1a2332 !important;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+  }
+  
+  .qilai-back-btn {
+    position: fixed;
+    top: 10px;
+    left: 15px;
+    z-index: 100000;
+    padding: 8px 16px;
+    background: rgba(0, 150, 200, 0.2);
+    border: 1px solid rgba(100, 180, 255, 0.5);
+    color: #8ab4f8;
+    font-size: 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.3s;
+    backdrop-filter: blur(5px);
+    font-family: "Microsoft YaHei", sans-serif;
+  }
+  
+  .qilai-back-btn:hover {
+    background: rgba(0, 150, 200, 0.4);
+    box-shadow: 0 0 15px rgba(100, 180, 255, 0.3);
+    color: #fff;
+  }
+  
+  .qilai-watermark {
+    position: fixed;
+    bottom: 15px;
+    right: 15px;
+    z-index: 99998;
+    font-size: 12px;
+    color: rgba(138, 180, 248, 0.35);
+    text-align: right;
+    line-height: 1.8;
+    pointer-events: none;
+    user-select: none;
+    font-family: "Microsoft YaHei", sans-serif;
+  }
+  
+  .qilai-watermark .title {
+    font-size: 14px;
+    font-weight: bold;
+    color: rgba(138, 180, 248, 0.45);
+    margin-bottom: 4px;
+    letter-spacing: 1px;
+  }
+  </style>
+</head>
+<body>
+  <a href="javascript:void(0);" class="qilai-back-btn" onclick="saveScrollAndReturn();">← 返回主页</a>
+  
+  <div class="qilai-watermark">
+    <div class="title">齐老师动画</div>
+    QQ 3398528250<br>
+    抖音 35320300542
+  </div>
+
+    <h2>铀-235 核裂变链式反应</h2>
+    <div class="equation">
+        <sup>235</sup><sub>92</sub>U + <sup>1</sup><sub>0</sub>n → 
+        <sup>141</sup><sub>56</sub>Ba + <sup>92</sup><sub>36</sub>Kr + 3<sup>1</sup><sub>0</sub>n
+    </div>
+    <canvas id="canvas" width="900" height="600"></canvas>
+    
+    <div class="legend">
+        <div class="legend-item">
+            <div class="dot proton"></div>
+            <span>质子（蓝色）</span>
+        </div>
+        <div class="legend-item">
+            <div class="dot neutron"></div>
+            <span>中子（红色）</span>
+        </div>
+    </div>
+    
+    <div class="controls">
+        <button onclick="startAnimation()">开始演示</button>
+        <button onclick="resetAnimation()">重置</button>
+    </div>
+    
+    <div class="info" id="info">点击"开始演示"观看3代链式反应过程</div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const info = document.getElementById('info');
+        
+        const WIDTH = canvas.width;
+        const HEIGHT = canvas.height;
+        const CENTER_X = WIDTH / 2;
+        const CENTER_Y = HEIGHT / 2;
+        
+        // 颜色定义：质子蓝色，中子红色
+        const PROTON_COLOR = '#3742fa';
+        const NEUTRON_COLOR = '#ff4757';
+        const U_GLOW = 'rgba(255, 165, 2, 0.35)';
+        const BA_COLOR = '#2ed573';
+        const KR_COLOR = '#1e90ff';
+        const SHOCKWAVE_COLOR = 'rgba(255, 200, 80, 0.7)';
+        
+        let animationId = null;
+        let generation = 0;
+        const maxGeneration = 3;
+        let phase = 'idle';
+        let phaseTime = 0;
+        
+        // 铀-235原子核类
+        class Uranium235 {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.radius = 28;
+                this.fissioned = false;
+                this.shockwaves = [];
+                this.nucleonRadius = 3.5;
+                
+                // 裂变前：质子+中子颗粒结构
+                this.protons = [];
+                this.neutrons = [];
+                this.initNucleons();
+                
+                // 裂变后：两个发光新核
+                this.baNucleus = null;
+                this.krNucleus = null;
+            }
+            
+            // 初始化核子（裂变前显示）
+            initNucleons() {
+                // 9个质子（对应原子序数92，按比例简化）
+                for (let i = 0; i < 9; i++) {
+                    const angle = Math.random() * Math.PI * 2;
+                    const r = Math.random() * this.radius * 0.85;
+                    this.protons.push({
+                        x: this.x + Math.cos(angle) * r,
+                        y: this.y + Math.sin(angle) * r,
+                        vx: (Math.random() - 0.5) * 0.4,
+                        vy: (Math.random() - 0.5) * 0.4
+                    });
+                }
+                // 14个中子（对应中子数143，按比例简化）
+                for (let i = 0; i < 14; i++) {
+                    const angle = Math.random() * Math.PI * 2;
+                    const r = Math.random() * this.radius * 0.9;
+                    this.neutrons.push({
+                        x: this.x + Math.cos(angle) * r,
+                        y: this.y + Math.sin(angle) * r,
+                        vx: (Math.random() - 0.5) * 0.4,
+                        vy: (Math.random() - 0.5) * 0.4
+                    });
+                }
+            }
+            
+            update() {
+                if (!this.fissioned) {
+                    // 未裂变：核子在核内振动
+                    this.updateNucleons(this.protons, this.x, this.y, this.radius * 0.85);
+                    this.updateNucleons(this.neutrons, this.x, this.y, this.radius * 0.9);
+                } else {
+                    // 裂变后：两个新核做减速运动
+                    this.baNucleus.x += this.baNucleus.vx;
+                    this.baNucleus.y += this.baNucleus.vy;
+                    this.baNucleus.vx *= 0.995;
+                    this.baNucleus.vy *= 0.995;
+                    
+                    this.krNucleus.x += this.krNucleus.vx;
+                    this.krNucleus.y += this.krNucleus.vy;
+                    this.krNucleus.vx *= 0.995;
+                    this.krNucleus.vy *= 0.995;
+                }
+                
+                // 更新冲击波
+                this.shockwaves.forEach(sw => {
+                    sw.radius += 7;
+                    sw.alpha -= 0.018;
+                });
+                this.shockwaves = this.shockwaves.filter(sw => sw.alpha > 0);
+            }
+            
+            // 核子边界反弹
+            updateNucleons(nucleons, centerX, centerY, maxR) {
+                nucleons.forEach(n => {
+                    n.x += n.vx;
+                    n.y += n.vy;
+                    const dx = n.x - centerX;
+                    const dy = n.y - centerY;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    if (dist > maxR) {
+                        const nx = dx / dist;
+                        const ny = dy / dist;
+                        const dot = n.vx * nx + n.vy * ny;
+                        n.vx -= 2 * dot * nx;
+                        n.vy -= 2 * dot * ny;
+                    }
+                });
+            }
+            
+            // 发生裂变，返回3个自由中子的出射方向
+            fission() {
+                if (this.fissioned) return [];
+                this.fissioned = true;
+                
+                // 随机裂变方向
+                const angle = Math.random() * Math.PI * 2;
+                const speed = 1.6;
+                
+                // 钡-141 新核（发光小球）
+                this.baNucleus = {
+                    x: this.x,
+                    y: this.y,
+                    vx: Math.cos(angle) * speed * 0.85,
+                    vy: Math.sin(angle) * speed * 0.85,
+                    radius: 20,
+                    color: BA_COLOR,
+                    label: 'Ba-141'
+                };
+                
+                // 氪-92 新核（发光小球）
+                this.krNucleus = {
+                    x: this.x,
+                    y: this.y,
+                    vx: Math.cos(angle + Math.PI) * speed * 1.15,
+                    vy: Math.sin(angle + Math.PI) * speed * 1.15,
+                    radius: 17,
+                    color: KR_COLOR,
+                    label: 'Kr-92'
+                };
+                
+                // 产生能量冲击波
+                for (let i = 0; i < 3; i++) {
+                    setTimeout(() => {
+                        this.shockwaves.push({
+                            x: this.x,
+                            y: this.y,
+                            radius: this.radius,
+                            alpha: 0.8
+                        });
+                    }, i * 80);
+                }
+                
+                // 返回3个自由中子的出射角度
+                const neutronAngles = [];
+                for (let i = 0; i < 3; i++) {
+                    neutronAngles.push(angle + (Math.random() - 0.5) * Math.PI * 0.9);
+                }
+                return neutronAngles;
+            }
+            
+            draw() {
+                // 绘制能量冲击波
+                this.shockwaves.forEach(sw => {
+                    ctx.beginPath();
+                    ctx.arc(sw.x, sw.y, sw.radius, 0, Math.PI * 2);
+                    ctx.strokeStyle = `rgba(255, 200, 80, ${sw.alpha})`;
+                    ctx.lineWidth = 3;
+                    ctx.stroke();
+                    
+                    ctx.beginPath();
+                    ctx.arc(sw.x, sw.y, sw.radius * 0.6, 0, Math.PI * 2);
+                    ctx.strokeStyle = `rgba(255, 230, 120, ${sw.alpha * 0.4})`;
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                });
+                
+                if (!this.fissioned) {
+                    // 铀核外层光晕
+                    const gradient = ctx.createRadialGradient(
+                        this.x, this.y, 0,
+                        this.x, this.y, this.radius * 1.5
+                    );
+                    gradient.addColorStop(0, U_GLOW);
+                    gradient.addColorStop(1, 'rgba(255, 165, 2, 0)');
+                    ctx.fillStyle = gradient;
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, this.radius * 1.5, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    // 绘制核子（中子在下，质子在上）
+                    this.neutrons.forEach(n => {
+                        ctx.beginPath();
+                        ctx.arc(n.x, n.y, this.nucleonRadius, 0, Math.PI * 2);
+                        ctx.fillStyle = NEUTRON_COLOR;
+                        ctx.fill();
+                    });
+                    this.protons.forEach(p => {
+                        ctx.beginPath();
+                        ctx.arc(p.x, p.y, this.nucleonRadius, 0, Math.PI * 2);
+                        ctx.fillStyle = PROTON_COLOR;
+                        ctx.fill();
+                    });
+                    
+                    // 标注
+                    ctx.fillStyle = '#ffa502';
+                    ctx.font = 'bold 11px Microsoft YaHei';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('U-235', this.x, this.y - this.radius - 8);
+                } else {
+                    // 绘制两个裂变产物（发光小球）
+                    this.drawProductNucleus(this.baNucleus);
+                    this.drawProductNucleus(this.krNucleus);
+                }
+            }
+            
+            // 绘制裂变产生的新原子核（发光小球，无多余核子）
+            drawProductNucleus(nucleus) {
+                // 外层光晕
+                const gradient = ctx.createRadialGradient(
+                    nucleus.x, nucleus.y, 0,
+                    nucleus.x, nucleus.y, nucleus.radius * 1.6
+                );
+                gradient.addColorStop(0, nucleus.color + '80');
+                gradient.addColorStop(1, nucleus.color + '00');
+                ctx.fillStyle = gradient;
+                ctx.beginPath();
+                ctx.arc(nucleus.x, nucleus.y, nucleus.radius * 1.6, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // 实心球体
+                ctx.beginPath();
+                ctx.arc(nucleus.x, nucleus.y, nucleus.radius, 0, Math.PI * 2);
+                ctx.fillStyle = nucleus.color;
+                ctx.fill();
+                ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+                
+                // 标注
+                ctx.fillStyle = '#fff';
+                ctx.font = 'bold 10px Microsoft YaHei';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(nucleus.label, nucleus.x, nucleus.y);
+            }
+        }
+        
+        // 自由中子类
+        class FreeNeutron {
+            constructor(x, y, vx, vy) {
+                this.x = x;
+                this.y = y;
+                this.vx = vx;
+                this.vy = vy;
+                this.radius = 5;
+                this.active = true;
+                this.trail = [];
+            }
+            
+            update() {
+                this.trail.push({x: this.x, y: this.y});
+                if (this.trail.length > 12) this.trail.shift();
+                
+                this.x += this.vx;
+                this.y += this.vy;
+                
+                if (this.x < -20 || this.x > WIDTH + 20 || 
+                    this.y < -20 || this.y > HEIGHT + 20) {
+                    this.active = false;
+                }
+            }
+            
+            draw() {
+                // 运动轨迹拖尾
+                for (let i = 0; i < this.trail.length; i++) {
+                    const alpha = (i / this.trail.length) * 0.5;
+                    const r = this.radius * (i / this.trail.length) * 0.8;
+                    ctx.beginPath();
+                    ctx.arc(this.trail[i].x, this.trail[i].y, r, 0, Math.PI * 2);
+                    ctx.fillStyle = `rgba(255, 71, 87, ${alpha})`;
+                    ctx.fill();
+                }
+                
+                // 中子本体
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = NEUTRON_COLOR;
+                ctx.fill();
+                ctx.strokeStyle = 'rgba(255,255,255,0.6)';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+            }
+        }
+        
+        // 全局对象
+        let nuclei = [];
+        let freeNeutrons = [];
+        
+        function initScene() {
+            nuclei = [];
+            freeNeutrons = [];
+            generation = 0;
+            phase = 'idle';
+            phaseTime = 0;
+            
+            // 第1代：中心1个U-235
+            nuclei.push(new Uranium235(CENTER_X, CENTER_Y));
+            
+            // 第2代：周围3个U-235
+            for (let i = 0; i < 3; i++) {
+                const angle = (i / 3) * Math.PI * 2 - Math.PI / 2;
+                const x = CENTER_X + Math.cos(angle) * 170;
+                const y = CENTER_Y + Math.sin(angle) * 170;
+                nuclei.push(new Uranium235(x, y));
+            }
+            
+            // 第3代：外围9个U-235
+            for (let i = 0; i < 9; i++) {
+                const angle = (i / 9) * Math.PI * 2 + Math.PI / 9;
+                const x = CENTER_X + Math.cos(angle) * 310;
+                const y = CENTER_Y + Math.sin(angle) * 210;
+                nuclei.push(new Uranium235(x, y));
+            }
+        }
+        
+        function startAnimation() {
+            if (phase !== 'idle' && phase !== 'done') return;
+            
+            initScene();
+            phase = 'firing';
+            phaseTime = 0;
+            generation = 1;
+            
+            // 从左侧发射初始中子
+            const initialNeutron = new FreeNeutron(30, CENTER_Y, 3.5, 0);
+            freeNeutrons.push(initialNeutron);
+            
+            info.textContent = `第 1 代：一个中子轰击铀-235原子核`;
+            
+            if (animationId) cancelAnimationFrame(animationId);
+            animate();
+        }
+        
+        function resetAnimation() {
+            if (animationId) {
+                cancelAnimationFrame(animationId);
+                animationId = null;
+            }
+            initScene();
+            draw();
+            info.textContent = '点击"开始演示"观看3代链式反应过程';
+        }
+        
+        // 碰撞检测：中子轰击铀核
+        function checkCollisions() {
+            freeNeutrons.forEach(neutron => {
+                if (!neutron.active) return;
+                
+                nuclei.forEach(nucleus => {
+                    if (nucleus.fissioned) return;
+                    
+                    const dx = neutron.x - nucleus.x;
+                    const dy = neutron.y - nucleus.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    
+                    if (dist < nucleus.radius + neutron.radius) {
+                        neutron.active = false;
+                        
+                        // 触发裂变，获得3个释放中子的方向
+                        const angles = nucleus.fission();
+                        
+                        // 延迟释放3个自由中子
+                        setTimeout(() => {
+                            angles.forEach(angle => {
+                                const speed = 3 + Math.random() * 1.5;
+                                const n = new FreeNeutron(
+                                    nucleus.x,
+                                    nucleus.y,
+                                    Math.cos(angle) * speed,
+                                    Math.sin(angle) * speed
+                                );
+                                freeNeutrons.push(n);
+                            });
+                        }, 150);
+                        
+                        // 更新代际提示
+                        if (generation < maxGeneration) {
+                            generation++;
+                            setTimeout(() => {
+                                info.textContent = `第 ${generation} 代：裂变释放的中子继续轰击邻近铀核`;
+                            }, 400);
+                        }
+                    }
+                });
+            });
+        }
+        
+        function checkComplete() {
+            const allFissioned = nuclei.every(n => n.fissioned);
+            if (allFissioned && phase !== 'done') {
+                phase = 'done';
+                info.textContent = '链式反应完成：3代裂变持续进行，释放大量核能';
+            }
+        }
+        
+        function animate() {
+            phaseTime++;
+            
+            nuclei.forEach(n => n.update());
+            freeNeutrons.forEach(n => n.update());
+            freeNeutrons = freeNeutrons.filter(n => n.active);
+            
+            checkCollisions();
+            checkComplete();
+            
+            draw();
+            
+            if (phase !== 'done' || phaseTime < 200) {
+                animationId = requestAnimationFrame(animate);
+            }
+        }
+        
+        function draw() {
+            // 浅蓝黑色背景
+            ctx.fillStyle = '#0d1f35';
+            ctx.fillRect(0, 0, WIDTH, HEIGHT);
+            
+            // 背景网格
+            ctx.strokeStyle = 'rgba(100, 150, 200, 0.06)';
+            ctx.lineWidth = 1;
+            for (let i = 0; i < WIDTH; i += 30) {
+                ctx.beginPath();
+                ctx.moveTo(i, 0);
+                ctx.lineTo(i, HEIGHT);
+                ctx.stroke();
+            }
+            for (let i = 0; i < HEIGHT; i += 30) {
+                ctx.beginPath();
+                ctx.moveTo(0, i);
+                ctx.lineTo(WIDTH, i);
+                ctx.stroke();
+            }
+            
+            // 绘制所有原子核
+            nuclei.forEach(n => n.draw());
+            
+            // 绘制所有自由中子
+            freeNeutrons.forEach(n => n.draw());
+        }
+        
+        // 初始化场景
+        initScene();
+        draw();
+    </script>
+
+  <script>
+  // 返回主页（滚动位置已在主页点击链接时保存）
+  function saveScrollAndReturn() {
+    window.location.href = '../index.html';
+  }
+  
+  // 禁用右键菜单
+  document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+  });
+  
+  // 禁用开发者工具快捷键
+  document.addEventListener('keydown', function(e) {
+    // ESC返回主页 - 保存滚动位置
+    if (e.keyCode === 27) {
+      saveScrollAndReturn();
+      return false;
+    }
+    // F12
+    if (e.keyCode === 123) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+U
+    if (e.ctrlKey && e.keyCode === 85) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+I
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 73) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+J
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 74) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+C
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 67) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+S
+    if (e.ctrlKey && e.keyCode === 83) {
+      e.preventDefault();
+      return false;
+    }
+  });
+  
+  // 禁用选择
+  document.addEventListener('selectstart', function(e) {
+    // 允许输入框选择
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+      return true;
+    }
+    e.preventDefault();
+    return false;
+  });
+  </script>
+</body>
+</html>
