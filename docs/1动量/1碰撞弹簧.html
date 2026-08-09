@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>弹簧碰撞模型</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .hidden { display: none !important; }
+        body {
+            background: linear-gradient(135deg, #0a0e17 0%, #131a28 100%);
+        }
+        .tech-panel {
+            background: rgba(30, 41, 59, 0.8);
+            border: 1px solid rgba(56, 189, 248, 0.2);
+            box-shadow: 0 0 20px rgba(56, 189, 248, 0.1);
+            backdrop-filter: blur(10px);
+        }
+        .tech-btn {
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        .tech-btn:hover {
+            box-shadow: 0 0 15px currentColor;
+            transform: translateY(-1px);
+        }
+        .tech-title {
+            text-shadow: 0 0 15px rgba(34, 211, 238, 0.8);
+        }
+        .tech-phase-tag {
+            border: 1px solid rgba(148, 163, 184, 0.3);
+        }
+    </style>
+
+  <style>
+  body {
+    background-color: #1a2332 !important;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+  }
+  
+  .qilai-back-btn {
+    position: fixed;
+    top: 10px;
+    left: 15px;
+    z-index: 100000;
+    padding: 8px 16px;
+    background: rgba(0, 150, 200, 0.2);
+    border: 1px solid rgba(100, 180, 255, 0.5);
+    color: #8ab4f8;
+    font-size: 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.3s;
+    backdrop-filter: blur(5px);
+    font-family: "Microsoft YaHei", sans-serif;
+  }
+  
+  .qilai-back-btn:hover {
+    background: rgba(0, 150, 200, 0.4);
+    box-shadow: 0 0 15px rgba(100, 180, 255, 0.3);
+    color: #fff;
+  }
+  
+  .qilai-watermark {
+    position: fixed;
+    bottom: 15px;
+    right: 15px;
+    z-index: 99998;
+    font-size: 12px;
+    color: rgba(138, 180, 248, 0.35);
+    text-align: right;
+    line-height: 1.8;
+    pointer-events: none;
+    user-select: none;
+    font-family: "Microsoft YaHei", sans-serif;
+  }
+  
+  .qilai-watermark .title {
+    font-size: 14px;
+    font-weight: bold;
+    color: rgba(138, 180, 248, 0.45);
+    margin-bottom: 4px;
+    letter-spacing: 1px;
+  }
+  </style>
+</head>
+<body class="text-white p-1 m-0">
+  <a href="javascript:void(0);" class="qilai-back-btn" onclick="saveScrollAndReturn();">← 返回主页</a>
+  
+  <div class="qilai-watermark">
+    <div class="title">齐老师动画</div>
+    QQ 3398528250<br>
+    抖音 35320300542
+  </div>
+
+<div class="max-w-7xl mx-auto">
+
+    <!-- 标题 - 发光效果 -->
+    <h1 class="text-xl font-bold text-center text-cyan-400 m-0 p-0 tech-title">高中物理碰撞弹簧模型</h1>
+
+    <!-- 动画画布面板 -->
+    <div class="tech-panel rounded p-1 mt-1">
+        <canvas id="animationCanvas" width="1200" height="200" class="w-full rounded bg-slate-900/50"></canvas>
+    </div>
+
+    <!-- 参数调节面板 -->
+    <div class="tech-panel rounded p-1 mt-1">
+        <div class="flex items-center justify-center gap-2 text-base whitespace-nowrap flex-wrap">
+            <span class="text-gray-300 text-base">mA</span>
+            <input id="massA" value="1" class="w-14 text-base p-1 bg-slate-700/50 rounded border border-cyan-500/30 text-cyan-300 focus:outline-none focus:border-cyan-400">
+            
+            <span class="text-gray-300 text-base">mB</span>
+            <input id="massB" value="1" class="w-14 text-base p-1 bg-slate-700/50 rounded border border-cyan-500/30 text-cyan-300 focus:outline-none focus:border-cyan-400">
+            
+            <span class="text-gray-300 text-base">v₀</span>
+            <input id="initialVelocitySlider" value="5" class="w-16 text-base p-1 bg-slate-700/50 rounded border border-cyan-500/30 text-cyan-300 focus:outline-none focus:border-cyan-400">
+            
+            <span class="text-gray-300 text-base">k</span>
+            <input id="springK" value="3" class="w-16 text-base p-1 bg-slate-700/50 rounded border border-cyan-500/30 text-cyan-300 focus:outline-none focus:border-cyan-400">
+            
+            <button id="applyParamsBtn" class="px-3 py-1 bg-blue-600/80 rounded text-base tech-btn">应用</button>
+        </div>
+    </div>
+
+    <!-- 控制按钮面板 -->
+    <div class="tech-panel rounded p-1 mt-1">
+        <div class="flex items-center justify-center gap-2 text-base whitespace-nowrap flex-wrap">
+            <button id="playPauseBtn" class="px-3 py-1 bg-green-600/80 rounded text-base tech-btn">播放</button>
+            <button id="resetBtn" class="px-3 py-1 bg-red-600/80 rounded text-base tech-btn">重置</button>
+            <button id="stepBtn" class="px-3 py-1 bg-yellow-600/80 rounded text-base tech-btn">单步</button>
+            <button id="lockSpringBtn" class="px-3 py-1 bg-purple-600/80 rounded text-base tech-btn">锁弹簧</button>
+
+            <!-- 图表显隐开关 -->
+            <button id="toggleVelocityBtn" class="px-3 py-1 bg-cyan-600/80 rounded text-base tech-btn">显/隐速度图</button>
+            <button id="toggleEnergyBtn" class="px-3 py-1 bg-cyan-600/80 rounded text-base tech-btn">显/隐能量图</button>
+        </div>
+    </div>
+
+    <!-- 状态面板 -->
+    <div class="tech-panel rounded p-1 mt-1 text-center">
+        <span id="phaseIndicator" class="px-2 py-1 rounded bg-blue-700/50 text-base font-bold border border-blue-500/30"></span>
+        <span id="phaseDescription" class="text-gray-400 ml-2 text-base"></span>
+    </div>
+
+    <!-- 图表 -->
+    <div class="grid grid-cols-1 gap-1 mt-1">
+        <div id="velocityChartWrapper" class="tech-panel rounded p-1">
+            <div class="text-lg text-center font-bold text-cyan-300">v-t 速度图像</div>
+            <canvas id="velocityChart" width="1200" height="160" class="w-full"></canvas>
+        </div>
+        <div id="energyChartWrapper" class="tech-panel rounded p-1">
+            <div class="text-lg text-center font-bold text-cyan-300">能量变化图</div>
+            <canvas id="energyChart" width="1200" height="160" class="w-full"></canvas>
+        </div>
+    </div>
+
+    <!-- 阶段提示 -->
+    <div class="flex justify-center gap-2 mt-1 text-lg">
+        <span class="bg-blue-900/50 px-2 py-1 rounded tech-phase-tag text-blue-300">压缩</span>
+        <span class="bg-purple-900/50 px-2 py-1 rounded tech-phase-tag text-purple-300">共速</span>
+        <span class="bg-orange-900/50 px-2 py-1 rounded tech-phase-tag text-orange-300">恢复</span>
+        <span class="bg-green-900/50 px-2 py-1 rounded tech-phase-tag text-green-300">分离</span>
+    </div>
+</div>
+
+<script>
+const canvas = document.getElementById('animationCanvas');
+const ctx = canvas.getContext('2d');
+const velocityCanvas = document.getElementById('velocityChart');
+const velocityCtx = velocityCanvas.getContext('2d');
+const energyCanvas = document.getElementById('energyChart');
+const energyCtx = energyCanvas.getContext('2d');
+
+// 显隐控制
+const velocityWrapper = document.getElementById('velocityChartWrapper');
+const energyWrapper = document.getElementById('energyChartWrapper');
+
+// 自适应图表大小函数
+function updateChartSize() {
+    const vVisible = !velocityWrapper.classList.contains('hidden');
+    const eVisible = !energyWrapper.classList.contains('hidden');
+    
+    if (vVisible && eVisible) {
+        velocityCanvas.height = 160;
+        energyCanvas.height = 160;
+    } else if (vVisible) {
+        velocityCanvas.height = 320;
+    } else if (eVisible) {
+        energyCanvas.height = 320;
+    }
+    
+    drawVelocityChart();
+    drawEnergyChart();
+}
+
+document.getElementById('toggleVelocityBtn').onclick = () => {
+    velocityWrapper.classList.toggle('hidden');
+    updateChartSize();
+};
+document.getElementById('toggleEnergyBtn').onclick = () => {
+    energyWrapper.classList.toggle('hidden');
+    updateChartSize();
+};
+
+let massA = 1, massB = 1, initialVelocity = 5, springK = 3;
+let springNaturalLength = 280, blockSize = 90;
+let xA, xB, vA, vB, time = 0, isPlaying = false, animationSpeed = 4, dt = 0.005;
+let isSpringLocked = false, lockedCompression = 0, historyData = [], maxHistoryPoints = 500;
+
+const PHASE = { INITIAL:0, COMPRESSION:1, COMMON_VELOCITY:2, RECOVERY:3, SEPARATION:4, LOCKED:5 };
+let currentPhase = PHASE.INITIAL;
+
+function init() {
+    xA = 100; xB = 600; vA = initialVelocity; vB = 0; time = 0;
+    currentPhase = PHASE.INITIAL; historyData = []; isSpringLocked = false;
+    document.getElementById('lockSpringBtn').disabled = false;
+    document.getElementById('lockSpringBtn').textContent = '锁弹簧';
+    updateUI(); draw(); 
+    updateChartSize();
+}
+
+function updatePhysics() {
+    if (isSpringLocked) {
+        let cv = (massA * vA + massB * vB) / (massA + massB);
+        vA = cv; vB = cv;
+        xA += vA * dt * animationSpeed * 50;
+        xB += vB * dt * animationSpeed * 50;
+        time += dt * animationSpeed;
+        currentPhase = PHASE.LOCKED;
+    } else {
+        let sle = xB - springNaturalLength;
+        let cp = Math.max(0, (xA + blockSize) - sle);
+        let f = springK * cp / 100;
+        let aA = -f / massA, aB = f / massB;
+        vA += aA * dt * animationSpeed;
+        vB += aB * dt * animationSpeed;
+        xA += vA * dt * animationSpeed * 50;
+        xB += vB * dt * animationSpeed * 50;
+        time += dt * animationSpeed;
+
+        let nc = Math.max(0, (xA + blockSize) - (xB - springNaturalLength));
+        if (nc > 0 && vA > vB) currentPhase = PHASE.COMPRESSION;
+        else if (nc > 0 && Math.abs(vA - vB) < 0.01) currentPhase = PHASE.COMMON_VELOCITY;
+        else if (nc > 0 && vA < vB) currentPhase = PHASE.RECOVERY;
+        else if (nc === 0 && vA <= vB) { currentPhase = PHASE.SEPARATION; document.getElementById('lockSpringBtn').disabled = true; }
+    }
+    if (historyData.length < maxHistoryPoints) {
+        let c = isSpringLocked ? lockedCompression : Math.max(0, (xA + blockSize) - (xB - springNaturalLength)) / 100;
+        let ekA = 0.5 * massA * vA * vA;
+        let ekB = 0.5 * massB * vB * vB;
+        let ep = 0.5 * springK * c * c;
+        historyData.push({ time, vA, vB, EkA: ekA, EkB: ekB, Ep: ep });
+    }
+}
+
+// 绘制箭头函数
+function drawArrow(x, y, length, color) {
+    if (Math.abs(length) < 0.1) return;
+    ctx.fillStyle = color;
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 3;
+    ctx.shadowBlur = 5;
+    ctx.shadowColor = color;
+    
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(x + length, y);
+    ctx.stroke();
+    
+    if (length > 0) {
+        ctx.beginPath();
+        ctx.moveTo(x + length, y);
+        ctx.lineTo(x + length - 8, y - 5);
+        ctx.lineTo(x + length - 8, y + 5);
+        ctx.closePath();
+        ctx.fill();
+    } else {
+        ctx.beginPath();
+        ctx.moveTo(x + length, y);
+        ctx.lineTo(x + length + 8, y - 5);
+        ctx.lineTo(x + length + 8, y + 5);
+        ctx.closePath();
+        ctx.fill();
+    }
+    ctx.shadowBlur = 0;
+}
+
+function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    const offsetY = 50;
+    
+    ctx.fillStyle = '#1e293b'; ctx.fillRect(0, offsetY + blockSize + 10, canvas.width, 50);
+
+    let sle = xB - springNaturalLength;
+    let cl = isSpringLocked ? (springNaturalLength - lockedCompression * 100) : (springNaturalLength - Math.max(0, (xA + blockSize) - sle));
+
+    ctx.save(); ctx.translate(xB - cl, offsetY + blockSize/2);
+    ctx.strokeStyle = isSpringLocked ? '#a855f7' : '#22d3ee';
+    ctx.lineWidth = 4;
+    ctx.shadowBlur = 6;
+    ctx.shadowColor = ctx.strokeStyle;
+    ctx.beginPath();
+    ctx.moveTo(0, 0); ctx.lineTo(10, 0);
+    let len = Math.hypot(xB - (xB - cl), 0);
+    let sp = (len - 20) / 15;
+    for (let i = 0; i <= 15; i++) {
+        let x = 10 + i * sp;
+        let y = i % 2 ? 7 : -7;
+        ctx.lineTo(x, y);
+    }
+    ctx.lineTo(len - 10, 0); ctx.lineTo(len, 0); ctx.stroke(); ctx.restore();
+    ctx.shadowBlur = 0;
+
+    let ga = ctx.createLinearGradient(xA, offsetY, xA + blockSize, offsetY + blockSize);
+    ga.addColorStop(0, '#e2e8f0'); ga.addColorStop(1, '#94a3b8');
+    ctx.fillStyle = ga;
+    ctx.shadowBlur = 8;
+    ctx.shadowColor = '#3b82f6';
+    ctx.fillRect(xA, offsetY, blockSize, blockSize);
+    ctx.strokeStyle = '#3b82f6'; ctx.lineWidth = 2; ctx.strokeRect(xA, offsetY, blockSize, blockSize);
+    ctx.shadowBlur = 0;
+
+    let gb = ctx.createLinearGradient(xB, offsetY, xB + blockSize, offsetY + blockSize);
+    gb.addColorStop(0, '#fca5a5'); gb.addColorStop(1, '#ef4444');
+    ctx.fillStyle = gb;
+    ctx.shadowBlur = 8;
+    ctx.shadowColor = '#ef4444';
+    ctx.fillRect(xB, offsetY, blockSize, blockSize);
+    ctx.strokeStyle = '#ef4444'; ctx.lineWidth = 2; ctx.strokeRect(xB, offsetY, blockSize, blockSize);
+    ctx.shadowBlur = 0;
+
+    ctx.fillStyle = '#111'; ctx.font = 'bold 30px Arial'; ctx.textAlign = 'center';
+    ctx.fillText('A', xA + blockSize/2, offsetY + blockSize/2 + 10);
+    ctx.fillText('B', xB + blockSize/2, offsetY + blockSize/2 + 10);
+
+    drawArrow(xA + blockSize/2, offsetY + blockSize + 20, vA * 15, '#3b82f6');
+    ctx.fillStyle = '#3b82f6'; ctx.font = 'bold 16px Arial';
+    ctx.shadowBlur = 3;
+    ctx.shadowColor = '#3b82f6';
+    ctx.fillText(`${vA.toFixed(2)} m/s`, xA + blockSize/2, offsetY + blockSize + 35);
+    ctx.shadowBlur = 0;
+    
+    drawArrow(xB + blockSize/2, offsetY + blockSize + 20, vB * 15, '#ef4444');
+    ctx.fillStyle = '#ef4444'; ctx.font = 'bold 16px Arial';
+    ctx.shadowBlur = 3;
+    ctx.shadowColor = '#ef4444';
+    ctx.fillText(`${vB.toFixed(2)} m/s`, xB + blockSize/2, offsetY + blockSize + 35);
+    ctx.shadowBlur = 0;
+}
+
+function drawVelocityChart() {
+    velocityCtx.clearRect(0, 0, velocityCanvas.width, velocityCanvas.height);
+    if (historyData.length < 2) return;
+    let p = 35, w = velocityCanvas.width - 2*p, h = velocityCanvas.height - 2*p;
+    
+    let allV = historyData.flatMap(d => [d.vA, d.vB]);
+    let maxV = Math.max(...allV) * 1.2;
+    let minV = Math.min(...allV) * 1.2;
+    maxV = Math.max(maxV, 10);
+    minV = Math.min(minV, -10);
+    let rangeV = maxV - minV;
+    
+    velocityCtx.strokeStyle = '#38bdf8'; velocityCtx.lineWidth = 2;
+    velocityCtx.beginPath();
+    velocityCtx.moveTo(p, p); velocityCtx.lineTo(p, p+h); velocityCtx.lineTo(p+w, p+h); velocityCtx.stroke();
+    
+    velocityCtx.fillStyle = '#ffffff'; velocityCtx.font = '14px Arial';
+    velocityCtx.textAlign = 'right';
+    velocityCtx.fillText('v', p - 5, p + 10);
+    velocityCtx.textAlign = 'left';
+    velocityCtx.fillText('t', p + w + 5, p + h + 10);
+    
+    velocityCtx.textAlign = 'right';
+    velocityCtx.font = '12px Arial';
+    velocityCtx.fillStyle = '#ffffff';
+    for(let i=0; i<=4; i++){
+        let v = minV + (rangeV / 4) * i;
+        let y = p + h * (1 - (v - minV) / rangeV);
+        velocityCtx.strokeStyle = '#666';
+        velocityCtx.lineWidth = 1;
+        velocityCtx.beginPath();
+        velocityCtx.moveTo(p-3, y);
+        velocityCtx.lineTo(p, y);
+        velocityCtx.stroke();
+        velocityCtx.fillText(v.toFixed(1), p-5, y+4);
+    }
+    
+    let zeroY = p + h * (1 - (0 - minV) / rangeV);
+    velocityCtx.strokeStyle = '#666'; velocityCtx.lineWidth = 1;
+    velocityCtx.setLineDash([5, 5]);
+    velocityCtx.beginPath();
+    velocityCtx.moveTo(p, zeroY); velocityCtx.lineTo(p+w, zeroY);
+    velocityCtx.stroke();
+    velocityCtx.setLineDash([]);
+    
+    velocityCtx.strokeStyle = '#9ca3af'; velocityCtx.lineWidth = 3;
+    velocityCtx.shadowBlur = 5;
+    velocityCtx.shadowColor = '#9ca3af';
+    velocityCtx.beginPath();
+    historyData.forEach((d, i) => {
+        let x = p + i / maxHistoryPoints * w;
+        let y = p + h * (1 - (d.vA - minV) / rangeV);
+        i ? velocityCtx.lineTo(x, y) : velocityCtx.moveTo(x, y);
+    }); velocityCtx.stroke();
+    velocityCtx.shadowBlur = 0;
+
+    velocityCtx.strokeStyle = '#ef4444';
+    velocityCtx.lineWidth = 3;
+    velocityCtx.shadowBlur = 5;
+    velocityCtx.shadowColor = '#ef4444';
+    velocityCtx.beginPath();
+    historyData.forEach((d, i) => {
+        let x = p + i / maxHistoryPoints * w;
+        let y = p + h * (1 - (d.vB - minV) / rangeV);
+        i ? velocityCtx.lineTo(x, y) : velocityCtx.moveTo(x, y);
+    }); velocityCtx.stroke();
+    velocityCtx.shadowBlur = 0;
+}
+
+function drawEnergyChart() {
+    energyCtx.clearRect(0, 0, energyCanvas.width, energyCanvas.height);
+    if (historyData.length < 2) return;
+    let p = 20, w = energyCanvas.width - 2*p, h = energyCanvas.height - 2*p;
+    let me = Math.max(...historyData.map(d => d.EkA + d.EkB + d.Ep)) * 1.1 || 1;
+    energyCtx.strokeStyle = '#38bdf8'; energyCtx.lineWidth = 2;
+    energyCtx.beginPath();
+    energyCtx.moveTo(p, p); energyCtx.lineTo(p, p+h); energyCtx.lineTo(p+w, p+h); energyCtx.stroke();
+
+    energyCtx.strokeStyle = '#9ca3af'; energyCtx.lineWidth = 3;
+    energyCtx.shadowBlur = 5;
+    energyCtx.shadowColor = '#9ca3af';
+    energyCtx.beginPath(); historyData.forEach((d,i)=>{
+        let x=p+i/maxHistoryPoints*w,y=p+h*(1-d.EkA/me);
+        i?energyCtx.lineTo(x,y):energyCtx.moveTo(x,y);
+    }); energyCtx.stroke();
+    energyCtx.shadowBlur = 0;
+
+    energyCtx.strokeStyle = '#ef4444';
+    energyCtx.lineWidth = 3;
+    energyCtx.shadowBlur = 5;
+    energyCtx.shadowColor = '#ef4444';
+    energyCtx.beginPath(); historyData.forEach((d,i)=>{
+        let x=p+i/maxHistoryPoints*w,y=p+h*(1-d.EkB/me);
+        i?energyCtx.lineTo(x,y):energyCtx.moveTo(x,y);
+    }); energyCtx.stroke();
+    energyCtx.shadowBlur = 0;
+
+    energyCtx.strokeStyle = '#22d3ee';
+    energyCtx.lineWidth = 3;
+    energyCtx.shadowBlur = 5;
+    energyCtx.shadowColor = '#22d3ee';
+    energyCtx.beginPath(); historyData.forEach((d,i)=>{
+        let x=p+i/maxHistoryPoints*w,y=p+h*(1-d.Ep/me);
+        i?energyCtx.lineTo(x,y):energyCtx.moveTo(x,y);
+    }); energyCtx.stroke();
+    energyCtx.shadowBlur = 0;
+}
+
+function updateUI() {
+    let ind = document.getElementById('phaseIndicator');
+    let des = document.getElementById('phaseDescription');
+    switch(currentPhase) {
+        case PHASE.INITIAL: ind.textContent='初始状态'; des.textContent='A以v₀向右运动'; break;
+        case PHASE.COMPRESSION: ind.textContent='压缩阶段'; des.textContent='vA > vB，弹簧被压缩'; break;
+        case PHASE.COMMON_VELOCITY: ind.textContent='共速时刻'; des.textContent='弹簧最短，势能最大'; break;
+        case PHASE.RECOVERY: ind.textContent='恢复阶段'; des.textContent='vA < vB，弹簧回弹'; break;
+        case PHASE.SEPARATION: ind.textContent='分离完成'; des.textContent='弹性碰撞完成'; break;
+        case PHASE.LOCKED: ind.textContent='弹簧锁定'; des.textContent='非弹性共速运动'; break;
+    }
+}
+
+function animate() {
+    if (isPlaying) { updatePhysics(); updateUI(); draw(); drawVelocityChart(); drawEnergyChart(); }
+    requestAnimationFrame(animate);
+}
+
+document.getElementById('playPauseBtn').onclick=()=>{ isPlaying=!isPlaying; document.getElementById('playPauseBtn').textContent=isPlaying?'暂停':'播放'; };
+document.getElementById('resetBtn').onclick=()=>{ isPlaying=false; init(); };
+document.getElementById('stepBtn').onclick=()=>{ updatePhysics(); updateUI(); draw(); drawVelocityChart(); drawEnergyChart(); };
+document.getElementById('lockSpringBtn').onclick=()=>{
+    if(!isSpringLocked&&currentPhase!==PHASE.INITIAL&&currentPhase!==PHASE.SEPARATION){
+        isSpringLocked=true;
+        lockedCompression=Math.max(0,(xA+blockSize)-(xB-springNaturalLength))/100;
+        document.getElementById('lockSpringBtn').textContent='已锁定';
+        document.getElementById('lockSpringBtn').disabled=true;
+    }
+};
+document.getElementById('applyParamsBtn').onclick=()=>{
+    massA=+document.getElementById('massA').value;
+    massB=+document.getElementById('massB').value;
+    initialVelocity=+document.getElementById('initialVelocitySlider').value;
+    springK=+document.getElementById('springK').value;
+    isPlaying=false; init();
+};
+
+init(); animate();
+</script>
+
+  <script>
+  // 返回主页（滚动位置已在主页点击链接时保存）
+  function saveScrollAndReturn() {
+    window.location.href = '../index.html';
+  }
+  
+  // 禁用右键菜单
+  document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+  });
+  
+  // 禁用开发者工具快捷键
+  document.addEventListener('keydown', function(e) {
+    // ESC返回主页 - 保存滚动位置
+    if (e.keyCode === 27) {
+      saveScrollAndReturn();
+      return false;
+    }
+    // F12
+    if (e.keyCode === 123) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+U
+    if (e.ctrlKey && e.keyCode === 85) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+I
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 73) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+J
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 74) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+C
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 67) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+S
+    if (e.ctrlKey && e.keyCode === 83) {
+      e.preventDefault();
+      return false;
+    }
+  });
+  
+  // 禁用选择
+  document.addEventListener('selectstart', function(e) {
+    // 允许输入框选择
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+      return true;
+    }
+    e.preventDefault();
+    return false;
+  });
+  </script>
+</body>
+</html>
