@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>关联速度模型 · 定滑轮绳连接体</title>
+    <style>
+        body { margin: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; background: #1a1a2e; font-family: 'PingFang SC', sans-serif; }
+        canvas { background: #f5f0e6; border-radius: 16px; box-shadow: 0 0 30px rgba(0,0,0,0.4); }
+        .controls { margin-top: 15px; display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; background: rgba(0,0,0,0.6); padding: 12px 24px; border-radius: 40px; backdrop-filter: blur(10px); }
+        button { padding: 8px 18px; border-radius: 20px; border: none; font-weight: bold; cursor: pointer; transition: 0.2s; font-size: 15px; }
+        .play { background: #2ecc71; color: white; } .pause { background: #e67e22; color: white; } .reset { background: #e74c3c; color: white; }
+        .mode-btn { background: #8e44ad; color: white; }
+        .mode-btn.active { background: #f0a500; color: #1a1a2e; }
+        button:hover { opacity: 0.85; transform: scale(1.05); }
+    </style>
+
+  <style>
+  body {
+    background-color: #1a2332 !important;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+  }
+  
+  .qilai-back-btn {
+    position: fixed;
+    top: 10px;
+    left: 15px;
+    z-index: 100000;
+    padding: 8px 16px;
+    background: rgba(0, 150, 200, 0.2);
+    border: 1px solid rgba(100, 180, 255, 0.5);
+    color: #8ab4f8;
+    font-size: 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.3s;
+    backdrop-filter: blur(5px);
+    font-family: "Microsoft YaHei", sans-serif;
+  }
+  
+  .qilai-back-btn:hover {
+    background: rgba(0, 150, 200, 0.4);
+    box-shadow: 0 0 15px rgba(100, 180, 255, 0.3);
+    color: #fff;
+  }
+  
+  .qilai-watermark {
+    position: fixed;
+    bottom: 15px;
+    right: 15px;
+    z-index: 99998;
+    font-size: 12px;
+    color: rgba(138, 180, 248, 0.35);
+    text-align: right;
+    line-height: 1.8;
+    pointer-events: none;
+    user-select: none;
+    font-family: "Microsoft YaHei", sans-serif;
+  }
+  
+  .qilai-watermark .title {
+    font-size: 14px;
+    font-weight: bold;
+    color: rgba(138, 180, 248, 0.45);
+    margin-bottom: 4px;
+    letter-spacing: 1px;
+  }
+  </style>
+</head>
+<body>
+  <a href="javascript:void(0);" class="qilai-back-btn" onclick="saveScrollAndReturn();">← 返回主页</a>
+  
+  <div class="qilai-watermark">
+    <div class="title">齐老师动画</div>
+    QQ 3398528250<br>
+    抖音 35320300542
+  </div>
+
+    <canvas id="canvas" width="900" height="500"></canvas>
+    <div class="controls">
+        <button class="mode-btn active" id="singleMode">单人拉环</button>
+        <button class="mode-btn" id="doubleMode">双人拉环</button>
+        <button class="mode-btn" id="pulleyMode">动滑轮</button>
+        <button class="mode-btn" id="oneManPulley">一人拉滑轮</button>
+        <button class="play" id="playBtn">▶ 播放</button>
+        <button class="pause" id="pauseBtn">⏸ 暂停</button>
+        <button class="reset" id="resetBtn">↺ 重置</button>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        // ---------- 场景参数 ----------
+        const groundY = 400;
+        const platformY = 195;
+        const ropeY = 185;
+        const sheaveY = 197;
+        const sheaveR = 12;
+        const V0 = 0.2;
+        const blockSize = 24;
+        const HANG_LENGTH = 16;
+
+        const ROD_X = 600;
+        const ROD_TOP_Y = groundY - 240;
+        const ROD_BOTTOM_Y = groundY;
+
+        const leftSheaveX = 450;
+        const leftTableLeft = 30;
+        const rightSheaveX = ROD_X + (ROD_X - leftSheaveX);
+        const rightTableLeft = ROD_X + (ROD_X - leftTableLeft) + 30;
+
+        const INIT_LEFT_PERSON_X = 430;
+        const INIT_RIGHT_PERSON_X = ROD_X + (ROD_X - INIT_LEFT_PERSON_X);
+        const INIT_RING_Y = groundY;
+
+        // 单人模式绳长
+        const singlePersonToSheave_init = leftSheaveX - INIT_LEFT_PERSON_X;
+        const singleSheaveToRing_init = Math.sqrt((ROD_X - leftSheaveX) ** 2 + (INIT_RING_Y - sheaveY) ** 2);
+        const SINGLE_TOTAL_ROPE = singlePersonToSheave_init + singleSheaveToRing_init;
+
+        // 双人模式绳长
+        const leftPersonToSheave_init = leftSheaveX - INIT_LEFT_PERSON_X;
+        const leftSheaveToRing_init = Math.sqrt((ROD_X - leftSheaveX) ** 2 + (INIT_RING_Y - sheaveY) ** 2);
+        const TOTAL_LEFT_ROPE = leftPersonToSheave_init + leftSheaveToRing_init;
+        const rightPersonToSheave_init = INIT_RIGHT_PERSON_X - rightSheaveX;
+        const rightSheaveToRing_init = Math.sqrt((rightSheaveX - ROD_X) ** 2 + (INIT_RING_Y - sheaveY) ** 2);
+        const TOTAL_RIGHT_ROPE = rightPersonToSheave_init + rightSheaveToRing_init;
+
+        // 动滑轮模式绳长
+        const dx_slant = ROD_X - leftSheaveX;
+        const PULLEY_INIT_RING_Y = groundY - blockSize - HANG_LENGTH - sheaveR;
+        const slant_init_pulley = Math.sqrt(dx_slant ** 2 + (sheaveY - PULLEY_INIT_RING_Y) ** 2);
+        const leftHoriz_init_p = leftSheaveX - INIT_LEFT_PERSON_X;
+        const rightHoriz_init_p = INIT_RIGHT_PERSON_X - rightSheaveX;
+        const arcConstant = 2 * (sheaveR * (70 * Math.PI / 180)) + Math.PI * sheaveR;
+        const PULLEY_TOTAL_ROPE = leftHoriz_init_p + rightHoriz_init_p + 2 * slant_init_pulley + arcConstant;
+
+        let leftPersonX = INIT_LEFT_PERSON_X;
+        let rightPersonX = INIT_RIGHT_PERSON_X;
+        let ringY = INIT_RING_Y;
+        let running = true;
+        let stopped = false;
+        let isDoubleMode = false;
+        let isPulleyMode = false;
+        let oneManPulley = false;
+
+        function drawArrow(x1, y1, x2, y2, color, width = 3) {
+            const dx = x2 - x1, dy = y2 - y1, len = Math.sqrt(dx * dx + dy * dy);
+            if (len < 1) return;
+            const ux = dx / len, uy = dy / len;
+            ctx.strokeStyle = color; ctx.lineWidth = width; ctx.lineCap = 'round';
+            ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2 - ux * 10, y2 - uy * 10); ctx.stroke();
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.moveTo(x2, y2);
+            ctx.lineTo(x2 - ux * 10 + uy * 5, y2 - uy * 10 - ux * 5);
+            ctx.lineTo(x2 - ux * 10 - uy * 5, y2 - uy * 10 + ux * 5);
+            ctx.closePath(); ctx.fill();
+        }
+
+        function drawDashed(x1, y1, x2, y2) {
+            ctx.save(); ctx.strokeStyle = '#888'; ctx.lineWidth = 1.5; ctx.setLineDash([5, 4]);
+            ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke(); ctx.restore();
+        }
+
+        function getLeftRopePoints() {
+            const topTan = { x: leftSheaveX, y: sheaveY - sheaveR };
+            const contactAngle = -70 * Math.PI / 180;
+            const sideTan = { x: leftSheaveX + sheaveR * Math.cos(contactAngle), y: sheaveY + sheaveR * Math.sin(contactAngle) };
+            return { topTan, sideTan };
+        }
+
+        function getRightRopePoints() {
+            const topTan = { x: rightSheaveX, y: sheaveY - sheaveR };
+            const contactAngle = -110 * Math.PI / 180;
+            const sideTan = { x: rightSheaveX + sheaveR * Math.cos(contactAngle), y: sheaveY + sheaveR * Math.sin(contactAngle) };
+            return { topTan, sideTan };
+        }
+
+        function update() {
+            if (!running || stopped) return;
+            if (!isDoubleMode && !isPulleyMode) {
+                const newPersonX = leftPersonX - V0;
+                const leftRope = leftSheaveX - newPersonX;
+                const rightRope = SINGLE_TOTAL_ROPE - leftRope;
+                const dx = ROD_X - leftSheaveX;
+                const dySq = rightRope * rightRope - dx * dx;
+                if (dySq < 0) { stopped = true; running = false; return; }
+                const newRingY = sheaveY + Math.sqrt(dySq);
+                if (newRingY <= ROD_TOP_Y) { ringY = ROD_TOP_Y; stopped = true; running = false; return; }
+                if (newRingY >= groundY) { stopped = true; running = false; return; }
+                leftPersonX = newPersonX;
+                ringY = newRingY;
+            } else if (isDoubleMode) {
+                const newLeftX = leftPersonX - V0;
+                const newRightX = rightPersonX + V0;
+                const leftL1 = leftSheaveX - newLeftX;
+                const leftL2 = TOTAL_LEFT_ROPE - leftL1;
+                const rightL1 = newRightX - rightSheaveX;
+                const rightL2 = TOTAL_RIGHT_ROPE - rightL1;
+                const lDx = ROD_X - leftSheaveX;
+                const rDx = rightSheaveX - ROD_X;
+                const lDySq = leftL2 * leftL2 - lDx * lDx;
+                const rDySq = rightL2 * rightL2 - rDx * rDx;
+                if (lDySq < 0 || rDySq < 0) { stopped = true; running = false; return; }
+                const lRingY = sheaveY + Math.sqrt(lDySq);
+                const rRingY = sheaveY + Math.sqrt(rDySq);
+                const newRingY = (lRingY + rRingY) / 2;
+                if (newRingY <= ROD_TOP_Y) { ringY = ROD_TOP_Y; stopped = true; running = false; return; }
+                if (newRingY >= groundY) { stopped = true; running = false; return; }
+                leftPersonX = newLeftX;
+                rightPersonX = newRightX;
+                ringY = newRingY;
+            } else if (isPulleyMode) {
+                if (oneManPulley) {
+                    // 一人拉滑轮：右侧人静止，动滑轮上升速度加倍
+                    const newLeftX = leftPersonX - V0;
+                    const leftHoriz = leftSheaveX - newLeftX;
+                    const rightHoriz = rightHoriz_init_p; // 固定
+                    const remaining = PULLEY_TOTAL_ROPE - leftHoriz - rightHoriz - arcConstant;
+                    if (remaining < 0) { stopped = true; running = false; return; }
+                    const slant = remaining / 2;
+                    const dySq = slant * slant - dx_slant * dx_slant;
+                    if (dySq < 0) { stopped = true; running = false; return; }
+                    const normalNewRingY = sheaveY + Math.sqrt(dySq);
+                    // 上升速度加倍：在正常上升量的基础上再提升相同的量
+                    const currentRingY = ringY;
+                    const normalDeltaY = normalNewRingY - currentRingY; // 通常为负值（上升）
+                    const doubledRingY = currentRingY + 2 * normalDeltaY;
+                    let finalRingY = doubledRingY;
+                    if (finalRingY <= ROD_TOP_Y) { finalRingY = ROD_TOP_Y; stopped = true; running = false; }
+                    if (finalRingY >= groundY) { stopped = true; running = false; return; }
+                    leftPersonX = newLeftX;
+                    ringY = finalRingY;
+                } else {
+                    // 两人拉滑轮
+                    const newLeftX = leftPersonX - V0;
+                    const newRightX = rightPersonX + V0;
+                    const leftHoriz = leftSheaveX - newLeftX;
+                    const rightHoriz = newRightX - rightSheaveX;
+                    const remaining = PULLEY_TOTAL_ROPE - leftHoriz - rightHoriz - arcConstant;
+                    if (remaining < 0) { stopped = true; running = false; return; }
+                    const slant = remaining / 2;
+                    const dySq = slant * slant - dx_slant * dx_slant;
+                    if (dySq < 0) { stopped = true; running = false; return; }
+                    const newRingY = sheaveY + Math.sqrt(dySq);
+                    if (newRingY <= ROD_TOP_Y) { ringY = ROD_TOP_Y; stopped = true; running = false; return; }
+                    if (newRingY >= groundY) { stopped = true; running = false; return; }
+                    leftPersonX = newLeftX;
+                    rightPersonX = newRightX;
+                    ringY = newRingY;
+                }
+            }
+        }
+
+        function drawPerson(x, isFacingRight) {
+            const pFootY = platformY;
+            const pHeadY = pFootY - 55;
+            const pShoulderY = pFootY - 38;
+            ctx.fillStyle = '#2c3e50';
+            ctx.fillRect(x - 10, pFootY - 16, 8, 16);
+            ctx.fillRect(x + 2, pFootY - 16, 8, 16);
+            ctx.fillStyle = '#111';
+            ctx.fillRect(x - 11, pFootY - 4, 10, 6);
+            ctx.fillRect(x, pFootY - 4, 10, 6);
+            ctx.fillStyle = '#2980b9';
+            ctx.fillRect(x - 13, pShoulderY - 4, 26, 24);
+            ctx.fillStyle = '#f1c40f';
+            ctx.fillRect(x - 13, pShoulderY - 2, 26, 4);
+            ctx.fillStyle = '#f5cba7';
+            ctx.beginPath(); ctx.arc(x, pHeadY, 13, 0, 2 * Math.PI); ctx.fill();
+            ctx.fillStyle = '#000';
+            ctx.beginPath(); ctx.arc(x - 5, pHeadY - 3, 2, 0, 2 * Math.PI); ctx.fill();
+            ctx.beginPath(); ctx.arc(x + 5, pHeadY - 3, 2, 0, 2 * Math.PI); ctx.fill();
+            ctx.strokeStyle = '#c0392b'; ctx.lineWidth = 1.5;
+            ctx.beginPath(); ctx.arc(x, pHeadY + 6, 3, 0, Math.PI); ctx.stroke();
+            ctx.fillStyle = '#e67e22';
+            ctx.beginPath(); ctx.arc(x, pHeadY - 8, 14, Math.PI, 0); ctx.fill();
+            ctx.strokeStyle = '#2980b9'; ctx.lineWidth = 4.5; ctx.lineCap = 'round';
+            ctx.beginPath();
+            ctx.moveTo(x + (isFacingRight ? -8 : 8), pShoulderY);
+            ctx.lineTo(x + (isFacingRight ? -20 : 20), ropeY);
+            ctx.stroke();
+            ctx.fillStyle = '#f5cba7';
+            ctx.beginPath(); ctx.arc(x + (isFacingRight ? -20 : 20), ropeY, 4.5, 0, 2 * Math.PI); ctx.fill();
+            const dir = isFacingRight ? 1 : -1;
+            drawArrow(x, pShoulderY - 20, x + dir * V0 * 200, pShoulderY - 20, '#e74c3c', 3);
+            ctx.fillStyle = '#c0392b'; ctx.font = 'bold 13px "PingFang SC"';
+            ctx.fillText('v₀', x + dir * V0 * 200 + (isFacingRight ? 5 : -25), pShoulderY - 28);
+        }
+
+        function drawTable(tl, sheaveX) {
+            ctx.fillStyle = '#8c7b6a';
+            ctx.fillRect(tl, platformY - 5, sheaveX - 10 - tl, 12);
+            ctx.fillStyle = '#7b6b5a';
+            ctx.fillRect(sheaveX - 20, platformY, 16, groundY - platformY);
+            ctx.fillRect(tl, platformY, 12, groundY - platformY);
+            ctx.fillRect(tl + 80, platformY, 12, groundY - platformY);
+        }
+
+        function drawSheave(x, y = sheaveY, color = '#aaa') {
+            ctx.fillStyle = color; ctx.beginPath(); ctx.arc(x, y, sheaveR, 0, 2 * Math.PI); ctx.fill();
+            ctx.strokeStyle = '#333'; ctx.lineWidth = 2.5; ctx.stroke();
+            ctx.fillStyle = '#444'; ctx.beginPath(); ctx.arc(x, y, 2.5, 0, 2 * Math.PI); ctx.fill();
+        }
+
+        function drawVelocityTriangle(sheaveX, vScale, maxLen, active = true) {
+            const startX = ROD_X;
+            const startY = ringY;
+            const ropeDx = sheaveX - ROD_X;
+            const ropeDy = sheaveY - ringY;
+            const ropeDist = Math.sqrt(ropeDx * ropeDx + ropeDy * ropeDy);
+            if (ropeDist < 1) return;
+            const ropeUx = ropeDx / ropeDist;
+            const ropeUy = ropeDy / ropeDist;
+            const vParLen = Math.min((active ? V0 : 0) * vScale, maxLen);
+            const yellowEndX = startX + ropeUx * vParLen;
+            const yellowEndY = startY + ropeUy * vParLen;
+            const dx_yellow = ropeUx * vParLen;
+            const dy_yellow = ropeUy * vParLen;
+            const blackEndY = startY + dy_yellow + (dx_yellow * dx_yellow) / dy_yellow;
+            const blackEndX = startX;
+            const blueStartX = yellowEndX;
+            const blueStartY = yellowEndY;
+            const blueEndX = blackEndX;
+            const blueEndY = blackEndY;
+            const blueLen = Math.sqrt((blueEndX - blueStartX) ** 2 + (blueEndY - blueStartY) ** 2);
+            if (blueLen < 0.5) return;
+            drawArrow(blueStartX, blueStartY, blueEndX, blueEndY, '#3498db', 2.8);
+            drawArrow(startX, startY, yellowEndX, yellowEndY, '#f1c40f', 2.8);
+            drawArrow(startX, startY, blackEndX, blackEndY, '#1a1a1a', 3.2);
+            drawDashed(blackEndX, blackEndY, yellowEndX, yellowEndY);
+            ctx.fillStyle = '#1a1a1a'; ctx.font = 'bold 13px "PingFang SC"';
+            ctx.fillText(isPulleyMode ? 'v动' : 'v环', blackEndX + 10, blackEndY - 8);
+            if (active) {
+                ctx.fillStyle = '#c9a220';
+                ctx.fillText('v∥=v₀', yellowEndX + (sheaveX < ROD_X ? -30 : 5), yellowEndY + 16);
+            }
+            ctx.fillStyle = '#2980b9';
+            const midX = (yellowEndX + blackEndX) / 2;
+            const midY = (yellowEndY + blackEndY) / 2;
+            ctx.fillText('v⊥', midX + (sheaveX < ROD_X ? -25 : 5), midY - 8);
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            const leftPts = getLeftRopePoints();
+            const rightPts = getRightRopePoints();
+
+            ctx.fillStyle = '#d4e6f1'; ctx.fillRect(0, 0, canvas.width, groundY);
+            ctx.fillStyle = '#a48c6c'; ctx.fillRect(0, groundY, canvas.width, canvas.height - groundY);
+
+            drawTable(leftTableLeft, leftSheaveX);
+            drawSheave(leftSheaveX);
+            if (isDoubleMode || isPulleyMode) {
+                drawTable(rightTableLeft, rightSheaveX);
+                drawSheave(rightSheaveX);
+            }
+
+            if (!isPulleyMode) {
+                ctx.strokeStyle = '#27ae60'; ctx.lineWidth = 4; ctx.lineCap = 'round';
+                ctx.beginPath(); ctx.moveTo(ROD_X, ROD_TOP_Y); ctx.lineTo(ROD_X, ROD_BOTTOM_Y); ctx.stroke();
+                ctx.fillStyle = '#27ae60'; ctx.fillRect(ROD_X - 8, ROD_BOTTOM_Y - 4, 16, 8);
+            }
+
+            if (isPulleyMode) {
+                drawSheave(ROD_X, ringY, '#3498db');
+                const blockTopY = ringY + sheaveR + HANG_LENGTH;
+                ctx.fillStyle = '#111';
+                ctx.fillRect(ROD_X - blockSize / 2, blockTopY, blockSize, blockSize);
+                ctx.strokeStyle = '#e74c3c';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.moveTo(ROD_X, ringY + sheaveR);
+                ctx.lineTo(ROD_X, blockTopY);
+                ctx.stroke();
+            } else {
+                ctx.strokeStyle = '#e74c3c';
+                ctx.lineWidth = 3;
+                ctx.beginPath(); ctx.arc(ROD_X, ringY, 9, 0, 2 * Math.PI); ctx.stroke();
+                ctx.strokeStyle = '#e74c3c'; ctx.lineWidth = 1.5;
+                ctx.beginPath(); ctx.arc(ROD_X, ringY, 5, 0, 2 * Math.PI); ctx.stroke();
+            }
+
+            ctx.strokeStyle = '#111';
+            ctx.lineWidth = 4;
+            ctx.lineCap = 'round';
+
+            ctx.beginPath(); ctx.moveTo(leftPersonX, ropeY); ctx.lineTo(leftPts.topTan.x, leftPts.topTan.y); ctx.stroke();
+            ctx.beginPath(); ctx.arc(leftSheaveX, sheaveY, sheaveR, -Math.PI / 2, -70 * Math.PI / 180, false); ctx.stroke();
+
+            if (isPulleyMode) {
+                const slant = Math.sqrt(dx_slant ** 2 + (sheaveY - ringY) ** 2);
+                const udx = dx_slant / slant;
+                const udy = (sheaveY - ringY) / slant;
+                const leftPulleyTan = { x: ROD_X - udx * sheaveR, y: ringY - udy * sheaveR };
+                const rightPulleyTan = { x: ROD_X + udx * sheaveR, y: ringY - udy * sheaveR };
+                const startAngle = Math.atan2(leftPulleyTan.y - ringY, leftPulleyTan.x - ROD_X);
+                const endAngle = Math.atan2(rightPulleyTan.y - ringY, rightPulleyTan.x - ROD_X);
+
+                ctx.beginPath(); ctx.moveTo(leftPts.sideTan.x, leftPts.sideTan.y); ctx.lineTo(leftPulleyTan.x, leftPulleyTan.y); ctx.stroke();
+                ctx.beginPath(); ctx.arc(ROD_X, ringY, sheaveR, startAngle, endAngle, false); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(rightPulleyTan.x, rightPulleyTan.y); ctx.lineTo(rightPts.sideTan.x, rightPts.sideTan.y); ctx.stroke();
+            } else {
+                ctx.beginPath(); ctx.moveTo(leftPts.sideTan.x, leftPts.sideTan.y); ctx.lineTo(ROD_X, ringY); ctx.stroke();
+            }
+
+            if (isDoubleMode || isPulleyMode) {
+                ctx.beginPath(); ctx.arc(rightSheaveX, sheaveY, sheaveR, Math.PI + 70 * Math.PI / 180, -Math.PI / 2, false); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(rightPersonX, ropeY); ctx.lineTo(rightPts.topTan.x, rightPts.topTan.y); ctx.stroke();
+                if (!isPulleyMode) {
+                    ctx.beginPath(); ctx.moveTo(rightPts.sideTan.x, rightPts.sideTan.y); ctx.lineTo(ROD_X, ringY); ctx.stroke();
+                }
+            }
+
+            if (ringY < groundY - 3 && ringY > ROD_TOP_Y + 3) {
+                const vScale = 200;
+                const maxLen = 250;
+                drawVelocityTriangle(leftSheaveX, vScale, maxLen, true);
+                if (isDoubleMode || isPulleyMode) {
+                    drawVelocityTriangle(rightSheaveX, vScale, maxLen, !oneManPulley);
+                }
+            }
+
+            drawPerson(leftPersonX, false);
+            if (isDoubleMode || isPulleyMode) drawPerson(rightPersonX, true);
+
+            if (stopped) {
+                ctx.fillStyle = 'rgba(220,50,50,0.9)';
+                ctx.font = 'bold 20px "PingFang SC"'; ctx.textAlign = 'center';
+                ctx.fillText('已到顶部，动画停止', canvas.width / 2, 50);
+            }
+
+            ctx.fillStyle = '#000'; ctx.font = 'bold 12px "PingFang SC"';
+            ctx.fillText('定滑轮', leftSheaveX - 30, sheaveY - 20);
+            ctx.fillText('高台', leftTableLeft + 5, platformY - 12);
+            if (isDoubleMode || isPulleyMode) {
+                ctx.fillText('定滑轮', rightSheaveX + 10, sheaveY - 20);
+                ctx.fillText('高台', rightTableLeft + 5, platformY - 12);
+            }
+            if (!isPulleyMode) {
+                ctx.fillText('竖直杆', ROD_X - 20, ROD_TOP_Y - 10);
+            }
+            ctx.fillText('地面', 830, groundY - 8);
+        }
+
+        function loop() {
+            update();
+            draw();
+            requestAnimationFrame(loop);
+        }
+
+        function setMode(mode) {
+            isDoubleMode = false;
+            isPulleyMode = false;
+            oneManPulley = false;
+            if (mode === 'double') isDoubleMode = true;
+            if (mode === 'pulley') isPulleyMode = true;
+            if (mode === 'oneMan') { isPulleyMode = true; oneManPulley = true; }
+            document.getElementById('singleMode').classList.remove('active');
+            document.getElementById('doubleMode').classList.remove('active');
+            document.getElementById('pulleyMode').classList.remove('active');
+            document.getElementById('oneManPulley').classList.remove('active');
+            if (mode === 'single') document.getElementById('singleMode').classList.add('active');
+            if (mode === 'double') document.getElementById('doubleMode').classList.add('active');
+            if (mode === 'pulley') document.getElementById('pulleyMode').classList.add('active');
+            if (mode === 'oneMan') document.getElementById('oneManPulley').classList.add('active');
+            resetState();
+        }
+
+        function resetState() {
+            leftPersonX = INIT_LEFT_PERSON_X;
+            rightPersonX = INIT_RIGHT_PERSON_X;
+            ringY = isPulleyMode ? PULLEY_INIT_RING_Y : INIT_RING_Y;
+            running = true;
+            stopped = false;
+        }
+
+        document.getElementById('playBtn').addEventListener('click', () => { if (!stopped) running = true; });
+        document.getElementById('pauseBtn').addEventListener('click', () => { running = false; });
+        document.getElementById('resetBtn').addEventListener('click', resetState);
+        document.getElementById('singleMode').addEventListener('click', () => setMode('single'));
+        document.getElementById('doubleMode').addEventListener('click', () => setMode('double'));
+        document.getElementById('pulleyMode').addEventListener('click', () => setMode('pulley'));
+        document.getElementById('oneManPulley').addEventListener('click', () => setMode('oneMan'));
+
+        window.addEventListener('keydown', (e) => {
+            if (e.code === 'Space') { e.preventDefault(); if (!stopped) running = !running; }
+            else if (e.code === 'KeyR') { resetState(); }
+        });
+
+        loop();
+    </script>
+
+  <script>
+  // 返回主页（滚动位置已在主页点击链接时保存）
+  function saveScrollAndReturn() {
+    window.location.href = '../index.html';
+  }
+  
+  // 禁用右键菜单
+  document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+  });
+  
+  // 禁用开发者工具快捷键
+  document.addEventListener('keydown', function(e) {
+    // ESC返回主页 - 保存滚动位置
+    if (e.keyCode === 27) {
+      saveScrollAndReturn();
+      return false;
+    }
+    // F12
+    if (e.keyCode === 123) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+U
+    if (e.ctrlKey && e.keyCode === 85) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+I
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 73) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+J
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 74) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+C
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 67) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+S
+    if (e.ctrlKey && e.keyCode === 83) {
+      e.preventDefault();
+      return false;
+    }
+  });
+  
+  // 禁用选择
+  document.addEventListener('selectstart', function(e) {
+    // 允许输入框选择
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+      return true;
+    }
+    e.preventDefault();
+    return false;
+  });
+  </script>
+</body>
+</html>
