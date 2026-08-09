@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>半圆形玻璃柱 · 激光折射实验（可对称翻转）</title>
+    <style>
+        :root {
+            --bg: #0a0c10;
+            --card-bg: #13161d;
+            --text: #e0e4ec;
+            --text-secondary: #a0aab8;
+            --accent: #4da6ff;
+            --slider-track: #2a2e38;
+            --shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+            --shadow-lg: 0 12px 48px rgba(0, 0, 0, 0.7);
+            --radius: 20px;
+            --transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body {
+            font-family: 'PingFang SC','Microsoft YaHei','Helvetica Neue',sans-serif;
+            background: radial-gradient(ellipse at 30% 20%, #1a1f2b 0%, #0a0c10 70%),
+                        radial-gradient(ellipse at 70% 80%, #16202e 0%, #0a0c10 60%);
+            background-attachment: fixed;
+            display: flex; justify-content: center; align-items: center;
+            min-height: 100vh; padding: 24px;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none; -webkit-user-select: none;
+            -webkit-font-smoothing: antialiased;
+        }
+        .container {
+            background: var(--card-bg); border-radius: var(--radius);
+            box-shadow: var(--shadow-lg); padding: 28px 32px 24px;
+            max-width: 940px; width: 100%; display: flex; flex-direction: column; gap: 20px;
+            border: 1px solid rgba(255,255,255,0.06); backdrop-filter: blur(2px);
+        }
+        .header { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:14px; }
+        .title-group { display:flex; align-items:center; gap:14px; }
+        .icon-laser {
+            width:48px; height:48px; border-radius:14px;
+            background: linear-gradient(135deg,#e63946,#b71c1c);
+            display:flex; align-items:center; justify-content:center;
+            font-size:24px; color:#fff; box-shadow:0 4px 18px rgba(230,57,70,0.4);
+        }
+        .title {
+            font-size:1.4rem; font-weight:700; color:#e0e4ec;
+            letter-spacing:0.03em; line-height:1.3;
+            text-shadow:0 0 16px rgba(255,100,100,0.25);
+        }
+        .subtitle { font-size:0.8rem; color:var(--text-secondary); font-weight:400; letter-spacing:0.04em; }
+        .badge {
+            display:inline-flex; align-items:center; gap:6px;
+            background:rgba(77,166,255,0.08); border:1px solid rgba(77,166,255,0.3);
+            border-radius:20px; padding:7px 16px; font-size:0.8rem; color:#b3d9ff;
+            font-weight:500; white-space:nowrap; letter-spacing:0.03em;
+        }
+        .badge .dot { width:8px; height:8px; border-radius:50%; background:#4da6ff; box-shadow:0 0 8px #4da6ff; }
+        .canvas-wrapper {
+            position:relative; background:#0f1219; border-radius:16px;
+            border:1px solid rgba(255,255,255,0.08); overflow:hidden;
+            cursor:default; box-shadow:inset 0 0 30px rgba(0,0,0,0.5);
+            transition:var(--transition);
+        }
+        .canvas-wrapper:active { cursor:grabbing; }
+        .canvas-wrapper.dragging { cursor:grabbing; }
+        .canvas-wrapper .hint-drag {
+            position:absolute; top:14px; left:50%; transform:translateX(-50%);
+            font-size:0.78rem; color:rgba(255,255,255,0.7); pointer-events:none;
+            letter-spacing:0.05em; background:rgba(10,12,16,0.8); padding:5px 16px;
+            border-radius:20px; backdrop-filter:blur(4px); border:1px solid rgba(255,255,255,0.1); z-index:5;
+        }
+        canvas { display:block; width:100%; height:auto; touch-action:none; }
+        .controls { display:flex; align-items:center; gap:18px; flex-wrap:wrap; justify-content:center; padding:4px 0; }
+        .control-group {
+            display:flex; align-items:center; gap:12px;
+            background:rgba(255,255,255,0.03); border-radius:14px; padding:11px 18px;
+            border:1px solid rgba(255,255,255,0.08); transition:var(--transition);
+        }
+        .control-group:hover { border-color:rgba(77,166,255,0.4); background:rgba(77,166,255,0.04); }
+        .control-label { font-size:0.82rem; color:var(--text-secondary); font-weight:500; white-space:nowrap; letter-spacing:0.04em; min-width:60px; }
+        .slider-container { display:flex; align-items:center; gap:10px; }
+        input[type="range"] {
+            -webkit-appearance:none; width:200px; height:8px; border-radius:4px;
+            background:var(--slider-track); outline:none; transition:var(--transition); cursor:pointer;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance:none; width:34px; height:34px; border-radius:50%;
+            background:#1a1e28; border:3px solid #e63946; cursor:pointer;
+            box-shadow:0 0 20px rgba(230,57,70,0.5),0 2px 10px rgba(0,0,0,0.5);
+            transition:var(--transition);
+        }
+        .pos-value {
+            display:inline-flex; align-items:center; justify-content:center;
+            min-width:56px; height:34px; background:rgba(230,57,70,0.08);
+            border:1px solid rgba(230,57,70,0.4); border-radius:10px;
+            font-size:0.9rem; font-weight:700; color:#ff9999; letter-spacing:0.03em; padding:0 8px;
+        }
+        .quick-btns { display:flex; gap:7px; flex-wrap:wrap; justify-content:center; align-items:center; }
+        .quick-btn, .flip-btn {
+            padding:8px 14px; border-radius:10px; border:1px solid rgba(255,255,255,0.12);
+            background:rgba(255,255,255,0.02); cursor:pointer; font-size:0.78rem;
+            font-weight:500; color:#bcc5d0; transition:var(--transition);
+            letter-spacing:0.04em; white-space:nowrap; backdrop-filter:blur(4px);
+        }
+        .quick-btn:hover, .flip-btn:hover { background:rgba(230,57,70,0.1); border-color:rgba(230,57,70,0.5); color:#ffcccc; }
+        .quick-btn.active { background:rgba(230,57,70,0.18); border-color:#e63946; color:#fff; font-weight:600; box-shadow:0 0 14px rgba(230,57,70,0.4); }
+        .flip-btn.active-mode { background:rgba(77,166,255,0.2); border-color:#4da6ff; color:#9cc9ff; font-weight:600; box-shadow:0 0 12px rgba(77,166,255,0.4); }
+        .info-row { display:flex; gap:10px; flex-wrap:wrap; justify-content:center; font-size:0.8rem; color:var(--text-secondary); letter-spacing:0.03em; }
+        .info-card {
+            background:rgba(255,255,255,0.03); border-radius:10px; padding:7px 14px;
+            border:1px solid rgba(255,255,255,0.07); display:flex; align-items:center; gap:6px;
+        }
+        .info-card .val { font-weight:700; color:#ffaa88; font-size:0.88rem; }
+        .info-card .unit { font-size:0.7rem; color:#7a8490; }
+        @media (max-width:700px) {
+            .container { padding:14px 10px 12px; border-radius:14px; gap:14px; }
+            .title { font-size:1.1rem; }
+            input[type="range"] { width:130px; }
+            .control-group { padding:7px 9px; gap:6px; }
+            .pos-value { min-width:40px; height:28px; font-size:0.75rem; }
+            .quick-btn, .flip-btn { padding:5px 8px; font-size:0.68rem; }
+            .info-card { padding:5px 8px; font-size:0.7rem; }
+        }
+    </style>
+
+  <style>
+  body {
+    background-color: #1a2332 !important;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+  }
+  
+  .qilai-back-btn {
+    position: fixed;
+    top: 10px;
+    left: 15px;
+    z-index: 100000;
+    padding: 8px 16px;
+    background: rgba(0, 150, 200, 0.2);
+    border: 1px solid rgba(100, 180, 255, 0.5);
+    color: #8ab4f8;
+    font-size: 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.3s;
+    backdrop-filter: blur(5px);
+    font-family: "Microsoft YaHei", sans-serif;
+  }
+  
+  .qilai-back-btn:hover {
+    background: rgba(0, 150, 200, 0.4);
+    box-shadow: 0 0 15px rgba(100, 180, 255, 0.3);
+    color: #fff;
+  }
+  
+  .qilai-watermark {
+    position: fixed;
+    bottom: 15px;
+    right: 15px;
+    z-index: 99998;
+    font-size: 12px;
+    color: rgba(138, 180, 248, 0.35);
+    text-align: right;
+    line-height: 1.8;
+    pointer-events: none;
+    user-select: none;
+    font-family: "Microsoft YaHei", sans-serif;
+  }
+  
+  .qilai-watermark .title {
+    font-size: 14px;
+    font-weight: bold;
+    color: rgba(138, 180, 248, 0.45);
+    margin-bottom: 4px;
+    letter-spacing: 1px;
+  }
+  </style>
+</head>
+<body>
+  <a href="javascript:void(0);" class="qilai-back-btn" onclick="saveScrollAndReturn();">← 返回主页</a>
+  
+  <div class="qilai-watermark">
+    <div class="title">齐老师动画</div>
+    QQ 3398528250<br>
+    抖音 35320300542
+  </div>
+
+<div class="container">
+    <div class="header">
+        <div class="title-group">
+            <div class="icon-laser">⚡</div>
+            <div>
+                <div class="title">半圆形玻璃柱 · 激光折射</div>
+                <div class="subtitle">光源竖直向上 · 可对称翻转</div>
+            </div>
+        </div>
+        <div class="badge"><span class="dot"></span> n<sub>玻璃</sub> = 1.50</div>
+    </div>
+
+    <div class="canvas-wrapper" id="canvasWrapper">
+        <canvas id="mainCanvas"></canvas>
+        <div class="hint-drag" id="hintDrag">💡 拖拽光源标记可左右移动</div>
+    </div>
+
+    <div class="controls">
+        <div class="control-group">
+            <span class="control-label">光源偏移</span>
+            <div class="slider-container">
+                <input type="range" id="posSlider" min="-180" max="180" value="0" step="1">
+                <span class="pos-value" id="posDisplay">0 mm</span>
+            </div>
+        </div>
+        <div class="quick-btns" id="quickBtns">
+            <button class="quick-btn" data-offset="-150">-150</button>
+            <button class="quick-btn" data-offset="-90">-90</button>
+            <button class="quick-btn active" data-offset="0">正中</button>
+            <button class="quick-btn" data-offset="90">+90</button>
+            <button class="quick-btn" data-offset="150">+150</button>
+            <button class="flip-btn" id="flipBtn">🔃 对称到上方</button>
+        </div>
+    </div>
+    <div class="info-row">
+        <div class="info-card">📐 入射角 i = <span class="val" id="infoIncAngle">0.0</span><span class="unit">°</span></div>
+        <div class="info-card">🔷 折射角 r = <span class="val" id="infoRefrAngle">0.0</span><span class="unit">°</span></div>
+        <div class="info-card">🔴 出射角 e = <span class="val" id="infoEmergAngle">0.0</span><span class="unit">°</span></div>
+    </div>
+</div>
+
+<script>
+(function() {
+    const canvas = document.getElementById('mainCanvas');
+    const ctx = canvas.getContext('2d');
+    const canvasWrapper = document.getElementById('canvasWrapper');
+    const posSlider = document.getElementById('posSlider');
+    const posDisplay = document.getElementById('posDisplay');
+    const hintDrag = document.getElementById('hintDrag');
+    const quickBtns = document.getElementById('quickBtns');
+    const flipBtn = document.getElementById('flipBtn');
+    const infoIncAngle = document.getElementById('infoIncAngle');
+    const infoRefrAngle = document.getElementById('infoRefrAngle');
+    const infoEmergAngle = document.getElementById('infoEmergAngle');
+
+    const n_air = 1.0;
+    const n_glass = 1.5;
+    let lightOffset = 0;
+    let isTopHalf = false;
+
+    const DESIGN_WIDTH = 900;
+    const DESIGN_HEIGHT = 540;
+    const DPR = Math.min(window.devicePixelRatio || 1, 2);
+
+    const baseCy = 200;          // 原始圆心Y坐标（圆弧朝下时）
+    const R = 180;
+    const lightY = 450;
+    const cx = 450;
+
+    function resizeCanvas() {
+        const wrapperWidth = canvasWrapper.clientWidth;
+        const scale = wrapperWidth / DESIGN_WIDTH;
+        canvas.style.width = wrapperWidth + 'px';
+        canvas.style.height = (DESIGN_HEIGHT * scale) + 'px';
+        canvas.width = DESIGN_WIDTH * DPR;
+        canvas.height = DESIGN_HEIGHT * DPR;
+        ctx.setTransform(1,0,0,1,0,0);
+        ctx.scale(DPR, DPR);
+    }
+    window.addEventListener('resize', () => { resizeCanvas(); draw(); });
+
+    function vec(x,y){ return {x,y}; }
+    function add(v,w){ return {x:v.x+w.x, y:v.y+w.y}; }
+    function sub(v,w){ return {x:v.x-w.x, y:v.y-w.y}; }
+    function mul(v,s){ return {x:v.x*s, y:v.y*s}; }
+    function dot(v,w){ return v.x*w.x + v.y*w.y; }
+    function len(v){ return Math.sqrt(v.x*v.x + v.y*v.y); }
+    function norm(v){ const l=len(v); return l>1e-9 ? {x:v.x/l, y:v.y/l} : {x:0,y:0}; }
+
+    function refract(incident, normal, eta) {
+        const cosI = -dot(incident, normal);
+        const sinT2 = eta*eta*(1.0 - cosI*cosI);
+        if (sinT2 > 1.0) return null;
+        const cosT = Math.sqrt(1.0 - sinT2);
+        return norm(add(mul(incident, eta), mul(normal, (eta*cosI - cosT))));
+    }
+    function reflect(incident, normal) {
+        return sub(incident, mul(normal, 2*dot(incident, normal)));
+    }
+
+    function computeRayPaths(offset, topHalf, cy) {
+        const lightX = cx + offset;
+        const d_in = {x:0, y:-1};
+
+        if (!topHalf) {
+            // 圆弧朝下，直径在上(cy)
+            const dx = lightX - cx;
+            if (Math.abs(dx) >= R) return { lightX, lightY, d_in, hitGlass:false, topHalf, cx, cy, R };
+            const dy_arc = Math.sqrt(R*R - dx*dx);
+            const incidentPt = {x:lightX, y:cy + dy_arc};
+            const nA_outer = norm(sub(incidentPt, {x:cx, y:cy}));
+
+            const d_refr = refract(d_in, nA_outer, n_air/n_glass);
+            if (!d_refr) return { lightX, lightY, d_in, hitGlass:true, incidentPt, nA_outer, totalReflect1:true, topHalf, cx, cy, R };
+            const d_refl = reflect(d_in, nA_outer);
+
+            if (d_refr.y >= 0) return { lightX, lightY, d_in, hitGlass:true, incidentPt, nA_outer, d_refr, d_refl, noDiameter:true, topHalf, cx, cy, R };
+            const tD = (cy - incidentPt.y) / d_refr.y;
+            if (tD <= 1e-5) return { lightX, lightY, d_in, hitGlass:true, incidentPt, nA_outer, d_refr, d_refl, noDiameter:true, topHalf, cx, cy, R };
+            const diameterPt = add(incidentPt, mul(d_refr, tD));
+            const nB_inner = {x:0, y:1};
+            const d_out = refract(d_refr, nB_inner, n_glass/n_air);
+            const totalReflect2 = (d_out === null);
+
+            const cosIncAngle = Math.abs(dot(d_in, nA_outer));
+            const incAngleRad = Math.acos(Math.min(1, cosIncAngle));
+            const incAngleDeg = incAngleRad * 180/Math.PI;
+            const refrAngleRad = Math.asin(Math.sin(incAngleRad) * n_air/n_glass);
+            const refrAngleDeg = refrAngleRad * 180/Math.PI;
+            let emergAngleDeg = 0;
+            if (d_out) {
+                const cosEmergAngle = Math.abs(dot(d_out, nB_inner));
+                emergAngleDeg = Math.acos(Math.min(1, cosEmergAngle)) * 180/Math.PI;
+            }
+
+            let d_refl2=null, refl2Pt2=null;
+            if (totalReflect2) {
+                d_refl2 = reflect(d_refr, nB_inner);
+                if (d_refl2 && d_refl2.y>0) {
+                    const p2 = diameterPt; const d2 = d_refl2;
+                    const f2 = sub(p2, {x:cx, y:cy});
+                    const a2 = dot(d2,d2); const b2 = 2*dot(f2,d2); const c2 = dot(f2,f2) - R*R;
+                    const delta2 = b2*b2 - 4*a2*c2;
+                    if (delta2>=0) {
+                        const sqrtD2 = Math.sqrt(delta2);
+                        const t2v = [(-b2 - sqrtD2)/(2*a2), (-b2 + sqrtD2)/(2*a2)].find(t=>t>1e-5);
+                        if (t2v!==undefined) refl2Pt2 = add(p2, mul(d2, t2v));
+                    }
+                }
+            }
+            return { lightX, lightY, d_in, hitGlass:true, topHalf, cx, cy, R,
+                     incidentPt, nA_outer, d_refr, d_refl, diameterPt, nB_inner, d_out,
+                     totalReflect2, d_refl2, refl2Pt2, incAngleDeg, refrAngleDeg, emergAngleDeg };
+        } else {
+            // 圆弧朝上，直径在下(cy)
+            const dx = lightX - cx;
+            if (Math.abs(dx) >= R) return { lightX, lightY, d_in, hitGlass:false, topHalf, cx, cy, R };
+            const incidentPt = {x:lightX, y:cy};
+            const nA_outer = {x:0, y:1}; // 指向下方空气
+            const d_refr = refract(d_in, nA_outer, n_air/n_glass);
+            if (!d_refr) return { lightX, lightY, d_in, hitGlass:true, incidentPt, nA_outer, totalReflect1:true, topHalf, cx, cy, R };
+            const d_refl = reflect(d_in, nA_outer);
+
+            if (d_refr.y >= 0) return { lightX, lightY, d_in, hitGlass:true, incidentPt, nA_outer, d_refr, d_refl, noArc:true, topHalf, cx, cy, R };
+            const f = sub(incidentPt, {x:cx, y:cy});
+            const a = dot(d_refr,d_refr); const b = 2*dot(f,d_refr); const c = dot(f,f) - R*R;
+            const delta = b*b - 4*a*c;
+            if (delta<0) return { lightX, lightY, d_in, hitGlass:true, incidentPt, nA_outer, d_refr, d_refl, noArc:true, topHalf, cx, cy, R };
+            const sqrtD = Math.sqrt(delta);
+            const t1 = (-b - sqrtD)/(2*a); const t2 = (-b + sqrtD)/(2*a);
+            const tArc = [t1,t2].find(t=>t>1e-5 && add(incidentPt, mul(d_refr,t)).y < cy - 1e-5);
+            if (tArc===undefined) return { lightX, lightY, d_in, hitGlass:true, incidentPt, nA_outer, d_refr, d_refl, noArc:true, topHalf, cx, cy, R };
+            const arcPt = add(incidentPt, mul(d_refr, tArc));
+            const nB_inner = norm(sub({x:cx, y:cy}, arcPt));
+            const d_out = refract(d_refr, nB_inner, n_glass/n_air);
+
+            const cosIncAngle = Math.abs(dot(d_in, nA_outer));
+            const incAngleRad = Math.acos(Math.min(1, cosIncAngle));
+            const incAngleDeg = incAngleRad * 180/Math.PI;
+            const refrAngleRad = Math.asin(Math.sin(incAngleRad) * n_air/n_glass);
+            const refrAngleDeg = refrAngleRad * 180/Math.PI;
+            let emergAngleDeg = 0;
+            if (d_out) {
+                const cosEmergAngle = Math.abs(dot(d_out, nB_inner));
+                emergAngleDeg = Math.acos(Math.min(1, cosEmergAngle)) * 180/Math.PI;
+            }
+            const totalReflect2 = (d_out === null);
+
+            let d_refl2=null, refl2Pt2=null;
+            if (totalReflect2) {
+                d_refl2 = reflect(d_refr, nB_inner);
+                if (d_refl2 && d_refl2.y>0) {
+                    const tD2 = (cy - arcPt.y) / d_refl2.y;
+                    if (tD2>1e-5) refl2Pt2 = add(arcPt, mul(d_refl2, tD2));
+                }
+            }
+            return { lightX, lightY, d_in, hitGlass:true, topHalf, cx, cy, R,
+                     incidentPt, nA_outer, d_refr, d_refl, arcPt, nB_inner, d_out,
+                     totalReflect2, d_refl2, refl2Pt2, incAngleDeg, refrAngleDeg, emergAngleDeg };
+        }
+    }
+
+    function drawGridBackground() {
+        const grad = ctx.createLinearGradient(0,0,0,DESIGN_HEIGHT);
+        grad.addColorStop(0,'#0b0e14'); grad.addColorStop(0.5,'#111620'); grad.addColorStop(1,'#0a0d12');
+        ctx.fillStyle = grad; ctx.fillRect(0,0,DESIGN_WIDTH,DESIGN_HEIGHT);
+        ctx.strokeStyle = 'rgba(80,120,180,0.07)'; ctx.lineWidth = 0.5;
+        for (let x=40; x<DESIGN_WIDTH; x+=40) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,DESIGN_HEIGHT); ctx.stroke(); }
+        for (let y=40; y<DESIGN_HEIGHT; y+=40) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(DESIGN_WIDTH,y); ctx.stroke(); }
+        ctx.fillStyle = 'rgba(180,200,230,0.45)'; ctx.font = 'italic 12px "PingFang SC","Microsoft YaHei",sans-serif';
+        ctx.textAlign = 'right'; ctx.fillText('空气  n=1.00', DESIGN_WIDTH-30, 40);
+        ctx.fillText('空气  n=1.00', DESIGN_WIDTH-30, DESIGN_HEIGHT-18);
+    }
+
+    function drawHalfCylinder(cy) {
+        ctx.save();
+        const arcStart = isTopHalf ? Math.PI : 0;
+        const arcEnd = isTopHalf ? 0 : Math.PI;
+        ctx.shadowColor = 'rgba(70,150,240,0.35)'; ctx.shadowBlur = 26;
+        ctx.fillStyle = 'rgba(60,130,210,0.16)';
+        ctx.beginPath(); ctx.arc(cx, cy, R, arcStart, arcEnd); ctx.closePath(); ctx.fill();
+        ctx.restore();
+
+        const grad = ctx.createRadialGradient(cx, isTopHalf ? cy - R*0.4 : cy + R*0.4, R*0.15, cx, cy, R);
+        grad.addColorStop(0,'rgba(130,190,245,0.4)'); grad.addColorStop(0.55,'rgba(75,145,215,0.26)'); grad.addColorStop(1,'rgba(35,90,170,0.38)');
+        ctx.fillStyle = grad;
+        ctx.beginPath(); ctx.arc(cx, cy, R, arcStart, arcEnd); ctx.closePath(); ctx.fill();
+
+        ctx.shadowColor = 'rgba(100,180,255,0.6)'; ctx.shadowBlur = 10;
+        ctx.strokeStyle = 'rgba(160,210,255,0.8)'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(cx, cy, R, arcStart, arcEnd); ctx.stroke();
+        ctx.shadowColor = 'transparent'; ctx.shadowBlur = 0;
+
+        ctx.strokeStyle = 'rgba(140,200,255,0.7)'; ctx.lineWidth = 2;
+        ctx.shadowColor = 'rgba(100,180,255,0.5)'; ctx.shadowBlur = 8;
+        ctx.beginPath(); ctx.moveTo(cx-R, cy); ctx.lineTo(cx+R, cy); ctx.stroke();
+        ctx.shadowColor = 'transparent'; ctx.shadowBlur = 0;
+
+        ctx.fillStyle = 'rgba(190,220,250,0.75)'; ctx.font = '600 12px "PingFang SC","Microsoft YaHei",sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('玻璃  n=1.50', cx, isTopHalf ? cy - R*0.55 : cy + R*0.55);
+    }
+
+    function drawDashedLine(x1,y1,x2,y2,color,lw,dl=7,gl=4) {
+        ctx.save(); ctx.strokeStyle=color; ctx.lineWidth=lw; ctx.setLineDash([dl,gl]);
+        ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke(); ctx.setLineDash([]); ctx.restore();
+    }
+    function drawRay(x1,y1,x2,y2,color,lw,glowC=null,gs=0) {
+        ctx.save(); if(glowC&&gs>0){ctx.shadowColor=glowC; ctx.shadowBlur=gs;}
+        ctx.strokeStyle=color; ctx.lineWidth=lw; ctx.lineCap='round';
+        ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
+        if(lw>=2.5){ctx.strokeStyle='rgba(255,255,255,0.3)'; ctx.lineWidth=lw*0.4; ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();}
+        ctx.restore();
+    }
+    function drawArrowhead(x,y,angle,size,color) {
+        ctx.save(); ctx.fillStyle=color; ctx.translate(x,y); ctx.rotate(angle);
+        ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(-size*0.85,-size*0.55); ctx.lineTo(-size*0.85,size*0.55); ctx.closePath(); ctx.fill(); ctx.restore();
+    }
+    function drawAngleArc(cx2,cy2,radius,startAngle,endAngle,color,lw,clockwise=true) {
+        ctx.save(); ctx.strokeStyle=color; ctx.lineWidth=lw; ctx.setLineDash([]);
+        ctx.beginPath(); ctx.arc(cx2,cy2,radius,startAngle,endAngle,!clockwise); ctx.stroke();
+        const ex = cx2+radius*Math.cos(endAngle); const ey = cy2 - radius*Math.sin(endAngle);
+        const tangentAngle = endAngle + (clockwise ? -Math.PI/2 : Math.PI/2);
+        ctx.fillStyle=color; ctx.translate(ex,ey); ctx.rotate(tangentAngle);
+        ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(-5,-3.5); ctx.lineTo(-5,3.5); ctx.closePath(); ctx.fill();
+        ctx.setTransform(1,0,0,1,0,0); ctx.scale(DPR,DPR); ctx.restore();
+    }
+
+    function drawAllRays(paths) {
+        if (!paths.hitGlass) {
+            drawRay(paths.lightX, lightY, paths.lightX, 8, '#ff4d6d', 3, '#ff3355', 10);
+            drawArrowhead(paths.lightX, (lightY+8)/2, -Math.PI/2, 11, '#ff4d6d');
+            return;
+        }
+        const { cx: pCx, cy: pCy, R: pR, lightX, lightY, d_in, topHalf } = paths;
+
+        if (!topHalf) {
+            const { incidentPt, nA_outer, d_refr, d_refl, diameterPt, d_out, totalReflect2, d_refl2, refl2Pt2 } = paths;
+            drawRay(lightX, lightY, incidentPt.x, incidentPt.y, '#ff4d6d', 3.2, '#ff3355', 12);
+            drawArrowhead((lightX+incidentPt.x)/2, (lightY+incidentPt.y)/2, Math.atan2(d_in.y,d_in.x), 11, '#ff4d6d');
+            if (d_refl) {
+                const reflLen=180; const reflEnd = add(incidentPt, mul(d_refl, reflLen));
+                drawRay(incidentPt.x, incidentPt.y, reflEnd.x, Math.min(reflEnd.y, DESIGN_HEIGHT-5), 'rgba(255,130,130,0.45)', 1.6);
+            }
+            if (d_refr && diameterPt) {
+                drawRay(incidentPt.x, incidentPt.y, diameterPt.x, diameterPt.y, '#ff758c', 2.6, '#ff4d6d', 8);
+                if (d_out && !totalReflect2) {
+                    const outLen=200; const outEnd = add(diameterPt, mul(d_out, outLen));
+                    drawRay(diameterPt.x, diameterPt.y, outEnd.x, Math.max(outEnd.y,5), '#ff4d6d', 3.2, '#ff3355', 12);
+                }
+                if (totalReflect2 && d_refl2 && refl2Pt2) {
+                    drawRay(diameterPt.x, diameterPt.y, refl2Pt2.x, refl2Pt2.y, '#ff9988', 2.2, '#ff6644', 7);
+                    const nR2 = norm(sub(refl2Pt2, {x:pCx, y:pCy}));
+                    const d_out2 = refract(d_refl2, nR2, n_glass/n_air);
+                    if (d_out2) {
+                        const outEnd2 = add(refl2Pt2, mul(d_out2, 180));
+                        drawRay(refl2Pt2.x, refl2Pt2.y, outEnd2.x, Math.min(outEnd2.y, DESIGN_HEIGHT-5), '#ff4d6d', 2.8);
+                    }
+                }
+            }
+            if (nA_outer && incidentPt) {
+                const nExt=55;
+                drawDashedLine(incidentPt.x - nA_outer.x*nExt, incidentPt.y - nA_outer.y*nExt,
+                    incidentPt.x + nA_outer.x*nExt*0.7, incidentPt.y + nA_outer.y*nExt*0.7, 'rgba(180,200,230,0.45)',1.1);
+            }
+            if (paths.incAngleDeg!==undefined && nA_outer && incidentPt) {
+                const iRad = paths.incAngleDeg * Math.PI/180;
+                const nA_angle = Math.atan2(-nA_outer.y, -nA_outer.x);
+                drawAngleArc(incidentPt.x, incidentPt.y, 26, nA_angle, nA_angle+iRad, '#ffaa33', 1.8, true);
+            }
+        } else {
+            const { incidentPt, nA_outer, d_refr, d_refl, arcPt, nB_inner, d_out, totalReflect2, d_refl2, refl2Pt2 } = paths;
+            drawRay(lightX, lightY, incidentPt.x, incidentPt.y, '#ff4d6d', 3.2, '#ff3355', 12);
+            if (d_refl) {
+                const reflLen=150; const reflEnd = add(incidentPt, mul(d_refl, reflLen));
+                drawRay(incidentPt.x, incidentPt.y, reflEnd.x, Math.max(reflEnd.y, lightY), 'rgba(255,130,130,0.45)', 1.6);
+            }
+            if (d_refr && arcPt) {
+                drawRay(incidentPt.x, incidentPt.y, arcPt.x, arcPt.y, '#ff758c', 2.6, '#ff4d6d', 8);
+                if (d_out && !totalReflect2) {
+                    const outLen=200; const outEnd = add(arcPt, mul(d_out, outLen));
+                    drawRay(arcPt.x, arcPt.y, outEnd.x, Math.min(outEnd.y, DESIGN_HEIGHT-5), '#ff4d6d', 3.2, '#ff3355', 12);
+                }
+                if (totalReflect2 && d_refl2 && refl2Pt2) {
+                    drawRay(arcPt.x, arcPt.y, refl2Pt2.x, refl2Pt2.y, '#ff9988', 2.2);
+                    const d_out2 = refract(d_refl2, {x:0,y:1}, n_glass/n_air);
+                    if (d_out2) {
+                        const outEnd2 = add(refl2Pt2, mul(d_out2, 150));
+                        drawRay(refl2Pt2.x, refl2Pt2.y, outEnd2.x, Math.max(outEnd2.y, lightY), '#ff4d6d', 2.8);
+                    }
+                }
+            }
+            if (nA_outer && incidentPt) {
+                drawDashedLine(incidentPt.x - nA_outer.x*45, incidentPt.y - nA_outer.y*45,
+                    incidentPt.x + nA_outer.x*40, incidentPt.y + nA_outer.y*40, 'rgba(180,200,230,0.45)',1.1);
+            }
+            if (paths.incAngleDeg!==undefined && nA_outer && incidentPt) {
+                const iRad = paths.incAngleDeg * Math.PI/180;
+                const nA_angle = Math.atan2(-nA_outer.y, -nA_outer.x);
+                drawAngleArc(incidentPt.x, incidentPt.y, 26, nA_angle, nA_angle+iRad, '#ffaa33', 1.8, true);
+            }
+        }
+    }
+
+    function drawLightSource(lx) {
+        const grad = ctx.createRadialGradient(lx, lightY, 0, lx, lightY, 18);
+        grad.addColorStop(0,'rgba(255,255,240,0.95)'); grad.addColorStop(0.2,'rgba(255,220,180,0.8)');
+        grad.addColorStop(0.5,'rgba(255,100,60,0.4)'); grad.addColorStop(1,'rgba(255,40,20,0)');
+        ctx.fillStyle = grad; ctx.beginPath(); ctx.arc(lx, lightY, 18, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = 'rgba(255,255,255,0.95)'; ctx.beginPath(); ctx.arc(lx, lightY, 5, 0, Math.PI*2); ctx.fill();
+        ctx.strokeStyle = 'rgba(255,100,80,0.8)'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(lx, lightY, 12, 0, Math.PI*2); ctx.stroke();
+        ctx.fillStyle = '#ffcccc'; ctx.font = '600 11px "PingFang SC","Microsoft YaHei",sans-serif';
+        ctx.textAlign = 'center'; ctx.fillText('光源', lx, lightY+26);
+    }
+
+    function draw() {
+        const cy = isTopHalf ? baseCy + R : baseCy;
+        ctx.clearRect(0,0,DESIGN_WIDTH,DESIGN_HEIGHT);
+        drawGridBackground();
+        drawHalfCylinder(cy);
+        const paths = computeRayPaths(lightOffset, isTopHalf, cy);
+        if (paths) {
+            drawAllRays(paths);
+            drawLightSource(paths.lightX);
+            if (paths.hitGlass && paths.incAngleDeg!==undefined) {
+                infoIncAngle.textContent = paths.incAngleDeg.toFixed(1);
+                infoRefrAngle.textContent = paths.refrAngleDeg.toFixed(1);
+                infoEmergAngle.textContent = paths.totalReflect2 ? '全反射' : paths.emergAngleDeg.toFixed(1);
+            } else {
+                infoIncAngle.textContent = '--'; infoRefrAngle.textContent = '--'; infoEmergAngle.textContent = '--';
+            }
+        }
+    }
+
+    function updateUI() {
+        posSlider.value = lightOffset;
+        posDisplay.textContent = lightOffset + ' mm';
+        flipBtn.textContent = isTopHalf ? '🔃 对称到下方' : '🔃 对称到上方';
+        flipBtn.classList.toggle('active-mode', isTopHalf);
+        quickBtns.querySelectorAll('.quick-btn').forEach(btn => {
+            const bo = parseFloat(btn.dataset.offset);
+            btn.classList.toggle('active', Math.abs(bo - lightOffset) < 1);
+        });
+        draw();
+    }
+
+    posSlider.addEventListener('input', () => { lightOffset = parseInt(posSlider.value); updateUI(); });
+    quickBtns.addEventListener('click', e => {
+        const btn = e.target.closest('.quick-btn');
+        if (!btn) return;
+        const offset = parseFloat(btn.dataset.offset);
+        if (!isNaN(offset)) { lightOffset = offset; updateUI(); }
+    });
+    flipBtn.addEventListener('click', () => { isTopHalf = !isTopHalf; updateUI(); });
+
+    let isDragging = false;
+    function getCanvasPos(e) {
+        const rect = canvas.getBoundingClientRect();
+        const sx = DESIGN_WIDTH / rect.width, sy = DESIGN_HEIGHT / rect.height;
+        const clx = e.touches ? e.touches[0].clientX : e.clientX;
+        const cly = e.touches ? e.touches[0].clientY : e.clientY;
+        return { x: (clx - rect.left)*sx, y: (cly - rect.top)*sy };
+    }
+    function isNearLightSource(pos) { return Math.hypot(pos.x - (cx+lightOffset), pos.y - lightY) < 30; }
+
+    canvas.addEventListener('mousedown', e => {
+        const pos = getCanvasPos(e);
+        if (isNearLightSource(pos)) {
+            isDragging = true; canvasWrapper.classList.add('dragging'); hintDrag.style.opacity = '0';
+            lightOffset = Math.round(pos.x - cx); lightOffset = Math.max(-180, Math.min(180, lightOffset));
+            updateUI(); e.preventDefault();
+        }
+    });
+    canvas.addEventListener('mousemove', e => {
+        const pos = getCanvasPos(e);
+        if (isDragging) {
+            lightOffset = Math.round(pos.x - cx); lightOffset = Math.max(-180, Math.min(180, lightOffset));
+            updateUI();
+        } else canvas.style.cursor = isNearLightSource(pos) ? 'grab' : 'default';
+    });
+    canvas.addEventListener('mouseup', () => { isDragging=false; canvasWrapper.classList.remove('dragging'); canvas.style.cursor='default'; });
+    canvas.addEventListener('mouseleave', () => { if(isDragging){ isDragging=false; canvasWrapper.classList.remove('dragging'); } });
+    canvas.addEventListener('touchstart', e => {
+        const pos = getCanvasPos(e);
+        if (isNearLightSource(pos)) {
+            isDragging=true; canvasWrapper.classList.add('dragging'); hintDrag.style.opacity='0';
+            lightOffset = Math.round(pos.x-cx); lightOffset = Math.max(-180, Math.min(180, lightOffset));
+            updateUI(); e.preventDefault();
+        }
+    }, {passive:false});
+    canvas.addEventListener('touchmove', e => {
+        if (isDragging) {
+            const pos = getCanvasPos(e);
+            lightOffset = Math.round(pos.x-cx); lightOffset = Math.max(-180, Math.min(180, lightOffset));
+            updateUI(); e.preventDefault();
+        }
+    }, {passive:false});
+    canvas.addEventListener('touchend', () => { isDragging=false; canvasWrapper.classList.remove('dragging'); });
+    document.addEventListener('keydown', e => {
+        if (e.target.tagName==='INPUT' && e.target.type==='range') return;
+        if (e.key==='ArrowRight') { e.preventDefault(); lightOffset = Math.min(180, lightOffset+5); updateUI(); }
+        else if (e.key==='ArrowLeft') { e.preventDefault(); lightOffset = Math.max(-180, lightOffset-5); updateUI(); }
+    });
+    setTimeout(() => { hintDrag.style.opacity='0.75'; setTimeout(()=>{ hintDrag.style.opacity='0'; },5000); },1500);
+
+    function init() { resizeCanvas(); lightOffset=0; isTopHalf=false; updateUI(); }
+    init();
+})();
+</script>
+
+  <script>
+  // 返回主页（滚动位置已在主页点击链接时保存）
+  function saveScrollAndReturn() {
+    window.location.href = '../index.html';
+  }
+  
+  // 禁用右键菜单
+  document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+  });
+  
+  // 禁用开发者工具快捷键
+  document.addEventListener('keydown', function(e) {
+    // ESC返回主页 - 保存滚动位置
+    if (e.keyCode === 27) {
+      saveScrollAndReturn();
+      return false;
+    }
+    // F12
+    if (e.keyCode === 123) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+U
+    if (e.ctrlKey && e.keyCode === 85) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+I
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 73) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+J
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 74) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+C
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 67) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+S
+    if (e.ctrlKey && e.keyCode === 83) {
+      e.preventDefault();
+      return false;
+    }
+  });
+  
+  // 禁用选择
+  document.addEventListener('selectstart', function(e) {
+    // 允许输入框选择
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+      return true;
+    }
+    e.preventDefault();
+    return false;
+  });
+  </script>
+</body>
+</html>
