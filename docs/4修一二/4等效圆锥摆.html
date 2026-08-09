@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>圆周运动四合一动画演示</title>
+<style>
+    body {
+        margin: 0;
+        padding: 18px;
+        font-family: 'Segoe UI', Arial, sans-serif;
+        background-color: #0a192f;
+        color: #ffffff;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    h1 {
+        margin: 0 0 8px;
+        font-size: 22px;
+        font-weight: normal;
+    }
+
+    .meta-bar {
+        width: 1000px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px;
+        color: #66ccff;
+        font-size: 15px;
+    }
+
+    .slider-box {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    input[type="range"] {
+        width: 260px;
+        accent-color: #66ccff;
+    }
+
+    canvas {
+        border: 1px solid #66ccff;
+        border-radius: 8px;
+        box-shadow: 0 0 25px rgba(102, 204, 255, 0.25);
+        background-color: #0a192f;
+    }
+</style>
+
+  <style>
+  body {
+    background-color: #1a2332 !important;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+  }
+  
+  .qilai-back-btn {
+    position: fixed;
+    top: 10px;
+    left: 15px;
+    z-index: 100000;
+    padding: 8px 16px;
+    background: rgba(0, 150, 200, 0.2);
+    border: 1px solid rgba(100, 180, 255, 0.5);
+    color: #8ab4f8;
+    font-size: 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.3s;
+    backdrop-filter: blur(5px);
+    font-family: "Microsoft YaHei", sans-serif;
+  }
+  
+  .qilai-back-btn:hover {
+    background: rgba(0, 150, 200, 0.4);
+    box-shadow: 0 0 15px rgba(100, 180, 255, 0.3);
+    color: #fff;
+  }
+  
+  .qilai-watermark {
+    position: fixed;
+    bottom: 15px;
+    right: 15px;
+    z-index: 99998;
+    font-size: 12px;
+    color: rgba(138, 180, 248, 0.35);
+    text-align: right;
+    line-height: 1.8;
+    pointer-events: none;
+    user-select: none;
+    font-family: "Microsoft YaHei", sans-serif;
+  }
+  
+  .qilai-watermark .title {
+    font-size: 14px;
+    font-weight: bold;
+    color: rgba(138, 180, 248, 0.45);
+    margin-bottom: 4px;
+    letter-spacing: 1px;
+  }
+  </style>
+</head>
+<body>
+  <a href="javascript:void(0);" class="qilai-back-btn" onclick="saveScrollAndReturn();">← 返回主页</a>
+  
+  <div class="qilai-watermark">
+    <div class="title">齐老师动画</div>
+    QQ 3398528250<br>
+    抖音 35320300542
+  </div>
+
+
+<h1>圆锥摆，h均带入轨迹圆心到圆心正上方等效悬挂点的距离</h1>
+
+<div class="meta-bar">
+    <div>上排：双圆锥摆对比｜下排：漏斗圆周运动 + 空中飞椅</div>
+    <div class="slider-box">
+        <label>高度 h：<span id="hValue">0.80</span> m</label>
+        <input type="range" id="hSlider" min="0.2" max="0.95" step="0.01" value="0.80" />
+    </div>
+    <div id="periodDisplay">周期：计算中...</div>
+</div>
+
+<canvas id="canvas" width="1000" height="600"></canvas>
+
+<script>
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const hSlider = document.getElementById('hSlider');
+const hValueDisplay = document.getElementById('hValue');
+const periodDisplay = document.getElementById('periodDisplay');
+
+const g = 9.8;
+const scale = 130;
+const zScale = 0.32;
+
+// ======================
+// 上排：两个圆锥摆
+// ======================
+const pendulum1 = {
+    anchorX: 250,
+    anchorY: 50,
+    L: 1.0,
+    color: '#ff4444',
+    glowColor: '#ffffff'
+};
+
+const pendulum2 = {
+    anchorX: 750,
+    anchorY: 50,
+    L: 1.5,
+    color: '#4444ff',
+    glowColor: '#ffdd88'
+};
+
+let h = 0.80;
+let r1 = Math.sqrt(Math.max(0.01, pendulum1.L * pendulum1.L - h * h));
+let r2 = Math.sqrt(Math.max(0.01, pendulum2.L * pendulum2.L - h * h));
+let T = 2 * Math.PI * Math.sqrt(h / g);
+let omegaPendulum = 2 * Math.PI / T;
+let anglePendulum = 0;
+let lastCrossTime = 0;
+let currentPeriod = T;
+
+// ======================
+// 下排左：漏斗圆周运动
+// ======================
+const funnel = {
+    centerX: 250,
+    bottomY: 540,
+    height: 0.9,
+    alpha: Math.PI / 4
+};
+
+const ballFunnelBlue = { h: 0.75, color: '#4488ff', glowColor: '#6699ff' };
+const ballFunnelRed = { h: 0.30, color: '#ff4444', glowColor: '#ff6666' };
+
+const rBlue = ballFunnelBlue.h * Math.tan(funnel.alpha);
+const rRed = ballFunnelRed.h * Math.tan(funnel.alpha);
+const omegaBlue = Math.sqrt(g / ballFunnelBlue.h);
+const omegaRed = Math.sqrt(g / ballFunnelRed.h);
+
+let angleBlue = 0;
+let angleRed = 0;
+
+// ======================
+// 下排右：空中飞椅
+// ======================
+const swing = {
+    axisX: 750,
+    axisY: 430,
+    rodLength: 0.7,
+    ropeLength: 0.9,
+    theta: Math.PI / 7
+};
+
+const swingR = (swing.rodLength + swing.ropeLength * Math.sin(swing.theta)) * scale;
+const swingH = swing.ropeLength * Math.cos(swing.theta) * scale;
+const omegaSwing = Math.sqrt(g * Math.tan(swing.theta) / (swing.rodLength + swing.ropeLength * Math.sin(swing.theta)));
+
+let angleSwing = 0;
+let lastTime = 0;
+
+// ======================
+// 滑块事件
+// ======================
+hSlider.addEventListener('input', () => {
+    h = parseFloat(hSlider.value);
+    hValueDisplay.textContent = h.toFixed(2);
+    r1 = Math.sqrt(Math.max(0.01, pendulum1.L * pendulum1.L - h * h));
+    r2 = Math.sqrt(Math.max(0.01, pendulum2.L * pendulum2.L - h * h));
+    T = 2 * Math.PI * Math.sqrt(h / g);
+    omegaPendulum = 2 * Math.PI / T;
+    lastCrossTime = 0;
+    currentPeriod = T;
+});
+
+// ======================
+// 绘制辅助函数
+// ======================
+function drawGrid() {
+    ctx.strokeStyle = '#172a45';
+    ctx.lineWidth = 1;
+    for (let x = 0; x <= canvas.width; x += 50) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, canvas.height);
+        ctx.stroke();
+    }
+    for (let y = 0; y <= canvas.height; y += 50) {
+        ctx.beginPath();
+            ctx.moveTo(0, y);
+            ctx.lineTo(canvas.width, y);
+            ctx.stroke();
+    }
+}
+
+function drawGlowBall(x, y, radius, color, glowColor) {
+    ctx.shadowColor = glowColor;
+    ctx.shadowBlur = 18;
+    const gradient = ctx.createRadialGradient(x - 3, y - 3, 0, x, y, radius);
+    gradient.addColorStop(0, '#ffffff');
+    gradient.addColorStop(0.5, color);
+    gradient.addColorStop(1, '#222222');
+    ctx.beginPath();
+    ctx.arc(x, y, radius, 0, 2 * Math.PI);
+    ctx.fillStyle = gradient;
+    ctx.fill();
+    ctx.shadowBlur = 0;
+}
+
+function drawDashedEllipse(cx, cy, rx, ry, color) {
+    ctx.beginPath();
+    ctx.setLineDash([5, 5]);
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1.5;
+    ctx.ellipse(cx, cy, rx, ry, 0, 0, 2 * Math.PI);
+    ctx.stroke();
+    ctx.setLineDash([]);
+}
+
+// ======================
+// 动画主循环
+// ======================
+function draw(timestamp) {
+    const dt = lastTime ? (timestamp - lastTime) / 1000 : 0;
+    lastTime = timestamp;
+
+    const prevAnglePendulum = anglePendulum;
+    anglePendulum += omegaPendulum * dt;
+    if (anglePendulum > 2 * Math.PI) anglePendulum -= 2 * Math.PI;
+
+    angleBlue += omegaBlue * dt;
+    angleRed += omegaRed * dt;
+    angleSwing += omegaSwing * dt;
+
+    if (angleBlue > 2 * Math.PI) angleBlue -= 2 * Math.PI;
+    if (angleRed > 2 * Math.PI) angleRed -= 2 * Math.PI;
+    if (angleSwing > 2 * Math.PI) angleSwing -= 2 * Math.PI;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawGrid();
+
+    // 画布正中间：圆锥摆周期公式注释
+    const formulaText = '圆锥摆周期：T = 2π√(h/g)';
+    const prefixText = '圆锥摆周期：T = 2π√';
+    const exprText = '(h/g)';
+    const centerX = canvas.width / 2;
+    const centerY = canvas.height / 2;
+
+    ctx.font = 'bold 28px "Times New Roman", serif';
+    ctx.fillStyle = '#66ccff';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(formulaText, centerX, centerY);
+
+    // 补充根号上方的水平横线
+    const prefixWidth = ctx.measureText(prefixText).width;
+    const exprWidth = ctx.measureText(exprText).width;
+    const totalWidth = ctx.measureText(formulaText).width;
+
+    const lineStartX = centerX - totalWidth / 2 + prefixWidth;
+    const lineEndX = lineStartX + exprWidth;
+    const lineY = centerY - 19;
+
+    ctx.beginPath();
+    ctx.moveTo(lineStartX, lineY);
+    ctx.lineTo(lineEndX, lineY);
+    ctx.strokeStyle = '#66ccff';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // ----------------------
+    // 上排：圆锥摆 1
+    // ----------------------
+    const p1CenterY = pendulum1.anchorY + h * scale;
+
+    ctx.beginPath();
+    ctx.setLineDash([5, 5]);
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 1;
+    ctx.moveTo(pendulum1.anchorX, pendulum1.anchorY);
+    ctx.lineTo(pendulum1.anchorX, p1CenterY);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    drawDashedEllipse(pendulum1.anchorX, p1CenterY, r1 * scale, r1 * scale * zScale, '#66ccff');
+
+    const ball1X = pendulum1.anchorX + r1 * Math.cos(anglePendulum) * scale;
+    const ball1Y = p1CenterY + r1 * Math.sin(anglePendulum) * scale * zScale;
+
+    ctx.beginPath();
+    ctx.moveTo(pendulum1.anchorX, pendulum1.anchorY);
+    ctx.lineTo(ball1X, ball1Y);
+    ctx.strokeStyle = pendulum1.color;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    drawGlowBall(ball1X, ball1Y, 12, '#dddddd', pendulum1.glowColor);
+
+    // ----------------------
+    // 上排：圆锥摆 2
+    // ----------------------
+    const p2CenterY = pendulum2.anchorY + h * scale;
+
+    ctx.beginPath();
+    ctx.setLineDash([5, 5]);
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 1;
+    ctx.moveTo(pendulum2.anchorX, pendulum2.anchorY);
+    ctx.lineTo(pendulum2.anchorX, p2CenterY);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    drawDashedEllipse(pendulum2.anchorX, p2CenterY, r2 * scale, r2 * scale * zScale, '#66ffcc');
+
+    const ball2X = pendulum2.anchorX + r2 * Math.cos(anglePendulum) * scale;
+    const ball2Y = p2CenterY + r2 * Math.sin(anglePendulum) * scale * zScale;
+
+    ctx.beginPath();
+    ctx.moveTo(pendulum2.anchorX, pendulum2.anchorY);
+    ctx.lineTo(ball2X, ball2Y);
+    ctx.strokeStyle = pendulum2.color;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    drawGlowBall(ball2X, ball2Y, 12, '#ffdd88', pendulum2.glowColor);
+
+    // 周期检测
+    const prevZ = Math.sin(prevAnglePendulum);
+    const currentZ = Math.sin(anglePendulum);
+    if (prevZ < 0 && currentZ >= 0) {
+        if (lastCrossTime > 0) currentPeriod = (timestamp - lastCrossTime) / 1000;
+        lastCrossTime = timestamp;
+    }
+    periodDisplay.textContent = `周期：${currentPeriod.toFixed(2)} s`;
+
+    // ----------------------
+    // 下排左：漏斗（顶部完整圆周）
+    // ----------------------
+    const rTop = funnel.height * Math.tan(funnel.alpha);
+    const funnelTopY = funnel.bottomY - funnel.height * scale;
+
+    // 漏斗顶部完整椭圆圆周
+    ctx.beginPath();
+    ctx.ellipse(
+        funnel.centerX,
+        funnelTopY,
+        rTop * scale,
+        rTop * scale * zScale,
+        0,
+        0,
+        2 * Math.PI,
+        false
+    );
+    ctx.strokeStyle = '#66ccff';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // 漏斗侧面与填充
+    ctx.beginPath();
+    ctx.moveTo(funnel.centerX - rTop * scale, funnelTopY);
+    ctx.lineTo(funnel.centerX, funnel.bottomY);
+    ctx.lineTo(funnel.centerX + rTop * scale, funnelTopY);
+    ctx.fillStyle = 'rgba(102, 204, 255, 0.12)';
+    ctx.fill();
+    ctx.strokeStyle = '#66ccff';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    const blueCenterY = funnel.bottomY - ballFunnelBlue.h * scale;
+    const redCenterY = funnel.bottomY - ballFunnelRed.h * scale;
+
+    drawDashedEllipse(funnel.centerX, blueCenterY, rBlue * scale, rBlue * scale * zScale, '#4488ff');
+    drawDashedEllipse(funnel.centerX, redCenterY, rRed * scale, rRed * scale * zScale, '#ff4444');
+
+    const ballBlueX = funnel.centerX + rBlue * Math.cos(angleBlue) * scale;
+    const ballBlueY = blueCenterY + rBlue * Math.sin(angleBlue) * scale * zScale;
+
+    const ballRedFunnelX = funnel.centerX + rRed * Math.cos(angleRed) * scale;
+    const ballRedFunnelY = redCenterY + rRed * Math.sin(angleRed) * scale * zScale;
+
+    drawGlowBall(ballBlueX, ballBlueY, 11, ballFunnelBlue.color, ballFunnelBlue.glowColor);
+    drawGlowBall(ballRedFunnelX, ballRedFunnelY, 11, ballFunnelRed.color, ballFunnelRed.glowColor);
+
+    // ----------------------
+    // 下排右：空中飞椅
+    // ----------------------
+    ctx.beginPath();
+    ctx.moveTo(swing.axisX, swing.axisY - 50);
+    ctx.lineTo(swing.axisX, swing.axisY + 50);
+    ctx.strokeStyle = '#888888';
+    ctx.lineWidth = 8;
+    ctx.stroke();
+
+    const rodEndX = swing.axisX + swing.rodLength * Math.cos(angleSwing) * scale;
+    const rodEndY = swing.axisY + swing.rodLength * Math.sin(angleSwing) * scale * zScale;
+
+    const swingBallX = rodEndX + swing.ropeLength * Math.sin(swing.theta) * Math.cos(angleSwing) * scale;
+    const swingBallY = rodEndY + swing.ropeLength * Math.sin(swing.theta) * Math.sin(angleSwing) * scale * zScale + swingH;
+
+    drawDashedEllipse(swing.axisX, swing.axisY + swingH, swingR, swingR * zScale, '#ff8844');
+
+    ctx.beginPath();
+    ctx.moveTo(swing.axisX, swing.axisY);
+    ctx.lineTo(rodEndX, rodEndY);
+    ctx.strokeStyle = '#cccccc';
+    ctx.lineWidth = 4;
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(rodEndX, rodEndY);
+    ctx.lineTo(swingBallX, swingBallY);
+    ctx.strokeStyle = '#ff4444';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    drawGlowBall(swingBallX, swingBallY, 12, '#ff6666', '#ff4444');
+
+    requestAnimationFrame(draw);
+}
+
+requestAnimationFrame(draw);
+</script>
+
+
+  <script>
+  // 返回主页（滚动位置已在主页点击链接时保存）
+  function saveScrollAndReturn() {
+    window.location.href = '../index.html';
+  }
+  
+  // 禁用右键菜单
+  document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+  });
+  
+  // 禁用开发者工具快捷键
+  document.addEventListener('keydown', function(e) {
+    // ESC返回主页 - 保存滚动位置
+    if (e.keyCode === 27) {
+      saveScrollAndReturn();
+      return false;
+    }
+    // F12
+    if (e.keyCode === 123) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+U
+    if (e.ctrlKey && e.keyCode === 85) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+I
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 73) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+J
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 74) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+C
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 67) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+S
+    if (e.ctrlKey && e.keyCode === 83) {
+      e.preventDefault();
+      return false;
+    }
+  });
+  
+  // 禁用选择
+  document.addEventListener('selectstart', function(e) {
+    // 允许输入框选择
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+      return true;
+    }
+    e.preventDefault();
+    return false;
+  });
+  </script>
+</body>
+</html>
