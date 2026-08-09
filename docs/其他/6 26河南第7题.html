@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>空间平抛运动演示</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            font-family: "Microsoft YaHei", sans-serif;
+            overflow: hidden;
+        }
+        #container {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+        }
+        #info {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: #fff;
+            z-index: 100;
+            background: rgba(0,0,0,0.5);
+            padding: 15px 20px;
+            border-radius: 10px;
+            font-size: 14px;
+            line-height: 1.8;
+        }
+        #controls {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 100;
+            display: flex;
+            gap: 15px;
+        }
+        button {
+            padding: 10px 25px;
+            font-size: 15px;
+            border: none;
+            border-radius: 25px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.5);
+        }
+        .legend {
+            margin-top: 10px;
+            font-size: 13px;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin: 5px 0;
+        }
+        .legend-line {
+            width: 30px;
+            height: 3px;
+            margin-right: 10px;
+        }
+    </style>
+
+  <style>
+  body {
+    background-color: #1a2332 !important;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+  }
+  
+  .qilai-back-btn {
+    position: fixed;
+    top: 10px;
+    left: 15px;
+    z-index: 100000;
+    padding: 8px 16px;
+    background: rgba(0, 150, 200, 0.2);
+    border: 1px solid rgba(100, 180, 255, 0.5);
+    color: #8ab4f8;
+    font-size: 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.3s;
+    backdrop-filter: blur(5px);
+    font-family: "Microsoft YaHei", sans-serif;
+  }
+  
+  .qilai-back-btn:hover {
+    background: rgba(0, 150, 200, 0.4);
+    box-shadow: 0 0 15px rgba(100, 180, 255, 0.3);
+    color: #fff;
+  }
+  
+  .qilai-watermark {
+    position: fixed;
+    bottom: 15px;
+    right: 15px;
+    z-index: 99998;
+    font-size: 12px;
+    color: rgba(138, 180, 248, 0.35);
+    text-align: right;
+    line-height: 1.8;
+    pointer-events: none;
+    user-select: none;
+    font-family: "Microsoft YaHei", sans-serif;
+  }
+  
+  .qilai-watermark .title {
+    font-size: 14px;
+    font-weight: bold;
+    color: rgba(138, 180, 248, 0.45);
+    margin-bottom: 4px;
+    letter-spacing: 1px;
+  }
+  </style>
+</head>
+<body>
+  <a href="javascript:void(0);" class="qilai-back-btn" onclick="saveScrollAndReturn();">← 返回主页</a>
+  
+  <div class="qilai-watermark">
+    <div class="title">齐老师动画</div>
+    QQ 3398528250<br>
+    抖音 35320300542
+  </div>
+
+    <div id="container">
+        <div id="info">
+            <div style="font-size: 18px; font-weight: bold; margin-bottom: 10px;">空间平抛运动演示</div>
+            <div>小球从正方体顶点沿水平方向抛出</div>
+            <div>落至体对角线另一端顶点</div>
+            <div class="legend">
+                <div class="legend-item">
+                    <div class="legend-line" style="background: #ff4757;"></div>
+                    <span>实际运动轨迹（实线）</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-line" style="background: #ffa502; border-top: 2px dashed;"></div>
+                    <span>正面投影（x-y面）</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-line" style="background: #2ed573; border-top: 2px dashed;"></div>
+                    <span>左侧面投影（y-z面）</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-line" style="background: #1e90ff; border-top: 2px dashed;"></div>
+                    <span>底面投影（x-z面）</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-line" style="background: #9b59b6; border-top: 2px dashed;"></div>
+                    <span>竖直分运动投影</span>
+                </div>
+            </div>
+        </div>
+        <div id="controls">
+            <button id="playBtn">播放</button>
+            <button id="resetBtn">重置</button>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/build/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/controls/OrbitControls.js"></script>
+    <script>
+        // 场景设置
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        document.getElementById('container').appendChild(renderer.domElement);
+
+        // 轨道控制器
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+
+        // 正方体参数
+        const size = 4;
+        const halfSize = size / 2;
+
+        // 创建半透明正方体
+        const cubeGeometry = new THREE.BoxGeometry(size, size, size);
+        const cubeMaterial = new THREE.MeshPhongMaterial({
+            color: 0x87ceeb,
+            transparent: true,
+            opacity: 0.25,
+            side: THREE.DoubleSide
+        });
+        const cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
+        scene.add(cube);
+
+        // 正方体线框
+        const edgesGeometry = new THREE.EdgesGeometry(cubeGeometry);
+        const edgesMaterial = new THREE.LineBasicMaterial({ color: 0x4a90d9, linewidth: 2 });
+        const edges = new THREE.LineSegments(edgesGeometry, edgesMaterial);
+        scene.add(edges);
+
+        // 坐标系辅助
+        const axesHelper = new THREE.AxesHelper(size * 0.8);
+        axesHelper.position.set(-halfSize, -halfSize, -halfSize);
+        scene.add(axesHelper);
+
+        // 起点和终点（体对角线两端）
+        // 起点: 左上后 (-halfSize, halfSize, -halfSize)
+        // 终点: 右下前 (halfSize, -halfSize, halfSize)
+        const startPoint = new THREE.Vector3(-halfSize, halfSize, -halfSize);
+        const endPoint = new THREE.Vector3(halfSize, -halfSize, halfSize);
+
+        // 标记起点和终点
+        function createMarker(position, color) {
+            const geometry = new THREE.SphereGeometry(0.12, 16, 16);
+            const material = new THREE.MeshBasicMaterial({ color: color });
+            const sphere = new THREE.Mesh(geometry, material);
+            sphere.position.copy(position);
+            return sphere;
+        }
+        scene.add(createMarker(startPoint, 0x00ff00)); // 起点绿色
+        scene.add(createMarker(endPoint, 0xffff00));   // 终点黄色
+
+        // 红色小球
+        const ballGeometry = new THREE.SphereGeometry(0.15, 32, 32);
+        const ballMaterial = new THREE.MeshBasicMaterial({ color: 0xff4757 });
+        const ball = new THREE.Mesh(ballGeometry, ballMaterial);
+        ball.position.copy(startPoint);
+        scene.add(ball);
+
+        // 轨迹线 - 实际轨迹（红色实线）
+        const trajectoryPoints = [];
+        const trajectoryGeometry = new THREE.BufferGeometry();
+        const trajectoryMaterial = new THREE.LineBasicMaterial({ 
+            color: 0xff4757, 
+            linewidth: 3 
+        });
+        const trajectoryLine = new THREE.Line(trajectoryGeometry, trajectoryMaterial);
+        scene.add(trajectoryLine);
+
+        // 正面投影轨迹 (x-y平面, z=-halfSize) - 橙色虚线
+        const projXYPoints = [];
+        const projXYGeometry = new THREE.BufferGeometry();
+        const projXYMaterial = new THREE.LineDashedMaterial({
+            color: 0xffa502,
+            dashSize: 0.15,
+            gapSize: 0.1
+        });
+        const projXYLine = new THREE.Line(projXYGeometry, projXYMaterial);
+        scene.add(projXYLine);
+
+        // 左侧面投影轨迹 (y-z平面, x=-halfSize) - 绿色虚线
+        const projYZPoints = [];
+        const projYZGeometry = new THREE.BufferGeometry();
+        const projYZMaterial = new THREE.LineDashedMaterial({
+            color: 0x2ed573,
+            dashSize: 0.15,
+            gapSize: 0.1
+        });
+        const projYZLine = new THREE.Line(projYZGeometry, projYZMaterial);
+        scene.add(projYZLine);
+
+        // 底面投影轨迹 (x-z平面, y=-halfSize) - 蓝色虚线
+        const projXZPoints = [];
+        const projXZGeometry = new THREE.BufferGeometry();
+        const projXZMaterial = new THREE.LineDashedMaterial({
+            color: 0x1e90ff,
+            dashSize: 0.15,
+            gapSize: 0.1
+        });
+        const projXZLine = new THREE.Line(projXZGeometry, projXZMaterial);
+        scene.add(projXZLine);
+
+        // 竖直分运动投影 (起点正下方竖直线, x=-halfSize, z=-halfSize) - 紫色虚线
+        const projVerticalPoints = [];
+        const projVerticalGeometry = new THREE.BufferGeometry();
+        const projVerticalMaterial = new THREE.LineDashedMaterial({
+            color: 0x9b59b6,
+            dashSize: 0.15,
+            gapSize: 0.1
+        });
+        const projVerticalLine = new THREE.Line(projVerticalGeometry, projVerticalMaterial);
+        scene.add(projVerticalLine);
+
+        // 投影小球
+        const projXYBall = new THREE.Mesh(
+            new THREE.SphereGeometry(0.1, 16, 16),
+            new THREE.MeshBasicMaterial({ color: 0xffa502 })
+        );
+        scene.add(projXYBall);
+
+        const projYZBall = new THREE.Mesh(
+            new THREE.SphereGeometry(0.1, 16, 16),
+            new THREE.MeshBasicMaterial({ color: 0x2ed573 })
+        );
+        scene.add(projYZBall);
+
+        const projXZBall = new THREE.Mesh(
+            new THREE.SphereGeometry(0.1, 16, 16),
+            new THREE.MeshBasicMaterial({ color: 0x1e90ff })
+        );
+        scene.add(projXZBall);
+
+        const projVerticalBall = new THREE.Mesh(
+            new THREE.SphereGeometry(0.1, 16, 16),
+            new THREE.MeshBasicMaterial({ color: 0x9b59b6 })
+        );
+        scene.add(projVerticalBall);
+
+        // 物理参数
+        const g = 9.8; // 重力加速度
+        const totalDisplacementY = size; // 竖直下落距离
+        const totalTime = Math.sqrt(2 * totalDisplacementY / g); // 总运动时间
+        const vx = size / totalTime; // x方向初速度
+        const vz = size / totalTime; // z方向初速度
+
+        // 动画状态
+        let isPlaying = false;
+        let currentTime = 0;
+        const speedScale = 0.8; // 动画速度倍率
+
+        // 更新小球位置
+        function updateBall(t) {
+            // 平抛运动公式
+            const x = startPoint.x + vx * t;
+            const y = startPoint.y - 0.5 * g * t * t;
+            const z = startPoint.z + vz * t;
+
+            ball.position.set(x, y, z);
+
+            // 添加轨迹点
+            trajectoryPoints.push(new THREE.Vector3(x, y, z));
+            trajectoryGeometry.setFromPoints(trajectoryPoints);
+
+            // x-y面投影 (z固定在后侧面)
+            const projXY = new THREE.Vector3(x, y, -halfSize);
+            projXYPoints.push(projXY);
+            projXYGeometry.setFromPoints(projXYPoints);
+            projXYLine.computeLineDistances();
+            projXYBall.position.copy(projXY);
+
+            // y-z面投影 (x固定在左侧面)
+            const projYZ = new THREE.Vector3(-halfSize, y, z);
+            projYZPoints.push(projYZ);
+            projYZGeometry.setFromPoints(projYZPoints);
+            projYZLine.computeLineDistances();
+            projYZBall.position.copy(projYZ);
+
+            // x-z面投影 (y固定在底面)
+            const projXZ = new THREE.Vector3(x, -halfSize, z);
+            projXZPoints.push(projXZ);
+            projXZGeometry.setFromPoints(projXZPoints);
+            projXZLine.computeLineDistances();
+            projXZBall.position.copy(projXZ);
+
+            // 竖直分运动投影 (x、z固定在起点位置，仅y变化)
+            const projVertical = new THREE.Vector3(-halfSize, y, -halfSize);
+            projVerticalPoints.push(projVertical);
+            projVerticalGeometry.setFromPoints(projVerticalPoints);
+            projVerticalLine.computeLineDistances();
+            projVerticalBall.position.copy(projVertical);
+        }
+
+        // 重置
+        function reset() {
+            isPlaying = false;
+            currentTime = 0;
+            trajectoryPoints.length = 0;
+            projXYPoints.length = 0;
+            projYZPoints.length = 0;
+            projXZPoints.length = 0;
+            projVerticalPoints.length = 0;
+            
+            trajectoryGeometry.setFromPoints([]);
+            projXYGeometry.setFromPoints([]);
+            projYZGeometry.setFromPoints([]);
+            projXZGeometry.setFromPoints([]);
+            projVerticalGeometry.setFromPoints([]);
+            
+            ball.position.copy(startPoint);
+            projXYBall.position.set(startPoint.x, startPoint.y, -halfSize);
+            projYZBall.position.set(-halfSize, startPoint.y, startPoint.z);
+            projXZBall.position.set(startPoint.x, -halfSize, startPoint.z);
+            projVerticalBall.position.set(-halfSize, startPoint.y, -halfSize);
+            
+            document.getElementById('playBtn').textContent = '播放';
+        }
+
+        // 播放/暂停
+        document.getElementById('playBtn').addEventListener('click', function() {
+            if (currentTime >= totalTime) {
+                reset();
+            }
+            isPlaying = !isPlaying;
+            this.textContent = isPlaying ? '暂停' : '播放';
+        });
+
+        document.getElementById('resetBtn').addEventListener('click', reset);
+
+        // 灯光
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+        scene.add(ambientLight);
+
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        directionalLight.position.set(5, 10, 7);
+        scene.add(directionalLight);
+
+        // 相机位置
+        camera.position.set(6, 4, 6);
+        camera.lookAt(0, 0, 0);
+
+        // 动画循环
+        const clock = new THREE.Clock();
+
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            const delta = clock.getDelta();
+
+            if (isPlaying && currentTime < totalTime) {
+                currentTime += delta * speedScale;
+                if (currentTime > totalTime) currentTime = totalTime;
+                updateBall(currentTime);
+                
+                if (currentTime >= totalTime) {
+                    isPlaying = false;
+                    document.getElementById('playBtn').textContent = '重新播放';
+                }
+            }
+
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        // 窗口自适应
+        window.addEventListener('resize', function() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // 初始化
+        reset();
+        animate();
+    </script>
+
+  <script>
+  // 返回主页（滚动位置已在主页点击链接时保存）
+  function saveScrollAndReturn() {
+    window.location.href = '../index.html';
+  }
+  
+  // 禁用右键菜单
+  document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+  });
+  
+  // 禁用开发者工具快捷键
+  document.addEventListener('keydown', function(e) {
+    // ESC返回主页 - 保存滚动位置
+    if (e.keyCode === 27) {
+      saveScrollAndReturn();
+      return false;
+    }
+    // F12
+    if (e.keyCode === 123) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+U
+    if (e.ctrlKey && e.keyCode === 85) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+I
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 73) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+J
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 74) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+C
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 67) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+S
+    if (e.ctrlKey && e.keyCode === 83) {
+      e.preventDefault();
+      return false;
+    }
+  });
+  
+  // 禁用选择
+  document.addEventListener('selectstart', function(e) {
+    // 允许输入框选择
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+      return true;
+    }
+    e.preventDefault();
+    return false;
+  });
+  </script>
+</body>
+</html>
