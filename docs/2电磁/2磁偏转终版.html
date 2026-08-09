@@ -1,0 +1,873 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>高中物理磁偏转动画</title>
+  <script>
+var pJS=function(e,a){var t=document.querySelector("#"+e+" > .particles-js-canvas-el");this.pJS={canvas:{el:t,w:t.offsetWidth,h:t.offsetHeight},particles:{number:{value:400,density:{enable:!0,value_area:800}},color:{value:"#fff"},shape:{type:"circle",stroke:{width:0,color:"#ff0000"},polygon:{nb_sides:5},image:{src:"",width:100,height:100}},opacity:{value:1,random:!1,anim:{enable:!1,speed:2,opacity_min:0,sync:!1}},size:{value:20,random:!1,anim:{enable:!1,speed:20,size_min:0,sync:!1}},line_linked:{enable:!0,distance:100,color:"#fff",opacity:1,width:1},move:{enable:!0,speed:2,direction:"none",random:!1,straight:!1,out_mode:"out",bounce:!1,attract:{enable:!1,rotateX:3e3,rotateY:3e3}},array:[]},interactivity:{detect_on:"canvas",events:{onhover:{enable:!0,mode:"grab"},onclick:{enable:!0,mode:"push"},resize:!0},modes:{grab:{distance:100,line_linked:{opacity:1}},bubble:{distance:200,size:80,duration:.4},repulse:{distance:200,duration:.4},push:{particles_nb:4},remove:{particles_nb:2}},mouse:{}},retina_detect:!1,fn:{interact:{},modes:{},vendors:{}},tmp:{}};var i=this.pJS;a&&Object.deepExtend(i,a),i.tmp.obj={size_value:i.particles.size.value,size_anim_speed:i.particles.size.anim.speed,move_speed:i.particles.move.speed,line_linked_distance:i.particles.line_linked.distance,line_linked_width:i.particles.line_linked.width,mode_grab_distance:i.interactivity.modes.grab.distance,mode_bubble_distance:i.interactivity.modes.bubble.distance,mode_bubble_size:i.interactivity.modes.bubble.size,mode_repulse_distance:i.interactivity.modes.repulse.distance},i.fn.retinaInit=function(){i.retina_detect&&window.devicePixelRatio>1?(i.canvas.pxratio=window.devicePixelRatio,i.tmp.retina=!0):(i.canvas.pxratio=1,i.tmp.retina=!1),i.canvas.w=i.canvas.el.offsetWidth*i.canvas.pxratio,i.canvas.h=i.canvas.el.offsetHeight*i.canvas.pxratio,i.particles.size.value=i.tmp.obj.size_value*i.canvas.pxratio,i.particles.size.anim.speed=i.tmp.obj.size_anim_speed*i.canvas.pxratio,i.particles.move.speed=i.tmp.obj.move_speed*i.canvas.pxratio,i.particles.line_linked.distance=i.tmp.obj.line_linked_distance*i.canvas.pxratio,i.interactivity.modes.grab.distance=i.tmp.obj.mode_grab_distance*i.canvas.pxratio,i.interactivity.modes.bubble.distance=i.tmp.obj.mode_bubble_distance*i.canvas.pxratio,i.particles.line_linked.width=i.tmp.obj.line_linked_width*i.canvas.pxratio,i.interactivity.modes.bubble.size=i.tmp.obj.mode_bubble_size*i.canvas.pxratio,i.interactivity.modes.repulse.distance=i.tmp.obj.mode_repulse_distance*i.canvas.pxratio},i.fn.canvasInit=function(){i.canvas.ctx=i.canvas.el.getContext("2d")},i.fn.canvasSize=function(){i.canvas.el.width=i.canvas.w,i.canvas.el.height=i.canvas.h,i&&i.interactivity.events.resize&&window.addEventListener("resize",(function(){i.canvas.w=i.canvas.el.offsetWidth,i.canvas.h=i.canvas.el.offsetHeight,i.tmp.retina&&(i.canvas.w*=i.canvas.pxratio,i.canvas.h*=i.canvas.pxratio),i.canvas.el.width=i.canvas.w,i.canvas.el.height=i.canvas.h,i.particles.move.enable||(i.fn.particlesEmpty(),i.fn.particlesCreate(),i.fn.particlesDraw(),i.fn.vendors.densityAutoParticles()),i.fn.vendors.densityAutoParticles()}))},i.fn.canvasPaint=function(){i.canvas.ctx.fillRect(0,0,i.canvas.w,i.canvas.h)},i.fn.canvasClear=function(){i.canvas.ctx.clearRect(0,0,i.canvas.w,i.canvas.h)},i.fn.particle=function(e,a,t){if(this.radius=(i.particles.size.random?Math.random():1)*i.particles.size.value,i.particles.size.anim.enable&&(this.size_status=!1,this.vs=i.particles.size.anim.speed/100,i.particles.size.anim.sync||(this.vs=this.vs*Math.random())),this.x=t?t.x:Math.random()*i.canvas.w,this.y=t?t.y:Math.random()*i.canvas.h,this.x>i.canvas.w-2*this.radius?this.x=this.x-this.radius:this.x<2*this.radius&&(this.x=this.x+this.radius),this.y>i.canvas.h-2*this.radius?this.y=this.y-this.radius:this.y<2*this.radius&&(this.y=this.y+this.radius),i.particles.move.bounce&&i.fn.vendors.checkOverlap(this,t),this.color={},"object"==typeof e.value)if(e.value instanceof Array){var n=e.value[Math.floor(Math.random()*i.particles.color.value.length)];this.color.rgb=hexToRgb(n)}else null!=e.value.r&&null!=e.value.g&&null!=e.value.b&&(this.color.rgb={r:e.value.r,g:e.value.g,b:e.value.b}),null!=e.value.h&&null!=e.value.s&&null!=e.value.l&&(this.color.hsl={h:e.value.h,s:e.value.s,l:e.value.l});else"random"==e.value?this.color.rgb={r:Math.floor(256*Math.random())+0,g:Math.floor(256*Math.random())+0,b:Math.floor(256*Math.random())+0}:"string"==typeof e.value&&(this.color=e,this.color.rgb=hexToRgb(this.color.value));this.opacity=(i.particles.opacity.random?Math.random():1)*i.particles.opacity.value,i.particles.opacity.anim.enable&&(this.opacity_status=!1,this.vo=i.particles.opacity.anim.speed/100,i.particles.opacity.anim.sync||(this.vo=this.vo*Math.random()));var s={};switch(i.particles.move.direction){case"top":s={x:0,y:-1};break;case"top-right":s={x:.5,y:-.5};break;case"right":s={x:1,y:-0};break;case"bottom-right":s={x:.5,y:.5};break;case"bottom":s={x:0,y:1};break;case"bottom-left":s={x:-.5,y:1};break;case"left":s={x:-1,y:0};break;case"top-left":s={x:-.5,y:-.5};break;default:s={x:0,y:0}}i.particles.move.straight?(this.vx=s.x,this.vy=s.y,i.particles.move.random&&(this.vx=this.vx*Math.random(),this.vy=this.vy*Math.random())):(this.vx=s.x+Math.random()-.5,this.vy=s.y+Math.random()-.5),this.vx_i=this.vx,this.vy_i=this.vy;var r=i.particles.shape.type;if("object"==typeof r){if(r instanceof Array){var c=r[Math.floor(Math.random()*r.length)];this.shape=c}}else this.shape=r;if("image"==this.shape){var o=i.particles.shape;this.img={src:o.image.src,ratio:o.image.width/o.image.height},this.img.ratio||(this.img.ratio=1),"svg"==i.tmp.img_type&&null!=i.tmp.source_svg&&(i.fn.vendors.createSvgImg(this),i.tmp.pushing&&(this.img.loaded=!1))}},i.fn.particle.prototype.draw=function(){var e=this;if(null!=e.radius_bubble)var a=e.radius_bubble;else a=e.radius;if(null!=e.opacity_bubble)var t=e.opacity_bubble;else t=e.opacity;if(e.color.rgb)var n="rgba("+e.color.rgb.r+","+e.color.rgb.g+","+e.color.rgb.b+","+t+")";else n="hsla("+e.color.hsl.h+","+e.color.hsl.s+"%,"+e.color.hsl.l+"%,"+t+")";switch(i.canvas.ctx.fillStyle=n,i.canvas.ctx.beginPath(),e.shape){case"circle":i.canvas.ctx.arc(e.x,e.y,a,0,2*Math.PI,!1);break;case"edge":i.canvas.ctx.rect(e.x-a,e.y-a,2*a,2*a);break;case"triangle":i.fn.vendors.drawShape(i.canvas.ctx,e.x-a,e.y+a/1.66,2*a,3,2);break;case"polygon":i.fn.vendors.drawShape(i.canvas.ctx,e.x-a/(i.particles.shape.polygon.nb_sides/3.5),e.y-a/.76,2.66*a/(i.particles.shape.polygon.nb_sides/3),i.particles.shape.polygon.nb_sides,1);break;case"star":i.fn.vendors.drawShape(i.canvas.ctx,e.x-2*a/(i.particles.shape.polygon.nb_sides/4),e.y-a/1.52,2*a*2.66/(i.particles.shape.polygon.nb_sides/3),i.particles.shape.polygon.nb_sides,2);break;case"image":if("svg"==i.tmp.img_type)var s=e.img.obj;else s=i.tmp.img_obj;s&&i.canvas.ctx.drawImage(s,e.x-a,e.y-a,2*a,2*a/e.img.ratio)}i.canvas.ctx.closePath(),i.particles.shape.stroke.width>0&&(i.canvas.ctx.strokeStyle=i.particles.shape.stroke.color,i.canvas.ctx.lineWidth=i.particles.shape.stroke.width,i.canvas.ctx.stroke()),i.canvas.ctx.fill()},i.fn.particlesCreate=function(){for(var e=0;e<i.particles.number.value;e++)i.particles.array.push(new i.fn.particle(i.particles.color,i.particles.opacity.value))},i.fn.particlesUpdate=function(){for(var e=0;e<i.particles.array.length;e++){var a=i.particles.array[e];if(i.particles.move.enable){var t=i.particles.move.speed/2;a.x+=a.vx*t,a.y+=a.vy*t}if(i.particles.opacity.anim.enable&&(1==a.opacity_status?(a.opacity>=i.particles.opacity.value&&(a.opacity_status=!1),a.opacity+=a.vo):(a.opacity<=i.particles.opacity.anim.opacity_min&&(a.opacity_status=!0),a.opacity-=a.vo),a.opacity<0&&(a.opacity=0)),i.particles.size.anim.enable&&(1==a.size_status?(a.radius>=i.particles.size.value&&(a.size_status=!1),a.radius+=a.vs):(a.radius<=i.particles.size.anim.size_min&&(a.size_status=!0),a.radius-=a.vs),a.radius<0&&(a.radius=0)),"bounce"==i.particles.move.out_mode)var n={x_left:a.radius,x_right:i.canvas.w,y_top:a.radius,y_bottom:i.canvas.h};else n={x_left:-a.radius,x_right:i.canvas.w+a.radius,y_top:-a.radius,y_bottom:i.canvas.h+a.radius};if(a.x-a.radius>i.canvas.w?(a.x=n.x_left,a.y=Math.random()*i.canvas.h):a.x+a.radius<0&&(a.x=n.x_right,a.y=Math.random()*i.canvas.h),a.y-a.radius>i.canvas.h?(a.y=n.y_top,a.x=Math.random()*i.canvas.h):a.y+a.radius<0&&(a.y=n.y_bottom,a.x=Math.random()*i.canvas.w),"bounce"===i.particles.move.out_mode)(a.x+a.radius>i.canvas.w||a.x-a.radius<0)&&(a.vx=-a.vx),(a.y+a.radius>i.canvas.h||a.y-a.radius<0)&&(a.vy=-a.vy);if(isInArray("grab",i.interactivity.events.onhover.mode)&&i.fn.modes.grabParticle(a),(isInArray("bubble",i.interactivity.events.onhover.mode)||isInArray("bubble",i.interactivity.events.onclick.mode))&&i.fn.modes.bubbleParticle(a),(isInArray("repulse",i.interactivity.events.onhover.mode)||isInArray("repulse",i.interactivity.events.onclick.mode))&&i.fn.modes.repulseParticle(a),i.particles.line_linked.enable||i.particles.move.attract.enable)for(var s=e+1;s<i.particles.array.length;s++){var r=i.particles.array[s];i.particles.line_linked.enable&&i.fn.interact.linkParticles(a,r),i.particles.move.attract.enable&&i.fn.interact.attractParticles(a,r),i.particles.move.bounce&&i.fn.interact.bounceParticles(a,r)}}},i.fn.particlesDraw=function(){i.canvas.ctx.clearRect(0,0,i.canvas.w,i.canvas.h),i.fn.particlesUpdate();for(var e=0;e<i.particles.array.length;e++){i.particles.array[e].draw()}},i.fn.particlesEmpty=function(){i.particles.array=[]},i.fn.particlesRefresh=function(){cancelRequestAnimFrame(i.fn.checkAnimFrame),cancelRequestAnimFrame(i.fn.drawAnimFrame),i.tmp.source_svg=void 0,i.tmp.img_obj=void 0,i.tmp.count_svg=0,i.fn.particlesEmpty(),i.fn.canvasClear(),i.fn.vendors.start()},i.fn.interact.linkParticles=function(e,a){var t=e.x-a.x,n=e.y-a.y,s=Math.sqrt(t*t+n*n);if(s<=i.particles.line_linked.distance){var r=i.particles.line_linked.opacity-s/(1/i.particles.line_linked.opacity)/i.particles.line_linked.distance;if(r>0){var c=i.particles.line_linked.color_rgb_line;i.canvas.ctx.strokeStyle="rgba("+c.r+","+c.g+","+c.b+","+r+")",i.canvas.ctx.lineWidth=i.particles.line_linked.width,i.canvas.ctx.beginPath(),i.canvas.ctx.moveTo(e.x,e.y),i.canvas.ctx.lineTo(a.x,a.y),i.canvas.ctx.stroke(),i.canvas.ctx.closePath()}}},i.fn.interact.attractParticles=function(e,a){var t=e.x-a.x,n=e.y-a.y;if(Math.sqrt(t*t+n*n)<=i.particles.line_linked.distance){var s=t/(1e3*i.particles.move.attract.rotateX),r=n/(1e3*i.particles.move.attract.rotateY);e.vx-=s,e.vy-=r,a.vx+=s,a.vy+=r}},i.fn.interact.bounceParticles=function(e,a){var t=e.x-a.x,i=e.y-a.y;Math.sqrt(t*t+i*i)<=e.radius+a.radius&&(e.vx=-e.vx,e.vy=-e.vy,a.vx=-a.vx,a.vy=-a.vy)},i.fn.modes.pushParticles=function(e,a){i.tmp.pushing=!0;for(var t=0;t<e;t++)i.particles.array.push(new i.fn.particle(i.particles.color,i.particles.opacity.value,{x:a?a.pos_x:Math.random()*i.canvas.w,y:a?a.pos_y:Math.random()*i.canvas.h})),t==e-1&&(i.particles.move.enable||i.fn.particlesDraw(),i.tmp.pushing=!1)},i.fn.modes.removeParticles=function(e){i.particles.array.splice(0,e),i.particles.move.enable||i.fn.particlesDraw()},i.fn.modes.bubbleParticle=function(e){if(i.interactivity.events.onhover.enable&&isInArray("bubble",i.interactivity.events.onhover.mode)){var a=e.x-i.interactivity.mouse.pos_x,t=e.y-i.interactivity.mouse.pos_y,n=1-(l=Math.sqrt(a*a+t*t))/i.interactivity.modes.bubble.distance;function s(){e.opacity_bubble=e.opacity,e.radius_bubble=e.radius}if(l<=i.interactivity.modes.bubble.distance){if(n>=0&&"mousemove"==i.interactivity.status){if(i.interactivity.modes.bubble.size!=i.particles.size.value)if(i.interactivity.modes.bubble.size>i.particles.size.value){(c=e.radius+i.interactivity.modes.bubble.size*n)>=0&&(e.radius_bubble=c)}else{var r=e.radius-i.interactivity.modes.bubble.size,c=e.radius-r*n;e.radius_bubble=c>0?c:0}var o;if(i.interactivity.modes.bubble.opacity!=i.particles.opacity.value)if(i.interactivity.modes.bubble.opacity>i.particles.opacity.value)(o=i.interactivity.modes.bubble.opacity*n)>e.opacity&&o<=i.interactivity.modes.bubble.opacity&&(e.opacity_bubble=o);else(o=e.opacity-(i.particles.opacity.value-i.interactivity.modes.bubble.opacity)*n)<e.opacity&&o>=i.interactivity.modes.bubble.opacity&&(e.opacity_bubble=o)}}else s();"mouseleave"==i.interactivity.status&&s()}else if(i.interactivity.events.onclick.enable&&isInArray("bubble",i.interactivity.events.onclick.mode)){if(i.tmp.bubble_clicking){a=e.x-i.interactivity.mouse.click_pos_x,t=e.y-i.interactivity.mouse.click_pos_y;var l=Math.sqrt(a*a+t*t),v=((new Date).getTime()-i.interactivity.mouse.click_time)/1e3;v>i.interactivity.modes.bubble.duration&&(i.tmp.bubble_duration_end=!0),v>2*i.interactivity.modes.bubble.duration&&(i.tmp.bubble_clicking=!1,i.tmp.bubble_duration_end=!1)}function p(a,t,n,s,r){if(a!=t)if(i.tmp.bubble_duration_end)null!=n&&(o=a+(a-(s-v*(s-a)/i.interactivity.modes.bubble.duration)),"size"==r&&(e.radius_bubble=o),"opacity"==r&&(e.opacity_bubble=o));else if(l<=i.interactivity.modes.bubble.distance){if(null!=n)var c=n;else c=s;if(c!=a){var o=s-v*(s-a)/i.interactivity.modes.bubble.duration;"size"==r&&(e.radius_bubble=o),"opacity"==r&&(e.opacity_bubble=o)}}else"size"==r&&(e.radius_bubble=void 0),"opacity"==r&&(e.opacity_bubble=void 0)}i.tmp.bubble_clicking&&(p(i.interactivity.modes.bubble.size,i.particles.size.value,e.radius_bubble,e.radius,"size"),p(i.interactivity.modes.bubble.opacity,i.particles.opacity.value,e.opacity_bubble,e.opacity,"opacity"))}},i.fn.modes.repulseParticle=function(e){if(i.interactivity.events.onhover.enable&&isInArray("repulse",i.interactivity.events.onhover.mode)&&"mousemove"==i.interactivity.status){var a=e.x-i.interactivity.mouse.pos_x,t=e.y-i.interactivity.mouse.pos_y,n=Math.sqrt(a*a+t*t),s={x:a/n,y:t/n},r=clamp(1/(o=i.interactivity.modes.repulse.distance)*(-1*Math.pow(n/o,2)+1)*o*100,0,50),c={x:e.x+s.x*r,y:e.y+s.y*r};"bounce"==i.particles.move.out_mode?(c.x-e.radius>0&&c.x+e.radius<i.canvas.w&&(e.x=c.x),c.y-e.radius>0&&c.y+e.radius<i.canvas.h&&(e.y=c.y)):(e.x=c.x,e.y=c.y)}else if(i.interactivity.events.onclick.enable&&isInArray("repulse",i.interactivity.events.onclick.mode))if(i.tmp.repulse_finish||(i.tmp.repulse_count++,i.tmp.repulse_count==i.particles.array.length&&(i.tmp.repulse_finish=!0)),i.tmp.repulse_clicking){var o=Math.pow(i.interactivity.modes.repulse.distance/6,3),l=i.interactivity.mouse.click_pos_x-e.x,v=i.interactivity.mouse.click_pos_y-e.y,p=l*l+v*v,d=-o/p*1;p<=o&&function(){var a=Math.atan2(v,l);if(e.vx=d*Math.cos(a),e.vy=d*Math.sin(a),"bounce"==i.particles.move.out_mode){var t={x:e.x+e.vx,y:e.y+e.vy};(t.x+e.radius>i.canvas.w||t.x-e.radius<0)&&(e.vx=-e.vx),(t.y+e.radius>i.canvas.h||t.y-e.radius<0)&&(e.vy=-e.vy)}}()}else 0==i.tmp.repulse_clicking&&(e.vx=e.vx_i,e.vy=e.vy_i)},i.fn.modes.grabParticle=function(e){if(i.interactivity.events.onhover.enable&&"mousemove"==i.interactivity.status){var a=e.x-i.interactivity.mouse.pos_x,t=e.y-i.interactivity.mouse.pos_y,n=Math.sqrt(a*a+t*t);if(n<=i.interactivity.modes.grab.distance){var s=i.interactivity.modes.grab.line_linked.opacity-n/(1/i.interactivity.modes.grab.line_linked.opacity)/i.interactivity.modes.grab.distance;if(s>0){var r=i.particles.line_linked.color_rgb_line;i.canvas.ctx.strokeStyle="rgba("+r.r+","+r.g+","+r.b+","+s+")",i.canvas.ctx.lineWidth=i.particles.line_linked.width,i.canvas.ctx.beginPath(),i.canvas.ctx.moveTo(e.x,e.y),i.canvas.ctx.lineTo(i.interactivity.mouse.pos_x,i.interactivity.mouse.pos_y),i.canvas.ctx.stroke(),i.canvas.ctx.closePath()}}}},i.fn.vendors.eventsListeners=function(){"window"==i.interactivity.detect_on?i.interactivity.el=window:i.interactivity.el=i.canvas.el,(i.interactivity.events.onhover.enable||i.interactivity.events.onclick.enable)&&(i.interactivity.el.addEventListener("mousemove",(function(e){if(i.interactivity.el==window)var a=e.clientX,t=e.clientY;else a=e.offsetX||e.clientX,t=e.offsetY||e.clientY;i.interactivity.mouse.pos_x=a,i.interactivity.mouse.pos_y=t,i.tmp.retina&&(i.interactivity.mouse.pos_x*=i.canvas.pxratio,i.interactivity.mouse.pos_y*=i.canvas.pxratio),i.interactivity.status="mousemove"})),i.interactivity.el.addEventListener("mouseleave",(function(e){i.interactivity.mouse.pos_x=null,i.interactivity.mouse.pos_y=null,i.interactivity.status="mouseleave"}))),i.interactivity.events.onclick.enable&&i.interactivity.el.addEventListener("click",(function(){if(i.interactivity.mouse.click_pos_x=i.interactivity.mouse.pos_x,i.interactivity.mouse.click_pos_y=i.interactivity.mouse.pos_y,i.interactivity.mouse.click_time=(new Date).getTime(),i.interactivity.events.onclick.enable)switch(i.interactivity.events.onclick.mode){case"push":i.particles.move.enable||1==i.interactivity.modes.push.particles_nb?i.fn.modes.pushParticles(i.interactivity.modes.push.particles_nb,i.interactivity.mouse):i.interactivity.modes.push.particles_nb>1&&i.fn.modes.pushParticles(i.interactivity.modes.push.particles_nb);break;case"remove":i.fn.modes.removeParticles(i.interactivity.modes.remove.particles_nb);break;case"bubble":i.tmp.bubble_clicking=!0;break;case"repulse":i.tmp.repulse_clicking=!0,i.tmp.repulse_count=0,i.tmp.repulse_finish=!1,setTimeout((function(){i.tmp.repulse_clicking=!1}),1e3*i.interactivity.modes.repulse.duration)}}))},i.fn.vendors.densityAutoParticles=function(){if(i.particles.number.density.enable){var e=i.canvas.el.width*i.canvas.el.height/1e3;i.tmp.retina&&(e/=2*i.canvas.pxratio);var a=e*i.particles.number.value/i.particles.number.density.value_area,t=i.particles.array.length-a;t<0?i.fn.modes.pushParticles(Math.abs(t)):i.fn.modes.removeParticles(t)}},i.fn.vendors.checkOverlap=function(e,a){for(var t=0;t<i.particles.array.length;t++){var n=i.particles.array[t],s=e.x-n.x,r=e.y-n.y;Math.sqrt(s*s+r*r)<=e.radius+n.radius&&(e.x=a?a.x:Math.random()*i.canvas.w,e.y=a?a.y:Math.random()*i.canvas.h,i.fn.vendors.checkOverlap(e))}},i.fn.vendors.createSvgImg=function(e){var a=i.tmp.source_svg.replace(/#([0-9A-F]{3,6})/gi,(function(a,t,i,n){if(e.color.rgb)var s="rgba("+e.color.rgb.r+","+e.color.rgb.g+","+e.color.rgb.b+","+e.opacity+")";else s="hsla("+e.color.hsl.h+","+e.color.hsl.s+"%,"+e.color.hsl.l+"%,"+e.opacity+")";return s})),t=new Blob([a],{type:"image/svg+xml;charset=utf-8"}),n=window.URL||window.webkitURL||window,s=n.createObjectURL(t),r=new Image;r.addEventListener("load",(function(){e.img.obj=r,e.img.loaded=!0,n.revokeObjectURL(s),i.tmp.count_svg++})),r.src=s},i.fn.vendors.destroypJS=function(){cancelAnimationFrame(i.fn.drawAnimFrame),t.remove(),pJSDom=null},i.fn.vendors.drawShape=function(e,a,t,i,n,s){var r=n*s,c=n/s,o=180*(c-2)/c,l=Math.PI-Math.PI*o/180;e.save(),e.beginPath(),e.translate(a,t),e.moveTo(0,0);for(var v=0;v<r;v++)e.lineTo(i,0),e.translate(i,0),e.rotate(l);e.fill(),e.restore()},i.fn.vendors.exportImg=function(){window.open(i.canvas.el.toDataURL("image/png"),"_blank")},i.fn.vendors.loadImg=function(e){if(i.tmp.img_error=void 0,""!=i.particles.shape.image.src)if("svg"==e){var a=new XMLHttpRequest;a.open("GET",i.particles.shape.image.src),a.onreadystatechange=function(e){4==a.readyState&&(200==a.status?(i.tmp.source_svg=e.currentTarget.response,i.fn.vendors.checkBeforeDraw()):(console.log("Error pJS - Image not found"),i.tmp.img_error=!0))},a.send()}else{var t=new Image;t.addEventListener("load",(function(){i.tmp.img_obj=t,i.fn.vendors.checkBeforeDraw()})),t.src=i.particles.shape.image.src}else console.log("Error pJS - No image.src"),i.tmp.img_error=!0},i.fn.vendors.draw=function(){"image"==i.particles.shape.type?"svg"==i.tmp.img_type?i.tmp.count_svg>=i.particles.number.value?(i.fn.particlesDraw(),i.particles.move.enable?i.fn.drawAnimFrame=requestAnimFrame(i.fn.vendors.draw):cancelRequestAnimFrame(i.fn.drawAnimFrame)):i.tmp.img_error||(i.fn.drawAnimFrame=requestAnimFrame(i.fn.vendors.draw)):null!=i.tmp.img_obj?(i.fn.particlesDraw(),i.particles.move.enable?i.fn.drawAnimFrame=requestAnimFrame(i.fn.vendors.draw):cancelRequestAnimFrame(i.fn.drawAnimFrame)):i.tmp.img_error||(i.fn.drawAnimFrame=requestAnimFrame(i.fn.vendors.draw)):(i.fn.particlesDraw(),i.particles.move.enable?i.fn.drawAnimFrame=requestAnimFrame(i.fn.vendors.draw):cancelRequestAnimFrame(i.fn.drawAnimFrame))},i.fn.vendors.checkBeforeDraw=function(){"image"==i.particles.shape.type?"svg"==i.tmp.img_type&&null==i.tmp.source_svg?i.tmp.checkAnimFrame=requestAnimFrame(check):(cancelRequestAnimFrame(i.tmp.checkAnimFrame),i.tmp.img_error||(i.fn.vendors.init(),i.fn.vendors.draw())):(i.fn.vendors.init(),i.fn.vendors.draw())},i.fn.vendors.init=function(){i.fn.retinaInit(),i.fn.canvasInit(),i.fn.canvasSize(),i.fn.canvasPaint(),i.fn.particlesCreate(),i.fn.vendors.densityAutoParticles(),i.particles.line_linked.color_rgb_line=hexToRgb(i.particles.line_linked.color)},i.fn.vendors.start=function(){isInArray("image",i.particles.shape.type)?(i.tmp.img_type=i.particles.shape.image.src.substr(i.particles.shape.image.src.length-3),i.fn.vendors.loadImg(i.tmp.img_type)):i.fn.vendors.checkBeforeDraw()},i.fn.vendors.eventsListeners(),i.fn.vendors.start()};function hexToRgb(e){e=e.replace(/^#?([a-f\d])([a-f\d])([a-f\d])$/i,(function(e,a,t,i){return a+a+t+t+i+i}));var a=/^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(e);return a?{r:parseInt(a[1],16),g:parseInt(a[2],16),b:parseInt(a[3],16)}:null}function clamp(e,a,t){return Math.min(Math.max(e,a),t)}function isInArray(e,a){return a.indexOf(e)>-1}Object.deepExtend=function(e,a){for(var t in a)a[t]&&a[t].constructor&&a[t].constructor===Object?(e[t]=e[t]||{},arguments.callee(e[t],a[t])):e[t]=a[t];return e},window.requestAnimFrame=window.requestAnimationFrame||window.webkitRequestAnimationFrame||window.mozRequestAnimationFrame||window.oRequestAnimationFrame||window.msRequestAnimationFrame||function(e){window.setTimeout(e,1e3/60)},window.cancelRequestAnimFrame=window.cancelAnimationFrame||window.webkitCancelRequestAnimationFrame||window.mozCancelRequestAnimationFrame||window.oCancelRequestAnimationFrame||window.msCancelRequestAnimationFrame||clearTimeout,window.pJSDom=[],window.particlesJS=function(e,a){"string"!=typeof e&&(a=e,e="particles-js"),e||(e="particles-js");var t=document.getElementById(e),i="particles-js-canvas-el",n=t.getElementsByClassName(i);if(n.length)for(;n.length>0;)t.removeChild(n[0]);var s=document.createElement("canvas");s.className=i,s.style.width="100%",s.style.height="100%",null!=document.getElementById(e).appendChild(s)&&pJSDom.push(new pJS(e,a))},window.particlesJS.load=function(e,a,t){var i=new XMLHttpRequest;i.open("GET",a),i.onreadystatechange=function(a){if(4==i.readyState)if(200==i.status){var n=JSON.parse(a.currentTarget.response);window.particlesJS(e,n),t&&t()}else console.log("Error pJS - XMLHttpRequest status: "+i.status),console.log("Error pJS - File config not found")},i.send()};
+  </script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    body {
+      overflow: hidden;
+      background: #0a0e27;
+    }
+
+    #particles-js {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      top: 0;
+      left: 0;
+      z-index: 1;
+    }
+
+    #simulationCanvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      z-index: 2;
+    }
+
+    .controls {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      z-index: 3;
+      background: rgba(10, 14, 39, 0.8);
+      padding: 20px;
+      border-radius: 10px;
+      color: white;
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(100, 150, 255, 0.3);
+      box-shadow: 0 0 20px rgba(100, 150, 255, 0.2);
+    }
+
+    .controls h3 {
+      margin-bottom: 15px;
+      color: #64b5f6;
+      text-align: center;
+    }
+
+    .control-item {
+      margin-bottom: 15px;
+      font-size: 14px;
+    }
+
+    .control-item label {
+      display: block;
+      margin-bottom: 5px;
+    }
+
+    .control-item input[type="range"] {
+      width: 200px;
+      accent-color: #64b5f6;
+    }
+
+    .controls button {
+      width: 100%;
+      padding: 10px;
+      background: #1976d2;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: background 0.3s;
+    }
+
+    .controls button:hover {
+      background: #1565c0;
+    }
+
+    /* 底部的磁场形状控制栏 */
+    .shape-controls {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 60px;
+      z-index: 3;
+      background: rgba(10, 14, 39, 0.8);
+      backdrop-filter: blur(10px);
+      border-top: 1px solid rgba(100, 150, 255, 0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 15px;
+      padding: 0 20px;
+    }
+
+    .shape-controls label {
+      color: white;
+      font-size: 14px;
+    }
+
+    .shape-btn {
+      padding: 8px 16px;
+      background: #1976d2;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: all 0.3s;
+    }
+
+    .shape-btn:hover {
+      background: #1565c0;
+    }
+
+    .shape-btn.active {
+      background: #64b5f6;
+      box-shadow: 0 0 10px rgba(100, 181, 246, 0.5);
+    }
+  </style>
+
+  <style>
+  body {
+    background-color: #1a2332 !important;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+  }
+  
+  .qilai-back-btn {
+    position: fixed;
+    top: 10px;
+    left: 15px;
+    z-index: 100000;
+    padding: 8px 16px;
+    background: rgba(0, 150, 200, 0.2);
+    border: 1px solid rgba(100, 180, 255, 0.5);
+    color: #8ab4f8;
+    font-size: 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.3s;
+    backdrop-filter: blur(5px);
+    font-family: "Microsoft YaHei", sans-serif;
+  }
+  
+  .qilai-back-btn:hover {
+    background: rgba(0, 150, 200, 0.4);
+    box-shadow: 0 0 15px rgba(100, 180, 255, 0.3);
+    color: #fff;
+  }
+  
+  .qilai-watermark {
+    position: fixed;
+    bottom: 15px;
+    right: 15px;
+    z-index: 99998;
+    font-size: 12px;
+    color: rgba(138, 180, 248, 0.35);
+    text-align: right;
+    line-height: 1.8;
+    pointer-events: none;
+    user-select: none;
+    font-family: "Microsoft YaHei", sans-serif;
+  }
+  
+  .qilai-watermark .title {
+    font-size: 14px;
+    font-weight: bold;
+    color: rgba(138, 180, 248, 0.45);
+    margin-bottom: 4px;
+    letter-spacing: 1px;
+  }
+  </style>
+</head>
+<body>
+  <a href="javascript:void(0);" class="qilai-back-btn" onclick="saveScrollAndReturn();">← 返回主页</a>
+  
+  <div class="qilai-watermark">
+    <div class="title">齐老师动画</div>
+    QQ 3398528250<br>
+    抖音 35320300542
+  </div>
+
+  <div id="particles-js"></div>
+  <canvas id="simulationCanvas"></canvas>
+  
+  <div class="controls">
+    <h3>参数调节</h3>
+    <div class="control-item">
+      <label>速度大小: <span id="speedValue">5.0</span></label>
+      <input type="range" id="speedSlider" min="1" max="40" step="0.1" value="5">
+    </div>
+    <div class="control-item">
+      <label>速度方向(°): <span id="angleValue">0</span></label>
+      <!-- 方向范围加倍，支持更大角度入射 -->
+      <input type="range" id="angleSlider" min="-180" max="180" step="1" value="0">
+    </div>
+    <!-- 尺寸调节控件，默认显示入射上下位置（圆形磁场默认） -->
+    <div class="control-item" id="sizeControls">
+      <label id="widthLabel" style="display: none;">磁场宽度: <span id="widthValue">400</span></label>
+      <input type="range" id="widthSlider" min="100" max="500" step="10" value="400" style="display: none;">
+      <label id="heightLabel" style="margin-top: 8px; display: none;">磁场高度: <span id="heightValue">300</span></label>
+      <input type="range" id="heightSlider" min="100" max="400" step="10" value="300" style="display: none;">
+      <label id="posYLabel" style="margin-top: 8px;">入射上下位置: <span id="posYValue">0</span></label>
+      <input type="range" id="posYSlider" min="-100" max="100" step="1" value="0">
+      <label id="posXLabel" style="margin-top: 8px; display: none;">入射左右位置: <span id="posXValue">0</span></label>
+      <input type="range" id="posXSlider" min="-150" max="150" step="1" value="0" style="display: none;">
+    </div>
+    <button id="resetBtn">重置动画</button>
+    <button id="keepTrajBtn" style="margin-top: 8px;">开启保留轨迹</button>
+    <button id="clearTrajBtn" style="margin-top: 8px;">删除所有轨迹</button>
+  </div>
+
+  <!-- 底部的磁场形状选择栏，全部横向显示按钮 -->
+  <div class="shape-controls">
+    <label>磁场形状选择:</label>
+    <button class="shape-btn active" data-shape="circle">圆形磁场</button>
+    <button class="shape-btn" data-shape="rect">矩形磁场</button>
+    <button class="shape-btn" data-shape="triangle">三角形磁场</button>
+    <button class="shape-btn" data-shape="single">单边界磁场</button>
+    <button class="shape-btn" data-shape="double">双边界磁场</button>
+  </div>
+
+  <script>
+    // 确保DOM完全加载后再执行所有JS
+    document.addEventListener('DOMContentLoaded', function() {
+      // 初始化科技感粒子背景
+      particlesJS('particles-js', {
+        particles: {
+          number: { value: 80, density: { enable: true, value_area: 800 } },
+          color: { value: "#64b5f6" },
+          shape: { type: "circle" },
+          opacity: { value: 0.5, random: true },
+          size: { value: 3, random: true },
+          line_linked: {
+            enable: true,
+            distance: 150,
+            color: "#64b5f6",
+            opacity: 0.2,
+            width: 1
+          },
+          move: {
+            enable: true,
+            speed: 1,
+            direction: "none",
+            random: true,
+            straight: false,
+            out_mode: "out",
+            bounce: false
+          }
+        },
+        interactivity: {
+          detect_on: "canvas",
+          events: {
+            onhover: { enable: true, mode: "grab" },
+            onclick: { enable: true, mode: "push" },
+            resize: true
+          },
+          modes: {
+            grab: { distance: 140, line_linked: { opacity: 0.5 } },
+            push: { particles_nb: 4 }
+          }
+        },
+        retina_detect: true
+      });
+
+      // 画布初始化
+      const canvas = document.getElementById('simulationCanvas');
+      const ctx = canvas.getContext('2d');
+
+      // 调整画布大小，留出底部控制栏
+      function resizeCanvas() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight - 60; // 底部控制栏高度60px
+      }
+      resizeCanvas();
+      window.addEventListener('resize', resizeCanvas);
+
+      // 磁场区域参数
+      let centerX, centerY, B_radius;
+      function updateMagneticFieldPos() {
+        centerX = canvas.width / 2;
+        centerY = canvas.height / 2;
+        B_radius = 200;
+      }
+      updateMagneticFieldPos();
+      window.addEventListener('resize', updateMagneticFieldPos);
+
+      // 可调节的尺寸参数
+      let rectWidth = 400;
+      let rectHeight = 300;
+      let doubleWidth = 400;
+
+      // 磁场形状
+      let magneticShape = 'circle';
+
+      // 物理参数
+      const B = 0.05;    // 磁场强度
+      const m = 1;      // 粒子质量
+      const q = 1;      // 粒子电荷量（正电）
+
+      // 判断点是否在磁场内
+      function isInMagnetic(x, y) {
+        const dx = x - centerX;
+        const dy = y - centerY;
+        const tol = 1; // 边界容差，确保边界处也有磁场
+        if (magneticShape === 'circle') {
+          return dx*dx + dy*dy <= (B_radius + tol)*(B_radius + tol);
+        } else if (magneticShape === 'rect') {
+          return x >= centerX - rectWidth/2 - tol && x <= centerX + rectWidth/2 + tol &&
+                 y >= centerY - rectHeight/2 - tol && y <= centerY + rectHeight/2 + tol;
+        } else if (magneticShape === 'triangle') {
+          // 等边三角形，左边的边垂直，边长300，粒子从左边的边的中点进入
+          const leftEdgeX = centerX - B_radius; // 左边的边的x坐标
+          const p1 = {x: leftEdgeX, y: centerY - 150}; // 左上顶点
+          const p2 = {x: leftEdgeX, y: centerY + 150}; // 左下顶点
+          const p3 = {x: leftEdgeX + 259.8, y: centerY}; // 右顶点，等边三角形的高=√3/2*300≈259.8
+          // 叉乘判断点是否在三角形内
+          const c1 = (p2.x - p1.x)*(y - p1.y) - (p2.y - p1.y)*(x - p1.x);
+          const c2 = (p3.x - p2.x)*(y - p2.y) - (p3.y - p2.y)*(x - p2.x);
+          const c3 = (p1.x - p3.x)*(y - p3.y) - (p1.y - p3.y)*(x - p3.x);
+          const hasNeg = (c1 < -tol) || (c2 < -tol) || (c3 < -tol);
+          const hasPos = (c1 > tol) || (c2 > tol) || (c3 > tol);
+          return !(hasNeg && hasPos);
+        } else if (magneticShape === 'single') {
+          // 单边界：左边界右侧都是磁场
+          return x >= centerX - B_radius - tol;
+        } else if (magneticShape === 'double') {
+          // 双边界：左边界固定在入射位置，只有右边界可调节
+          const leftEdge = centerX - B_radius;
+          const rightEdge = leftEdge + doubleWidth;
+          return x >= leftEdge - tol && x <= rightEdge + tol;
+        }
+        return false;
+      }
+
+      // 粒子状态
+      let particle = {
+        x: 0,
+        y: 0,
+        vx: 0,
+        vy: 0
+      };
+      let trajectory = []; // 运动轨迹
+      let keepTrajectory = false; // 是否保留轨迹
+      let lastInMagnetic = false; // 记录上一帧粒子是否在磁场内
+
+      // 控制元素
+      const speedSlider = document.getElementById('speedSlider');
+      const angleSlider = document.getElementById('angleSlider');
+      const speedValue = document.getElementById('speedValue');
+      const angleValue = document.getElementById('angleValue');
+      const resetBtn = document.getElementById('resetBtn');
+      const keepTrajBtn = document.getElementById('keepTrajBtn');
+      const clearTrajBtn = document.getElementById('clearTrajBtn');
+      const sizeControls = document.getElementById('sizeControls');
+      const widthSlider = document.getElementById('widthSlider');
+      const heightSlider = document.getElementById('heightSlider');
+      const widthValue = document.getElementById('widthValue');
+      const widthLabel = document.getElementById('widthLabel');
+      const heightValue = document.getElementById('heightValue');
+      const heightLabel = document.getElementById('heightLabel');
+      const posYSlider = document.getElementById('posYSlider');
+      const posYValue = document.getElementById('posYValue');
+      const posYLabel = document.getElementById('posYLabel');
+      const posXSlider = document.getElementById('posXSlider');
+      const posXValue = document.getElementById('posXValue');
+      const posXLabel = document.getElementById('posXLabel');
+
+      // 重置粒子状态
+      function resetParticle() {
+        // 初始位置：入射点（所有形状都支持上下调节，左右调节仅矩形磁场支持）
+        const posYOffset = parseFloat(posYSlider.value); // 上下调节（所有形状）
+        const posXOffset = magneticShape === 'rect' ? parseFloat(posXSlider.value) : 0;
+        particle.x = centerX - B_radius + posXOffset; // 左右调节（仅矩形）
+        particle.y = centerY + posYOffset;            // 上下调节（所有形状）
+        
+        // 根据滑块计算初始速度
+        const speed = parseFloat(speedSlider.value);
+        const angle = parseFloat(angleSlider.value) * Math.PI / 180; // 角度转弧度
+        particle.vx = speed * Math.cos(angle);
+        particle.vy = speed * Math.sin(angle);
+        
+        // 如果没有开启保留轨迹，才清空轨迹
+        if (!keepTrajectory) {
+          trajectory = [];
+        }
+        // 添加轨迹断点，避免不同轮次的轨迹被错误连线
+        trajectory.push(null);
+        
+        // 更新显示值
+        speedValue.textContent = speed.toFixed(1);
+        angleValue.textContent = angleSlider.value;
+        posYValue.textContent = posYSlider.value;
+        posXValue.textContent = posXSlider.value;
+        
+        // 重置状态标记
+        lastInMagnetic = false;
+      }
+
+      // 控制事件监听
+      speedSlider.addEventListener('input', resetParticle);
+      angleSlider.addEventListener('input', resetParticle);
+      resetBtn.addEventListener('click', resetParticle);
+
+      // 尺寸调节事件
+      widthSlider.addEventListener('input', () => {
+        const w = parseFloat(widthSlider.value);
+        widthValue.textContent = w;
+        if (magneticShape === 'rect') {
+          rectWidth = w;
+        } else if (magneticShape === 'double') {
+          doubleWidth = w;
+        }
+        resetParticle();
+      });
+      heightSlider.addEventListener('input', () => {
+        const h = parseFloat(heightSlider.value);
+        heightValue.textContent = h;
+        if (magneticShape === 'rect') {
+          rectHeight = h;
+        }
+        resetParticle();
+      });
+      // 入射位置调节事件
+      posYSlider.addEventListener('input', resetParticle);
+      posXSlider.addEventListener('input', resetParticle);
+
+      // 形状按钮的点击事件
+      const shapeBtns = document.querySelectorAll('.shape-btn');
+      shapeBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+          const shape = btn.dataset.shape;
+          magneticShape = shape;
+          // 更新按钮选中状态
+          shapeBtns.forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          
+          // 根据形状显示/隐藏尺寸调节控件（所有形状都显示入射上下位置调节）
+          sizeControls.style.display = 'block';
+          if (shape === 'rect') {
+            widthLabel.style.display = 'block';
+            widthSlider.style.display = 'block';
+            heightLabel.style.display = 'block';
+            heightSlider.style.display = 'block';
+            posYLabel.style.display = 'block';
+            posYSlider.style.display = 'block';
+            posXLabel.style.display = 'block';
+            posXSlider.style.display = 'block';
+            // 设置滑块为当前矩形的尺寸
+            widthSlider.value = rectWidth;
+            widthValue.textContent = rectWidth;
+            heightSlider.value = rectHeight;
+            heightValue.textContent = rectHeight;
+            posYValue.textContent = posYSlider.value;
+            posXValue.textContent = posXSlider.value;
+          } else if (shape === 'double') {
+            // 双边界显示宽度和上下位置
+            widthLabel.style.display = 'block';
+            widthSlider.style.display = 'block';
+            heightLabel.style.display = 'none';
+            heightSlider.style.display = 'none';
+            posYLabel.style.display = 'block';
+            posYSlider.style.display = 'block';
+            posXLabel.style.display = 'none';
+            posXSlider.style.display = 'none';
+            // 设置滑块为当前双边界的尺寸
+            widthSlider.value = doubleWidth;
+            widthValue.textContent = doubleWidth;
+            posYValue.textContent = posYSlider.value;
+          } else {
+            // 圆形、三角形、单边界：只显示入射上下位置
+            widthLabel.style.display = 'none';
+            widthSlider.style.display = 'none';
+            heightLabel.style.display = 'none';
+            heightSlider.style.display = 'none';
+            posYLabel.style.display = 'block';
+            posYSlider.style.display = 'block';
+            posXLabel.style.display = 'none';
+            posXSlider.style.display = 'none';
+            posYValue.textContent = posYSlider.value;
+          }
+          
+          // 重置动画
+          resetParticle();
+        });
+      });
+
+      // 轨迹控制按钮事件
+      keepTrajBtn.addEventListener('click', () => {
+        keepTrajectory = !keepTrajectory;
+        keepTrajBtn.textContent = keepTrajectory ? '关闭保留轨迹' : '开启保留轨迹';
+      });
+      clearTrajBtn.addEventListener('click', () => {
+        trajectory = [];
+      });
+
+      // 绘制速度矢量，红色显示，统一箭头长度，不随速度大小变化
+      function drawVelocityVector() {
+        // 绘制速度矢量，红色
+        ctx.strokeStyle = '#ff5252';
+        ctx.fillStyle = '#ff5252';
+        ctx.lineWidth = 2;
+        
+        // 统一箭头长度，不随速度大小变化，只保留方向，已加倍
+        const fixedArrowLength = 40; // 固定箭头长度，已加倍
+        const angle = Math.atan2(particle.vy, particle.vx); // 速度方向
+        const endX = particle.x + Math.cos(angle) * fixedArrowLength;
+        const endY = particle.y + Math.sin(angle) * fixedArrowLength;
+        
+        // 绘制箭头的线
+        ctx.beginPath();
+        ctx.moveTo(particle.x, particle.y);
+        ctx.lineTo(endX, endY);
+        ctx.stroke();
+        
+        // 绘制箭头的头部，也同步加倍
+        const headLen = 16;
+        ctx.beginPath();
+        ctx.moveTo(endX, endY);
+        ctx.lineTo(endX - headLen * Math.cos(angle - Math.PI/6), endY - headLen * Math.sin(angle - Math.PI/6));
+        ctx.lineTo(endX - headLen * Math.cos(angle + Math.PI/6), endY - headLen * Math.sin(angle + Math.PI/6));
+        ctx.closePath();
+        ctx.fill();
+      }
+
+      // 绘制磁场区域与磁感线
+      function drawMagneticField() {
+        ctx.strokeStyle = 'rgba(100, 181, 246, 0.8)';
+        ctx.fillStyle = 'rgba(100, 181, 246, 0.1)';
+        ctx.lineWidth = 2;
+        
+        // 开启边界发光效果，实现科技感
+        ctx.shadowBlur = 15;
+        ctx.shadowColor = 'rgba(100, 181, 246, 1)';
+        
+        if (magneticShape === 'circle') {
+          // 圆形磁场
+          ctx.beginPath();
+          ctx.arc(centerX, centerY, B_radius, 0, Math.PI * 2);
+          ctx.stroke();
+          
+          // 关闭发光效果，避免影响填充和磁感线
+          ctx.shadowBlur = 0;
+          ctx.fill();
+          
+          // 绘制磁感线
+          ctx.strokeStyle = 'rgba(100, 181, 246, 0.5)';
+          const gridSize = 30;
+          for (let x = centerX - B_radius + gridSize/2; x < centerX + B_radius; x += gridSize) {
+            for (let y = centerY - B_radius + gridSize/2; y < centerY + B_radius; y += gridSize) {
+              if (isInMagnetic(x, y)) {
+                const size = 5;
+                ctx.beginPath();
+                ctx.moveTo(x - size, y - size);
+                ctx.lineTo(x + size, y + size);
+                ctx.moveTo(x + size, y - size);
+                ctx.lineTo(x - size, y + size);
+                ctx.stroke();
+              }
+            }
+          }
+        } else if (magneticShape === 'rect') {
+          // 矩形磁场，可调节尺寸
+          ctx.strokeRect(centerX - rectWidth/2, centerY - rectHeight/2, rectWidth, rectHeight);
+          
+          // 关闭发光效果
+          ctx.shadowBlur = 0;
+          ctx.fillRect(centerX - rectWidth/2, centerY - rectHeight/2, rectWidth, rectHeight);
+          
+          // 绘制磁感线
+          ctx.strokeStyle = 'rgba(100, 181, 246, 0.5)';
+          const gridSize = 30;
+          for (let x = centerX - rectWidth/2 + gridSize/2; x < centerX + rectWidth/2; x += gridSize) {
+            for (let y = centerY - rectHeight/2 + gridSize/2; y < centerY + rectHeight/2; y += gridSize) {
+              if (isInMagnetic(x, y)) {
+                const size = 5;
+                ctx.beginPath();
+                ctx.moveTo(x - size, y - size);
+                ctx.lineTo(x + size, y + size);
+                ctx.moveTo(x + size, y - size);
+                ctx.lineTo(x - size, y + size);
+                ctx.stroke();
+              }
+            }
+          }
+        } else if (magneticShape === 'triangle') {
+          // 等边三角形磁场，左边的边垂直，边长300，粒子从左边的边的中点进入
+          const leftEdgeX = centerX - B_radius;
+          const p1 = {x: leftEdgeX, y: centerY - 150}; // 左上顶点
+          const p2 = {x: leftEdgeX, y: centerY + 150}; // 左下顶点
+          const p3 = {x: leftEdgeX + 259.8, y: centerY}; // 右顶点，等边三角形的高=√3/2*300≈259.8
+          ctx.beginPath();
+          ctx.moveTo(p1.x, p1.y);
+          ctx.lineTo(p2.x, p2.y);
+          ctx.lineTo(p3.x, p3.y);
+          ctx.closePath();
+          ctx.stroke();
+          
+          // 关闭发光效果
+          ctx.shadowBlur = 0;
+          ctx.fill();
+          
+          // 绘制磁感线
+          ctx.strokeStyle = 'rgba(100, 181, 246, 0.5)';
+          const gridSize = 30;
+          // 遍历三角形的范围，绘制磁感线
+          for (let x = leftEdgeX + gridSize/2; x < leftEdgeX + 260; x += gridSize) {
+            for (let y = centerY - 150 + gridSize/2; y < centerY + 150; y += gridSize) {
+              if (isInMagnetic(x, y)) {
+                const size = 5;
+                ctx.beginPath();
+                ctx.moveTo(x - size, y - size);
+                ctx.lineTo(x + size, y + size);
+                ctx.moveTo(x + size, y - size);
+                ctx.lineTo(x - size, y + size);
+                ctx.stroke();
+              }
+            }
+          }
+        } else if (magneticShape === 'single') {
+          // 单边界磁场
+          ctx.beginPath();
+          ctx.moveTo(centerX - B_radius, centerY - 300);
+          ctx.lineTo(centerX - B_radius, centerY + 300);
+          ctx.stroke();
+          
+          // 关闭发光效果
+          ctx.shadowBlur = 0;
+          ctx.fillRect(centerX - B_radius, centerY - 300, canvas.width, 600);
+          
+          // 绘制磁感线
+          ctx.strokeStyle = 'rgba(100, 181, 246, 0.5)';
+          const gridSize = 30;
+          for (let x = centerX - B_radius + gridSize/2; x < canvas.width; x += gridSize) {
+            for (let y = centerY - 300 + gridSize/2; y < centerY + 300; y += gridSize) {
+              if (isInMagnetic(x, y)) {
+                const size = 5;
+                ctx.beginPath();
+                ctx.moveTo(x - size, y - size);
+                ctx.lineTo(x + size, y + size);
+                ctx.moveTo(x + size, y - size);
+                ctx.lineTo(x - size, y + size);
+                ctx.stroke();
+              }
+            }
+          }
+        } else if (magneticShape === 'double') {
+          // 双边界磁场，左边界固定，只有右边界可调节
+          const leftEdge = centerX - B_radius;
+          const rightEdge = leftEdge + doubleWidth;
+          ctx.beginPath();
+          ctx.moveTo(leftEdge, centerY - 300);
+          ctx.lineTo(leftEdge, centerY + 300);
+          ctx.moveTo(rightEdge, centerY - 300);
+          ctx.lineTo(rightEdge, centerY + 300);
+          ctx.stroke();
+          
+          // 关闭发光效果
+          ctx.shadowBlur = 0;
+          ctx.fillRect(leftEdge, centerY - 300, doubleWidth, 600);
+          
+          // 绘制磁感线
+          ctx.strokeStyle = 'rgba(100, 181, 246, 0.5)';
+          const gridSize = 30;
+          for (let x = leftEdge + gridSize/2; x < rightEdge; x += gridSize) {
+            for (let y = centerY - 300 + gridSize/2; y < centerY + 300; y += gridSize) {
+              if (isInMagnetic(x, y)) {
+                const size = 5;
+                ctx.beginPath();
+                ctx.moveTo(x - size, y - size);
+                ctx.lineTo(x + size, y + size);
+                ctx.moveTo(x + size, y - size);
+                ctx.lineTo(x - size, y + size);
+                ctx.stroke();
+              }
+            }
+          }
+        }
+      }
+
+      // 绘制轨迹，支持断点分隔不同轮次的运动
+      function drawTrajectory() {
+        if (trajectory.length < 2) return;
+        ctx.strokeStyle = '#ff5252';
+        ctx.lineWidth = 2;
+        
+        let startIdx = 0;
+        for (let i = 0; i < trajectory.length; i++) {
+          if (trajectory[i] === null) {
+            // 遇到断点，绘制当前段
+            if (i > startIdx) {
+              ctx.beginPath();
+              ctx.moveTo(trajectory[startIdx].x, trajectory[startIdx].y);
+              for (let j = startIdx + 1; j < i; j++) {
+                ctx.lineTo(trajectory[j].x, trajectory[j].y);
+              }
+              ctx.stroke();
+            }
+            startIdx = i + 1;
+          }
+        }
+        // 绘制最后一段轨迹
+        if (trajectory.length > startIdx) {
+          ctx.beginPath();
+          ctx.moveTo(trajectory[startIdx].x, trajectory[startIdx].y);
+          for (let j = startIdx + 1; j < trajectory.length; j++) {
+            ctx.lineTo(trajectory[j].x, trajectory[j].y);
+          }
+          ctx.stroke();
+        }
+      }
+
+      // 绘制当前的粒子，增强发光效果
+      function drawParticle() {
+        // 增强的发光光晕，让红色粒子更明显
+        const gradient = ctx.createRadialGradient(particle.x, particle.y, 0, particle.x, particle.y, 20);
+        gradient.addColorStop(0, 'rgba(255, 82, 82, 0.9)');
+        gradient.addColorStop(1, 'rgba(255, 82, 82, 0)');
+        ctx.fillStyle = gradient;
+        ctx.beginPath();
+        ctx.arc(particle.x, particle.y, 20, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // 粒子本体
+        ctx.beginPath();
+        ctx.arc(particle.x, particle.y, 5, 0, Math.PI * 2);
+        ctx.fillStyle = '#ff5252';
+        ctx.fill();
+      }
+
+      // 动画主循环
+      function animate() {
+        // 清空画布
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        // 绘制磁场
+        drawMagneticField();
+        
+        // 记录当前位置到轨迹
+        trajectory.push({x: particle.x, y: particle.y});
+        
+        // 绘制轨迹
+        drawTrajectory();
+        
+        // 绘制当前的粒子
+        drawParticle();
+        
+        // 绘制速度矢量，红色显示，统一箭头长度
+        drawVelocityVector();
+        
+        // 然后更新粒子状态，为下一帧准备
+        // 检查粒子是否在磁场内
+        const inMagneticField = isInMagnetic(particle.x, particle.y);
+        
+        // 时间步长，控制动画速度
+        const dt = 0.5;
+        
+        if (inMagneticField) {
+          // 洛伦兹力只改变速度方向，不改变速度大小
+          // 使用旋转矩阵精确更新速度方向，保证速度大小严格不变
+          const omega = q * B / m;  // 角速度 ω = qB/m
+          const dtheta = omega * dt;  // 每帧旋转的角度
+          
+          // 旋转速度向量（逆时针旋转dtheta），保持速度大小不变
+          const cosT = Math.cos(dtheta);
+          const sinT = Math.sin(dtheta);
+          const newVx = particle.vx * cosT - particle.vy * sinT;
+          const newVy = particle.vx * sinT + particle.vy * cosT;
+          particle.vx = newVx;
+          particle.vy = newVy;
+        }
+        
+        // 更新位置
+        particle.x += particle.vx * dt;
+        particle.y += particle.vy * dt;
+        
+        // 更新上一帧的磁场内状态
+        lastInMagnetic = isInMagnetic(particle.x, particle.y);
+        
+        // 粒子超出画布时自动重置（射出磁场后做匀速直线运动，直到飞出画面）
+        if (particle.x < -50 || particle.x > canvas.width +50 || 
+            particle.y < -50 || particle.y > canvas.height +50) {
+          resetParticle();
+        }
+        
+        requestAnimationFrame(animate);
+      }
+
+      // 初始化并启动动画
+      resetParticle();
+      animate();
+    });
+  </script>
+
+  <script>
+  // 返回主页（滚动位置已在主页点击链接时保存）
+  function saveScrollAndReturn() {
+    window.location.href = '../index.html';
+  }
+  
+  // 禁用右键菜单
+  document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+  });
+  
+  // 禁用开发者工具快捷键
+  document.addEventListener('keydown', function(e) {
+    // ESC返回主页 - 保存滚动位置
+    if (e.keyCode === 27) {
+      saveScrollAndReturn();
+      return false;
+    }
+    // F12
+    if (e.keyCode === 123) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+U
+    if (e.ctrlKey && e.keyCode === 85) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+I
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 73) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+J
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 74) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+C
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 67) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+S
+    if (e.ctrlKey && e.keyCode === 83) {
+      e.preventDefault();
+      return false;
+    }
+  });
+  
+  // 禁用选择
+  document.addEventListener('selectstart', function(e) {
+    // 允许输入框选择
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+      return true;
+    }
+    e.preventDefault();
+    return false;
+  });
+  </script>
+</body>
+</html>
