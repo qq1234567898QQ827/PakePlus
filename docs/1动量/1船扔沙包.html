@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <title>高中物理 · 动量守恒 | 红船速度加倍</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: linear-gradient(145deg, #0b0f1a 0%, #1a1f2e 100%);
+      font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+      display: flex; justify-content: center; align-items: center; min-height: 100vh;
+      padding: 1rem; color: #eef5ff; user-select: none; -webkit-user-select: none;
+    }
+    .container {
+      width: 100%; max-width: 1100px; background: rgba(18,24,36,0.85);
+      backdrop-filter: blur(18px); border-radius: 2.5rem;
+      box-shadow: 0 25px 50px rgba(0,0,0,0.7); overflow: hidden;
+      display: flex; flex-direction: column; border: 1px solid rgba(255,255,255,0.08);
+    }
+    .header {
+      padding: 1rem 1.8rem; display: flex; align-items: center; justify-content: space-between;
+      flex-wrap: wrap; gap: 1rem; background: rgba(10,15,25,0.5);
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    .title { display: flex; align-items: center; gap: 0.8rem; }
+    .title .icon { font-size: 2.2rem; filter: drop-shadow(0 0 6px #4da6ff); }
+    .title h1 {
+      font-size: 1.5rem; font-weight: 700;
+      background: linear-gradient(135deg, #cbd5ff, #8eaefb);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    .badge {
+      background: #2c3e50; padding: 0.4rem 1.2rem; border-radius: 2rem;
+      font-size: 0.85rem; font-weight: 600; letter-spacing: 0.3px;
+      box-shadow: 0 0 10px rgba(0,160,255,0.3); border: 1px solid rgba(255,255,255,0.15);
+    }
+    .canvas-wrap { position: relative; width: 100%; background: #0a111c; border-bottom: 1px solid rgba(255,255,255,0.05); }
+    canvas { display: block; width: 100%; height: auto; }
+    .controls {
+      padding: 1.2rem 1.8rem; display: flex; flex-wrap: wrap; align-items: center;
+      gap: 1.5rem; background: rgba(14,20,32,0.7); backdrop-filter: blur(8px);
+    }
+    .slider-group { display: flex; align-items: center; gap: 0.8rem; flex-wrap: wrap; }
+    .slider-group label { font-weight: 600; font-size: 0.9rem; color: #bdd3ff; display: flex; align-items: center; gap: 0.4rem; }
+    input[type="range"] { width: 140px; height: 7px; -webkit-appearance: none; background: #2e3b4e; border-radius: 5px; outline: none; }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none; width: 24px; height: 24px; background: #f4b642;
+      border-radius: 50%; border: 2px solid #1e2b3c; box-shadow: 0 0 14px #f4b642; cursor: pointer;
+    }
+    .speed-val { background: #f4b64220; padding: 0.3rem 1rem; border-radius: 1.5rem; font-weight: 700; color: #f7c860; min-width: 70px; text-align: center; }
+    .buttons { display: flex; gap: 0.8rem; flex-wrap: wrap; }
+    button {
+      padding: 0.7rem 1.6rem; border-radius: 2.2rem; font-weight: 700; font-size: 0.9rem;
+      border: none; cursor: pointer; background: #2c3a50; color: #d0e0ff;
+      border: 1px solid rgba(255,255,255,0.15); transition: all 0.2s; letter-spacing: 0.4px;
+      display: flex; align-items: center; gap: 0.3rem;
+    }
+    button.throw { background: linear-gradient(135deg, #d64545, #b0302a); color: white; box-shadow: 0 6px 18px rgba(220,60,50,0.5); border: none; }
+    button.throw:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 10px 24px rgba(240,70,50,0.7); }
+    button:disabled { opacity: 0.5; cursor: not-allowed; filter: grayscale(0.4); }
+    .info-grid {
+      padding: 1rem 1.8rem; display: flex; flex-wrap: wrap; gap: 1rem;
+      background: rgba(0,0,0,0.35); border-top: 1px solid rgba(255,255,255,0.08); font-size: 0.9rem;
+    }
+    .info-card {
+      background: rgba(20,30,44,0.7); border-radius: 1rem; padding: 0.7rem 1.2rem;
+      min-width: 110px; flex: 1; border-left: 4px solid; backdrop-filter: blur(4px);
+    }
+    .info-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.4px; color: #a0b8d8; }
+    .info-value { font-size: 1.2rem; font-weight: 700; letter-spacing: 0.4px; }
+    .momentum { color: #2ecc71; }
+    .text-gold { color: #f7c860; }
+    .collision-warning { color: #ff8c5a; font-weight: 700; animation: pulse 1s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
+  </style>
+
+  <style>
+  body {
+    background-color: #1a2332 !important;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+  }
+  
+  .qilai-back-btn {
+    position: fixed;
+    top: 10px;
+    left: 15px;
+    z-index: 100000;
+    padding: 8px 16px;
+    background: rgba(0, 150, 200, 0.2);
+    border: 1px solid rgba(100, 180, 255, 0.5);
+    color: #8ab4f8;
+    font-size: 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.3s;
+    backdrop-filter: blur(5px);
+    font-family: "Microsoft YaHei", sans-serif;
+  }
+  
+  .qilai-back-btn:hover {
+    background: rgba(0, 150, 200, 0.4);
+    box-shadow: 0 0 15px rgba(100, 180, 255, 0.3);
+    color: #fff;
+  }
+  
+  .qilai-watermark {
+    position: fixed;
+    bottom: 15px;
+    right: 15px;
+    z-index: 99998;
+    font-size: 12px;
+    color: rgba(138, 180, 248, 0.35);
+    text-align: right;
+    line-height: 1.8;
+    pointer-events: none;
+    user-select: none;
+    font-family: "Microsoft YaHei", sans-serif;
+  }
+  
+  .qilai-watermark .title {
+    font-size: 14px;
+    font-weight: bold;
+    color: rgba(138, 180, 248, 0.45);
+    margin-bottom: 4px;
+    letter-spacing: 1px;
+  }
+  </style>
+</head>
+<body>
+  <a href="javascript:void(0);" class="qilai-back-btn" onclick="saveScrollAndReturn();">← 返回主页</a>
+  
+  <div class="qilai-watermark">
+    <div class="title">齐老师动画</div>
+    QQ 3398528250<br>
+    抖音 35320300542
+  </div>
+
+<div class="container">
+  <div class="header">
+    <div class="title">
+      <span class="icon">⚛️</span>
+      <h1>动量守恒 · 红船速度加倍 (v₀=3.0)</h1>
+    </div>
+    <div id="statusBadge" class="badge">🔵 准备中…</div>
+  </div>
+  <div class="canvas-wrap"><canvas id="physicsCanvas"></canvas></div>
+  <div class="controls">
+    <div class="slider-group">
+      <label><span style="color:#f4b642;">🟡</span> 沙包地面速度</label>
+      <input type="range" id="speedSlider" min="2.0" max="8.5" step="0.1" value="5.0">
+      <span class="speed-val" id="speedDisplay">5.0 px/帧</span>
+    </div>
+    <div class="buttons">
+      <button class="throw" id="btnThrow">🎯 扔沙包！</button>
+      <button id="btnReset">🔄 重置</button>
+      <button id="btnAuto">🤖 自动扔包</button>
+    </div>
+  </div>
+  <div class="info-grid">
+    <div class="info-card" style="border-left-color:#2ecc71;">
+      <div class="info-label">📐 系统总动量 (水平)</div>
+      <div class="info-value momentum" id="totalMomentum">0.0</div>
+    </div>
+    <div class="info-card" style="border-left-color:#e74c3c;">
+      <div class="info-label">🔴 红船质量 / 速度</div>
+      <div class="info-value" id="redInfo">100m / +3.00</div>
+    </div>
+    <div class="info-card" style="border-left-color:#3498db;">
+      <div class="info-label">🔵 蓝船质量 / 速度</div>
+      <div class="info-value" id="blueInfo">200m / -1.50</div>
+    </div>
+    <div class="info-card" style="border-left-color:#f4b642;">
+      <div class="info-label">🟡 飞行中沙包</div>
+      <div class="info-value text-gold" id="sandbagCount">0 个</div>
+    </div>
+  </div>
+</div>
+
+<script>
+  (function() {
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+    const W = 1000, H = 500;
+    let scale = 1;
+    function resize() {
+      const wrap = canvas.parentElement;
+      scale = Math.min(wrap.clientWidth / W, 1.0);
+      canvas.width = W; canvas.height = H;
+      canvas.style.width = (W * scale) + 'px'; canvas.style.height = (H * scale) + 'px';
+    }
+    window.addEventListener('resize', resize);
+    resize();
+
+    // ---------- 物理参数 (红船初始速度加倍) ----------
+    const SANDBAG_MASS = 10;
+    const MIN_RED_MASS = 10;
+    let redMass = 100;
+    let blueMass = 200;
+    
+    // 关键修改：红船初始速度加倍为3.0，蓝船保持-1.5
+    const RED_INITIAL_SPEED = 3.0;
+    const BLUE_INITIAL_SPEED = -1.5;
+    
+    let redV = RED_INITIAL_SPEED;
+    let blueV = BLUE_INITIAL_SPEED;
+
+    let redX = 170;
+    let blueX = 830;
+    
+    const LAKE_Y = 310;
+    const BOAT_Y = LAKE_Y + 15;
+    const PERSON_Y_OFFSET = -8;
+    
+    let sandbags = [];
+    let collision = false;
+    let explosionParticles = [];
+    let throwParticles = [];
+    let catchParticles = [];
+
+    let autoMode = false;
+    let autoThrowTimer = 0;
+    let animationId;
+    let frameCount = 0;
+    let waveOffset = 0;
+
+    const speedSlider = document.getElementById('speedSlider');
+    const speedDisplay = document.getElementById('speedDisplay');
+    const btnThrow = document.getElementById('btnThrow');
+    const btnReset = document.getElementById('btnReset');
+    const btnAuto = document.getElementById('btnAuto');
+    const statusBadge = document.getElementById('statusBadge');
+    const totalMomentumEl = document.getElementById('totalMomentum');
+    const redInfoEl = document.getElementById('redInfo');
+    const blueInfoEl = document.getElementById('blueInfo');
+    const sandbagCountEl = document.getElementById('sandbagCount');
+
+    function getSandbagGroundSpeed() { return parseFloat(speedSlider.value); }
+
+    function updateUI() {
+      speedDisplay.textContent = getSandbagGroundSpeed().toFixed(1) + ' px/帧';
+      let pRed = redMass * redV;
+      let pBlue = blueMass * blueV;
+      let pSandbags = sandbags.reduce((sum, s) => sum + SANDBAG_MASS * s.groundV, 0);
+      let totalP = pRed + pBlue + pSandbags;
+      totalMomentumEl.textContent = totalP.toFixed(1);
+      redInfoEl.textContent = `${redMass}m / ${redV >= 0 ? '+' : ''}${redV.toFixed(2)}`;
+      blueInfoEl.textContent = `${blueMass}m / ${blueV >= 0 ? '+' : ''}${blueV.toFixed(2)}`;
+      sandbagCountEl.textContent = `${sandbags.length} 个`;
+
+      if (collision) {
+        statusBadge.innerHTML = '💥 碰撞爆炸！';
+        statusBadge.style.background = '#5a2e2e';
+      } else if (sandbags.length > 0) {
+        statusBadge.innerHTML = '🚀 沙包飞行中';
+        statusBadge.style.background = '#2c3e50';
+      } else {
+        statusBadge.innerHTML = '🔵 可扔沙包';
+        statusBadge.style.background = '#2c3e50';
+      }
+      btnThrow.disabled = (collision || redMass <= MIN_RED_MASS);
+      btnAuto.disabled = collision;
+    }
+
+    function throwOneSandbag() {
+      if (collision) return;
+      if (redMass <= MIN_RED_MASS) { alert('红船质量不足，无法再扔沙包！'); return; }
+      const vSand = getSandbagGroundSpeed();
+      const newRedV = (redMass * redV - SANDBAG_MASS * vSand) / (redMass - SANDBAG_MASS);
+      
+      const personY = BOAT_Y + PERSON_Y_OFFSET;
+      const startX = redX + 18;
+      const startY = personY - 6;
+      sandbags.push({
+        x: startX, y: startY, groundV: vSand,
+        startX: startX, startY: startY, targetY: startY,
+        flightDX: (blueX - 15) - startX, active: true
+      });
+
+      redMass -= SANDBAG_MASS;
+      redV = newRedV;
+
+      for (let i = 0; i < 14; i++) {
+        throwParticles.push({
+          x: startX, y: startY, vx: (Math.random()-0.5)*3.5, vy: (Math.random()-0.5)*4-2,
+          life: 26+Math.random()*20, maxLife: 46, color: 'rgba(240,180,70,', size: 1.6+Math.random()*3.2
+        });
+      }
+      updateUI();
+    }
+
+    function catchSandbag(index) {
+      const s = sandbags[index];
+      if (!s || !s.active) return;
+      const vSand = s.groundV;
+      const newBlueV = (blueMass * blueV + SANDBAG_MASS * vSand) / (blueMass + SANDBAG_MASS);
+      blueMass += SANDBAG_MASS;
+      blueV = newBlueV;
+
+      const personY = BOAT_Y + PERSON_Y_OFFSET;
+      const catchX = blueX - 15, catchY = personY - 6;
+      for (let i = 0; i < 18; i++) {
+        catchParticles.push({
+          x: catchX, y: catchY, vx: (Math.random()-0.5)*5, vy: (Math.random()-1)*5-3,
+          life: 28+Math.random()*24, maxLife: 52, color: 'rgba(110,210,255,', size: 2+Math.random()*4
+        });
+      }
+      sandbags.splice(index, 1);
+      updateUI();
+    }
+
+    function triggerCollision() {
+      if (collision) return;
+      collision = true;
+      redV = 0; blueV = 0;
+      const cx = (redX + blueX) / 2, cy = BOAT_Y - 30;
+      for (let i = 0; i < 45; i++) {
+        const angle = Math.random()*Math.PI*2;
+        const speed = 2 + Math.random()*8;
+        explosionParticles.push({
+          x: cx, y: cy, vx: Math.cos(angle)*speed, vy: Math.sin(angle)*speed-2,
+          life: 35+Math.random()*35, maxLife: 70,
+          color: Math.random()<0.6?'rgba(255,140,30,':'rgba(80,80,80,', size: 2.5+Math.random()*6
+        });
+      }
+      updateUI();
+    }
+
+    function resetSimulation() {
+      redMass = 100; blueMass = 200;
+      redV = RED_INITIAL_SPEED;
+      blueV = BLUE_INITIAL_SPEED;
+      redX = 170; blueX = 830;
+      sandbags = []; collision = false;
+      explosionParticles = []; throwParticles = []; catchParticles = [];
+      autoMode = false; autoThrowTimer = 0;
+      btnAuto.textContent = '🤖 自动扔包';
+      updateUI();
+    }
+
+    function updatePositions() {
+      if (!collision) {
+        redX += redV; blueX += blueV;
+        redX = Math.max(45, Math.min(950, redX));
+        blueX = Math.max(45, Math.min(950, blueX));
+        if (Math.abs(redX - blueX) < 75) triggerCollision();
+      }
+      for (let i = sandbags.length-1; i >= 0; i--) {
+        const s = sandbags[i];
+        if (!s.active) continue;
+        s.x += s.groundV;
+        const progress = s.flightDX !== 0 ? (s.x - s.startX) / s.flightDX : 0;
+        s.y = s.startY + (s.targetY - s.startY) * Math.min(progress, 1.2);
+        const catchX = blueX - 15;
+        if (s.x >= catchX-14 && s.x <= catchX+22 && progress > 0.25) catchSandbag(i);
+        else if (s.x > blueX+80 || s.y > BOAT_Y+25 || s.x > W+50) { sandbags.splice(i,1); updateUI(); }
+      }
+      if (autoMode && !collision && redMass > MIN_RED_MASS) {
+        autoThrowTimer++;
+        if (autoThrowTimer > 50 && Math.abs(redX-blueX)<480 && Math.abs(redX-blueX)>150) {
+          throwOneSandbag(); autoThrowTimer = 0;
+        }
+      }
+    }
+
+    function drawScene() {
+      ctx.clearRect(0,0,W,H);
+      const skyGrad = ctx.createLinearGradient(0,0,0,LAKE_Y);
+      skyGrad.addColorStop(0,'#c3d9f0'); skyGrad.addColorStop(1,'#e2effa');
+      ctx.fillStyle = skyGrad; ctx.fillRect(0,0,W,LAKE_Y);
+      ctx.fillStyle = 'rgba(255,250,235,0.9)'; ctx.beginPath(); ctx.arc(800,80,45,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,0.7)';
+      ctx.beginPath(); ctx.arc(150,60,28,0,Math.PI*2); ctx.arc(180,50,22,0,Math.PI*2); ctx.arc(210,60,26,0,Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.arc(550,90,24,0,Math.PI*2); ctx.arc(580,78,20,0,Math.PI*2); ctx.arc(610,90,23,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle = '#b1c9a8'; ctx.beginPath(); ctx.moveTo(0,LAKE_Y); ctx.quadraticCurveTo(200,260,400,290); ctx.quadraticCurveTo(600,250,800,280); ctx.quadraticCurveTo(900,265,1000,285); ctx.lineTo(1000,LAKE_Y); ctx.fill();
+      const lakeGrad = ctx.createLinearGradient(0,LAKE_Y,0,460);
+      lakeGrad.addColorStop(0,'#4f8db3'); lakeGrad.addColorStop(1,'#1e405b');
+      ctx.fillStyle = lakeGrad; ctx.fillRect(0,LAKE_Y,W,150);
+      waveOffset += 0.03;
+      ctx.strokeStyle = 'rgba(255,255,255,0.18)'; ctx.lineWidth = 1.2;
+      for (let row=0; row<6; row++) {
+        ctx.beginPath();
+        for (let x=0; x<=W; x+=5) {
+          let y = LAKE_Y+8 + row*18 + Math.sin(x*0.03 + waveOffset + row)*3.5;
+          if(x===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+        }
+        ctx.stroke();
+      }
+      
+      function drawBoat(x, y, baseColor, label, mass, speed, isBlack) {
+        ctx.save();
+        const main = isBlack ? '#3a3a3a' : baseColor.main;
+        const light = isBlack ? '#555' : baseColor.light;
+        const dark = isBlack ? '#1a1a1a' : baseColor.dark;
+        const len = 90, h = 22;
+        ctx.fillStyle = 'rgba(0,0,0,0.3)';
+        ctx.beginPath(); ctx.moveTo(x-len/2-2,y+2); ctx.quadraticCurveTo(x-20,y+h+10,x+18,y+h+8); ctx.lineTo(x+18,y+h+8); ctx.quadraticCurveTo(x+len/2,y+h+8,x+len/2,y+2); ctx.fill();
+        const grad = ctx.createLinearGradient(0, y-8, 0, y+h);
+        grad.addColorStop(0, light); grad.addColorStop(0.7, main); grad.addColorStop(1, dark);
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.moveTo(x-len/2, y); ctx.quadraticCurveTo(x-len/2+4, y+h, x-22, y+h);
+        ctx.lineTo(x+20, y+h); ctx.quadraticCurveTo(x+len/2-4, y+h, x+len/2, y);
+        ctx.quadraticCurveTo(x+len/2, y-6, x+len/2-8, y-3);
+        ctx.lineTo(x-len/2+8, y-3); ctx.quadraticCurveTo(x-len/2, y-6, x-len/2, y);
+        ctx.closePath(); ctx.fill();
+        ctx.strokeStyle = isBlack ? '#222' : baseColor.border; ctx.lineWidth = 2; ctx.stroke();
+        ctx.fillStyle = '#fff'; ctx.font = 'bold 11px "PingFang SC","Microsoft YaHei"'; ctx.textAlign = 'center';
+        ctx.fillText(label, x, y-20); ctx.fillText(mass + 'm', x, y+h+18);
+        ctx.font = '9px "PingFang SC"'; ctx.fillText('v='+speed.toFixed(2), x, y+h+32);
+        ctx.restore();
+      }
+      
+      function drawPerson(x, y, bodyColor, isBlack) {
+        ctx.save();
+        const col = isBlack ? '#2a2a2a' : bodyColor;
+        ctx.fillStyle = col;
+        ctx.fillRect(x-6, y-20, 12, 20);
+        ctx.strokeStyle = col; ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.moveTo(x-3, y-12); ctx.lineTo(x-10, y-2);
+        ctx.moveTo(x+3, y-12); ctx.lineTo(x+12, y-6); ctx.stroke();
+        ctx.fillStyle = isBlack ? '#1a1a1a' : '#f5d5b8';
+        ctx.beginPath(); ctx.arc(x, y-26, 9, 0, Math.PI*2); ctx.fill();
+        ctx.strokeStyle = '#333'; ctx.lineWidth = 1; ctx.stroke();
+        ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(x-3,y-28,2.2,0,Math.PI*2); ctx.fill(); ctx.arc(x+4,y-28,2.2,0,Math.PI*2); ctx.fill();
+        ctx.fillStyle = '#111'; ctx.beginPath(); ctx.arc(x-3,y-28,1,0,Math.PI*2); ctx.fill(); ctx.arc(x+4,y-28,1,0,Math.PI*2); ctx.fill();
+        ctx.restore();
+      }
+      
+      const redCol = { main:'#d64541', light:'#e8746e', dark:'#a3302c', border:'#8b1f1c' };
+      drawBoat(redX, BOAT_Y, redCol, '🔴 红船', redMass, redV, collision);
+      drawPerson(redX+8, BOAT_Y + PERSON_Y_OFFSET, '#c0392b', collision);
+      
+      const blueCol = { main:'#3b7dc4', light:'#5b9de0', dark:'#285a8a', border:'#1c4060' };
+      drawBoat(blueX, BOAT_Y, blueCol, '🔵 蓝船', blueMass, blueV, collision);
+      drawPerson(blueX-8, BOAT_Y + PERSON_Y_OFFSET, '#2471a3', collision);
+      
+      sandbags.forEach(s => {
+        ctx.save();
+        ctx.fillStyle = '#e8c050'; ctx.shadowColor = '#00000040'; ctx.shadowBlur = 6;
+        ctx.beginPath(); ctx.roundRect(s.x-8, s.y-6, 16, 12, 4); ctx.fill();
+        ctx.strokeStyle = '#8b5e14'; ctx.lineWidth = 1.5; ctx.stroke();
+        ctx.fillStyle = '#c89630'; ctx.beginPath(); ctx.roundRect(s.x-5, s.y-3, 10, 2, 2); ctx.fill();
+        ctx.restore();
+      });
+      
+      [...throwParticles, ...catchParticles, ...explosionParticles].forEach(p => {
+        p.x += p.vx; p.y += p.vy; p.life--;
+        if(p.life>0){
+          ctx.fillStyle = p.color + (p.life/p.maxLife*0.7) + ')';
+          ctx.beginPath(); ctx.arc(p.x, p.y, p.size*(p.life/p.maxLife), 0, 2*Math.PI); ctx.fill();
+        }
+      });
+      throwParticles = throwParticles.filter(p=>p.life>0);
+      catchParticles = catchParticles.filter(p=>p.life>0);
+      explosionParticles = explosionParticles.filter(p=>p.life>0);
+    }
+
+    function animate() {
+      frameCount++;
+      updatePositions();
+      drawScene();
+      updateUI();
+      animationId = requestAnimationFrame(animate);
+    }
+
+    btnThrow.addEventListener('click', throwOneSandbag);
+    btnReset.addEventListener('click', resetSimulation);
+    btnAuto.addEventListener('click', () => {
+      autoMode = !autoMode; autoThrowTimer = 0;
+      btnAuto.textContent = autoMode ? '🤖 自动中…' : '🤖 自动扔包';
+      if (autoMode && collision) autoMode = false;
+    });
+    speedSlider.addEventListener('input', updateUI);
+    window.addEventListener('keydown', (e) => {
+      if (e.code === 'Space' && !collision && redMass > MIN_RED_MASS) { e.preventDefault(); throwOneSandbag(); }
+      if (e.code === 'KeyR') { e.preventDefault(); resetSimulation(); }
+    });
+
+    resetSimulation();
+    animationId = requestAnimationFrame(animate);
+  })();
+</script>
+
+  <script>
+  // 返回主页（滚动位置已在主页点击链接时保存）
+  function saveScrollAndReturn() {
+    window.location.href = '../index.html';
+  }
+  
+  // 禁用右键菜单
+  document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+  });
+  
+  // 禁用开发者工具快捷键
+  document.addEventListener('keydown', function(e) {
+    // ESC返回主页 - 保存滚动位置
+    if (e.keyCode === 27) {
+      saveScrollAndReturn();
+      return false;
+    }
+    // F12
+    if (e.keyCode === 123) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+U
+    if (e.ctrlKey && e.keyCode === 85) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+I
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 73) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+J
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 74) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+C
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 67) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+S
+    if (e.ctrlKey && e.keyCode === 83) {
+      e.preventDefault();
+      return false;
+    }
+  });
+  
+  // 禁用选择
+  document.addEventListener('selectstart', function(e) {
+    // 允许输入框选择
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+      return true;
+    }
+    e.preventDefault();
+    return false;
+  });
+  </script>
+</body>
+</html>
