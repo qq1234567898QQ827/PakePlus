@@ -1,0 +1,784 @@
+<!doctype html>
+<html lang="zh-CN">
+ <head>
+  <meta charset="UTF-8">
+  <title>螺旋测微器读数</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif;
+      background: linear-gradient(135deg, #0a0e27 0%, #1a1f4e 50%, #0d1b3e 100%);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 24px;
+      position: relative;
+      overflow-x: hidden;
+    }
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-image: 
+        radial-gradient(2px 2px at 20px 30px, rgba(255,255,255,0.8), transparent),
+        radial-gradient(2px 2px at 40px 70px, rgba(100,200,255,0.6), transparent),
+        radial-gradient(1px 1px at 90px 40px, rgba(255,255,255,0.7), transparent),
+        radial-gradient(2px 2px at 130px 80px, rgba(100,200,255,0.5), transparent),
+        radial-gradient(1px 1px at 160px 120px, rgba(255,255,255,0.6), transparent),
+        radial-gradient(2px 2px at 200px 50px, rgba(100,200,255,0.7), transparent),
+        radial-gradient(1px 1px at 250px 90px, rgba(255,255,255,0.5), transparent),
+        radial-gradient(2px 2px at 300px 130px, rgba(100,200,255,0.6), transparent),
+        radial-gradient(1px 1px at 350px 60px, rgba(255,255,255,0.7), transparent),
+        radial-gradient(2px 2px at 400px 100px, rgba(100,200,255,0.5), transparent);
+      background-size: 400px 200px;
+      animation: twinkle 8s ease-in-out infinite;
+      pointer-events: none;
+      z-index: 0;
+    }
+    @keyframes twinkle {
+      0%, 100% { opacity: 0.8; }
+      50% { opacity: 0.4; }
+    }
+    .panel {
+      background: rgba(20, 30, 60, 0.7);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      padding: 28px 32px 32px;
+      border-radius: 16px;
+      box-shadow: 
+        0 8px 32px rgba(0, 100, 200, 0.2),
+        0 0 60px rgba(0, 150, 255, 0.1),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+      max-width: 1400px;
+      width: 100%;
+      border: 1px solid rgba(100, 180, 255, 0.2);
+      position: relative;
+      z-index: 1;
+    }
+    h2 {
+      margin: 0 0 16px;
+      font-size: 26px;
+      color: #fff;
+      text-shadow: 0 0 20px rgba(100, 200, 255, 0.5);
+      font-weight: 600;
+      letter-spacing: 1px;
+    }
+    #micrometerCanvas {
+      border-radius: 12px;
+      background: linear-gradient(180deg, #0d1530 0%, #1a2550 50%, #0d1530 100%);
+      border: 1px solid rgba(100, 180, 255, 0.3);
+      margin-top: 8px;
+      display: block;
+      width: 100%;
+      height: auto;
+      box-shadow: 
+        inset 0 2px 10px rgba(0, 0, 0, 0.3),
+        0 0 30px rgba(0, 100, 200, 0.15);
+    }
+    .controls {
+      margin-top: 18px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 16px;
+      font-size: 15px;
+      color: #c0d8ff;
+    }
+    input[type="range"] {
+      width: 420px;
+      height: 6px;
+      -webkit-appearance: none;
+      appearance: none;
+      background: linear-gradient(90deg, #1a3a6e, #2a5a9e);
+      border-radius: 3px;
+      outline: none;
+      cursor: pointer;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: linear-gradient(145deg, #4da6ff, #0066cc);
+      box-shadow: 
+        0 2px 8px rgba(0, 100, 200, 0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.3);
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+    input[type="range"]::-webkit-slider-thumb:hover {
+      transform: scale(1.1);
+    }
+    button {
+      padding: 8px 18px;
+      border-radius: 8px;
+      border: 1px solid rgba(100, 180, 255, 0.4);
+      background: linear-gradient(145deg, #1a4a8e, #0d2a5e);
+      color: #c0e0ff;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.3s;
+      box-shadow: 
+        0 2px 8px rgba(0, 50, 100, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    }
+    button:hover {
+      background: linear-gradient(145deg, #2a5a9e, #1a3a7e);
+      box-shadow: 
+        0 4px 12px rgba(0, 100, 200, 0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+      transform: translateY(-1px);
+    }
+    button:active {
+      transform: translateY(0);
+    }
+    .reading {
+      margin-top: 16px;
+      font-size: 18px;
+      color: #e0f0ff;
+    }
+    .reading strong {
+      font-size: 22px;
+      color: #fff;
+      text-shadow: 0 0 15px rgba(100, 200, 255, 0.6);
+    }
+    .reading .formula {
+      margin-top: 10px;
+      font-size: 15px;
+      color: #80b0e0;
+      font-weight: normal;
+      padding: 8px 14px;
+      background: rgba(0, 80, 160, 0.2);
+      border-radius: 6px;
+      display: inline-block;
+      border: 1px solid rgba(100, 180, 255, 0.2);
+    }
+    #valueLabel {
+      color: #60c0ff;
+      font-weight: 600;
+      font-family: 'Courier New', monospace;
+      text-shadow: 0 0 10px rgba(100, 200, 255, 0.5);
+    }
+  </style>
+ 
+  <style>
+  body {
+    background-color: #1a2332 !important;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+  }
+  
+  .qilai-back-btn {
+    position: fixed;
+    top: 10px;
+    left: 15px;
+    z-index: 100000;
+    padding: 8px 16px;
+    background: rgba(0, 150, 200, 0.2);
+    border: 1px solid rgba(100, 180, 255, 0.5);
+    color: #8ab4f8;
+    font-size: 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.3s;
+    backdrop-filter: blur(5px);
+    font-family: "Microsoft YaHei", sans-serif;
+  }
+  
+  .qilai-back-btn:hover {
+    background: rgba(0, 150, 200, 0.4);
+    box-shadow: 0 0 15px rgba(100, 180, 255, 0.3);
+    color: #fff;
+  }
+  
+  .qilai-watermark {
+    position: fixed;
+    bottom: 15px;
+    right: 15px;
+    z-index: 99998;
+    font-size: 12px;
+    color: rgba(138, 180, 248, 0.35);
+    text-align: right;
+    line-height: 1.8;
+    pointer-events: none;
+    user-select: none;
+    font-family: "Microsoft YaHei", sans-serif;
+  }
+  
+  .qilai-watermark .title {
+    font-size: 14px;
+    font-weight: bold;
+    color: rgba(138, 180, 248, 0.45);
+    margin-bottom: 4px;
+    letter-spacing: 1px;
+  }
+  </style>
+</head>
+ <body>
+  <a href="javascript:void(0);" class="qilai-back-btn" onclick="saveScrollAndReturn();">← 返回主页</a>
+  
+  <div class="qilai-watermark">
+    <div class="title">齐老师动画</div>
+    QQ 3398528250<br>
+    抖音 35320300542
+  </div>
+
+  <div class="panel">
+   <h2>螺旋测微器读数</h2>
+   <canvas id="micrometerCanvas" width="1400" height="480"></canvas>
+   <div class="controls">
+    <label for="valueSlider">旋转鼓轮（模拟读数）：</label>
+    <input type="range" id="valueSlider" min="0" max="25" step="0.001" value="7.382">
+    <span id="valueLabel"></span>
+    <button id="randomBtn" type="button">随机生成读数</button>
+    <button id="toggleAnswerBtn" type="button">隐藏读数</button>
+   </div>
+   <div class="reading">
+    <strong>总读数：<span id="totalReading"></span> mm</strong>
+    <div class="formula">主尺读数 + 对齐的格数 × 0.01 mm = 读数</div>
+   </div>
+  </div>
+  <script>
+(function () {
+  const canvas = document.getElementById('micrometerCanvas');
+  const ctx = canvas.getContext('2d');
+  const slider = document.getElementById('valueSlider');
+  const randomBtn = document.getElementById('randomBtn');
+  const toggleBtn = document.getElementById('toggleAnswerBtn');
+  const valueLabel = document.getElementById('valueLabel');
+  const totalReadingSpan = document.getElementById('totalReading');
+  if (!canvas || !ctx || !slider || !randomBtn || !toggleBtn) {
+    console.error('初始化失败：元素未找到');
+    return;
+  }
+  let showAnswers = true;
+  const maxL = 25;
+  const mmToPx = 20;
+  const mainX0 = 220;
+  const mainY = 260;
+  const mainLengthPx = maxL * mmToPx;
+  const indexY = mainY;
+  const anvilX = mainX0 - 110;
+  const anvilTop = mainY - 50;
+  const anvilBottom = mainY + 50;
+  const frameTop = anvilTop - 70;
+  const frameBottom = anvilBottom + 70;
+  const thimbleWidth = 150;
+  const thimbleHeight = 320;
+  const drumTickDy = 8;
+  const sleeveTop = mainY - 46;
+  const sleeveHeight = 92;
+  const sleeveLeft = mainX0 - 18;
+  const sleeveRight = mainX0 + mainLengthPx + 60;
+  let isDraggingThimble = false;
+  let dragStartY = 0;
+  let dragStartL = 0;
+  const dragSensitivity = 0.001;
+
+  function shadeColor(color, percent) {
+    const num = parseInt(color.replace('#', ''), 16);
+    const amt = Math.round(2.55 * percent);
+    const R = (num >> 16) + amt;
+    const G = (num >> 8 & 0x00FF) + amt;
+    const B = (num & 0x0000FF) + amt;
+    return '#' + (0x1000000 + 
+      (R < 255 ? R < 1 ? 0 : R : 255) * 0x10000 + 
+      (G < 255 ? G < 1 ? 0 : G : 255) * 0x100 + 
+      (B < 255 ? B < 1 ? 0 : B : 255)
+    ).toString(16).slice(1);
+  }
+
+  function drawStarBackground() {
+    const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+    gradient.addColorStop(0, '#0a1228');
+    gradient.addColorStop(0.5, '#121e45');
+    gradient.addColorStop(1, '#0a1228');
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+    for (let i = 0; i < 50; i++) {
+      const x = (i * 37) % canvas.width;
+      const y = (i * 53) % canvas.height;
+      const size = (i % 3) * 0.5 + 0.5;
+      ctx.beginPath();
+      ctx.arc(x, y, size, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.strokeStyle = 'rgba(100, 180, 255, 0.05)';
+    ctx.lineWidth = 1;
+    for (let i = 0; i < canvas.width; i += 50) {
+      ctx.beginPath();
+      ctx.moveTo(i, 0);
+      ctx.lineTo(i, canvas.height);
+      ctx.stroke();
+    }
+    for (let i = 0; i < canvas.height; i += 50) {
+      ctx.beginPath();
+      ctx.moveTo(0, i);
+      ctx.lineTo(canvas.width, i);
+      ctx.stroke();
+    }
+  }
+
+  function computeReadings(Lraw) {
+    let L = Lraw;
+    if (L < 0) L = 0;
+    if (L > maxL) L = maxL;
+    let mainRead = Math.floor(L * 2 + 1e-6) / 2;
+    if (mainRead < 0) mainRead = 0;
+    if (mainRead > maxL) mainRead = maxL;
+    let fractional = L - mainRead;
+    if (fractional >= 0.5 - 1e-6 && mainRead + 0.5 <= maxL) {
+      mainRead += 0.5;
+      fractional = 0;
+    }
+    if (fractional < 0) fractional = 0;
+    let index = Math.floor(fractional / 0.01);
+    if (index > 49) {
+      index = 49;
+      fractional = 0.49;
+    }
+    if (index < 0) index = 0;
+    const drumRead = index * 0.01;
+    const instrumentTotal = mainRead + drumRead;
+    const fracWithinStep = fractional - index * 0.01;
+    let offset = 0;
+    if (fracWithinStep > 0) {
+      offset = fracWithinStep / 0.01;
+    }
+    return { L, mainRead, index, drumRead, instrumentTotal, offset };
+  }
+
+  function updateLabels(r) {
+    const Lstr = r.L.toFixed(3);
+    if (showAnswers) {
+      valueLabel.textContent = Lstr + ' mm';
+      totalReadingSpan.textContent = Lstr;
+    } else {
+      valueLabel.textContent = '（已隐藏）';
+      totalReadingSpan.textContent = '???.???';
+    }
+  }
+
+  function drawMicrometer(Lraw) {
+    const r = computeReadings(Lraw);
+    const L = r.L;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    drawStarBackground();
+
+    ctx.fillStyle = '#a0d0ff';
+    ctx.font = '20px "Microsoft YaHei", sans-serif';
+    ctx.textAlign = 'left';
+    ctx.shadowColor = 'rgba(100, 200, 255, 0.5)';
+    ctx.shadowBlur = 10;
+    ctx.fillText('螺旋测微器', mainX0 - 20, 40);
+    ctx.shadowBlur = 0;
+
+    // 左侧机架
+    const frameGradient = ctx.createLinearGradient(anvilX - 70, frameTop, anvilX + 28, frameTop);
+    frameGradient.addColorStop(0, '#8a95a5');
+    frameGradient.addColorStop(0.3, '#b0bcc8');
+    frameGradient.addColorStop(0.7, '#9aa5b5');
+    frameGradient.addColorStop(1, '#7a8595');
+    ctx.fillStyle = frameGradient;
+    ctx.strokeStyle = '#5a6575';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(anvilX - 70, frameTop);
+    ctx.lineTo(anvilX + 28, frameTop);
+    ctx.lineTo(anvilX + 28, frameBottom);
+    ctx.lineTo(anvilX - 70, frameBottom);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
+    ctx.fillRect(anvilX - 68, frameTop + 2, 8, frameBottom - frameTop - 4);
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.15)';
+    ctx.fillRect(anvilX + 20, frameTop + 2, 6, frameBottom - frameTop - 4);
+
+    // 砧座
+    const anvilGradient = ctx.createLinearGradient(anvilX - 8, 0, anvilX + 8, 0);
+    anvilGradient.addColorStop(0, '#5a6575');
+    anvilGradient.addColorStop(0.3, '#8a95a5');
+    anvilGradient.addColorStop(0.7, '#7a8595');
+    anvilGradient.addColorStop(1, '#4a5565');
+    ctx.fillStyle = anvilGradient;
+    ctx.fillRect(anvilX - 8, anvilTop, 16, anvilBottom - anvilTop);
+    ctx.strokeStyle = '#3a4555';
+    ctx.strokeRect(anvilX - 8, anvilTop, 16, anvilBottom - anvilTop);
+    ctx.fillStyle = '#c0c8d0';
+    ctx.fillRect(anvilX + 5, anvilTop + 5, 3, anvilBottom - anvilTop - 10);
+
+    // 主轴
+    const spindleX = anvilX + 32 + L * mmToPx;
+    const spindleGradient = ctx.createLinearGradient(spindleX - 8, 0, spindleX + 8, 0);
+    spindleGradient.addColorStop(0, '#7a8595');
+    spindleGradient.addColorStop(0.3, '#b0bac8');
+    spindleGradient.addColorStop(0.7, '#a0aab8');
+    spindleGradient.addColorStop(1, '#6a7585');
+    ctx.fillStyle = spindleGradient;
+    ctx.fillRect(spindleX - 8, anvilTop, 16, anvilBottom - anvilTop);
+    ctx.strokeStyle = '#5a6575';
+    ctx.strokeRect(spindleX - 8, anvilTop, 16, anvilBottom - anvilTop);
+    ctx.fillStyle = '#d0d8e0';
+    ctx.fillRect(spindleX - 8, anvilTop + 5, 3, anvilBottom - anvilTop - 10);
+
+    // 测杆
+    const rodTop = mainY - 14;
+    const rodHeight = 28;
+    const rodGradient = ctx.createLinearGradient(0, rodTop, 0, rodTop + rodHeight);
+    rodGradient.addColorStop(0, '#b8c0c8');
+    rodGradient.addColorStop(0.5, '#9098a0');
+    rodGradient.addColorStop(1, '#a8b0b8');
+    ctx.fillStyle = rodGradient;
+    ctx.fillRect(spindleX, rodTop, mainX0 - spindleX - 14, rodHeight);
+    ctx.strokeStyle = '#707880';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(spindleX, rodTop, mainX0 - spindleX - 14, rodHeight);
+
+    // 套筒主体
+    const sleeveGradient = ctx.createLinearGradient(0, sleeveTop, 0, sleeveTop + sleeveHeight);
+    sleeveGradient.addColorStop(0, '#c8d0d8');
+    sleeveGradient.addColorStop(0.2, '#a8b0b8');
+    sleeveGradient.addColorStop(0.5, '#9098a0');
+    sleeveGradient.addColorStop(0.8, '#a8b0b8');
+    sleeveGradient.addColorStop(1, '#889098');
+    ctx.fillStyle = sleeveGradient;
+    ctx.fillRect(sleeveLeft, sleeveTop, sleeveRight - sleeveLeft, sleeveHeight);
+    ctx.strokeStyle = '#606870';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(sleeveLeft, sleeveTop, sleeveRight - sleeveLeft, sleeveHeight);
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
+    ctx.fillRect(sleeveLeft + 2, sleeveTop + 2, sleeveRight - sleeveLeft - 4, 3);
+
+    // 主尺刻度
+    ctx.font = '15px "Microsoft YaHei", sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillStyle = '#80b0e0';
+    ctx.shadowColor = 'rgba(100, 200, 255, 0.3)';
+    ctx.shadowBlur = 5;
+    ctx.fillText('主尺（mm）', sleeveLeft + 4, sleeveTop - 8);
+    ctx.shadowBlur = 0;
+
+    ctx.strokeStyle = '#e0e8f0';
+    ctx.lineWidth = 1;
+    for (let mm = 0; mm <= maxL; mm++) {
+      const x = mainX0 + mm * mmToPx;
+      let down = 14;
+      if (mm % 5 === 0) down = 20;
+      ctx.beginPath();
+      ctx.moveTo(x, mainY);
+      ctx.lineTo(x, mainY + down);
+      ctx.stroke();
+      if (mm % 5 === 0) {
+        ctx.font = '14px "Microsoft YaHei", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillStyle = '#f0f4f8';
+        ctx.fillText(mm.toString(), x, mainY + down + 18);
+      }
+      if (mm < maxL) {
+        const xHalf = x + mmToPx / 2;
+        const up = 14;
+        ctx.beginPath();
+        ctx.moveTo(xHalf, mainY);
+        ctx.lineTo(xHalf, mainY - up);
+        ctx.stroke();
+      }
+    }
+
+    // 鼓轮主体
+    const thimbleLeft = mainX0 + L * mmToPx;
+    const thimbleRight = thimbleLeft + thimbleWidth;
+    const thimbleTop = indexY - thimbleHeight / 2;
+    const thimbleBottom = indexY + thimbleHeight / 2;
+
+    const thimbleGradient = ctx.createLinearGradient(thimbleLeft, 0, thimbleRight, 0);
+    thimbleGradient.addColorStop(0, '#687078');
+    thimbleGradient.addColorStop(0.1, '#a0a8b0');
+    thimbleGradient.addColorStop(0.35, '#d0d8e0');
+    thimbleGradient.addColorStop(0.5, '#e8f0f8');
+    thimbleGradient.addColorStop(0.65, '#d0d8e0');
+    thimbleGradient.addColorStop(0.9, '#a0a8b0');
+    thimbleGradient.addColorStop(1, '#687078');
+    ctx.fillStyle = thimbleGradient;
+    ctx.fillRect(thimbleLeft, thimbleTop, thimbleWidth, thimbleHeight);
+    ctx.strokeStyle = '#404850';
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(thimbleLeft, thimbleTop, thimbleWidth, thimbleHeight);
+
+    // 鼓轮滚花纹理
+    ctx.strokeStyle = 'rgba(60, 70, 80, 0.35)';
+    ctx.lineWidth = 1;
+    for (let y = thimbleTop + 30; y < thimbleBottom - 30; y += 6) {
+      ctx.beginPath();
+      ctx.moveTo(thimbleLeft + 10, y);
+      ctx.lineTo(thimbleRight - 10, y);
+      ctx.stroke();
+    }
+
+    // 鼓轮右侧旋钮
+    const knobLeft = thimbleRight;
+    const knobWidth = 60;
+    const knobTop = thimbleTop + 28;
+    const knobHeight = thimbleHeight - 56;
+    const knobGradient = ctx.createLinearGradient(knobLeft, 0, knobLeft + knobWidth, 0);
+    knobGradient.addColorStop(0, '#586068');
+    knobGradient.addColorStop(0.3, '#9098a0');
+    knobGradient.addColorStop(0.7, '#808890');
+    knobGradient.addColorStop(1, '#485058');
+    ctx.fillStyle = knobGradient;
+    ctx.fillRect(knobLeft, knobTop, knobWidth, knobHeight);
+    ctx.strokeStyle = '#303840';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(knobLeft, knobTop, knobWidth, knobHeight);
+    ctx.strokeStyle = 'rgba(40, 50, 60, 0.5)';
+    for (let y = knobTop + 5; y < knobTop + knobHeight - 5; y += 4) {
+      ctx.beginPath();
+      ctx.moveTo(knobLeft + 5, y);
+      ctx.lineTo(knobLeft + knobWidth - 5, y);
+      ctx.stroke();
+    }
+
+    // 鼓轮说明文字
+    ctx.font = '15px "Microsoft YaHei", sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillStyle = '#80b0e0';
+    ctx.shadowColor = 'rgba(100, 200, 255, 0.3)';
+    ctx.shadowBlur = 5;
+    ctx.fillText('鼓轮刻度（×0.01 mm）', thimbleLeft, thimbleTop - 12);
+    ctx.shadowBlur = 0;
+
+    // 鼓轮窗口
+    const windowLeft = thimbleLeft + 16;
+    const windowRight = thimbleRight - 16;
+    const windowTop = thimbleTop + 22;
+    const windowBottom = thimbleBottom - 22;
+    
+    const windowGradient = ctx.createLinearGradient(0, windowTop, 0, windowBottom);
+    windowGradient.addColorStop(0, '#1a2a4a');
+    windowGradient.addColorStop(0.5, '#0d1a3a');
+    windowGradient.addColorStop(1, '#1a2a4a');
+    ctx.fillStyle = windowGradient;
+    ctx.fillRect(windowLeft, windowTop, windowRight - windowLeft, windowBottom - windowTop);
+    ctx.strokeStyle = '#304060';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(windowLeft, windowTop, windowRight - windowLeft, windowBottom - windowTop);
+
+    // 鼓轮刻度
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(windowLeft + 2, windowTop + 2, windowRight - windowLeft - 4, windowBottom - windowTop - 4);
+    ctx.clip();
+
+    const xScaleCenter = (windowLeft + windowRight) / 2;
+    ctx.strokeStyle = '#e0e8f0';
+    ctx.fillStyle = '#f0f4f8';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+
+    for (let k = r.index - 30; k <= r.index + 30; k++) {
+      let kk = ((k % 50) + 50) % 50;
+      const y = mainY + ((r.index + r.offset - k) * drumTickDy);
+      if (y < windowTop + 4 || y > windowBottom - 4) continue;
+      const major = (kk % 5 === 0);
+      const halfLen = major ? 16 : 9;
+      ctx.beginPath();
+      ctx.moveTo(xScaleCenter - halfLen, y);
+      ctx.lineTo(xScaleCenter + halfLen, y);
+      ctx.lineWidth = major ? 1.5 : 1;
+      ctx.stroke();
+      if (major) {
+        ctx.font = 'bold 14px "Microsoft YaHei", sans-serif';
+        ctx.fillStyle = '#ffffff';
+        ctx.fillText(kk.toString(), xScaleCenter + 22, y);
+      }
+    }
+    ctx.restore();
+
+    // 鼓轮左侧竖线
+    ctx.beginPath();
+    ctx.moveTo(thimbleLeft, sleeveTop - 8);
+    ctx.lineTo(thimbleLeft, sleeveTop + sleeveHeight + 8);
+    ctx.strokeStyle = '#ff6060';
+    ctx.lineWidth = 2;
+    ctx.shadowColor = 'rgba(255, 100, 100, 0.5)';
+    ctx.shadowBlur = 8;
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    // 水平基准线
+    ctx.beginPath();
+    ctx.moveTo(mainX0 - 50, mainY);
+    ctx.lineTo(canvas.width - 60, mainY);
+    ctx.strokeStyle = '#ff6060';
+    ctx.lineWidth = 1.5;
+    ctx.shadowColor = 'rgba(255, 100, 100, 0.5)';
+    ctx.shadowBlur = 6;
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    ctx.fillStyle = '#ff6060';
+    ctx.beginPath();
+    ctx.moveTo(mainX0 - 50, mainY);
+    ctx.lineTo(mainX0 - 58, mainY - 5);
+    ctx.lineTo(mainX0 - 58, mainY + 5);
+    ctx.closePath();
+    ctx.fill();
+
+    updateLabels(r);
+  }
+
+  function onSliderChange() {
+    const L = parseFloat(slider.value || '0');
+    drawMicrometer(L);
+  }
+
+  canvas.addEventListener('mousedown', function(e) {
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const L = parseFloat(slider.value || '0');
+    const thimbleLeft = mainX0 + L * mmToPx;
+    const thimbleRight = thimbleLeft + thimbleWidth;
+    const thimbleTop = indexY - thimbleHeight / 2;
+    const thimbleBottom = indexY + thimbleHeight / 2;
+    if (x >= thimbleLeft && x <= thimbleRight && y >= thimbleTop && y <= thimbleBottom) {
+      isDraggingThimble = true;
+      dragStartY = y;
+      dragStartL = L;
+      canvas.style.cursor = 'ns-resize';
+    }
+  });
+
+  window.addEventListener('mousemove', function(e) {
+    if (!isDraggingThimble) return;
+    const rect = canvas.getBoundingClientRect();
+    const y = e.clientY - rect.top;
+    const dy = y - dragStartY;
+    let newL = dragStartL - dy * dragSensitivity;
+    newL = Math.round(newL * 1000) / 1000;
+    if (newL < 0) newL = 0;
+    if (newL > maxL) newL = maxL;
+    slider.value = newL.toFixed(3);
+    drawMicrometer(newL);
+  });
+
+  window.addEventListener('mouseup', function() {
+    if (isDraggingThimble) {
+      isDraggingThimble = false;
+      canvas.style.cursor = 'default';
+    }
+  });
+
+  canvas.addEventListener('mousemove', function(e) {
+    if (isDraggingThimble) return;
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const L = parseFloat(slider.value || '0');
+    const thimbleLeft = mainX0 + L * mmToPx;
+    const thimbleRight = thimbleLeft + thimbleWidth;
+    const thimbleTop = indexY - thimbleHeight / 2;
+    const thimbleBottom = indexY + thimbleHeight / 2;
+    if (x >= thimbleLeft && x <= thimbleRight && y >= thimbleTop && y <= thimbleBottom) {
+      canvas.style.cursor = 'ns-resize';
+    } else {
+      canvas.style.cursor = 'default';
+    }
+  });
+
+  slider.addEventListener('input', onSliderChange);
+
+  randomBtn.addEventListener('click', function() {
+    let L = Math.random() * maxL;
+    L = Math.round(L * 1000) / 1000;
+    slider.value = L.toFixed(3);
+    drawMicrometer(L);
+  });
+
+  toggleBtn.addEventListener('click', function() {
+    showAnswers = !showAnswers;
+    toggleBtn.textContent = showAnswers ? '隐藏读数' : '显示读数';
+    const L = parseFloat(slider.value || '0');
+    drawMicrometer(L);
+  });
+
+  onSliderChange();
+})();
+</script>
+ 
+  <script>
+  // 返回主页（滚动位置已在主页点击链接时保存）
+  function saveScrollAndReturn() {
+    window.location.href = '../index.html';
+  }
+  
+  // 禁用右键菜单
+  document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+  });
+  
+  // 禁用开发者工具快捷键
+  document.addEventListener('keydown', function(e) {
+    // ESC返回主页 - 保存滚动位置
+    if (e.keyCode === 27) {
+      saveScrollAndReturn();
+      return false;
+    }
+    // F12
+    if (e.keyCode === 123) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+U
+    if (e.ctrlKey && e.keyCode === 85) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+I
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 73) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+J
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 74) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+C
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 67) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+S
+    if (e.ctrlKey && e.keyCode === 83) {
+      e.preventDefault();
+      return false;
+    }
+  });
+  
+  // 禁用选择
+  document.addEventListener('selectstart', function(e) {
+    // 允许输入框选择
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+      return true;
+    }
+    e.preventDefault();
+    return false;
+  });
+  </script>
+</body>
+</html>
