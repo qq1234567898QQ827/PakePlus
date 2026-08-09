@@ -1,0 +1,1147 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>等效重力场 - 抛体运动模拟</title>
+    <style>
+        :root {
+            --bg: #1a1a2e;
+            --panel-bg: #16213e;
+            --text: #e0e0e0;
+            --accent: #e74c3c;
+            --accent2: #f39c12;
+            --slider-track: #2c3e50;
+            --slider-fill: #e74c3c;
+            --border: #2c3e50;
+            --button: #e74c3c;
+            --button-hover: #c0392b;
+            --label: #b0b0b0;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: var(--bg);
+            font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', 'Helvetica Neue', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 15px;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            width: 100%;
+            max-width: 820px;
+        }
+
+        .header {
+            text-align: center;
+        }
+        .header h1 {
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: #fff;
+            letter-spacing: 0.03em;
+            margin: 0;
+            background: linear-gradient(135deg, #ff6b6b, #f39c12);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .header .subtitle {
+            font-size: 0.85rem;
+            color: #888;
+            margin-top: 2px;
+            letter-spacing: 0.02em;
+        }
+
+        .canvas-wrapper {
+            position: relative;
+            background: #0d1117;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45), 0 0 0 1px var(--border);
+            aspect-ratio: 7 / 5;
+            width: 100%;
+            cursor: default;
+        }
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            border-radius: 16px;
+        }
+
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 14px;
+            background: var(--panel-bg);
+            border-radius: 14px;
+            padding: 18px 20px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3), 0 0 0 1px var(--border);
+            align-items: flex-end;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            flex: 1 1 180px;
+            min-width: 150px;
+        }
+        .control-group label {
+            font-size: 0.82rem;
+            font-weight: 600;
+            color: var(--label);
+            letter-spacing: 0.02em;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .control-group label .icon {
+            font-size: 1rem;
+        }
+        .control-group .value-display {
+            font-weight: 700;
+            color: #fff;
+            font-size: 0.9rem;
+            min-width: 50px;
+            text-align: right;
+            background: rgba(255, 255, 255, 0.06);
+            padding: 3px 10px;
+            border-radius: 6px;
+            display: inline-block;
+            letter-spacing: 0.02em;
+        }
+
+        /* 自定义滑块 */
+        input[type="range"] {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 8px;
+            border-radius: 4px;
+            background: var(--slider-track);
+            outline: none;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: #fff;
+            border: 3px solid var(--accent);
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+            transition: transform 0.1s, box-shadow 0.1s;
+        }
+        input[type="range"]::-webkit-slider-thumb:active {
+            transform: scale(1.1);
+            box-shadow: 0 4px 16px rgba(231, 76, 60, 0.5);
+        }
+        input[type="range"]::-moz-range-thumb {
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            background: #fff;
+            border: 3px solid var(--accent);
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        .btn-row {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: flex-end;
+        }
+        button {
+            padding: 11px 22px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            letter-spacing: 0.03em;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: inherit;
+            white-space: nowrap;
+        }
+        .btn-launch {
+            background: var(--accent);
+            color: #fff;
+            box-shadow: 0 4px 14px rgba(231, 76, 60, 0.35);
+        }
+        .btn-launch:hover {
+            background: var(--button-hover);
+            box-shadow: 0 6px 20px rgba(231, 76, 60, 0.5);
+            transform: translateY(-1px);
+        }
+        .btn-launch:active {
+            transform: scale(0.96);
+        }
+        .btn-reset {
+            background: transparent;
+            color: #ccc;
+            border: 2px solid #444;
+        }
+        .btn-reset:hover {
+            border-color: #888;
+            color: #fff;
+            background: rgba(255, 255, 255, 0.03);
+        }
+        .btn-loop {
+            background: transparent;
+            color: #f39c12;
+            border: 2px solid #f39c12;
+            font-size: 0.85rem;
+        }
+        .btn-loop:hover {
+            background: rgba(243, 156, 18, 0.1);
+        }
+        .btn-loop.active {
+            background: #f39c12;
+            color: #1a1a2e;
+            font-weight: 700;
+        }
+
+        @media (max-width: 650px) {
+            .controls {
+                padding: 14px;
+                gap: 10px;
+            }
+            .control-group {
+                flex: 1 1 130px;
+                min-width: 120px;
+            }
+            button {
+                padding: 10px 16px;
+                font-size: 0.8rem;
+                border-radius: 8px;
+            }
+            .header h1 {
+                font-size: 1.3rem;
+            }
+            input[type="range"]::-webkit-slider-thumb {
+                width: 24px;
+                height: 24px;
+            }
+        }
+    </style>
+
+  <style>
+  body {
+    background-color: #1a2332 !important;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+  }
+  
+  .qilai-back-btn {
+    position: fixed;
+    top: 10px;
+    left: 15px;
+    z-index: 100000;
+    padding: 8px 16px;
+    background: rgba(0, 150, 200, 0.2);
+    border: 1px solid rgba(100, 180, 255, 0.5);
+    color: #8ab4f8;
+    font-size: 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.3s;
+    backdrop-filter: blur(5px);
+    font-family: "Microsoft YaHei", sans-serif;
+  }
+  
+  .qilai-back-btn:hover {
+    background: rgba(0, 150, 200, 0.4);
+    box-shadow: 0 0 15px rgba(100, 180, 255, 0.3);
+    color: #fff;
+  }
+  
+  .qilai-watermark {
+    position: fixed;
+    bottom: 15px;
+    right: 15px;
+    z-index: 99998;
+    font-size: 12px;
+    color: rgba(138, 180, 248, 0.35);
+    text-align: right;
+    line-height: 1.8;
+    pointer-events: none;
+    user-select: none;
+    font-family: "Microsoft YaHei", sans-serif;
+  }
+  
+  .qilai-watermark .title {
+    font-size: 14px;
+    font-weight: bold;
+    color: rgba(138, 180, 248, 0.45);
+    margin-bottom: 4px;
+    letter-spacing: 1px;
+  }
+  </style>
+</head>
+<body>
+  <a href="javascript:void(0);" class="qilai-back-btn" onclick="saveScrollAndReturn();">← 返回主页</a>
+  
+  <div class="qilai-watermark">
+    <div class="title">齐老师动画</div>
+    QQ 3398528250<br>
+    抖音 35320300542
+  </div>
+
+    <div class="container">
+        <div class="header">
+            <h1>等效重力场 · 抛体运动</h1>
+            <p class="subtitle">等效重力斜向右下方 45° | 红色小球做抛体运动</p>
+        </div>
+
+        <div class="canvas-wrapper">
+            <canvas id="mainCanvas"></canvas>
+        </div>
+
+        <div class="controls">
+            <div class="control-group">
+                <label>
+                    <span class="icon">🚀</span> 初速度大小 v₀
+                    <span class="value-display" id="valSpeed">200</span> px/s
+                </label>
+                <input type="range" id="sliderSpeed" min="40" max="450" value="200" step="2">
+            </div>
+            <div class="control-group">
+                <label>
+                    <span class="icon">📐</span> 夹角 θ（v₀与等效重力）
+                    <span class="value-display" id="valAngle">60°</span>
+                </label>
+                <input type="range" id="sliderAngle" min="0" max="180" value="60" step="1">
+            </div>
+            <div class="btn-row">
+                <button class="btn-launch" id="btnLaunch" title="发射小球">▶ 发射</button>
+                <button class="btn-reset" id="btnReset" title="清除轨迹并重置">↺ 重置</button>
+                <button class="btn-loop" id="btnLoop" title="切换自动循环模式">🔁 循环</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            // ==================== DOM 元素 ====================
+            const canvas = document.getElementById('mainCanvas');
+            const ctx = canvas.getContext('2d');
+            const sliderSpeed = document.getElementById('sliderSpeed');
+            const sliderAngle = document.getElementById('sliderAngle');
+            const valSpeed = document.getElementById('valSpeed');
+            const valAngle = document.getElementById('valAngle');
+            const btnLaunch = document.getElementById('btnLaunch');
+            const btnReset = document.getElementById('btnReset');
+            const btnLoop = document.getElementById('btnLoop');
+
+            // ==================== 画布尺寸 ====================
+            const CSS_WIDTH = 800;
+            const CSS_HEIGHT = 500;
+            const DPR = Math.min(window.devicePixelRatio || 1, 2);
+
+            function resizeCanvas() {
+                const wrapper = canvas.parentElement;
+                const wrapperWidth = wrapper.clientWidth;
+                const scale = wrapperWidth / CSS_WIDTH;
+                const displayHeight = CSS_HEIGHT * scale;
+                canvas.style.width = wrapperWidth + 'px';
+                canvas.style.height = displayHeight + 'px';
+                canvas.width = CSS_WIDTH * DPR;
+                canvas.height = CSS_HEIGHT * DPR;
+                ctx.setTransform(1, 0, 0, 1, 0, 0);
+                ctx.scale(DPR, DPR);
+            }
+
+            window.addEventListener('resize', resizeCanvas);
+            resizeCanvas();
+
+            // ==================== 物理常量与参数 ====================
+            const G_EFF = 220; // 等效重力加速度 (px/s²)，在CSS像素空间
+            const GRAVITY_ANGLE_DEG = 45; // 等效重力方向：右下45°（canvas中角度）
+            const GRAVITY_ANGLE_RAD = GRAVITY_ANGLE_DEG * Math.PI / 180;
+            // 等效重力单位向量 (canvas坐标: x右, y下)
+            const G_UNIT_X = Math.cos(GRAVITY_ANGLE_RAD); // √2/2 ≈ 0.707
+            const G_UNIT_Y = Math.sin(GRAVITY_ANGLE_RAD); // √2/2 ≈ 0.707
+
+            // 垂直于等效重力的单位向量（逆时针90°，即"水平"方向，指向右上）
+            const PERP_UNIT_X = Math.cos(GRAVITY_ANGLE_RAD - Math.PI / 2); // cos(-45°) = √2/2
+            const PERP_UNIT_Y = Math.sin(GRAVITY_ANGLE_RAD - Math.PI / 2); // sin(-45°) = -√2/2
+
+            // ==================== 状态 ====================
+            let v0 = parseFloat(sliderSpeed.value); // 初速度大小 px/s
+            let thetaDeg = parseFloat(sliderAngle.value); // 初速度与等效重力夹角(度)
+            let thetaRad = thetaDeg * Math.PI / 180;
+
+            // 小球初始位置（CSS像素坐标，画布约35%,38%处）
+            let startX = CSS_WIDTH * 0.32;
+            let startY = CSS_HEIGHT * 0.35;
+
+            // 小球状态
+            let ballX = startX;
+            let ballY = startY;
+            let ballVX = 0;
+            let ballVY = 0;
+            let isFlying = false;
+            let trajectoryPoints = []; // {x, y}
+            let autoLoop = false;
+            let outOfBoundsTimer = 0;
+            const OUT_OF_BOUNDS_DELAY = 0.6; // 飞出后等待秒数再重置
+            let outOfBoundsCountdown = 0;
+            let lastTrajectory = []; // 保留上一次的轨迹用于淡出显示
+
+            // 粒子尾迹
+            let trailParticles = [];
+
+            // ==================== 计算初速度分量 ====================
+            function computeInitialVelocity() {
+                // v0方向与等效重力方向的夹角为theta
+                // 等效重力方向在canvas中角度为 GRAVITY_ANGLE_RAD (45°)
+                // 初速度方向 = 等效重力方向 - theta（逆时针）
+                const vAngle = GRAVITY_ANGLE_RAD - thetaRad;
+                ballVX = v0 * Math.cos(vAngle);
+                ballVY = v0 * Math.sin(vAngle);
+            }
+
+            // ==================== 重置小球 ====================
+            function resetBall(clearTrajectory = true) {
+                ballX = startX;
+                ballY = startY;
+                computeInitialVelocity();
+                isFlying = true;
+                outOfBoundsCountdown = 0;
+                if (clearTrajectory) {
+                    lastTrajectory = [...trajectoryPoints];
+                    trajectoryPoints = [];
+                    trailParticles = [];
+                }
+                // 添加起始点到轨迹
+                trajectoryPoints.push({ x: ballX, y: ballY });
+            }
+
+            // ==================== 发射 ====================
+            function launch() {
+                v0 = parseFloat(sliderSpeed.value);
+                thetaDeg = parseFloat(sliderAngle.value);
+                thetaRad = thetaDeg * Math.PI / 180;
+                lastTrajectory = [...trajectoryPoints];
+                trajectoryPoints = [];
+                trailParticles = [];
+                resetBall(true);
+                isFlying = true;
+                outOfBoundsCountdown = 0;
+            }
+
+            // ==================== 检查是否出界 ====================
+            function isOutOfBounds(x, y) {
+                const margin = 60;
+                return (
+                    x < -margin ||
+                    x > CSS_WIDTH + margin ||
+                    y < -margin ||
+                    y > CSS_HEIGHT + margin
+                );
+            }
+
+            // ==================== 添加尾迹粒子 ====================
+            function addTrailParticle(x, y) {
+                trailParticles.push({
+                    x: x,
+                    y: y,
+                    life: 0.55,
+                    maxLife: 0.55,
+                    radius: 3 + Math.random() * 3,
+                });
+                // 限制粒子数量
+                if (trailParticles.length > 80) {
+                    trailParticles.shift();
+                }
+            }
+
+            // ==================== 动画循环 ====================
+            let lastTime = performance.now();
+            let accumulatedDt = 0;
+            const FIXED_DT = 1 / 120; // 固定物理步长
+
+            function animate(timestamp) {
+                requestAnimationFrame(animate);
+
+                let rawDt = (timestamp - lastTime) / 1000;
+                lastTime = timestamp;
+
+                // 防止大帧跳跃
+                if (rawDt > 0.15) rawDt = 0.15;
+                if (rawDt <= 0) rawDt = FIXED_DT;
+
+                accumulatedDt += rawDt;
+
+                // 使用子步进提高精度
+                const subSteps = 3;
+                const subDt = FIXED_DT / subSteps;
+
+                while (accumulatedDt >= FIXED_DT) {
+                    accumulatedDt -= FIXED_DT;
+
+                    if (isFlying) {
+                        for (let s = 0; s < subSteps; s++) {
+                            // 更新速度（等效重力加速度）
+                            ballVX += G_EFF * G_UNIT_X * subDt;
+                            ballVY += G_EFF * G_UNIT_Y * subDt;
+                            // 更新位置
+                            ballX += ballVX * subDt;
+                            ballY += ballVY * subDt;
+                        }
+
+                        // 记录轨迹
+                        trajectoryPoints.push({ x: ballX, y: ballY });
+                        // 限制轨迹点数量
+                        if (trajectoryPoints.length > 2000) {
+                            trajectoryPoints = trajectoryPoints.slice(-1500);
+                        }
+
+                        // 添加尾迹粒子
+                        if (trajectoryPoints.length % 2 === 0) {
+                            addTrailParticle(ballX, ballY);
+                        }
+
+                        // 检查出界
+                        if (isOutOfBounds(ballX, ballY)) {
+                            if (outOfBoundsCountdown <= 0) {
+                                outOfBoundsCountdown = OUT_OF_BOUNDS_DELAY;
+                            }
+                            outOfBoundsCountdown -= FIXED_DT;
+                            if (outOfBoundsCountdown <= 0) {
+                                if (autoLoop) {
+                                    launch();
+                                } else {
+                                    isFlying = false;
+                                    lastTrajectory = [...trajectoryPoints];
+                                    // 小球停留在最后位置
+                                    ballX = Math.max(-40, Math.min(CSS_WIDTH + 40, ballX));
+                                    ballY = Math.max(-40, Math.min(CSS_HEIGHT + 40, ballY));
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // 更新尾迹粒子
+                for (let i = trailParticles.length - 1; i >= 0; i--) {
+                    trailParticles[i].life -= rawDt;
+                    if (trailParticles[i].life <= 0) {
+                        trailParticles.splice(i, 1);
+                    }
+                }
+
+                // 绘制
+                draw();
+            }
+
+            // ==================== 绘制函数 ====================
+            function draw() {
+                ctx.clearRect(0, 0, CSS_WIDTH, CSS_HEIGHT);
+
+                // 背景
+                const bgGrad = ctx.createRadialGradient(CSS_WIDTH * 0.35, CSS_HEIGHT * 0.35, 50, CSS_WIDTH * 0.5, CSS_HEIGHT *
+                    0.5, CSS_WIDTH * 0.9);
+                bgGrad.addColorStop(0, '#1a1d28');
+                bgGrad.addColorStop(1, '#0a0c14');
+                ctx.fillStyle = bgGrad;
+                ctx.fillRect(0, 0, CSS_WIDTH, CSS_HEIGHT);
+
+                // 绘制网格
+                drawGrid();
+
+                // 绘制等效重力场背景箭头
+                drawFieldArrows();
+
+                // 绘制等势线（垂直于等效重力的虚线族）
+                drawEquipotentialLines();
+
+                // 绘制上一次的淡化轨迹
+                if (lastTrajectory.length > 2 && !isFlying) {
+                    drawFadedTrajectory(lastTrajectory);
+                }
+                if (isFlying && lastTrajectory.length > 2 && trajectoryPoints.length < 20) {
+                    drawFadedTrajectory(lastTrajectory);
+                }
+
+                // 绘制当前轨迹
+                if (trajectoryPoints.length > 1) {
+                    drawTrajectory(trajectoryPoints, isFlying ? 1 : 0.85);
+                }
+
+                // 绘制尾迹粒子
+                drawTrailParticles();
+
+                // 绘制辅助线（从起点）
+                drawGuidelines();
+
+                // 绘制小球
+                drawBall(ballX, ballY);
+
+                // 绘制起点标记
+                drawStartMarker();
+
+                // 绘制图例
+                drawLegend();
+
+                // 如果小球飞出且非循环模式，显示提示
+                if (!isFlying && trajectoryPoints.length > 5 && isOutOfBounds(ballX, ballY)) {
+                    ctx.fillStyle = 'rgba(255,255,255,0.75)';
+                    ctx.font = '600 15px "PingFang SC","Microsoft YaHei","Segoe UI",sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('小球已飞出边界 — 点击「发射」重新开始', CSS_WIDTH / 2, CSS_HEIGHT - 25);
+                    ctx.textAlign = 'start';
+                }
+                if (!isFlying && trajectoryPoints.length <= 1) {
+                    ctx.fillStyle = 'rgba(255,255,255,0.6)';
+                    ctx.font = '500 14px "PingFang SC","Microsoft YaHei","Segoe UI",sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('调整参数后点击「发射」按钮', CSS_WIDTH / 2, CSS_HEIGHT - 25);
+                    ctx.textAlign = 'start';
+                }
+            }
+
+            function drawGrid() {
+                ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+                ctx.lineWidth = 1;
+                const spacing = 40;
+                for (let x = spacing; x < CSS_WIDTH; x += spacing) {
+                    ctx.beginPath();
+                    ctx.moveTo(x, 0);
+                    ctx.lineTo(x, CSS_HEIGHT);
+                    ctx.stroke();
+                }
+                for (let y = spacing; y < CSS_HEIGHT; y += spacing) {
+                    ctx.beginPath();
+                    ctx.moveTo(0, y);
+                    ctx.lineTo(CSS_WIDTH, y);
+                    ctx.stroke();
+                }
+                // 稍粗的网格线
+                ctx.strokeStyle = 'rgba(255,255,255,0.07)';
+                ctx.lineWidth = 1.2;
+                const bigSpacing = 120;
+                for (let x = bigSpacing; x < CSS_WIDTH; x += bigSpacing) {
+                    ctx.beginPath();
+                    ctx.moveTo(x, 0);
+                    ctx.lineTo(x, CSS_HEIGHT);
+                    ctx.stroke();
+                }
+                for (let y = bigSpacing; y < CSS_HEIGHT; y += bigSpacing) {
+                    ctx.beginPath();
+                    ctx.moveTo(0, y);
+                    ctx.lineTo(CSS_WIDTH, y);
+                    ctx.stroke();
+                }
+            }
+
+            function drawFieldArrows() {
+                // 在背景中绘制等效重力场方向的小箭头阵列
+                const spacing = 70;
+                const arrowLen = 16;
+                const arrowHead = 5;
+                ctx.strokeStyle = 'rgba(255,180,100,0.13)';
+                ctx.fillStyle = 'rgba(255,180,100,0.13)';
+                ctx.lineWidth = 1.2;
+
+                for (let cx = spacing * 0.6; cx < CSS_WIDTH; cx += spacing) {
+                    for (let cy = spacing * 0.6; cy < CSS_HEIGHT; cy += spacing) {
+                        // 跳过起点附近区域
+                        const dxStart = cx - startX;
+                        const dyStart = cy - startY;
+                        if (Math.sqrt(dxStart * dxStart + dyStart * dyStart) < 55) continue;
+
+                        const ex = cx + G_UNIT_X * arrowLen;
+                        const ey = cy + G_UNIT_Y * arrowLen;
+                        ctx.beginPath();
+                        ctx.moveTo(cx - G_UNIT_X * arrowLen * 0.35, cy - G_UNIT_Y * arrowLen * 0.35);
+                        ctx.lineTo(ex, ey);
+                        ctx.stroke();
+                        // 箭头头部
+                        const hx1 = ex - G_UNIT_X * arrowHead + PERP_UNIT_X * arrowHead * 0.55;
+                        const hy1 = ey - G_UNIT_Y * arrowHead + PERP_UNIT_Y * arrowHead * 0.55;
+                        const hx2 = ex - G_UNIT_X * arrowHead - PERP_UNIT_X * arrowHead * 0.55;
+                        const hy2 = ey - G_UNIT_Y * arrowHead - PERP_UNIT_Y * arrowHead * 0.55;
+                        ctx.beginPath();
+                        ctx.moveTo(ex, ey);
+                        ctx.lineTo(hx1, hy1);
+                        ctx.lineTo(hx2, hy2);
+                        ctx.closePath();
+                        ctx.fill();
+                    }
+                }
+            }
+
+            function drawEquipotentialLines() {
+                // 等势线：垂直于等效重力方向
+                ctx.strokeStyle = 'rgba(150,200,255,0.08)';
+                ctx.lineWidth = 1;
+                ctx.setLineDash([8, 20]);
+                const spacing = 50;
+                // 沿等效重力方向偏移
+                for (let d = -400; d < 800; d += spacing) {
+                    const cx = startX + G_UNIT_X * d;
+                    const cy = startY + G_UNIT_Y * d;
+                    // 等势线方向为PERP方向
+                    const len = 600;
+                    const x1 = cx - PERP_UNIT_X * len;
+                    const y1 = cy - PERP_UNIT_Y * len;
+                    const x2 = cx + PERP_UNIT_X * len;
+                    const y2 = cy + PERP_UNIT_Y * len;
+                    ctx.beginPath();
+                    ctx.moveTo(x1, y1);
+                    ctx.lineTo(x2, y2);
+                    ctx.stroke();
+                }
+                ctx.setLineDash([]);
+            }
+
+            function drawFadedTrajectory(points) {
+                if (points.length < 2) return;
+                ctx.strokeStyle = 'rgba(255,100,80,0.2)';
+                ctx.lineWidth = 2.5;
+                ctx.setLineDash([6, 10]);
+                ctx.beginPath();
+                ctx.moveTo(points[0].x, points[0].y);
+                for (let i = 1; i < points.length; i++) {
+                    ctx.lineTo(points[i].x, points[i].y);
+                }
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
+
+            function drawTrajectory(points, alpha) {
+                if (points.length < 2) return;
+                // 使用渐变：从起点(亮)到终点(稍暗)
+                const grad = ctx.createLinearGradient(
+                    points[0].x, points[0].y,
+                    points[points.length - 1].x, points[points.length - 1].y
+                );
+                grad.addColorStop(0, `rgba(255,160,60,${0.9 * alpha})`);
+                grad.addColorStop(0.5, `rgba(255,80,50,${0.8 * alpha})`);
+                grad.addColorStop(1, `rgba(220,50,40,${0.7 * alpha})`);
+
+                ctx.strokeStyle = grad;
+                ctx.lineWidth = 3.5;
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+                ctx.shadowColor = `rgba(255,100,50,${0.35 * alpha})`;
+                ctx.shadowBlur = 8;
+                ctx.beginPath();
+                ctx.moveTo(points[0].x, points[0].y);
+                for (let i = 1; i < points.length; i++) {
+                    ctx.lineTo(points[i].x, points[i].y);
+                }
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+
+                // 外层光晕
+                ctx.strokeStyle = `rgba(255,200,150,${0.25 * alpha})`;
+                ctx.lineWidth = 7;
+                ctx.beginPath();
+                ctx.moveTo(points[0].x, points[0].y);
+                for (let i = 1; i < points.length; i++) {
+                    ctx.lineTo(points[i].x, points[i].y);
+                }
+                ctx.stroke();
+            }
+
+            function drawTrailParticles() {
+                for (const p of trailParticles) {
+                    const alpha = p.life / p.maxLife;
+                    const r = p.radius * alpha;
+                    if (r < 0.3) continue;
+                    const grad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, r);
+                    grad.addColorStop(0, `rgba(255,180,100,${0.8 * alpha})`);
+                    grad.addColorStop(0.5, `rgba(255,100,50,${0.5 * alpha})`);
+                    grad.addColorStop(1, `rgba(255,60,30,0)`);
+                    ctx.fillStyle = grad;
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+
+            function drawGuidelines() {
+                // 从起点绘制等效重力方向虚线箭头
+                const guideLen = 70;
+                const arrowHead = 10;
+                const gx = startX + G_UNIT_X * guideLen;
+                const gy = startY + G_UNIT_Y * guideLen;
+
+                ctx.strokeStyle = 'rgba(255,200,140,0.55)';
+                ctx.lineWidth = 2;
+                ctx.setLineDash([5, 5]);
+                ctx.beginPath();
+                ctx.moveTo(startX, startY);
+                ctx.lineTo(gx, gy);
+                ctx.stroke();
+                ctx.setLineDash([]);
+                // 箭头
+                const ahx1 = gx - G_UNIT_X * arrowHead + PERP_UNIT_X * arrowHead * 0.6;
+                const ahy1 = gy - G_UNIT_Y * arrowHead + PERP_UNIT_Y * arrowHead * 0.6;
+                const ahx2 = gx - G_UNIT_X * arrowHead - PERP_UNIT_X * arrowHead * 0.6;
+                const ahy2 = gy - G_UNIT_Y * arrowHead - PERP_UNIT_Y * arrowHead * 0.6;
+                ctx.fillStyle = 'rgba(255,200,140,0.55)';
+                ctx.beginPath();
+                ctx.moveTo(gx, gy);
+                ctx.lineTo(ahx1, ahy1);
+                ctx.lineTo(ahx2, ahy2);
+                ctx.closePath();
+                ctx.fill();
+                // 标签
+                ctx.fillStyle = 'rgba(255,200,140,0.8)';
+                ctx.font = '600 12px "PingFang SC","Microsoft YaHei","Segoe UI",sans-serif';
+                ctx.textAlign = 'left';
+                ctx.fillText('等效重力方向', gx + 8, gy + 4);
+                ctx.textAlign = 'start';
+
+                // 从起点绘制初速度方向箭头
+                const vAngle = GRAVITY_ANGLE_RAD - thetaRad;
+                const vUnitX = Math.cos(vAngle);
+                const vUnitY = Math.sin(vAngle);
+                const vLen = Math.min(v0 * 0.4, 160);
+                const vx = startX + vUnitX * vLen;
+                const vy = startY + vUnitY * vLen;
+
+                ctx.strokeStyle = 'rgba(100,200,255,0.7)';
+                ctx.lineWidth = 2.5;
+                ctx.setLineDash([]);
+                ctx.beginPath();
+                ctx.moveTo(startX, startY);
+                ctx.lineTo(vx, vy);
+                ctx.stroke();
+                // 箭头
+                const vHead = 11;
+                const vPerpX = Math.cos(vAngle - Math.PI / 2);
+                const vPerpY = Math.sin(vAngle - Math.PI / 2);
+                const vhx1 = vx - vUnitX * vHead + vPerpX * vHead * 0.55;
+                const vhy1 = vy - vUnitY * vHead + vPerpY * vHead * 0.55;
+                const vhx2 = vx - vUnitX * vHead - vPerpX * vHead * 0.55;
+                const vhy2 = vy - vUnitY * vHead - vPerpY * vHead * 0.55;
+                ctx.fillStyle = 'rgba(100,200,255,0.7)';
+                ctx.beginPath();
+                ctx.moveTo(vx, vy);
+                ctx.lineTo(vhx1, vhy1);
+                ctx.lineTo(vhx2, vhy2);
+                ctx.closePath();
+                ctx.fill();
+                // 标签
+                ctx.fillStyle = 'rgba(100,200,255,0.85)';
+                ctx.font = '600 12px "PingFang SC","Microsoft YaHei","Segoe UI",sans-serif';
+                ctx.textAlign = 'left';
+                const labelOffsetX = vPerpX * 18;
+                const labelOffsetY = vPerpY * 18;
+                ctx.fillText(`v₀ 方向 (θ=${thetaDeg}°)`, vx + labelOffsetX + 4, vy + labelOffsetY + 4);
+                ctx.textAlign = 'start';
+            }
+
+            function drawBall(x, y) {
+                // 光晕
+                const glowGrad = ctx.createRadialGradient(x, y, 4, x, y, 22);
+                glowGrad.addColorStop(0, 'rgba(255,120,60,0.7)');
+                glowGrad.addColorStop(0.5, 'rgba(255,60,30,0.25)');
+                glowGrad.addColorStop(1, 'rgba(255,30,10,0)');
+                ctx.fillStyle = glowGrad;
+                ctx.beginPath();
+                ctx.arc(x, y, 22, 0, Math.PI * 2);
+                ctx.fill();
+
+                // 主体球
+                const ballRadius = 9;
+                const ballGrad = ctx.createRadialGradient(x - 2.5, y - 3, ballRadius * 0.25, x, y, ballRadius);
+                ballGrad.addColorStop(0, '#ff9a76');
+                ballGrad.addColorStop(0.35, '#ff4d3a');
+                ballGrad.addColorStop(0.7, '#c0392b');
+                ballGrad.addColorStop(1, '#7a1a10');
+                ctx.fillStyle = ballGrad;
+                ctx.beginPath();
+                ctx.arc(x, y, ballRadius, 0, Math.PI * 2);
+                ctx.fill();
+
+                // 高光
+                const hlGrad = ctx.createRadialGradient(x - 2, y - 3.5, 1, x - 1, y - 1.5, ballRadius * 0.7);
+                hlGrad.addColorStop(0, 'rgba(255,255,255,0.7)');
+                hlGrad.addColorStop(0.6, 'rgba(255,255,255,0.1)');
+                hlGrad.addColorStop(1, 'rgba(255,255,255,0)');
+                ctx.fillStyle = hlGrad;
+                ctx.beginPath();
+                ctx.arc(x, y, ballRadius, 0, Math.PI * 2);
+                ctx.fill();
+
+                // 边缘
+                ctx.strokeStyle = 'rgba(255,180,150,0.5)';
+                ctx.lineWidth = 1.2;
+                ctx.beginPath();
+                ctx.arc(x, y, ballRadius, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+
+            function drawStartMarker() {
+                // 起点小十字
+                ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+                ctx.lineWidth = 1.5;
+                const s = 8;
+                ctx.beginPath();
+                ctx.moveTo(startX - s, startY);
+                ctx.lineTo(startX + s, startY);
+                ctx.moveTo(startX, startY - s);
+                ctx.lineTo(startX, startY + s);
+                ctx.stroke();
+                // 起点小圆
+                ctx.fillStyle = 'rgba(255,255,255,0.4)';
+                ctx.beginPath();
+                ctx.arc(startX, startY, 3.5, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            function drawLegend() {
+                const lx = CSS_WIDTH - 195;
+                const ly = 18;
+                ctx.fillStyle = 'rgba(0,0,0,0.55)';
+                ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.roundRect(lx - 10, ly - 6, 192, 62, 10);
+                ctx.fill();
+                ctx.stroke();
+
+                ctx.fillStyle = 'rgba(255,200,140,0.85)';
+                ctx.font = '500 11px "PingFang SC","Microsoft YaHei","Segoe UI",sans-serif';
+                ctx.textAlign = 'left';
+                ctx.fillText('🟡 等效重力方向：右下45°', lx, ly + 16);
+                ctx.fillText('🔵 v₀ 方向（蓝色箭头）', lx, ly + 34);
+                ctx.fillText('🔴 红色小球 · 轨迹为抛物线', lx, ly + 52);
+                ctx.textAlign = 'start';
+            }
+
+            // ==================== 事件监听 ====================
+            sliderSpeed.addEventListener('input', () => {
+                v0 = parseFloat(sliderSpeed.value);
+                valSpeed.textContent = Math.round(v0);
+                if (!isFlying && trajectoryPoints.length <= 1) {
+                    computeInitialVelocity();
+                }
+                if (isFlying) {
+                    // 实时更新速度（保持方向，缩放大小）
+                    const vAngle = GRAVITY_ANGLE_RAD - thetaRad;
+                    const currentSpeed = Math.sqrt(ballVX * ballVX + ballVY * ballVY);
+                    if (currentSpeed > 5) {
+                        const scale = v0 / currentSpeed;
+                        // 不直接缩放，而是重新计算初始速度并重置
+                        // 为保持流畅，这里选择重置
+                        launch();
+                    } else {
+                        computeInitialVelocity();
+                        resetBall(true);
+                    }
+                } else {
+                    computeInitialVelocity();
+                }
+            });
+
+            sliderAngle.addEventListener('input', () => {
+                thetaDeg = parseFloat(sliderAngle.value);
+                thetaRad = thetaDeg * Math.PI / 180;
+                valAngle.textContent = Math.round(thetaDeg) + '°';
+                if (isFlying) {
+                    launch();
+                } else {
+                    computeInitialVelocity();
+                    // 更新lastTrajectory以便预览角度变化
+                    if (trajectoryPoints.length <= 1) {
+                        lastTrajectory = [];
+                    }
+                }
+            });
+
+            btnLaunch.addEventListener('click', () => {
+                launch();
+                btnLaunch.textContent = '▶ 重新发射';
+            });
+
+            btnReset.addEventListener('click', () => {
+                isFlying = false;
+                ballX = startX;
+                ballY = startY;
+                lastTrajectory = [...trajectoryPoints];
+                trajectoryPoints = [];
+                trailParticles = [];
+                outOfBoundsCountdown = 0;
+                computeInitialVelocity();
+                trajectoryPoints.push({ x: ballX, y: ballY });
+                btnLaunch.textContent = '▶ 发射';
+            });
+
+            btnLoop.addEventListener('click', () => {
+                autoLoop = !autoLoop;
+                if (autoLoop) {
+                    btnLoop.classList.add('active');
+                    btnLoop.textContent = '🔁 循环中';
+                    if (!isFlying) {
+                        launch();
+                    }
+                } else {
+                    btnLoop.classList.remove('active');
+                    btnLoop.textContent = '🔁 循环';
+                }
+            });
+
+            // 键盘快捷键
+            document.addEventListener('keydown', (e) => {
+                if (e.key === ' ' || e.code === 'Space') {
+                    e.preventDefault();
+                    launch();
+                } else if (e.key === 'r' || e.key === 'R') {
+                    e.preventDefault();
+                    btnReset.click();
+                } else if (e.key === 'l' || e.key === 'L') {
+                    e.preventDefault();
+                    btnLoop.click();
+                }
+            });
+
+            // ==================== 触摸支持 ====================
+            canvas.addEventListener('click', (e) => {
+                // 点击画布也可触发发射
+                const rect = canvas.getBoundingClientRect();
+                const cx = (e.clientX - rect.left) / rect.width * CSS_WIDTH;
+                const cy = (e.clientY - rect.top) / rect.height * CSS_HEIGHT;
+                // 如果点击在起点附近（半径30px内），触发发射
+                const dist = Math.sqrt((cx - startX) ** 2 + (cy - startY) ** 2);
+                if (dist < 30 && !isFlying) {
+                    launch();
+                }
+            });
+
+            // ==================== 初始化 ====================
+            function init() {
+                v0 = parseFloat(sliderSpeed.value);
+                thetaDeg = parseFloat(sliderAngle.value);
+                thetaRad = thetaDeg * Math.PI / 180;
+                valSpeed.textContent = Math.round(v0);
+                valAngle.textContent = Math.round(thetaDeg) + '°';
+                computeInitialVelocity();
+                ballX = startX;
+                ballY = startY;
+                isFlying = false;
+                trajectoryPoints = [{ x: ballX, y: ballY }];
+                lastTrajectory = [];
+                trailParticles = [];
+                autoLoop = false;
+                btnLoop.classList.remove('active');
+                btnLoop.textContent = '🔁 循环';
+                btnLaunch.textContent = '▶ 发射';
+                lastTime = performance.now();
+                accumulatedDt = 0;
+            }
+
+            init();
+            requestAnimationFrame(animate);
+
+            // ==================== 响应窗口大小变化 ====================
+            window.addEventListener('resize', () => {
+                resizeCanvas();
+                // 调整起始位置比例
+                startX = CSS_WIDTH * 0.32;
+                startY = CSS_HEIGHT * 0.35;
+                if (!isFlying) {
+                    ballX = startX;
+                    ballY = startY;
+                    trajectoryPoints = [{ x: ballX, y: ballY }];
+                    lastTrajectory = [];
+                }
+            });
+
+            console.log('🚀 等效重力场抛体运动模拟已就绪');
+            console.log('  🟡 等效重力方向：斜向右下方45°');
+            console.log('  🔵 初速度大小：' + v0 + ' px/s');
+            console.log('  📐 夹角θ：' + thetaDeg + '°');
+            console.log('  🖱️ 拖拽滑块调节参数 | 点击发射 | 空格键发射 | L键切换循环');
+            console.log('  💡 点击画布中起点附近也可发射');
+        })();
+    </script>
+
+  <script>
+  // 返回主页（滚动位置已在主页点击链接时保存）
+  function saveScrollAndReturn() {
+    window.location.href = '../index.html';
+  }
+  
+  // 禁用右键菜单
+  document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+  });
+  
+  // 禁用开发者工具快捷键
+  document.addEventListener('keydown', function(e) {
+    // ESC返回主页 - 保存滚动位置
+    if (e.keyCode === 27) {
+      saveScrollAndReturn();
+      return false;
+    }
+    // F12
+    if (e.keyCode === 123) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+U
+    if (e.ctrlKey && e.keyCode === 85) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+I
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 73) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+J
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 74) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+C
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 67) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+S
+    if (e.ctrlKey && e.keyCode === 83) {
+      e.preventDefault();
+      return false;
+    }
+  });
+  
+  // 禁用选择
+  document.addEventListener('selectstart', function(e) {
+    // 允许输入框选择
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+      return true;
+    }
+    e.preventDefault();
+    return false;
+  });
+  </script>
+</body>
+</html>
