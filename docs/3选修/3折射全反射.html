@@ -1,0 +1,1010 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>光的折射与全反射 - 红光 | 高中物理动画</title>
+    <style>
+        :root {
+            --bg: #0f172a;
+            --panel-bg: #1e293b;
+            --text: #e2e8f0;
+            --accent: #ef4444;
+            --border: #334155;
+        }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background: var(--bg);
+            font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 16px;
+        }
+        .main-container {
+            background: var(--panel-bg);
+            border-radius: 20px;
+            padding: 18px 22px 22px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            max-width: 900px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .header h1 {
+            font-size: 1.5rem;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .header h1 .dot-red {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: #ff4444;
+            box-shadow: 0 0 14px #ff4444;
+            animation: pulse-dot 2s ease-in-out infinite;
+        }
+        @keyframes pulse-dot {
+            0%,
+            100% {
+                box-shadow: 0 0 10px #ff4444;
+            }
+            50% {
+                box-shadow: 0 0 20px #ff4444, 0 0 32px rgba(255, 68, 68, 0.6);
+            }
+        }
+        .canvas-wrapper {
+            background: #0b1120;
+            border-radius: 14px;
+            overflow: hidden;
+            box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.6);
+            border: 1px solid var(--border);
+            aspect-ratio: 16 / 10;
+            min-height: 340px;
+        }
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+        .mode-buttons {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .mode-btn {
+            padding: 9px 18px;
+            border-radius: 28px;
+            border: 2px solid transparent;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.9rem;
+            background: #1e293b;
+            color: #cbd5e1;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+        .mode-btn:hover {
+            border-color: #64748b;
+            color: #f8fafc;
+            background: #334155;
+        }
+        .mode-btn.active-air {
+            background: #0369a1;
+            border-color: #38bdf8;
+            color: #fff;
+            box-shadow: 0 0 18px rgba(56, 189, 248, 0.3);
+        }
+        .mode-btn.active-water {
+            background: #047857;
+            border-color: #34d399;
+            color: #fff;
+            box-shadow: 0 0 18px rgba(52, 211, 153, 0.3);
+        }
+        .slider-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        .slider-label-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            color: #cbd5e1;
+            font-size: 0.88rem;
+        }
+        .slider-value {
+            font-weight: 700;
+            font-size: 1.25rem;
+            color: #fff;
+        }
+        input[type="range"] {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 10px;
+            border-radius: 5px;
+            background: #334155;
+            outline: none;
+            cursor: pointer;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: #fff;
+            border: 3px solid #ef4444;
+            box-shadow: 0 0 16px rgba(239, 68, 68, 0.5);
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .preset-btns {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            justify-content: center;
+        }
+        .preset-btn {
+            padding: 6px 14px;
+            border-radius: 18px;
+            border: 1px solid #475569;
+            cursor: pointer;
+            font-size: 0.78rem;
+            background: #1e293b;
+            color: #cbd5e1;
+            transition: 0.25s;
+            white-space: nowrap;
+        }
+        .preset-btn:hover {
+            background: #334155;
+            color: #f1f5f9;
+        }
+        .preset-btn.critical-preset {
+            border-color: #fbbf24;
+            color: #fbbf24;
+            font-weight: 700;
+        }
+        .info-cards {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .info-card {
+            flex: 1;
+            min-width: 85px;
+            background: #1e293b;
+            border-radius: 12px;
+            padding: 12px 12px;
+            text-align: center;
+            border-left: 4px solid #f97316;
+            transition: 0.3s;
+        }
+        .info-card .card-val {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #fff;
+        }
+        .info-card .card-label {
+            font-size: 0.7rem;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-top: 2px;
+        }
+        .info-card.refract-card {
+            border-left-color: #3b82f6;
+        }
+        .info-card.warning-card {
+            border-left-color: #ef4444;
+            animation: glow-warn 1.5s ease-in-out infinite;
+        }
+        @keyframes glow-warn {
+            0%,
+            100% {
+                box-shadow: 0 0 8px rgba(239, 68, 68, 0.3);
+            }
+            50% {
+                box-shadow: 0 0 22px rgba(239, 68, 68, 0.7);
+            }
+        }
+        .card-val.dim {
+            color: #64748b;
+        }
+        .card-val.bright {
+            color: #f87171;
+        }
+        .card-val.gold {
+            color: #fcd34d;
+        }
+        .tir-badge {
+            display: inline-block;
+            background: #dc2626;
+            color: #fff;
+            font-weight: 700;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            animation: pulse-badge 0.8s ease-in-out infinite;
+            letter-spacing: 0.5px;
+        }
+        @keyframes pulse-badge {
+            0%,
+            100% {
+                transform: scale(1);
+                box-shadow: 0 0 8px rgba(220, 38, 38, 0.6);
+            }
+            50% {
+                transform: scale(1.06);
+                box-shadow: 0 0 22px rgba(220, 38, 38, 0.9);
+            }
+        }
+        .legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            justify-content: center;
+            font-size: 0.8rem;
+            color: #94a3b8;
+        }
+        .legend-dot {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 5px;
+            vertical-align: middle;
+        }
+        .legend-dot.inc {
+            background: #ff4d4d;
+            box-shadow: 0 0 6px #ff4d4d;
+        }
+        .legend-dot.ref {
+            background: #ff9f43;
+            box-shadow: 0 0 6px #ff9f43;
+        }
+        .legend-dot.frac {
+            background: #ff6b6b;
+            box-shadow: 0 0 6px #ff6b6b;
+        }
+        @media (max-width: 600px) {
+            .main-container {
+                padding: 12px 12px 16px;
+                gap: 12px;
+            }
+            .header h1 {
+                font-size: 1.25rem;
+            }
+            .mode-btn {
+                padding: 8px 14px;
+                font-size: 0.8rem;
+            }
+            .info-card .card-val {
+                font-size: 1.2rem;
+            }
+            canvas {
+                min-height: 260px;
+            }
+            .canvas-wrapper {
+                aspect-ratio: 4/3;
+                min-height: 260px;
+            }
+            input[type="range"]::-webkit-slider-thumb {
+                width: 30px;
+                height: 30px;
+            }
+        }
+    </style>
+
+  <style>
+  body {
+    background-color: #1a2332 !important;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+  }
+  
+  .qilai-back-btn {
+    position: fixed;
+    top: 10px;
+    left: 15px;
+    z-index: 100000;
+    padding: 8px 16px;
+    background: rgba(0, 150, 200, 0.2);
+    border: 1px solid rgba(100, 180, 255, 0.5);
+    color: #8ab4f8;
+    font-size: 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.3s;
+    backdrop-filter: blur(5px);
+    font-family: "Microsoft YaHei", sans-serif;
+  }
+  
+  .qilai-back-btn:hover {
+    background: rgba(0, 150, 200, 0.4);
+    box-shadow: 0 0 15px rgba(100, 180, 255, 0.3);
+    color: #fff;
+  }
+  
+  .qilai-watermark {
+    position: fixed;
+    bottom: 15px;
+    right: 15px;
+    z-index: 99998;
+    font-size: 12px;
+    color: rgba(138, 180, 248, 0.35);
+    text-align: right;
+    line-height: 1.8;
+    pointer-events: none;
+    user-select: none;
+    font-family: "Microsoft YaHei", sans-serif;
+  }
+  
+  .qilai-watermark .title {
+    font-size: 14px;
+    font-weight: bold;
+    color: rgba(138, 180, 248, 0.45);
+    margin-bottom: 4px;
+    letter-spacing: 1px;
+  }
+  </style>
+</head>
+<body>
+  <a href="javascript:void(0);" class="qilai-back-btn" onclick="saveScrollAndReturn();">← 返回主页</a>
+  
+  <div class="qilai-watermark">
+    <div class="title">齐老师动画</div>
+    QQ 3398528250<br>
+    抖音 35320300542
+  </div>
+
+    <div class="main-container">
+        <div class="header">
+            <h1><span class="dot-red"></span>光的折射与全反射 · 红光</h1>
+            <span id="tirBadge" style="display:none;" class="tir-badge">⚡ 全反射</span>
+        </div>
+
+        <div class="canvas-wrapper">
+            <canvas id="mainCanvas"></canvas>
+        </div>
+
+        <div class="mode-buttons">
+            <button class="mode-btn active-air" id="btnAirToWater" onclick="setMode('airToWater')">☁️→💧 空气射入水</button>
+            <button class="mode-btn" id="btnWaterToAir" onclick="setMode('waterToAir')">💧→☁️ 水射入空气</button>
+        </div>
+
+        <div class="slider-group">
+            <div class="slider-label-row">
+                <span>🔴 入射角 θ₁</span>
+                <span class="slider-value" id="angleDisplay">30°</span>
+            </div>
+            <input type="range" id="angleSlider" min="0" max="85" value="30" step="0.5" oninput="onSliderChange()">
+        </div>
+
+        <div class="preset-btns" id="presetContainer"></div>
+
+        <div class="info-cards">
+            <div class="info-card">
+                <div class="card-val" id="reflectAngleVal">30°</div>
+                <div class="card-label">反射角</div>
+            </div>
+            <div class="info-card refract-card">
+                <div class="card-val" id="refractAngleVal">22°</div>
+                <div class="card-label">折射角</div>
+            </div>
+            <div class="info-card">
+                <div class="card-val" id="reflectBrightness">4.2%</div>
+                <div class="card-label">反射光亮度</div>
+            </div>
+            <div class="info-card refract-card">
+                <div class="card-val" id="refractBrightness">95.8%</div>
+                <div class="card-label">折射光亮度</div>
+            </div>
+            <div class="info-card" id="criticalCard" style="display:none;">
+                <div class="card-val gold" id="criticalAngleVal">48.8°</div>
+                <div class="card-label">临界角</div>
+            </div>
+        </div>
+
+        <div class="legend">
+            <span><span class="legend-dot inc"></span>入射光</span>
+            <span><span class="legend-dot ref"></span>反射光</span>
+            <span><span class="legend-dot frac"></span>折射光</span>
+            <span style="color:#64748b;">| 虚线：法线</span>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            const canvas = document.getElementById('mainCanvas');
+            const ctx = canvas.getContext('2d');
+
+            const AIR_N = 1.0;
+            const WATER_N = 1.33;
+            const CRITICAL_ANGLE_RAD = Math.asin(AIR_N / WATER_N);
+            const CRITICAL_ANGLE_DEG = (CRITICAL_ANGLE_RAD * 180) / Math.PI;
+
+            let currentMode = 'airToWater';
+            let incidentAngleDeg = 30;
+            let incidentAngleRad = degToRad(incidentAngleDeg);
+            const RAY_LENGTH = 210;
+
+            const angleSlider = document.getElementById('angleSlider');
+            const angleDisplay = document.getElementById('angleDisplay');
+            const btnAirToWater = document.getElementById('btnAirToWater');
+            const btnWaterToAir = document.getElementById('btnWaterToAir');
+            const tirBadge = document.getElementById('tirBadge');
+            const reflectAngleVal = document.getElementById('reflectAngleVal');
+            const refractAngleVal = document.getElementById('refractAngleVal');
+            const reflectBrightness = document.getElementById('reflectBrightness');
+            const refractBrightness = document.getElementById('refractBrightness');
+            const criticalCard = document.getElementById('criticalCard');
+            const criticalAngleVal = document.getElementById('criticalAngleVal');
+            const presetContainer = document.getElementById('presetContainer');
+
+            function degToRad(deg) { return deg * Math.PI / 180; }
+
+            function radToDeg(rad) { return rad * 180 / Math.PI; }
+
+            function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
+
+            function fresnelReflectanceS(n1, n2, theta1, theta2) {
+                const cos1 = Math.cos(theta1);
+                const cos2 = Math.cos(theta2);
+                const num = n1 * cos1 - n2 * cos2;
+                const den = n1 * cos1 + n2 * cos2;
+                if (Math.abs(den) < 1e-12) return 1;
+                return (num / den) ** 2;
+            }
+
+            function computeOptics(n1, n2, theta1) {
+                const sinTheta1 = Math.sin(theta1);
+                const sinTheta2Raw = (n1 * sinTheta1) / n2;
+                let totalInternalReflection = false;
+                let theta2 = 0;
+                let reflectance = 0;
+                let transmittance = 0;
+
+                if (sinTheta2Raw >= 1.0 - 1e-9) {
+                    totalInternalReflection = true;
+                    reflectance = 1.0;
+                    transmittance = 0.0;
+                    theta2 = Math.PI / 2;
+                } else {
+                    theta2 = Math.asin(sinTheta2Raw);
+                    reflectance = fresnelReflectanceS(n1, n2, theta1, theta2);
+                    reflectance = clamp(reflectance, 0, 1);
+                    transmittance = 1 - reflectance;
+                }
+                return { theta2, reflectance, transmittance, totalInternalReflection };
+            }
+
+            function glancingAttenuation(theta2) {
+                if (theta2 >= Math.PI / 2) return 0;
+                const deg = radToDeg(theta2);
+                if (deg < 80) return 1.0;
+                if (deg >= 89.9) return 0.0;
+                const factor = (90 - deg) / 10;
+                return factor * factor;
+            }
+
+            function resizeCanvas() {
+                const wrapper = canvas.parentElement;
+                const rect = wrapper.getBoundingClientRect();
+                const dpr = window.devicePixelRatio || 1;
+                canvas.width = rect.width * dpr;
+                canvas.height = rect.height * dpr;
+                canvas.style.width = rect.width + 'px';
+                canvas.style.height = rect.height + 'px';
+                ctx.setTransform(1, 0, 0, 1, 0, 0);
+                ctx.scale(dpr, dpr);
+                canvas.logicalWidth = rect.width;
+                canvas.logicalHeight = rect.height;
+            }
+
+            function draw() {
+                const w = canvas.logicalWidth || canvas.width / (window.devicePixelRatio || 1);
+                const h = canvas.logicalHeight || canvas.height / (window.devicePixelRatio || 1);
+                if (w === 0 || h === 0) return;
+
+                ctx.clearRect(0, 0, w, h);
+                const ox = w * 0.5;
+                const oy = h * 0.52;
+                const n1 = currentMode === 'airToWater' ? AIR_N : WATER_N;
+                const n2 = currentMode === 'airToWater' ? WATER_N : AIR_N;
+                const optics = computeOptics(n1, n2, incidentAngleRad);
+
+                // 背景
+                const topGrad = ctx.createLinearGradient(0, 0, 0, oy);
+                topGrad.addColorStop(0, '#dbeafe');
+                topGrad.addColorStop(1, '#bfdbfe');
+                ctx.fillStyle = topGrad;
+                ctx.fillRect(0, 0, w, oy);
+
+                const botGrad = ctx.createLinearGradient(0, oy, 0, h);
+                botGrad.addColorStop(0, '#0369a1');
+                botGrad.addColorStop(0.7, '#0c4a6e');
+                botGrad.addColorStop(1, '#082f49');
+                ctx.fillStyle = botGrad;
+                ctx.fillRect(0, oy, w, h - oy);
+
+                // 界面线
+                ctx.strokeStyle = 'rgba(255,255,255,0.75)';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.moveTo(0, oy);
+                ctx.lineTo(w, oy);
+                ctx.stroke();
+                ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+                ctx.lineWidth = 6;
+                ctx.stroke();
+
+                // 法线
+                ctx.strokeStyle = 'rgba(255,255,255,0.45)';
+                ctx.lineWidth = 1.8;
+                ctx.setLineDash([10, 8]);
+                ctx.beginPath();
+                ctx.moveTo(ox, oy - RAY_LENGTH - 25);
+                ctx.lineTo(ox, oy + RAY_LENGTH + 25);
+                ctx.stroke();
+                ctx.setLineDash([]);
+                ctx.fillStyle = 'rgba(255,255,255,0.8)';
+                ctx.font = 'italic 14px "Segoe UI","PingFang SC",sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('法线', ox + 20, oy - RAY_LENGTH - 5);
+
+                const L = RAY_LENGTH;
+                const sinT1 = Math.sin(incidentAngleRad);
+                const cosT1 = Math.cos(incidentAngleRad);
+                let sx, sy, rx, ry, tx, ty;
+                let refractExists = !optics.totalInternalReflection;
+
+                if (currentMode === 'airToWater') {
+                    sx = ox - L * sinT1;
+                    sy = oy - L * cosT1;
+                    rx = ox + L * sinT1;
+                    ry = oy - L * cosT1;
+                    if (refractExists) {
+                        const sinT2 = Math.sin(optics.theta2);
+                        const cosT2 = Math.cos(optics.theta2);
+                        tx = ox + L * sinT2;
+                        ty = oy + L * cosT2;
+                    } else {
+                        tx = ox + L;
+                        ty = oy;
+                    }
+                } else {
+                    sx = ox - L * sinT1;
+                    sy = oy + L * cosT1;
+                    rx = ox + L * sinT1;
+                    ry = oy + L * cosT1;
+                    if (refractExists) {
+                        const sinT2 = Math.sin(optics.theta2);
+                        const cosT2 = Math.cos(optics.theta2);
+                        tx = ox + L * sinT2;
+                        ty = oy - L * cosT2;
+                    } else {
+                        tx = ox + L;
+                        ty = oy;
+                    }
+                }
+
+                function drawGlowRay(x1, y1, x2, y2, alpha, colorRGB, glowSize, lineWidth) {
+                    if (alpha < 0.003) return;
+                    const a = clamp(alpha, 0, 1);
+                    ctx.save();
+                    ctx.shadowColor = `rgba(${colorRGB},${a})`;
+                    ctx.shadowBlur = glowSize;
+                    ctx.strokeStyle = `rgba(${colorRGB},${a})`;
+                    ctx.lineWidth = lineWidth;
+                    ctx.lineCap = 'round';
+                    ctx.beginPath();
+                    ctx.moveTo(x1, y1);
+                    ctx.lineTo(x2, y2);
+                    ctx.stroke();
+                    ctx.restore();
+
+                    ctx.strokeStyle = `rgba(${colorRGB},${Math.min(1, a * 1.3)})`;
+                    ctx.lineWidth = Math.max(0.8, lineWidth * 0.5);
+                    ctx.beginPath();
+                    ctx.moveTo(x1, y1);
+                    ctx.lineTo(x2, y2);
+                    ctx.stroke();
+                }
+
+                function drawArrow(x1, y1, x2, y2, color, size) {
+                    const dx = x2 - x1;
+                    const dy = y2 - y1;
+                    const len = Math.sqrt(dx * dx + dy * dy);
+                    if (len < 2) return;
+                    const ux = dx / len;
+                    const uy = dy / len;
+                    const perpX = -uy;
+                    const perpY = ux;
+                    const baseX = x2 - ux * size * 1.5;
+                    const baseY = y2 - uy * size * 1.5;
+                    const ax = baseX + perpX * size * 0.55;
+                    const ay = baseY + perpY * size * 0.55;
+                    const bx = baseX - perpX * size * 0.55;
+                    const by = baseY - perpY * size * 0.55;
+                    ctx.fillStyle = color;
+                    ctx.beginPath();
+                    ctx.moveTo(x2, y2);
+                    ctx.lineTo(ax, ay);
+                    ctx.lineTo(bx, by);
+                    ctx.closePath();
+                    ctx.fill();
+                }
+
+                // 入射光
+                drawGlowRay(sx, sy, ox, oy, 1.0, '255,40,40', 20, 5);
+                drawArrow(sx, sy, ox, oy, 'rgba(255,40,40,0.95)', 10);
+
+                // 反射光
+                const trueRefAlpha = optics.reflectance;
+                const displayRefAlpha = 0.28 + 0.72 * trueRefAlpha;
+                if (displayRefAlpha > 0.005) {
+                    drawGlowRay(ox, oy, rx, ry, displayRefAlpha, '255,140,50', 14 * displayRefAlpha + 4, 4 *
+                        displayRefAlpha + 1);
+                    drawArrow(ox, oy, rx, ry, `rgba(255,140,50,${displayRefAlpha})`, 9);
+                }
+
+                // 折射光
+                const fracAlphaRaw = optics.transmittance;
+                const glancing = glancingAttenuation(optics.theta2);
+                const fracAlpha = fracAlphaRaw * glancing;
+                if (fracAlpha > 0.003 && refractExists) {
+                    drawGlowRay(ox, oy, tx, ty, fracAlpha, '255,90,70', 14 * fracAlpha + 4, 4 * fracAlpha + 1);
+                    drawArrow(ox, oy, tx, ty, `rgba(255,90,70,${fracAlpha})`, 9);
+                }
+
+                // 角度弧线
+                function drawArc(cx, cy, radius, startAngle, endAngle, color, lineWidth, counterclockwise) {
+                    ctx.strokeStyle = color;
+                    ctx.lineWidth = lineWidth;
+                    ctx.setLineDash([]);
+                    ctx.beginPath();
+                    ctx.arc(cx, cy, radius, startAngle, endAngle, counterclockwise);
+                    ctx.stroke();
+                }
+                const arcR = 40;
+                const normUp = -Math.PI / 2;
+                const normDown = Math.PI / 2;
+
+                if (currentMode === 'airToWater') {
+                    drawArc(ox, oy, arcR, normUp, normUp + incidentAngleRad, 'rgba(255,200,100,0.7)', 2, false);
+                    drawArc(ox, oy, arcR + 6, normUp - incidentAngleRad, normUp, 'rgba(255,160,60,0.5)', 2, false);
+                    if (refractExists) {
+                        drawArc(ox, oy, arcR + 12, normDown, normDown - optics.theta2, 'rgba(100,180,255,0.6)', 2,
+                        true);
+                    }
+                } else {
+                    drawArc(ox, oy, arcR, normDown, normDown - incidentAngleRad, 'rgba(255,200,100,0.7)', 2, true);
+                    drawArc(ox, oy, arcR + 6, normDown + incidentAngleRad, normDown, 'rgba(255,160,60,0.5)', 2, true);
+                    if (refractExists) {
+                        drawArc(ox, oy, arcR + 12, normUp, normUp + optics.theta2, 'rgba(100,180,255,0.6)', 2, false);
+                    }
+                }
+
+                // 全反射特效
+                if (optics.totalInternalReflection) {
+                    const flashGrad = ctx.createRadialGradient(ox, oy, 3, ox, oy, 40);
+                    flashGrad.addColorStop(0, 'rgba(255,255,200,0.8)');
+                    flashGrad.addColorStop(0.5, 'rgba(255,200,100,0.3)');
+                    flashGrad.addColorStop(1, 'rgba(255,80,40,0)');
+                    ctx.fillStyle = flashGrad;
+                    ctx.beginPath();
+                    ctx.arc(ox, oy, 40, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    ctx.fillStyle = '#ff4444';
+                    ctx.font = 'bold 17px "Segoe UI","PingFang SC",sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('⚡ 全反射', ox, oy - 50);
+
+                    ctx.strokeStyle = 'rgba(255,100,100,0.5)';
+                    ctx.lineWidth = 2;
+                    ctx.setLineDash([5, 6]);
+                    ctx.beginPath();
+                    ctx.moveTo(tx - 20, ty - 20);
+                    ctx.lineTo(tx + 20, ty + 20);
+                    ctx.moveTo(tx + 20, ty - 20);
+                    ctx.lineTo(tx - 20, ty + 20);
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+                }
+
+                // 入射点光斑
+                const spotGrad = ctx.createRadialGradient(ox, oy, 0, ox, oy, 12);
+                spotGrad.addColorStop(0, 'rgba(255,255,255,0.95)');
+                spotGrad.addColorStop(0.4, 'rgba(255,200,150,0.7)');
+                spotGrad.addColorStop(1, 'rgba(255,100,50,0)');
+                ctx.fillStyle = spotGrad;
+                ctx.beginPath();
+                ctx.arc(ox, oy, 12, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = '#fff';
+                ctx.beginPath();
+                ctx.arc(ox, oy, 4, 0, Math.PI * 2);
+                ctx.fill();
+
+                // 介质标签
+                ctx.fillStyle = 'rgba(0,0,0,0.5)';
+                ctx.font = 'bold 14px "Segoe UI","PingFang SC",sans-serif';
+                ctx.textAlign = 'right';
+                ctx.fillText('空气 n=1.00', w - 25, oy - 18);
+                ctx.fillText('水 n=1.33', w - 25, oy + 32);
+
+                // 临界角参考线
+                if (currentMode === 'waterToAir') {
+                    const critSin = Math.sin(CRITICAL_ANGLE_RAD);
+                    const critCos = Math.cos(CRITICAL_ANGLE_RAD);
+                    const critX = ox - L * critSin;
+                    const critY = oy + L * critCos;
+                    ctx.strokeStyle = 'rgba(251,191,36,0.4)';
+                    ctx.lineWidth = 1.5;
+                    ctx.setLineDash([4, 8]);
+                    ctx.beginPath();
+                    ctx.moveTo(ox, oy);
+                    ctx.lineTo(critX, critY);
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+                    ctx.fillStyle = 'rgba(251,191,36,0.8)';
+                    ctx.font = 'italic 12px "Segoe UI","PingFang SC",sans-serif';
+                    ctx.textAlign = 'right';
+                    ctx.fillText('临界角≈48.8°', (ox + critX) / 2 - 10, (oy + critY) / 2 + 5);
+                }
+            }
+
+            function updateUI() {
+                const n1 = currentMode === 'airToWater' ? AIR_N : WATER_N;
+                const n2 = currentMode === 'airToWater' ? WATER_N : AIR_N;
+                const optics = computeOptics(n1, n2, incidentAngleRad);
+
+                angleDisplay.textContent = incidentAngleDeg.toFixed(1) + '°';
+                reflectAngleVal.textContent = incidentAngleDeg.toFixed(1) + '°';
+
+                if (optics.totalInternalReflection) {
+                    refractAngleVal.textContent = '—';
+                    refractAngleVal.style.color = '#ef4444';
+                } else {
+                    refractAngleVal.textContent = radToDeg(optics.theta2).toFixed(1) + '°';
+                    refractAngleVal.style.color = '#fff';
+                }
+
+                reflectBrightness.textContent = (optics.reflectance * 100).toFixed(1) + '%';
+                refractBrightness.textContent = (optics.transmittance * 100).toFixed(1) + '%';
+
+                reflectBrightness.className = 'card-val' + (optics.reflectance > 0.9 ? ' bright' : optics
+                    .reflectance < 0.05 ? ' dim' : '');
+                refractBrightness.className = 'card-val' + (optics.transmittance < 0.05 ? ' dim' : optics
+                    .transmittance > 0.9 ? ' bright' : '');
+
+                tirBadge.style.display = optics.totalInternalReflection ? 'inline-block' : 'none';
+
+                if (currentMode === 'waterToAir') {
+                    criticalCard.style.display = '';
+                    criticalAngleVal.textContent = CRITICAL_ANGLE_DEG.toFixed(1) + '°';
+                    criticalCard.classList.toggle('warning-card', incidentAngleDeg >= CRITICAL_ANGLE_DEG - 0.05);
+                } else {
+                    criticalCard.style.display = 'none';
+                    criticalCard.classList.remove('warning-card');
+                }
+            }
+
+            function generatePresets() {
+                presetContainer.innerHTML = '';
+                let presets;
+                if (currentMode === 'airToWater') {
+                    presets = [0, 15, 30, 45, 60, 75, 85];
+                } else {
+                    presets = [0, 15, 30, 40, Math.round(CRITICAL_ANGLE_DEG * 10) / 10, 55, 65, 75];
+                }
+                presets.forEach(val => {
+                    const btn = document.createElement('button');
+                    btn.className = 'preset-btn';
+                    const isCritical = currentMode === 'waterToAir' && Math.abs(val - CRITICAL_ANGLE_DEG) < 0.1;
+                    if (isCritical) btn.classList.add('critical-preset');
+                    btn.textContent = isCritical ? `临界 ${val.toFixed(1)}°` : val + '°';
+                    btn.addEventListener('click', () => setIncidentAngle(val));
+                    presetContainer.appendChild(btn);
+                });
+            }
+
+            function setIncidentAngle(deg) {
+                incidentAngleDeg = clamp(deg, 0, 85);
+                incidentAngleRad = degToRad(incidentAngleDeg);
+                angleSlider.value = incidentAngleDeg;
+                updateUI();
+                draw();
+            }
+
+            window.onSliderChange = function() {
+                incidentAngleDeg = parseFloat(angleSlider.value);
+                incidentAngleRad = degToRad(incidentAngleDeg);
+                updateUI();
+                draw();
+            };
+
+            window.setMode = function(mode) {
+                currentMode = mode;
+                btnAirToWater.className = 'mode-btn' + (mode === 'airToWater' ? ' active-air' : '');
+                btnWaterToAir.className = 'mode-btn' + (mode === 'waterToAir' ? ' active-water' : '');
+                generatePresets();
+                updateUI();
+                draw();
+            };
+
+            window.addEventListener('resize', () => { resizeCanvas();
+                draw(); });
+            window.addEventListener('keydown', (e) => {
+                if (e.key === 'ArrowRight' || e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    setIncidentAngle(Math.min(85, incidentAngleDeg + 1));
+                } else if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    setIncidentAngle(Math.max(0, incidentAngleDeg - 1));
+                } else if (e.key === '1') { setMode('airToWater'); } else if (e.key === '2') { setMode(
+                    'waterToAir'); }
+            });
+
+            canvas.addEventListener('touchstart', (e) => { e.preventDefault();
+                handleTouch(e); }, { passive: false });
+            canvas.addEventListener('touchmove', (e) => { e.preventDefault();
+                handleTouch(e); }, { passive: false });
+
+            function handleTouch(e) {
+                const touch = e.touches[0];
+                const rect = canvas.getBoundingClientRect();
+                const frac = clamp((touch.clientX - rect.left) / rect.width, 0, 1);
+                setIncidentAngle(frac * 85);
+            }
+
+            resizeCanvas();
+            setMode('airToWater');
+            setIncidentAngle(30);
+            generatePresets();
+            updateUI();
+            draw();
+        })();
+    </script>
+
+<style>
+.back-btn {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    padding: 10px 20px;
+    background: rgba(0, 150, 200, 0.3);
+    border: 1px solid #00ffff;
+    color: white;
+    font-size: 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    z-index: 9999;
+    transition: 0.3s;
+    backdrop-filter: blur(5px);
+}
+.back-btn:hover {
+    background: rgba(0, 150, 200, 0.6);
+    box-shadow: 0 0 15px #00ffff;
+}
+</style>
+<button class="back-btn" onclick="goBack()">⬅️ 返回</button>
+<script>
+function goBack() {
+    history.back();
+}
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        goBack();
+    }
+});
+</script>
+
+
+<div class="watermark">齐老师动画</div>
+<style>
+.watermark {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    font-size: 14px;
+    color: rgba(0, 255, 255, 0.3);
+    z-index: 9998;
+    pointer-events: none;
+    user-select: none;
+}
+</style>
+
+
+<script>
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+});
+</script>
+
+
+  <script>
+  // 返回主页（滚动位置已在主页点击链接时保存）
+  function saveScrollAndReturn() {
+    window.location.href = '../index.html';
+  }
+  
+  // 禁用右键菜单
+  document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+  });
+  
+  // 禁用开发者工具快捷键
+  document.addEventListener('keydown', function(e) {
+    // ESC返回主页 - 保存滚动位置
+    if (e.keyCode === 27) {
+      saveScrollAndReturn();
+      return false;
+    }
+    // F12
+    if (e.keyCode === 123) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+U
+    if (e.ctrlKey && e.keyCode === 85) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+I
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 73) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+J
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 74) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+C
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 67) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+S
+    if (e.ctrlKey && e.keyCode === 83) {
+      e.preventDefault();
+      return false;
+    }
+  });
+  
+  // 禁用选择
+  document.addEventListener('selectstart', function(e) {
+    // 允许输入框选择
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+      return true;
+    }
+    e.preventDefault();
+    return false;
+  });
+  </script>
+</body>
+</html>
