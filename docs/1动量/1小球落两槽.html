@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>双槽动量守恒演示</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: radial-gradient(circle at 30% 30%, #1a2b4c, #0b0e14 80%);
+            font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 12px;
+        }
+        .container {
+            background: rgba(10, 15, 25, 0.7);
+            backdrop-filter: blur(28px);
+            border-radius: 2.2rem;
+            padding: 1.2rem 1.6rem;
+            box-shadow: 0 30px 50px rgba(0,0,0,0.8), inset 0 0 0 1px rgba(100, 150, 255, 0.25);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+        }
+        canvas {
+            display: block;
+            width: 100%;
+            max-width: 900px;
+            border-radius: 1.6rem;
+            background: #0a0e1a;
+            box-shadow: 0 0 40px rgba(0, 160, 255, 0.2), inset 0 0 60px rgba(0,0,0,0.5);
+        }
+        .control-panel {
+            width: 100%;
+            color: #b0c8ff;
+            background: rgba(15, 20, 35, 0.8);
+            border-radius: 2rem;
+            padding: 0.8rem 1.6rem;
+            border: 1px solid rgba(70, 130, 255, 0.3);
+        }
+        .buttons {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-bottom: 0.8rem;
+        }
+        button {
+            background: linear-gradient(180deg, #3a5a9a 0%, #1a3a6a 100%);
+            border: 1px solid rgba(100, 180, 255, 0.4);
+            color: #e0eaff;
+            font-weight: bold;
+            padding: 0.5rem 1.2rem;
+            border-radius: 2rem;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        button:hover { background: linear-gradient(180deg, #4a6aaa 0%, #2a4a8a 100%); }
+        .sliders {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 1rem 2rem;
+            font-size: 0.95rem;
+        }
+        .slider-group { display: flex; align-items: center; gap: 0.5rem; }
+        input[type="range"] { accent-color: #4a90e2; width: 90px; }
+    </style>
+
+  <style>
+  body {
+    background-color: #1a2332 !important;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+  }
+  
+  .qilai-back-btn {
+    position: fixed;
+    top: 10px;
+    left: 15px;
+    z-index: 100000;
+    padding: 8px 16px;
+    background: rgba(0, 150, 200, 0.2);
+    border: 1px solid rgba(100, 180, 255, 0.5);
+    color: #8ab4f8;
+    font-size: 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.3s;
+    backdrop-filter: blur(5px);
+    font-family: "Microsoft YaHei", sans-serif;
+  }
+  
+  .qilai-back-btn:hover {
+    background: rgba(0, 150, 200, 0.4);
+    box-shadow: 0 0 15px rgba(100, 180, 255, 0.3);
+    color: #fff;
+  }
+  
+  .qilai-watermark {
+    position: fixed;
+    bottom: 15px;
+    right: 15px;
+    z-index: 99998;
+    font-size: 12px;
+    color: rgba(138, 180, 248, 0.35);
+    text-align: right;
+    line-height: 1.8;
+    pointer-events: none;
+    user-select: none;
+    font-family: "Microsoft YaHei", sans-serif;
+  }
+  
+  .qilai-watermark .title {
+    font-size: 14px;
+    font-weight: bold;
+    color: rgba(138, 180, 248, 0.45);
+    margin-bottom: 4px;
+    letter-spacing: 1px;
+  }
+  </style>
+</head>
+<body>
+  <a href="javascript:void(0);" class="qilai-back-btn" onclick="saveScrollAndReturn();">← 返回主页</a>
+  
+  <div class="qilai-watermark">
+    <div class="title">齐老师动画</div>
+    QQ 3398528250<br>
+    抖音 35320300542
+  </div>
+
+<div class="container">
+    <canvas id="canvas" width="900" height="450"></canvas>
+    <div class="control-panel">
+        <div class="buttons">
+            <button id="resetBtn">重置</button>
+            <button id="pauseBtn">暂停</button>
+            <button id="trailBtn">轨迹：开</button>
+        </div>
+        <div class="sliders">
+            <div class="slider-group">
+                <label>单槽质量 M：</label>
+                <input type="range" id="massM" min="1" max="10" step="0.5" value="4">
+                <span id="massMVal">4.0</span> kg
+            </div>
+            <div class="slider-group">
+                <label>小球质量 m：</label>
+                <input type="range" id="massm" min="0.5" max="5" step="0.1" value="1">
+                <span id="massmVal">1.0</span> kg
+            </div>
+            <div class="slider-group">
+                <label>释放高度 h：</label>
+                <input type="range" id="heightH" min="1.5" max="3" step="0.1" value="2.8">
+                <span id="heightHVal">2.8</span> m
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+(function() {
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const trailCanvas = document.createElement('canvas');
+    trailCanvas.width = canvas.width;
+    trailCanvas.height = canvas.height;
+    const trailCtx = trailCanvas.getContext('2d');
+
+    // 物理常量
+    const g = 9.8;
+    const R = 1.5; // 凹槽圆弧半径（内半径）固定1.5m
+    const BALL_RADIUS = 0.08; // 小球半径
+    const R_EFF = R - BALL_RADIUS; // 球心轨迹有效半径（球面与弧面相切）
+
+    const SCALE = 120; // 像素/米
+    const GROUND_Y = 380; // 桌面y坐标（像素）
+    const ORIGIN_X = 450; // 初始原点x坐标（像素）
+
+    // 状态枚举
+    const STATE = {
+        FREE_FALL: 'free_fall',           // 初始自由下落
+        SLIDE_RIGHT: 'slide_right',       // 沿右槽滑动
+        FREE_LEFT: 'free_left',           // 向左匀速直线
+        SLIDE_LEFT: 'slide_left',         // 沿左槽滑动
+        FREE_RIGHT: 'free_right',         // 向右匀速直线
+        PROJECTILE_LEFT: 'projectile_left',   // 从左槽飞出后的斜上抛
+        PROJECTILE_RIGHT: 'projectile_right'  // 从右槽飞出后的斜上抛
+    };
+
+    // 全局变量
+    let state = STATE.FREE_FALL;
+    let paused = false;
+    let showTrail = true;
+    let M = 4, m = 1, h0 = 2.8; // 槽质量、小球质量、初始释放高度
+
+    // 两个槽的状态
+    let leftTrough = { x: 0, v: 0 };
+    let rightTrough = { x: 0, v: 0 };
+
+    // 小球状态（球心位置）
+    let ball = { x: 0, y: 0, vx: 0, vy: 0 };
+
+    // 滑动角度与角速度（相对于槽）
+    let theta = 0;    // 右槽角度：0最低点，π/2顶端
+    let omega = 0;    // 右槽角速度
+    let phi = 0;      // 左槽角度：0最低点，π/2顶端
+    let omegaPhi = 0; // 左槽角速度
+
+    // 当前相互作用子系统的守恒量
+    let sysP = 0; // 子系统总水平动量
+    let sysE = 0; // 子系统总机械能
+
+    let trailPoints = [];
+    let lastTime = 0;
+
+    // ========== 木质纹理生成 ==========
+    function createWoodPattern() {
+        const w = 120, h = 120;
+        const tmp = document.createElement('canvas');
+        tmp.width = w; tmp.height = h;
+        const tctx = tmp.getContext('2d');
+        
+        tctx.fillStyle = '#8B5A2B';
+        tctx.fillRect(0, 0, w, h);
+        
+        const grad = tctx.createLinearGradient(0, 0, 0, h);
+        grad.addColorStop(0, 'rgba(160, 110, 60, 0.6)');
+        grad.addColorStop(0.5, 'rgba(100, 60, 25, 0.4)');
+        grad.addColorStop(1, 'rgba(70, 40, 15, 0.6)');
+        tctx.fillStyle = grad;
+        tctx.fillRect(0, 0, w, h);
+
+        tctx.strokeStyle = 'rgba(50, 25, 10, 0.3)';
+        tctx.lineWidth = 1;
+        for (let i = 0; i < 15; i++) {
+            const y = Math.random() * h;
+            tctx.beginPath();
+            tctx.moveTo(0, y);
+            for (let x = 0; x < w; x += 4) {
+                tctx.lineTo(x, y + Math.sin(x * 0.08 + i * 2) * 2.5);
+            }
+            tctx.stroke();
+        }
+        return ctx.createPattern(tmp, 'repeat');
+    }
+    const woodPattern = createWoodPattern();
+
+    // ========== 坐标转换 ==========
+    function toCanvasX(x) { return ORIGIN_X + x * SCALE; }
+    function toCanvasY(y) { return GROUND_Y - y * SCALE; }
+
+    // ========== 读取UI参数 ==========
+    function readParams() {
+        M = parseFloat(document.getElementById('massM').value);
+        m = parseFloat(document.getElementById('massm').value);
+        h0 = parseFloat(document.getElementById('heightH').value);
+        document.getElementById('massMVal').textContent = M.toFixed(1);
+        document.getElementById('massmVal').textContent = m.toFixed(1);
+        document.getElementById('heightHVal').textContent = h0.toFixed(1);
+    }
+
+    // ========== 重置模拟 ==========
+    function reset() {
+        readParams();
+        state = STATE.FREE_FALL;
+        leftTrough = { x: 0, v: 0 };
+        rightTrough = { x: 0, v: 0 };
+
+        // 小球初始位置：右槽顶端正上方，球心左移一个半径，使球面与顶端对齐
+        ball.x = R - BALL_RADIUS;
+        ball.y = h0;
+        ball.vx = 0;
+        ball.vy = 0;
+
+        theta = Math.PI / 2;
+        omega = 0;
+        phi = 0;
+        omegaPhi = 0;
+
+        trailPoints = [];
+        trailCtx.clearRect(0, 0, trailCanvas.width, trailCanvas.height);
+    }
+
+    // ========== 右槽角加速度计算（使用有效半径） ==========
+    function calcAlphaRight(theta, omega) {
+        const sinT = Math.sin(theta);
+        const cosT = Math.cos(theta);
+        const sin2T = sinT * sinT;
+        
+        const numerator = -sinT * (g * (M + m) + m * R_EFF * omega * omega * cosT);
+        const denominator = R_EFF * (M + m * sin2T);
+        
+        return numerator / denominator;
+    }
+
+    // ========== 左槽角加速度计算（使用有效半径） ==========
+    function calcAlphaLeft(phi, omegaPhi) {
+        const sinP = Math.sin(phi);
+        const cosP = Math.cos(phi);
+        const sin2P = sinP * sinP;
+        
+        const numerator = -sinP * (g * (M + m) + m * R_EFF * omegaPhi * omegaPhi * cosP);
+        const denominator = R_EFF * (M + m * sin2P);
+        
+        return numerator / denominator;
+    }
+
+    // ========== 1. 自由下落阶段 ==========
+    function stepFreeFall(dt) {
+        ball.vy -= g * dt;
+        ball.y += ball.vy * dt;
+
+        // 下落到球心高度 = R 时，球面正好与凹槽顶端相切，平滑进入轨道
+        if (ball.y <= R) {
+            ball.y = R;
+            ball.x = R - BALL_RADIUS; // 球心位置与轨道顶端球心位置一致
+            state = STATE.SLIDE_RIGHT;
+
+            // 初始化子系统守恒量
+            sysP = 0;
+            sysE = m * g * h0;
+
+            // 初始切向速度（竖直向下），转换为角速度（顺时针，θ减小）
+            const vTangent = Math.abs(ball.vy);
+            omega = -vTangent / R_EFF;
+            theta = Math.PI / 2;
+        }
+    }
+
+    // ========== 2. 沿右槽滑动阶段 ==========
+    function stepSlideRight(dt) {
+        // 二阶龙格-库塔积分
+        const alpha1 = calcAlphaRight(theta, omega);
+        const omegaMid = omega + alpha1 * dt / 2;
+        const thetaMid = theta + omega * dt / 2;
+        const alpha2 = calcAlphaRight(thetaMid, omegaMid);
+        
+        omega += alpha2 * dt;
+        theta += omega * dt;
+
+        // 由动量守恒计算槽的速度
+        const cosT = Math.cos(theta);
+        rightTrough.v = (sysP - m * R_EFF * omega * cosT) / (M + m);
+
+        // 更新位置：两个槽都更新，左槽保持匀速
+        rightTrough.x += rightTrough.v * dt;
+        leftTrough.x += leftTrough.v * dt;
+
+        // 小球球心绝对位置（使用有效半径）
+        const sinT = Math.sin(theta);
+        ball.x = rightTrough.x + R_EFF * sinT;
+        ball.y = BALL_RADIUS + R_EFF * (1 - cosT); // 底部高度 + 球心相对最低点高度
+
+        // 到达最低点，脱离槽，向左匀速
+        if (theta <= 0) {
+            theta = 0;
+            ball.y = BALL_RADIUS; // 最低点球心高度 = 小球半径
+            ball.x = rightTrough.x;
+            
+            // 脱离瞬间小球水平速度
+            ball.vx = rightTrough.v + R_EFF * omega * 1;
+            ball.vy = 0;
+            
+            state = STATE.FREE_LEFT;
+            return;
+        }
+
+        // 到达顶端且仍在上升，飞出槽，做斜上抛
+        if (theta >= Math.PI / 2 && omega > 0) {
+            theta = Math.PI / 2;
+            ball.y = R; // 顶端球心高度 = R
+            ball.x = rightTrough.x + R_EFF * Math.sin(theta); // 球心x位置
+            
+            // 飞出瞬间速度：水平速度与槽相同，竖直速度为相对切向速度
+            ball.vx = rightTrough.v;
+            ball.vy = R_EFF * omega; // 竖直向上
+            
+            state = STATE.PROJECTILE_RIGHT;
+        }
+    }
+
+    // ========== 3. 向左匀速直线阶段 ==========
+    function stepFreeLeft(dt) {
+        // 小球匀速（球心）
+        ball.x += ball.vx * dt;
+        ball.y = BALL_RADIUS;
+
+        // 两个槽各自匀速运动，互不影响
+        leftTrough.x += leftTrough.v * dt;
+        rightTrough.x += rightTrough.v * dt;
+
+        // 到达左槽最低点，滑上左槽
+        if (ball.x <= leftTrough.x) {
+            ball.x = leftTrough.x;
+            ball.y = BALL_RADIUS;
+            phi = 0;
+
+            // 接触瞬间，小球与左槽组成新的子系统，动量守恒、能量守恒
+            sysP = m * ball.vx + M * leftTrough.v;
+            sysE = 0.5 * m * ball.vx * ball.vx + 0.5 * M * leftTrough.v * leftTrough.v + m * g * BALL_RADIUS;
+
+            // 初始相对速度 → 初始角速度（上滑，φ增大，角速度为正）
+            const relV = ball.vx - leftTrough.v;
+            omegaPhi = -relV / R_EFF;
+            
+            state = STATE.SLIDE_LEFT;
+        }
+    }
+
+    // ========== 4. 沿左槽滑动阶段 ==========
+    function stepSlideLeft(dt) {
+        // 二阶龙格-库塔积分
+        const alpha1 = calcAlphaLeft(phi, omegaPhi);
+        const omegaMid = omegaPhi + alpha1 * dt / 2;
+        const phiMid = phi + omegaPhi * dt / 2;
+        const alpha2 = calcAlphaLeft(phiMid, omegaMid);
+        
+        omegaPhi += alpha2 * dt;
+        phi += omegaPhi * dt;
+
+        // 由动量守恒计算左槽速度
+        const cosP = Math.cos(phi);
+        leftTrough.v = (sysP + m * R_EFF * omegaPhi * cosP) / (M + m);
+
+        // 更新位置：两个槽都更新，右槽保持匀速
+        leftTrough.x += leftTrough.v * dt;
+        rightTrough.x += rightTrough.v * dt;
+
+        // 小球球心绝对位置（使用有效半径）
+        const sinP = Math.sin(phi);
+        ball.x = leftTrough.x - R_EFF * sinP;
+        ball.y = BALL_RADIUS + R_EFF * (1 - cosP);
+
+        // 到达最低点，脱离槽，向右匀速
+        if (phi <= 0) {
+            phi = 0;
+            ball.y = BALL_RADIUS;
+            ball.x = leftTrough.x;
+            
+            // 脱离瞬间小球水平速度
+            ball.vx = leftTrough.v - R_EFF * omegaPhi * 1;
+            ball.vy = 0;
+            
+            state = STATE.FREE_RIGHT;
+            return;
+        }
+
+        // 到达顶端且仍在上升，飞出槽，做斜上抛
+        if (phi >= Math.PI / 2 && omegaPhi > 0) {
+            phi = Math.PI / 2;
+            ball.y = R; // 顶端球心高度 = R
+            ball.x = leftTrough.x - R_EFF * Math.sin(phi);
+            
+            // 飞出瞬间速度：水平速度与槽相同，竖直速度为相对切向速度
+            ball.vx = leftTrough.v;
+            ball.vy = R_EFF * omegaPhi; // 竖直向上
+            
+            state = STATE.PROJECTILE_LEFT;
+        }
+    }
+
+    // ========== 5. 向右匀速直线阶段 ==========
+    function stepFreeRight(dt) {
+        // 小球匀速（球心）
+        ball.x += ball.vx * dt;
+        ball.y = BALL_RADIUS;
+
+        // 两个槽各自匀速运动
+        leftTrough.x += leftTrough.v * dt;
+        rightTrough.x += rightTrough.v * dt;
+
+        // 追上右槽最低点，滑上右槽
+        if (ball.x >= rightTrough.x) {
+            ball.x = rightTrough.x;
+            ball.y = BALL_RADIUS;
+            theta = 0;
+
+            // 右槽子系统守恒量
+            sysP = m * ball.vx + M * rightTrough.v;
+            sysE = 0.5 * m * ball.vx * ball.vx + 0.5 * M * rightTrough.v * rightTrough.v + m * g * BALL_RADIUS;
+
+            // 初始相对速度 → 初始角速度（上滑，θ增大）
+            const relV = ball.vx - rightTrough.v;
+            omega = relV / R_EFF;
+            
+            state = STATE.SLIDE_RIGHT;
+        }
+    }
+
+    // ========== 6. 从左槽飞出后的斜上抛阶段 ==========
+    function stepProjectileLeft(dt) {
+        // 小球只受重力
+        ball.vy -= g * dt;
+        ball.y += ball.vy * dt;
+        ball.x += ball.vx * dt;
+
+        // 两个槽都保持匀速运动
+        leftTrough.x += leftTrough.v * dt;
+        rightTrough.x += rightTrough.v * dt;
+
+        // 下落回到槽顶端球心高度，落回左槽
+        if (ball.y <= R && ball.vy < 0) {
+            ball.y = R;
+            phi = Math.PI / 2;
+            
+            // 落回时的相对速度（竖直向下）→ 角速度（下滑，φ减小，为负）
+            const relVy = ball.vy; // 向下为负
+            omegaPhi = relVy / R_EFF;
+            
+            // 强制对齐水平位置（理论上应相等，消除数值误差）
+            ball.x = leftTrough.x - R_EFF;
+            
+            // 重新计算子系统守恒量
+            sysP = m * ball.vx + M * leftTrough.v;
+            sysE = 0.5 * m * (ball.vx * ball.vx + ball.vy * ball.vy) + 0.5 * M * leftTrough.v * leftTrough.v + m * g * ball.y;
+            
+            state = STATE.SLIDE_LEFT;
+        }
+    }
+
+    // ========== 7. 从右槽飞出后的斜上抛阶段 ==========
+    function stepProjectileRight(dt) {
+        // 小球只受重力
+        ball.vy -= g * dt;
+        ball.y += ball.vy * dt;
+        ball.x += ball.vx * dt;
+
+        // 两个槽都保持匀速运动
+        leftTrough.x += leftTrough.v * dt;
+        rightTrough.x += rightTrough.v * dt;
+
+        // 下落回到槽顶端球心高度，落回右槽
+        if (ball.y <= R && ball.vy < 0) {
+            ball.y = R;
+            theta = Math.PI / 2;
+            
+            // 落回时的相对速度（竖直向下）→ 角速度（下滑，θ减小，为负）
+            const relVy = ball.vy; // 向下为负
+            omega = relVy / R_EFF;
+            
+            // 强制对齐水平位置
+            ball.x = rightTrough.x + R_EFF;
+            
+            // 重新计算子系统守恒量
+            sysP = m * ball.vx + M * rightTrough.v;
+            sysE = 0.5 * m * (ball.vx * ball.vx + ball.vy * ball.vy) + 0.5 * M * rightTrough.v * rightTrough.v + m * g * ball.y;
+            
+            state = STATE.SLIDE_RIGHT;
+        }
+    }
+
+    // ========== 总更新 ==========
+    function update(dt) {
+        if (paused) return;
+
+        // 细分步长，保证数值稳定性
+        const maxDt = 0.0008;
+        let remaining = dt;
+        while (remaining > 0) {
+            const step = Math.min(remaining, maxDt);
+            switch (state) {
+                case STATE.FREE_FALL:        stepFreeFall(step); break;
+                case STATE.SLIDE_RIGHT:       stepSlideRight(step); break;
+                case STATE.FREE_LEFT:         stepFreeLeft(step); break;
+                case STATE.SLIDE_LEFT:        stepSlideLeft(step); break;
+                case STATE.FREE_RIGHT:        stepFreeRight(step); break;
+                case STATE.PROJECTILE_LEFT:   stepProjectileLeft(step); break;
+                case STATE.PROJECTILE_RIGHT:  stepProjectileRight(step); break;
+            }
+            remaining -= step;
+        }
+
+        // 添加轨迹点（球心轨迹）
+        if (showTrail) {
+            trailPoints.push({ x: ball.x, y: ball.y });
+            if (trailPoints.length > 400) {
+                if (trailPoints.length >= 2) {
+                    trailCtx.beginPath();
+                    trailCtx.strokeStyle = '#ff5050';
+                    trailCtx.lineWidth = 2;
+                    trailCtx.lineCap = 'round';
+                    trailCtx.moveTo(toCanvasX(trailPoints[0].x), toCanvasY(trailPoints[0].y));
+                    for (let i = 1; i < trailPoints.length; i++) {
+                        trailCtx.lineTo(toCanvasX(trailPoints[i].x), toCanvasY(trailPoints[i].y));
+                    }
+                    trailCtx.stroke();
+                }
+                trailPoints = [trailPoints[trailPoints.length - 1]];
+            }
+        }
+    }
+
+    // ========== 绘制函数 ==========
+    function drawTrough(x, side) {
+        const cx = toCanvasX(x);
+        const cy = toCanvasY(R); // 凹槽圆心y坐标（凹槽内半径为R）
+        const rPx = R * SCALE;   // 凹槽内半径（像素）
+
+        ctx.save();
+        ctx.beginPath();
+
+        if (side === 'right') {
+            // 右四分之一圆弧槽：实体在右下方，内壁圆弧从顶端（右）顺时针到最低点（下）
+            ctx.moveTo(cx, cy + rPx);       // 最低点
+            ctx.lineTo(cx + rPx, cy + rPx); // 右下角
+            ctx.lineTo(cx + rPx, cy);       // 顶端
+            ctx.arc(cx, cy, rPx, 0, Math.PI / 2, false); // 内壁圆弧：顺时针从0°(右)到90°(下)
+        } else {
+            // 左四分之一圆弧槽：实体在左下方，内壁圆弧从顶端（左）逆时针到最低点（下）
+            ctx.moveTo(cx, cy + rPx);       // 最低点
+            ctx.lineTo(cx - rPx, cy + rPx); // 左下角
+            ctx.lineTo(cx - rPx, cy);       // 顶端
+            ctx.arc(cx, cy, rPx, Math.PI, Math.PI / 2, true); // 内壁圆弧：逆时针从180°(左)到90°(下)
+        }
+
+        ctx.closePath();
+        ctx.fillStyle = woodPattern;
+        ctx.fill();
+
+        // 外边缘描边
+        ctx.strokeStyle = '#5C3A1A';
+        ctx.lineWidth = 2.5;
+        ctx.stroke();
+
+        // 内壁高光描边
+        ctx.beginPath();
+        if (side === 'right') {
+            ctx.arc(cx, cy, rPx, 0, Math.PI / 2, false);
+        } else {
+            ctx.arc(cx, cy, rPx, Math.PI, Math.PI / 2, true);
+        }
+        ctx.strokeStyle = '#3D2410';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+
+        ctx.restore();
+    }
+
+    function drawBall() {
+        const bx = toCanvasX(ball.x);
+        const by = toCanvasY(ball.y);
+        const br = BALL_RADIUS * SCALE;
+
+        const grad = ctx.createRadialGradient(bx - br*0.3, by - br*0.3, br*0.1, bx, by, br);
+        grad.addColorStop(0, '#ffffff');
+        grad.addColorStop(0.3, '#c0c0c0');
+        grad.addColorStop(0.7, '#707070');
+        grad.addColorStop(1, '#202020');
+
+        ctx.beginPath();
+        ctx.arc(bx, by, br, 0, Math.PI * 2);
+        ctx.fillStyle = grad;
+        ctx.fill();
+        ctx.strokeStyle = '#000';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+    }
+
+    function drawGround() {
+        ctx.fillStyle = '#1e2430';
+        ctx.fillRect(0, GROUND_Y, canvas.width, canvas.height - GROUND_Y);
+        
+        ctx.strokeStyle = '#4a6080';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([8, 6]);
+        ctx.beginPath();
+        ctx.moveTo(0, GROUND_Y);
+        ctx.lineTo(canvas.width, GROUND_Y);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        ctx.fillStyle = '#2a3340';
+        ctx.fillRect(0, GROUND_Y, canvas.width, 3);
+    }
+
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = '#0a0e1a';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        drawGround();
+
+        // 绘制两个槽（凹槽半径R）
+        drawTrough(leftTrough.x, 'left');
+        drawTrough(rightTrough.x, 'right');
+
+        // 绘制轨迹
+        if (showTrail) {
+            ctx.drawImage(trailCanvas, 0, 0);
+            if (trailPoints.length > 1) {
+                ctx.beginPath();
+                ctx.strokeStyle = '#ff5050';
+                ctx.lineWidth = 2;
+                ctx.lineCap = 'round';
+                ctx.moveTo(toCanvasX(trailPoints[0].x), toCanvasY(trailPoints[0].y));
+                for (let i = 1; i < trailPoints.length; i++) {
+                    ctx.lineTo(toCanvasX(trailPoints[i].x), toCanvasY(trailPoints[i].y));
+                }
+                ctx.stroke();
+            }
+        }
+
+        drawBall();
+    }
+
+    // ========== 动画主循环 ==========
+    function loop(timestamp) {
+        if (!lastTime) lastTime = timestamp;
+        const dt = Math.min((timestamp - lastTime) / 1000, 0.05);
+        lastTime = timestamp;
+
+        update(dt);
+        draw();
+        requestAnimationFrame(loop);
+    }
+
+    // ========== 事件绑定 ==========
+    document.getElementById('resetBtn').addEventListener('click', reset);
+    document.getElementById('pauseBtn').addEventListener('click', () => {
+        paused = !paused;
+        document.getElementById('pauseBtn').textContent = paused ? '继续' : '暂停';
+    });
+    document.getElementById('trailBtn').addEventListener('click', () => {
+        showTrail = !showTrail;
+        document.getElementById('trailBtn').textContent = showTrail ? '轨迹：开' : '轨迹：关';
+        if (!showTrail) {
+            trailPoints = [];
+            trailCtx.clearRect(0, 0, trailCanvas.width, trailCanvas.height);
+        }
+    });
+
+    ['massM', 'massm', 'heightH'].forEach(id => {
+        document.getElementById(id).addEventListener('input', () => {
+            readParams();
+        });
+        document.getElementById(id).addEventListener('change', reset);
+    });
+
+    // 初始化启动
+    reset();
+    requestAnimationFrame(loop);
+})();
+</script>
+
+  <script>
+  // 返回主页（滚动位置已在主页点击链接时保存）
+  function saveScrollAndReturn() {
+    window.location.href = '../index.html';
+  }
+  
+  // 禁用右键菜单
+  document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+  });
+  
+  // 禁用开发者工具快捷键
+  document.addEventListener('keydown', function(e) {
+    // ESC返回主页 - 保存滚动位置
+    if (e.keyCode === 27) {
+      saveScrollAndReturn();
+      return false;
+    }
+    // F12
+    if (e.keyCode === 123) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+U
+    if (e.ctrlKey && e.keyCode === 85) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+I
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 73) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+J
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 74) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+C
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 67) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+S
+    if (e.ctrlKey && e.keyCode === 83) {
+      e.preventDefault();
+      return false;
+    }
+  });
+  
+  // 禁用选择
+  document.addEventListener('selectstart', function(e) {
+    // 允许输入框选择
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+      return true;
+    }
+    e.preventDefault();
+    return false;
+  });
+  </script>
+</body>
+</html>
