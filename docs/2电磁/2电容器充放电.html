@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>高中物理 - 电容器充放电动画（课本电路图 + i-t/v-t图像）</title>
+    <style>
+        :root { --bg: #f9f7f3; --panel-bg: #ffffff; --text: #333; --accent: #c0392b; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: linear-gradient(160deg, #ede8df 0%, #f4f1ea 35%, #e8e3d9 100%);
+            display: flex; justify-content: center; align-items: center; min-height: 100vh;
+            font-family: 'PingFang SC', 'Microsoft YaHei', 'Noto Sans SC', sans-serif; padding: 16px;
+        }
+        .main-container {
+            background: #ffffff; border-radius: 18px; box-shadow: 0 10px 36px rgba(0,0,0,0.10);
+            padding: 20px 24px 16px; max-width: 920px; width: 100%; display: flex;
+            flex-direction: column; align-items: center; gap: 12px;
+        }
+        .title-area { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; justify-content: center; }
+        .title-area h1 { font-size: 1.35rem; font-weight: 700; color: #2c3e50; }
+        .badge { display: inline-block; padding: 5px 15px; border-radius: 20px; font-size: 0.78rem; font-weight: 700; }
+        .badge-ready { background: #fef9e7; color: #8b6914; border: 1.5px solid #f0d060; }
+        .badge-charging { background: #eaf7ea; color: #27ae60; border: 1.5px solid #a3d9a3; }
+        .badge-discharging { background: #fdecea; color: #c0392b; border: 1.5px solid #f5b7b1; }
+        canvas { display: block; width: 100%; height: auto; border-radius: 14px; background: #fefefc; border: 2px solid #e6e2da; }
+        .info-row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: center; font-size: 0.85rem; }
+        .info-item { background: #fafaf7; border-radius: 9px; padding: 7px 14px; border: 1px solid #e8e4dc; white-space: nowrap; }
+        .info-value { color: #2c3e50; font-weight: 700; font-size: 0.95rem; }
+        .info-label { font-size: 0.73rem; color: #888; }
+        .controls { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: center; }
+        .btn { padding: 10px 20px; border: none; border-radius: 26px; font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: all 0.25s; }
+        .btn:active { transform: scale(0.95); }
+        .btn-charge { background: #4a6fa5; color: #fff; }
+        .btn-charge:hover { background: #3a5a8c; }
+        .btn-discharge { background: #c0392b; color: #fff; }
+        .btn-discharge:hover { background: #a93226; }
+        .btn-auto { background: #fff; color: #555; border: 2px solid #d5cfc6; }
+        .btn-auto.active { background: #fef9e7; border-color: #e0b830; color: #7a5d10; animation: pulse-auto 2s infinite; }
+        @keyframes pulse-auto { 0%,100%{ box-shadow: 0 3px 14px rgba(200,150,20,0.25); } 50%{ box-shadow: 0 6px 24px rgba(190,130,10,0.45); } }
+        .btn-reset { background: #fff; color: #666; border: 2px solid #e0dcd5; }
+        .legend-row { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; justify-content: center; font-size: 0.78rem; color: #777; }
+        .legend-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 5px; }
+        .legend-dot.red { background: #e74c3c; box-shadow: 0 0 6px rgba(231,76,60,0.55); }
+    </style>
+
+  <style>
+  body {
+    background-color: #1a2332 !important;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+  }
+  
+  .qilai-back-btn {
+    position: fixed;
+    top: 10px;
+    left: 15px;
+    z-index: 100000;
+    padding: 8px 16px;
+    background: rgba(0, 150, 200, 0.2);
+    border: 1px solid rgba(100, 180, 255, 0.5);
+    color: #8ab4f8;
+    font-size: 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.3s;
+    backdrop-filter: blur(5px);
+    font-family: "Microsoft YaHei", sans-serif;
+  }
+  
+  .qilai-back-btn:hover {
+    background: rgba(0, 150, 200, 0.4);
+    box-shadow: 0 0 15px rgba(100, 180, 255, 0.3);
+    color: #fff;
+  }
+  
+  .qilai-watermark {
+    position: fixed;
+    bottom: 15px;
+    right: 15px;
+    z-index: 99998;
+    font-size: 12px;
+    color: rgba(138, 180, 248, 0.35);
+    text-align: right;
+    line-height: 1.8;
+    pointer-events: none;
+    user-select: none;
+    font-family: "Microsoft YaHei", sans-serif;
+  }
+  
+  .qilai-watermark .title {
+    font-size: 14px;
+    font-weight: bold;
+    color: rgba(138, 180, 248, 0.45);
+    margin-bottom: 4px;
+    letter-spacing: 1px;
+  }
+  </style>
+</head>
+<body>
+  <a href="javascript:void(0);" class="qilai-back-btn" onclick="saveScrollAndReturn();">← 返回主页</a>
+  
+  <div class="qilai-watermark">
+    <div class="title">齐老师动画</div>
+    QQ 3398528250<br>
+    抖音 35320300542
+  </div>
+
+<div class="main-container">
+    <div class="title-area"><h1>🔋 电容器充放电</h1><span id="statusBadge" class="badge badge-ready">就绪</span></div>
+    <canvas id="mainCanvas" width="850" height="660"></canvas>
+    <div class="info-row">
+        <span class="info-item"><span class="info-label">极板电压</span><span class="info-value" id="voltageDisplay">0.00 V</span></span>
+        <span class="info-item"><span class="info-label">电荷量 Q</span><span class="info-value" id="chargeDisplay">0.00 μC</span></span>
+        <span class="info-item"><span class="info-label">电流 I</span><span class="info-value" id="currentDisplay">0.00 mA</span></span>
+    </div>
+    <div class="controls">
+        <button class="btn btn-charge" id="btnCharge">⚡ 充电</button>
+        <button class="btn btn-discharge" id="btnDischarge">🔌 放电</button>
+        <button class="btn btn-auto" id="btnAuto">🔄 自动循环</button>
+        <button class="btn btn-reset" id="btnReset">↺ 重置</button>
+    </div>
+    <div class="legend-row">
+        <span><span class="legend-dot red"></span> 红色粒子（带白色横线）= 电子(e⁻)</span>
+        <span>左 i‑t | 右 v‑t</span>
+    </div>
+</div>
+<script>
+    (function() {
+        const canvas = document.getElementById('mainCanvas');
+        const ctx = canvas.getContext('2d');
+        const W = canvas.width, H = canvas.height;
+        const statusBadge = document.getElementById('statusBadge');
+        const voltageDisplay = document.getElementById('voltageDisplay');
+        const chargeDisplay = document.getElementById('chargeDisplay');
+        const currentDisplay = document.getElementById('currentDisplay');
+        const btnCharge = document.getElementById('btnCharge');
+        const btnDischarge = document.getElementById('btnDischarge');
+        const btnAuto = document.getElementById('btnAuto');
+        const btnReset = document.getElementById('btnReset');
+
+        const V_BATTERY = 10.0, CAPACITANCE = 100, RESISTANCE_CHARGE = 8000, RESISTANCE_DISCHARGE = 16000;
+        const Q_MAX = CAPACITANCE * V_BATTERY;
+        let capacitorCharge = 0, mode = 'idle', autoCycle = false, autoCycleTimer = null;
+        let lastTime = performance.now(), smoothSwitchAngle = 0, targetSwitchAngle = 0;
+        let iTHistory = [], vTHistory = [], chartTimeElapsed = 0;
+        const chartMaxTime = 9;
+        const CHART_Y_TOP = 420, CHART_Y_BOTTOM = 645;
+        const CHART_I_LEFT = 60, CHART_I_RIGHT = 430;
+        const CHART_V_LEFT = 465, CHART_V_RIGHT = 835;
+
+        // 电路坐标
+        const plateCX = 610, plateWidth = 150, plateHeight = 14;
+        const topPlateY = 118, bottomPlateY = 348;
+        const topPlateCY = topPlateY + plateHeight/2, bottomPlateCY = bottomPlateY + plateHeight/2;
+        const plateLeftX = plateCX - plateWidth/2, plateRightX = plateCX + plateWidth/2;
+        const batteryCX = 135, batteryTopY = topPlateCY, batteryBottomY = bottomPlateCY;
+        const batteryMidY = (batteryTopY + batteryBottomY)/2;
+        const switchPivotX = 375, switchPivotY = topPlateCY;
+        const switchTopContactX = 375, switchTopContactY = 76;
+        const switchBottomContactX = 375, switchBottomContactY = 200;
+        // 电阻上移：下端从355改到310，上端相应调整
+        const resistorCX = 375;
+        const resistorTopY = 180;    // 原225-45
+        const resistorBottomY = 310; // 原355-45，不再接触底部导线
+        const topWireY = topPlateCY, bottomWireY = bottomPlateCY;
+        const ammeterX = (resistorCX + plateLeftX) / 2, ammeterY = bottomWireY;
+        const voltmeterX = plateLeftX - 30, voltmeterCY = (topWireY + bottomWireY) / 2;
+
+        function buildPath(points) {
+            const segments = []; let cum = 0;
+            for (let i = 0; i < points.length - 1; i++) {
+                const dx = points[i+1].x - points[i].x, dy = points[i+1].y - points[i].y;
+                const len = Math.sqrt(dx*dx+dy*dy);
+                segments.push({ startIdx: i, endIdx: i+1, dx, dy, length: len, cumulativeStart: cum });
+                cum += len;
+            }
+            return { points, segments, totalLength: cum };
+        }
+        function getPositionOnPath(path, dist) {
+            if (dist <= 0) return { x: path.points[0].x, y: path.points[0].y };
+            if (dist >= path.totalLength) return { x: path.points[path.points.length-1].x, y: path.points[path.points.length-1].y };
+            for (const seg of path.segments) {
+                if (dist >= seg.cumulativeStart && dist < seg.cumulativeStart + seg.length) {
+                    const t = (dist - seg.cumulativeStart) / seg.length;
+                    return { x: path.points[seg.startIdx].x + seg.dx*t, y: path.points[seg.startIdx].y + seg.dy*t };
+                }
+            }
+            return { x: path.points[path.points.length-1].x, y: path.points[path.points.length-1].y };
+        }
+
+        const chargePathA = buildPath([
+            { x: batteryCX, y: batteryBottomY }, { x: plateLeftX, y: bottomWireY }, { x: plateRightX, y: bottomWireY }
+        ]);
+        const chargePathB = buildPath([
+            { x: plateRightX, y: topWireY }, { x: plateLeftX, y: topWireY }, { x: switchPivotX, y: switchPivotY },
+            { x: switchTopContactX, y: switchTopContactY }, { x: batteryCX, y: batteryTopY }
+        ]);
+        // 放电路径更新：电阻下端在310，需要经过垂直引线到底部导线
+        const dischargePath = buildPath([
+            { x: plateRightX, y: bottomWireY }, { x: plateLeftX, y: bottomWireY },
+            { x: ammeterX + 14, y: bottomWireY }, { x: ammeterX - 14, y: bottomWireY },
+            { x: resistorCX, y: bottomWireY }, { x: resistorCX, y: resistorBottomY },
+            { x: resistorCX, y: resistorTopY }, { x: switchBottomContactX, y: switchBottomContactY },
+            { x: switchPivotX, y: switchPivotY }, { x: plateLeftX, y: topWireY }, { x: plateRightX, y: topWireY }
+        ]);
+
+        const PARTICLES_MAX = 90;
+        let particles = [];
+        function createParticle(path, startDist, speed) { return { path, dist: startDist, speed, alive: true }; }
+        function updateParticles(dt, currentMA) {
+            const absCurrent = Math.abs(currentMA), maxCurrentMA = 2.0, baseSpeed = 55;
+            const speedFactor = Math.min(absCurrent/(maxCurrentMA*0.6), 2.2);
+            const particleSpeed = baseSpeed * Math.max(speedFactor, 0.06);
+            const desiredTotal = Math.floor(PARTICLES_MAX * Math.min(absCurrent/maxCurrentMA, 1.0));
+            const eff = Math.max(desiredTotal, 1);
+            for (const p of particles) {
+                if (!p.alive) continue;
+                p.speed = particleSpeed * (0.82 + Math.random()*0.36);
+                p.dist += p.speed * dt;
+                if (p.dist >= p.path.totalLength) p.dist %= p.path.totalLength;
+                if (p.dist < 0) p.dist += p.path.totalLength;
+            }
+            while (particles.length > eff+6) particles.shift();
+            while (particles.length < eff) {
+                const path = (mode==='charging') ? (Math.random()<0.5?chargePathA:chargePathB) : dischargePath;
+                particles.push(createParticle(path, Math.random()*path.totalLength, particleSpeed));
+            }
+            if (absCurrent<0.015 && particles.length>1) particles.pop();
+        }
+        function clearParticles() { particles = []; }
+        function seedParticles() {
+            clearParticles(); let desired = 2;
+            if (mode==='charging') {
+                const initI = V_BATTERY/RESISTANCE_CHARGE*1000;
+                desired = Math.floor(PARTICLES_MAX*Math.min(initI/2.0,0.7));
+                for (let i=0;i<desired;i++) { const p = Math.random()<0.5?chargePathA:chargePathB; particles.push(createParticle(p, Math.random()*p.totalLength, 55)); }
+            } else if (mode==='discharging') {
+                const vCap = capacitorCharge/CAPACITANCE, initI = vCap/RESISTANCE_DISCHARGE*1000;
+                desired = Math.floor(PARTICLES_MAX*Math.min(Math.abs(initI)/2.0,0.7));
+                for (let i=0;i<desired;i++) particles.push(createParticle(dischargePath, Math.random()*dischargePath.totalLength, 55));
+            }
+        }
+
+        function updatePhysics(dt) {
+            let currentMA = 0, recordData = false;
+            if (mode==='charging') {
+                const R=RESISTANCE_CHARGE, C=CAPACITANCE*1e-6, Qc=capacitorCharge*1e-6, Vc=Qc/C;
+                const I = (V_BATTERY-Vc)/R; capacitorCharge += I*dt*1e6;
+                if (capacitorCharge >= Q_MAX*0.998) { capacitorCharge=Q_MAX; if(autoCycle) scheduleDischarge(); } else recordData = true;
+                currentMA = I*1000;
+            } else if (mode==='discharging') {
+                const R=RESISTANCE_DISCHARGE, C=CAPACITANCE*1e-6, Qc=capacitorCharge*1e-6, Vc=Qc/C;
+                const I = Vc/R; capacitorCharge -= I*dt*1e6;
+                if (capacitorCharge <= Q_MAX*0.002) { capacitorCharge=0; if(autoCycle) scheduleCharge(); } else recordData = true;
+                currentMA = -I*1000;
+            }
+            updateParticles(dt, currentMA);
+            if (Math.abs(smoothSwitchAngle-targetSwitchAngle)>0.01) {
+                smoothSwitchAngle += (targetSwitchAngle-smoothSwitchAngle)*Math.min(8*dt,1);
+                if (Math.abs(smoothSwitchAngle-targetSwitchAngle)<0.015) smoothSwitchAngle=targetSwitchAngle;
+            }
+            if (recordData) {
+                chartTimeElapsed += dt; const voltage = capacitorCharge/CAPACITANCE;
+                iTHistory.push({ t:chartTimeElapsed, i:currentMA }); vTHistory.push({ t:chartTimeElapsed, v:voltage });
+                while (iTHistory.length>0 && iTHistory[0].t < chartTimeElapsed-chartMaxTime) { iTHistory.shift(); vTHistory.shift(); }
+            }
+            return currentMA;
+        }
+        function scheduleDischarge() { if(autoCycleTimer)clearTimeout(autoCycleTimer); autoCycleTimer=setTimeout(()=>{ if(autoCycle&&mode==='charging'&&capacitorCharge>=Q_MAX*0.995) switchToDischarge(); },400); }
+        function scheduleCharge() { if(autoCycleTimer)clearTimeout(autoCycleTimer); autoCycleTimer=setTimeout(()=>{ if(autoCycle&&mode==='discharging'&&capacitorCharge<=Q_MAX*0.005) switchToCharge(); },400); }
+        function switchToCharge() { mode='charging'; targetSwitchAngle=-1; clearParticles(); seedParticles(); chartTimeElapsed=0; iTHistory=[]; vTHistory=[]; updateUIState(); }
+        function switchToDischarge() { mode='discharging'; targetSwitchAngle=1; clearParticles(); seedParticles(); chartTimeElapsed=0; iTHistory=[]; vTHistory=[]; updateUIState(); }
+        function resetAll() { mode='idle'; capacitorCharge=0; clearParticles(); autoCycle=false; targetSwitchAngle=0; smoothSwitchAngle=0; if(autoCycleTimer)clearTimeout(autoCycleTimer); autoCycleTimer=null; btnAuto.classList.remove('active'); btnAuto.textContent='🔄 自动循环'; chartTimeElapsed=0; iTHistory=[]; vTHistory=[]; updateUIState(); }
+        function updateUIState() {
+            const v = capacitorCharge/CAPACITANCE; voltageDisplay.textContent = v.toFixed(2)+' V';
+            chargeDisplay.textContent = capacitorCharge.toFixed(2)+' μC'; let cur=0;
+            if (mode==='charging') { const Qc=capacitorCharge*1e-6, Vc=Qc/(CAPACITANCE*1e-6); cur=(V_BATTERY-Vc)/RESISTANCE_CHARGE*1000; }
+            else if (mode==='discharging') { const Qc=capacitorCharge*1e-6, Vc=Qc/(CAPACITANCE*1e-6); cur=-(Vc/RESISTANCE_DISCHARGE*1000); }
+            currentDisplay.textContent = cur.toFixed(3)+' mA';
+            statusBadge.classList.remove('badge-charging','badge-discharging','badge-ready');
+            if (mode==='charging') { statusBadge.classList.add('badge-charging'); statusBadge.textContent=capacitorCharge>=Q_MAX*0.998?'已充满 ✓':'充电中…'; }
+            else if (mode==='discharging') { statusBadge.classList.add('badge-discharging'); statusBadge.textContent=capacitorCharge<=Q_MAX*0.002?'已放完':'放电中…'; }
+            else { statusBadge.classList.add('badge-ready'); statusBadge.textContent='就绪'; }
+        }
+
+        function drawWire(x1,y1,x2,y2,color='#3d3d3d',width=5.2) { ctx.strokeStyle=color; ctx.lineWidth=width; ctx.lineCap='round'; ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke(); }
+        function drawBattery() {
+            const cx=batteryCX, top=batteryTopY, bottom=batteryBottomY;
+            ctx.fillStyle='#fcfcf9'; ctx.strokeStyle='#4a4a4a'; ctx.lineWidth=3;
+            ctx.beginPath(); ctx.roundRect(cx-28,top-16,56,bottom-top+32,8); ctx.fill(); ctx.stroke();
+            ctx.strokeStyle='#b33a2a'; ctx.lineWidth=4.5; ctx.beginPath(); ctx.moveTo(cx-17,top+4); ctx.lineTo(cx+17,top+4); ctx.stroke();
+            ctx.strokeStyle='#2c3e50'; ctx.beginPath(); ctx.moveTo(cx-11,bottom-4); ctx.lineTo(cx+11,bottom-4); ctx.stroke();
+            ctx.fillStyle='#b33a2a'; ctx.font='bold 13px sans-serif'; ctx.textAlign='center'; ctx.fillText('+',cx,top-22);
+            ctx.fillStyle='#2c3e50'; ctx.fillText('−',cx,bottom+26);
+            ctx.fillStyle='#444'; ctx.font='12px sans-serif'; ctx.fillText('E=10V',cx,batteryMidY+5);
+        }
+        function drawResistor() {
+            const cx=resistorCX, top=resistorTopY, bottom=resistorBottomY, boxWidth=36, boxHeight=bottom-top;
+            ctx.fillStyle='#fdfaf5'; ctx.strokeStyle='#6b4f1a'; ctx.lineWidth=3;
+            ctx.beginPath(); ctx.roundRect(cx-boxWidth/2,top,boxWidth,boxHeight,4); ctx.fill(); ctx.stroke();
+            ctx.fillStyle='#6b4f1a'; ctx.font='11px sans-serif'; ctx.textAlign='center'; ctx.fillText('R=16kΩ',cx,bottom+18);
+        }
+        function drawSwitch() {
+            const px=switchPivotX, py=switchPivotY, tcX=switchTopContactX, tcY=switchTopContactY, bcX=switchBottomContactX, bcY=switchBottomContactY;
+            ctx.fillStyle='#444'; ctx.beginPath(); ctx.arc(px,py,7,0,Math.PI*2); ctx.fill(); ctx.strokeStyle='#2a2a2a'; ctx.lineWidth=2.5; ctx.stroke();
+            const angle=smoothSwitchAngle; let tipX, tipY;
+            if(angle<=-0.01){ const p=Math.min(1,Math.abs(angle)); tipX=px+(tcX-px)*p; tipY=py+(tcY-py)*p; }
+            else if(angle>=0.01){ const p=Math.min(1,angle); tipX=px+(bcX-px)*p; tipY=py+(bcY-py)*p; }
+            else { tipX=px+44; tipY=py; }
+            ctx.strokeStyle='#4a4a4a'; ctx.lineWidth=4.5; ctx.beginPath(); ctx.moveTo(px,py); ctx.lineTo(tipX,tipY); ctx.stroke();
+            ctx.fillStyle='#555'; ctx.beginPath(); ctx.arc(tipX,tipY,5,0,Math.PI*2); ctx.fill();
+            const isCharging=angle<-0.25, isDischarging=angle>0.25;
+            ctx.fillStyle=isCharging?'#4CAF50':'#c0c0c0'; ctx.beginPath(); ctx.arc(tcX,tcY,6.5,0,Math.PI*2); ctx.fill(); ctx.strokeStyle='#5a5a5a'; ctx.lineWidth=2; ctx.stroke();
+            ctx.fillStyle='#fff'; ctx.font='bold 9px sans-serif'; ctx.textAlign='center'; ctx.fillText('充',tcX,tcY-15);
+            ctx.fillStyle=isDischarging?'#e74c3c':'#c0c0c0'; ctx.beginPath(); ctx.arc(bcX,bcY,6.5,0,Math.PI*2); ctx.fill(); ctx.stroke();
+            ctx.fillStyle='#fff'; ctx.fillText('放',bcX,bcY+18);
+            ctx.fillStyle='#444'; ctx.font='11px sans-serif'; ctx.fillText('单刀双掷',px,py-22);
+        }
+        function drawCapacitorPlates() {
+            const gradTop=ctx.createLinearGradient(0,topPlateY,0,topPlateY+plateHeight); gradTop.addColorStop(0,'#d8d3ca'); gradTop.addColorStop(0.3,'#f6f4f0'); gradTop.addColorStop(0.5,'#ece8e0'); gradTop.addColorStop(0.7,'#f6f4f0'); gradTop.addColorStop(1,'#c8c2b8');
+            ctx.fillStyle=gradTop; ctx.strokeStyle='#8a857d'; ctx.lineWidth=2.2; ctx.beginPath(); ctx.roundRect(plateLeftX,topPlateY,plateWidth,plateHeight,3); ctx.fill(); ctx.stroke();
+            const gradBottom=ctx.createLinearGradient(0,bottomPlateY,0,bottomPlateY+plateHeight); gradBottom.addColorStop(0,'#d8d3ca'); gradBottom.addColorStop(0.3,'#f6f4f0'); gradBottom.addColorStop(0.5,'#ece8e0'); gradBottom.addColorStop(0.7,'#f6f4f0'); gradBottom.addColorStop(1,'#c8c2b8');
+            ctx.fillStyle=gradBottom; ctx.beginPath(); ctx.roundRect(plateLeftX,bottomPlateY,plateWidth,plateHeight,3); ctx.fill(); ctx.stroke();
+            ctx.fillStyle='#555'; ctx.font='bold 13px sans-serif'; ctx.textAlign='center'; ctx.fillText('上极板 (+)',plateCX,topPlateY-11); ctx.fillText('下极板 (−)',plateCX,bottomPlateY+plateHeight+20);
+        }
+        function drawChargeSymbols() {
+            const ratio=Math.min(Math.abs(capacitorCharge)/Q_MAX,1.0); if(ratio<0.03) return;
+            const maxSym=10, num=Math.floor(ratio*maxSym), symW=plateWidth/(maxSym+1), startX=plateLeftX+symW;
+            ctx.font='bold 14px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+            ctx.fillStyle='#c0392b'; for(let i=0;i<num;i++) ctx.fillText('+',startX+i*symW,topPlateCY);
+            ctx.fillStyle='#2471a3'; for(let i=0;i<num;i++) ctx.fillText('−',startX+i*symW,bottomPlateCY);
+        }
+        function drawElectricField() {
+            const ratio=Math.min(Math.abs(capacitorCharge)/Q_MAX,1.0); if(ratio<0.03) return;
+            const alpha=0.22+ratio*0.7, numArrows=5, spacing=plateWidth/(numArrows+1), fTop=topPlateY+plateHeight+10, fBottom=bottomPlateY-10, head=10;
+            ctx.strokeStyle=`rgba(110,50,150,${alpha})`; ctx.fillStyle=`rgba(110,50,150,${alpha})`; ctx.lineWidth=1.8; ctx.setLineDash([5,5]);
+            for(let i=0;i<numArrows;i++){ const ax=plateLeftX+spacing*(i+1); ctx.beginPath(); ctx.moveTo(ax,fTop); ctx.lineTo(ax,fBottom-head); ctx.stroke(); ctx.setLineDash([]); ctx.beginPath(); ctx.moveTo(ax,fBottom); ctx.lineTo(ax-head/2,fBottom-head); ctx.lineTo(ax+head/2,fBottom-head); ctx.closePath(); ctx.fill(); ctx.setLineDash([5,5]); }
+            ctx.setLineDash([]);
+            if(ratio>0.12){ ctx.fillStyle=`rgba(110,50,150,${alpha})`; ctx.font='italic 12px sans-serif'; ctx.textAlign='center'; ctx.fillText('电场 E ↓',plateCX,(fTop+fBottom)/2); }
+        }
+        function drawParticles() {
+            for(const p of particles){ if(!p.alive) continue; const pos=getPositionOnPath(p.path,p.dist);
+                const glow=ctx.createRadialGradient(pos.x,pos.y,1.5,pos.x,pos.y,7.5); glow.addColorStop(0,'rgba(255,70,40,1)'); glow.addColorStop(0.35,'rgba(255,35,25,0.85)'); glow.addColorStop(0.65,'rgba(215,18,15,0.4)'); glow.addColorStop(1,'rgba(190,0,0,0)');
+                ctx.fillStyle=glow; ctx.beginPath(); ctx.arc(pos.x,pos.y,7.5,0,Math.PI*2); ctx.fill();
+                ctx.fillStyle='#ff2a18'; ctx.beginPath(); ctx.arc(pos.x,pos.y,3.0,0,Math.PI*2); ctx.fill();
+                ctx.fillStyle='rgba(255,190,170,0.75)'; ctx.beginPath(); ctx.arc(pos.x-0.7,pos.y-0.9,1.2,0,Math.PI*2); ctx.fill();
+                ctx.strokeStyle='white'; ctx.lineWidth=1.6; ctx.beginPath(); ctx.moveTo(pos.x-2.2,pos.y); ctx.lineTo(pos.x+2.2,pos.y); ctx.stroke(); }
+        }
+        function drawCircuitHighlight() {
+            if(mode==='charging'){ ctx.strokeStyle='rgba(74,111,165,0.18)'; ctx.lineWidth=10; ctx.beginPath(); ctx.moveTo(batteryCX,batteryTopY); ctx.lineTo(switchTopContactX,switchTopContactY); ctx.stroke(); ctx.beginPath(); ctx.moveTo(switchPivotX,switchPivotY); ctx.lineTo(plateLeftX,topWireY); ctx.stroke(); ctx.beginPath(); ctx.moveTo(batteryCX,batteryBottomY); ctx.lineTo(plateLeftX,bottomWireY); ctx.stroke(); }
+            else if(mode==='discharging'){ ctx.strokeStyle='rgba(192,57,43,0.17)'; ctx.lineWidth=10; ctx.beginPath(); ctx.moveTo(plateLeftX,bottomWireY); ctx.lineTo(resistorCX,bottomWireY); ctx.stroke(); ctx.beginPath(); ctx.moveTo(resistorCX,resistorTopY); ctx.lineTo(switchBottomContactX,switchBottomContactY); ctx.stroke(); ctx.beginPath(); ctx.moveTo(switchPivotX,switchPivotY); ctx.lineTo(plateLeftX,topWireY); ctx.stroke(); }
+        }
+        function drawCurrentArrows() {
+            if(mode==='charging'&&capacitorCharge<Q_MAX*0.995){ const midX=(batteryCX+plateLeftX)/2, ay=bottomWireY; ctx.fillStyle='rgba(74,111,165,0.75)'; ctx.strokeStyle='rgba(74,111,165,0.75)'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(midX-22,ay); ctx.lineTo(midX+22,ay); ctx.stroke(); ctx.beginPath(); ctx.moveTo(midX+22,ay); ctx.lineTo(midX+14,ay-7); ctx.lineTo(midX+14,ay+7); ctx.closePath(); ctx.fill(); ctx.font='10px sans-serif'; ctx.textAlign='center'; ctx.fillText('电流→ / 电子←',midX,ay-16); }
+            else if(mode==='discharging'&&capacitorCharge>Q_MAX*0.005){ const midX=(resistorCX+plateLeftX)/2, ay=bottomWireY; ctx.fillStyle='rgba(192,57,43,0.75)'; ctx.strokeStyle='rgba(192,57,43,0.75)'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(midX+22,ay); ctx.lineTo(midX-22,ay); ctx.stroke(); ctx.beginPath(); ctx.moveTo(midX-22,ay); ctx.lineTo(midX-14,ay-7); ctx.lineTo(midX-14,ay+7); ctx.closePath(); ctx.fill(); ctx.font='10px sans-serif'; ctx.textAlign='center'; ctx.fillText('电流← / 电子→',midX,ay-16); }
+        }
+        function drawConnectionDots() {
+            const dots=[{x:batteryCX,y:batteryTopY},{x:batteryCX,y:batteryBottomY},{x:switchTopContactX,y:switchTopContactY},{x:switchBottomContactX,y:switchBottomContactY},{x:plateLeftX,y:topWireY},{x:plateLeftX,y:bottomWireY},{x:plateRightX,y:topWireY},{x:plateRightX,y:bottomWireY},{x:resistorCX,y:resistorBottomY},{x:resistorCX,y:resistorTopY}];
+            ctx.fillStyle='#3d3d3d'; for(const d of dots){ ctx.beginPath(); ctx.arc(d.x,d.y,4,0,Math.PI*2); ctx.fill(); }
+        }
+        function drawElectronLegend() {
+            const lx=25,ly=28; const glow=ctx.createRadialGradient(lx,ly,1.5,lx,ly,7.5); glow.addColorStop(0,'rgba(255,70,40,1)'); glow.addColorStop(0.35,'rgba(255,35,25,0.85)'); glow.addColorStop(0.65,'rgba(215,18,15,0.4)'); glow.addColorStop(1,'rgba(190,0,0,0)');
+            ctx.fillStyle=glow; ctx.beginPath(); ctx.arc(lx,ly,7.5,0,Math.PI*2); ctx.fill(); ctx.fillStyle='#ff2a18'; ctx.beginPath(); ctx.arc(lx,ly,3.0,0,Math.PI*2); ctx.fill();
+            ctx.fillStyle='rgba(255,190,170,0.75)'; ctx.beginPath(); ctx.arc(lx-0.7,ly-0.9,1.2,0,Math.PI*2); ctx.fill();
+            ctx.strokeStyle='white'; ctx.lineWidth=1.6; ctx.beginPath(); ctx.moveTo(lx-2.2,ly); ctx.lineTo(lx+2.2,ly); ctx.stroke();
+            ctx.fillStyle='#333'; ctx.font='bold 12px sans-serif'; ctx.textAlign='left'; ctx.fillText('红色粒子 = 电子 (e⁻)',lx+16,ly+5);
+        }
+        function drawAmmeter() {
+            const cx=ammeterX, cy=ammeterY; ctx.fillStyle='#fff'; ctx.strokeStyle='#333'; ctx.lineWidth=2.5;
+            ctx.beginPath(); ctx.arc(cx,cy,14,0,2*Math.PI); ctx.fill(); ctx.stroke();
+            ctx.fillStyle='#333'; ctx.font='bold 14px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('A',cx,cy);
+        }
+        function drawVoltmeter() {
+            const cx=voltmeterX, topY=topWireY, bottomY=bottomWireY, cy=voltmeterCY, r=14;
+            drawWire(cx,topY,cx,cy-r,'#3d3d3d',3.0); drawWire(cx,bottomY,cx,cy+r,'#3d3d3d',3.0);
+            ctx.fillStyle='#fff'; ctx.strokeStyle='#333'; ctx.lineWidth=2.5; ctx.beginPath(); ctx.arc(cx,cy,r,0,2*Math.PI); ctx.fill(); ctx.stroke();
+            ctx.fillStyle='#333'; ctx.font='bold 14px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('V',cx,cy);
+        }
+
+        function drawITChart() {
+            const top=CHART_Y_TOP, bottom=CHART_Y_BOTTOM, left=CHART_I_LEFT, right=CHART_I_RIGHT;
+            ctx.fillStyle='#fafbfc'; ctx.fillRect(left-8,top-8,right-left+16,bottom-top+16);
+            ctx.strokeStyle='#ccc'; ctx.lineWidth=1.2; ctx.strokeRect(left,top,right-left,bottom-top);
+            ctx.strokeStyle='#333'; ctx.lineWidth=1.8; ctx.beginPath(); ctx.moveTo(left,top); ctx.lineTo(left,bottom); ctx.stroke();
+            const zeroY=bottom-((0+1.5)/3.0)*(bottom-top); ctx.beginPath(); ctx.moveTo(left,zeroY); ctx.lineTo(right,zeroY); ctx.stroke();
+            ctx.fillStyle='#333'; ctx.font='11px sans-serif'; ctx.textAlign='center'; ctx.fillText('时间 t/s',(left+right)/2,zeroY+22);
+            for(let t=0;t<=chartMaxTime;t+=1){ const x=left+(t/chartMaxTime)*(right-left); ctx.fillStyle='#555'; ctx.font='9px sans-serif'; ctx.fillText(t,x,zeroY+14); ctx.strokeStyle='#eee'; ctx.lineWidth=0.5; ctx.beginPath(); ctx.moveTo(x,top); ctx.lineTo(x,bottom); ctx.stroke(); }
+            for(let i=-1.5;i<=1.5;i+=0.5){ const y=bottom-((i+1.5)/3.0)*(bottom-top); ctx.fillStyle='#555'; ctx.textAlign='right'; ctx.font='9px sans-serif'; ctx.fillText(i.toFixed(1),left-6,y+3); ctx.strokeStyle='#eee'; ctx.lineWidth=0.5; ctx.beginPath(); ctx.moveTo(left,y); ctx.lineTo(right,y); ctx.stroke(); }
+            if(iTHistory.length<2) return;
+            ctx.strokeStyle=mode==='charging'?'#4a6fa5':'#c0392b'; ctx.lineWidth=2.2; ctx.beginPath(); let first=true;
+            for(const point of iTHistory){ if(point.t>chartMaxTime)break; const x=left+(point.t/chartMaxTime)*(right-left); const iClamped=Math.max(-1.5,Math.min(1.5,point.i)); const y=bottom-((iClamped+1.5)/3.0)*(bottom-top); if(first){ctx.moveTo(x,y);first=false;}else ctx.lineTo(x,y); } ctx.stroke();
+            ctx.fillStyle='#4a6fa5'; ctx.font='bold 10px sans-serif'; ctx.textAlign='left'; ctx.fillText('i-t (电流)',left+6,top+16);
+        }
+        function drawVTChart() {
+            const top=CHART_Y_TOP, bottom=CHART_Y_BOTTOM, left=CHART_V_LEFT, right=CHART_V_RIGHT;
+            ctx.fillStyle='#fafbfc'; ctx.fillRect(left-8,top-8,right-left+16,bottom-top+16);
+            ctx.strokeStyle='#ccc'; ctx.lineWidth=1.2; ctx.strokeRect(left,top,right-left,bottom-top);
+            ctx.strokeStyle='#333'; ctx.lineWidth=1.8; ctx.beginPath(); ctx.moveTo(right,top); ctx.lineTo(right,bottom); ctx.stroke();
+            const zeroY=bottom; ctx.beginPath(); ctx.moveTo(left,zeroY); ctx.lineTo(right,zeroY); ctx.stroke();
+            ctx.fillStyle='#333'; ctx.font='11px sans-serif'; ctx.textAlign='center'; ctx.fillText('时间 t/s',(left+right)/2,zeroY+22);
+            for(let t=0;t<=chartMaxTime;t+=1){ const x=left+(t/chartMaxTime)*(right-left); ctx.fillStyle='#555'; ctx.font='9px sans-serif'; ctx.fillText(t,x,zeroY+14); ctx.strokeStyle='#eee'; ctx.lineWidth=0.5; ctx.beginPath(); ctx.moveTo(x,top); ctx.lineTo(x,bottom); ctx.stroke(); }
+            const vMax=10; for(let v=0;v<=vMax;v+=2){ const y=bottom-(v/vMax)*(bottom-top); ctx.fillStyle='#555'; ctx.textAlign='left'; ctx.font='9px sans-serif'; ctx.fillText(v,right+6,y+3); ctx.strokeStyle='#eee'; ctx.lineWidth=0.5; ctx.beginPath(); ctx.moveTo(left,y); ctx.lineTo(right,y); ctx.stroke(); }
+            if(vTHistory.length<2) return;
+            ctx.strokeStyle='#27ae60'; ctx.lineWidth=2.2; ctx.beginPath(); let first=true;
+            for(const point of vTHistory){ if(point.t>chartMaxTime)break; const x=left+(point.t/chartMaxTime)*(right-left); const vClamped=Math.max(0,Math.min(vMax,point.v)); const y=bottom-(vClamped/vMax)*(bottom-top); if(first){ctx.moveTo(x,y);first=false;}else ctx.lineTo(x,y); } ctx.stroke();
+            ctx.fillStyle='#27ae60'; ctx.font='bold 10px sans-serif'; ctx.textAlign='left'; ctx.fillText('v-t (电压)',left+6,top+16);
+        }
+
+        function drawAll() {
+            ctx.clearRect(0,0,W,H); ctx.fillStyle='#fefefc'; ctx.fillRect(0,0,W,H);
+            ctx.strokeStyle='rgba(0,0,0,0.025)'; ctx.lineWidth=0.5;
+            for(let gx=0;gx<W;gx+=28){ctx.beginPath();ctx.moveTo(gx,0);ctx.lineTo(gx,410);ctx.stroke();}
+            for(let gy=0;gy<410;gy+=28){ctx.beginPath();ctx.moveTo(0,gy);ctx.lineTo(W,gy);ctx.stroke();}
+            ctx.save(); ctx.beginPath(); ctx.rect(0,0,W,410); ctx.clip();
+            const dTop=topPlateY+plateHeight, dBottom=bottomPlateY;
+            ctx.fillStyle='rgba(215,225,245,0.30)'; ctx.fillRect(plateLeftX-4,dTop,plateWidth+8,dBottom-dTop);
+            ctx.strokeStyle='rgba(170,185,210,0.45)'; ctx.lineWidth=1; ctx.setLineDash([3,5]); ctx.strokeRect(plateLeftX-4,dTop,plateWidth+8,dBottom-dTop); ctx.setLineDash([]);
+            ctx.fillStyle='rgba(95,115,145,0.65)'; ctx.font='11px sans-serif'; ctx.textAlign='center'; ctx.fillText('电介质',plateCX,(dTop+dBottom)/2+4);
+            drawElectricField(); drawCircuitHighlight();
+            // 顶部导线
+            drawWire(batteryCX,batteryTopY,switchTopContactX,switchTopContactY,'#3d3d3d',5.5);
+            drawWire(switchPivotX,switchPivotY,plateLeftX,topWireY,'#3d3d3d',5.5);
+            drawWire(plateLeftX,topWireY,plateRightX,topWireY,'#3d3d3d',4.5);
+            // 底部导线
+            drawWire(batteryCX,batteryBottomY,plateLeftX,bottomWireY,'#3d3d3d',5.5);
+            drawWire(plateLeftX,bottomWireY,plateRightX,bottomWireY,'#3d3d3d',4.5);
+            // 电阻下端垂直引线到底部导线（经过电流表）
+            drawWire(resistorCX,resistorBottomY,resistorCX,bottomWireY,'#5a4020',4);
+            drawWire(resistorCX,bottomWireY,ammeterX-14,bottomWireY,'#5a4020',4);
+            drawWire(ammeterX+14,bottomWireY,plateLeftX,bottomWireY,'#5a4020',4);
+            // 电阻上端到开关下触点
+            drawWire(switchBottomContactX,switchBottomContactY,resistorCX,resistorTopY,'#5a4020',4);
+            // 电压表连接
+            drawWire(plateLeftX,topWireY,voltmeterX,topWireY,'#3d3d3d',3.5);
+            drawWire(plateLeftX,bottomWireY,voltmeterX,bottomWireY,'#3d3d3d',3.5);
+            drawBattery(); drawResistor(); drawAmmeter(); drawVoltmeter(); drawSwitch();
+            drawCapacitorPlates(); drawChargeSymbols(); drawConnectionDots(); drawParticles(); drawCurrentArrows(); drawElectronLegend();
+            ctx.restore();
+            drawITChart(); drawVTChart();
+            ctx.fillStyle='rgba(0,0,0,0.45)'; ctx.font='10px sans-serif'; ctx.textAlign='right'; ctx.fillText('🔴 电子(白色横线)=负电荷 | 左 i‑t | 右 v‑t',W-18,H-6);
+        }
+
+        function animate(timestamp) {
+            let dt=(timestamp-lastTime)/1000; if(dt<=0)dt=0.016; if(dt>0.12)dt=0.12; lastTime=timestamp;
+            updatePhysics(dt); updateUIState(); drawAll(); requestAnimationFrame(animate);
+        }
+        btnCharge.addEventListener('click',()=>{ if(autoCycle){autoCycle=false;clearTimeout(autoCycleTimer);btnAuto.classList.remove('active');btnAuto.textContent='🔄 自动循环';} if(capacitorCharge>=Q_MAX*0.998)capacitorCharge=0; switchToCharge(); });
+        btnDischarge.addEventListener('click',()=>{ if(autoCycle){autoCycle=false;clearTimeout(autoCycleTimer);btnAuto.classList.remove('active');btnAuto.textContent='🔄 自动循环';} if(capacitorCharge<=Q_MAX*0.002)capacitorCharge=Q_MAX; switchToDischarge(); });
+        btnAuto.addEventListener('click',()=>{ autoCycle=!autoCycle; if(autoCycle){btnAuto.classList.add('active');btnAuto.textContent='🔄 自动循环 (开)'; if(capacitorCharge<=Q_MAX*0.05)switchToCharge(); else if(capacitorCharge>=Q_MAX*0.95)switchToDischarge(); else switchToCharge();} else {btnAuto.classList.remove('active');btnAuto.textContent='🔄 自动循环'; clearTimeout(autoCycleTimer);autoCycleTimer=null;} });
+        btnReset.addEventListener('click',()=>resetAll());
+        document.addEventListener('keydown',(e)=>{ switch(e.key.toLowerCase()){ case 'c':btnCharge.click();break; case 'd':btnDischarge.click();break; case 'a':btnAuto.click();break; case 'r':btnReset.click();break; } });
+        function init(){ capacitorCharge=0; mode='idle'; clearParticles(); autoCycle=false; targetSwitchAngle=0; smoothSwitchAngle=0; lastTime=performance.now(); chartTimeElapsed=0; iTHistory=[]; vTHistory=[]; updateUIState(); drawAll(); requestAnimationFrame(animate); }
+        init();
+    })();
+</script>
+
+  <script>
+  // 返回主页（滚动位置已在主页点击链接时保存）
+  function saveScrollAndReturn() {
+    window.location.href = '../index.html';
+  }
+  
+  // 禁用右键菜单
+  document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+  });
+  
+  // 禁用开发者工具快捷键
+  document.addEventListener('keydown', function(e) {
+    // ESC返回主页 - 保存滚动位置
+    if (e.keyCode === 27) {
+      saveScrollAndReturn();
+      return false;
+    }
+    // F12
+    if (e.keyCode === 123) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+U
+    if (e.ctrlKey && e.keyCode === 85) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+I
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 73) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+J
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 74) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+C
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 67) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+S
+    if (e.ctrlKey && e.keyCode === 83) {
+      e.preventDefault();
+      return false;
+    }
+  });
+  
+  // 禁用选择
+  document.addEventListener('selectstart', function(e) {
+    // 允许输入框选择
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+      return true;
+    }
+    e.preventDefault();
+    return false;
+  });
+  </script>
+</body>
+</html>
