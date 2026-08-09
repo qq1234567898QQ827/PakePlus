@@ -1,0 +1,1702 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta charset="UTF-8">
+    <meta charset="UTF-8">
+    <meta charset="UTF-8">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>高中物理 - 人船模型 | 动量守恒演示</title>
+    <style>
+        :root {
+            --bg: #0a0e17;
+            --panel-bg: rgba(14, 20, 35, 0.9);
+            --accent: #00d4ff;
+            --accent2: #ff6b9d;
+            --gold: #ffb347;
+            --text: #c8d6e5;
+            --text-bright: #e8f0f8;
+            --border: rgba(0, 180, 240, 0.3);
+            --glow: rgba(0, 200, 255, 0.5);
+            --danger: #ff4757;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: var(--bg);
+            font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', 'Helvetica Neue', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow-x: hidden;
+            background: radial-gradient(ellipse at center, #0f1a2e 0%, #060c16 55%, #020610 100%);
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        /* 背景星空粒子 */
+        .stars-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .star {
+            position: absolute;
+            border-radius: 50%;
+            background: white;
+            animation: twinkle var(--dur) ease-in-out infinite;
+            animation-delay: var(--delay);
+            opacity: 0;
+        }
+        @keyframes twinkle {
+            0%,
+            100% {
+                opacity: 0.15;
+                transform: scale(1);
+            }
+            25% {
+                opacity: 0.9;
+                transform: scale(1.8);
+            }
+            50% {
+                opacity: 0.2;
+                transform: scale(0.7);
+            }
+            75% {
+                opacity: 0.6;
+                transform: scale(1.4);
+            }
+        }
+
+        /* 扫描线 */
+        .scanline {
+            position: fixed;
+            top: -2px;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: rgba(0, 200, 255, 0.15);
+            pointer-events: none;
+            z-index: 1;
+            animation: scanDown 7s linear infinite;
+            box-shadow: 0 0 30px rgba(0, 180, 255, 0.4);
+        }
+        @keyframes scanDown {
+            0% {
+                top: -2px;
+            }
+            100% {
+                top: 105vh;
+            }
+        }
+
+        .main-container {
+            position: relative;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+            width: 95vw;
+            max-width: 920px;
+        }
+
+        .title-area {
+            text-align: center;
+        }
+        .title-area h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            background: linear-gradient(135deg, #00d4ff 10%, #7bdcff 40%, #00b4e0 70%, #00d4ff 90%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            filter: drop-shadow(0 0 18px rgba(0, 200, 255, 0.5));
+            margin-bottom: 2px;
+        }
+        .title-area .subtitle {
+            font-size: 0.85rem;
+            color: #6a9fc0;
+            letter-spacing: 0.15em;
+            font-weight: 300;
+        }
+
+        /* 画布容器 */
+        .canvas-wrapper {
+            position: relative;
+            width: 100%;
+            max-width: 900px;
+            aspect-ratio: 900 / 480;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow:
+                0 0 40px rgba(0, 160, 240, 0.2),
+                0 0 80px rgba(0, 100, 180, 0.1),
+                inset 0 0 0 1px rgba(0, 180, 240, 0.25);
+            border: 1px solid rgba(0, 180, 240, 0.35);
+            background: #080e1a;
+        }
+        .canvas-wrapper canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            border-radius: 15px;
+        }
+
+        /* 控制面板 */
+        .control-panel {
+            width: 100%;
+            max-width: 900px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 14px 20px;
+            background: var(--panel-bg);
+            border-radius: 14px;
+            padding: 18px 24px;
+            border: 1px solid var(--border);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            align-items: center;
+        }
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            flex: 1 1 140px;
+            min-width: 120px;
+        }
+        .control-group label {
+            font-size: 0.78rem;
+            font-weight: 600;
+            letter-spacing: 0.04em;
+            color: #8ab4d0;
+            text-transform: uppercase;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .control-group label .icon-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            display: inline-block;
+            box-shadow: 0 0 8px currentColor;
+        }
+        .icon-dot.person-dot {
+            background: var(--accent2);
+            box-shadow: 0 0 10px var(--accent2);
+        }
+        .icon-dot.boat-dot {
+            background: var(--accent);
+            box-shadow: 0 0 10px var(--accent);
+        }
+        .icon-dot.speed-dot {
+            background: var(--gold);
+            box-shadow: 0 0 10px var(--gold);
+        }
+
+        .control-group input[type="range"] {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: rgba(255, 255, 255, 0.08);
+            outline: none;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .control-group input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid rgba(255, 255, 255, 0.7);
+            box-shadow: 0 0 16px var(--glow);
+            transition: all 0.2s;
+        }
+        #massPerson::-webkit-slider-thumb {
+            background: #ff6b9d;
+            box-shadow: 0 0 18px rgba(255, 107, 157, 0.7);
+        }
+        #massBoat::-webkit-slider-thumb {
+            background: #00c8f0;
+            box-shadow: 0 0 18px rgba(0, 200, 240, 0.7);
+        }
+        #speedRel::-webkit-slider-thumb {
+            background: #ffb347;
+            box-shadow: 0 0 18px rgba(255, 179, 71, 0.7);
+        }
+
+        .control-group .val-display {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: #e0e8f0;
+            letter-spacing: 0.03em;
+        }
+        .val-display span {
+            color: #90c8e8;
+            font-weight: 400;
+            font-size: 0.75rem;
+        }
+
+        .btn-row {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex: 0 0 auto;
+        }
+        .btn {
+            padding: 10px 20px;
+            border-radius: 25px;
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.9rem;
+            letter-spacing: 0.05em;
+            transition: all 0.3s;
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+            outline: none;
+            position: relative;
+            overflow: hidden;
+            font-family: inherit;
+        }
+        .btn-start {
+            background: rgba(0, 200, 150, 0.2);
+            color: #00e8b0;
+            border-color: rgba(0, 220, 160, 0.5);
+        }
+        .btn-start:hover {
+            background: rgba(0, 220, 160, 0.35);
+            box-shadow: 0 0 28px rgba(0, 220, 160, 0.4);
+            border-color: rgba(0, 240, 180, 0.7);
+        }
+        .btn-pause {
+            background: rgba(255, 180, 50, 0.2);
+            color: #ffc048;
+            border-color: rgba(255, 180, 50, 0.5);
+        }
+        .btn-pause:hover {
+            background: rgba(255, 190, 60, 0.35);
+            box-shadow: 0 0 28px rgba(255, 180, 50, 0.4);
+            border-color: rgba(255, 200, 70, 0.7);
+        }
+        .btn-reset {
+            background: rgba(180, 180, 200, 0.15);
+            color: #bcc8d8;
+            border-color: rgba(180, 190, 210, 0.4);
+        }
+        .btn-reset:hover {
+            background: rgba(200, 200, 220, 0.3);
+            box-shadow: 0 0 20px rgba(180, 190, 210, 0.3);
+            border-color: rgba(200, 210, 230, 0.6);
+        }
+        .btn:active {
+            transform: scale(0.95);
+        }
+
+        /* 数据指示器 */
+        .data-hud {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px 16px;
+            width: 100%;
+            max-width: 900px;
+            font-size: 0.8rem;
+            color: #90b8d0;
+            letter-spacing: 0.03em;
+            justify-content: center;
+        }
+        .data-hud .hud-item {
+            background: rgba(14, 22, 38, 0.8);
+            border: 1px solid rgba(0, 170, 220, 0.3);
+            border-radius: 20px;
+            padding: 6px 14px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+        }
+        .hud-item .hud-val {
+            font-weight: 700;
+            color: #e0f0ff;
+            font-size: 0.9rem;
+            min-width: 40px;
+            text-align: center;
+        }
+        .hud-item.person-hud .hud-val {
+            color: #ff8aab;
+        }
+        .hud-item.boat-hud .hud-val {
+            color: #60d8ff;
+        }
+        .hud-item.total-hud .hud-val {
+            color: #50ffb0;
+        }
+
+        @media (max-width: 700px) {
+            .control-panel {
+                gap: 10px 12px;
+                padding: 12px 14px;
+            }
+            .control-group {
+                min-width: 90px;
+                flex: 1 1 90px;
+            }
+            .btn {
+                padding: 8px 14px;
+                font-size: 0.8rem;
+            }
+            .title-area h1 {
+                font-size: 1.3rem;
+            }
+            .data-hud {
+                gap: 6px 8px;
+            }
+            .data-hud .hud-item {
+                padding: 4px 10px;
+                font-size: 0.7rem;
+            }
+        }
+    </style>
+
+  <style>
+  body {
+    background-color: #1a2332 !important;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+  }
+  
+  .qilai-back-btn {
+    position: fixed;
+    top: 10px;
+    left: 15px;
+    z-index: 100000;
+    padding: 8px 16px;
+    background: rgba(0, 150, 200, 0.2);
+    border: 1px solid rgba(100, 180, 255, 0.5);
+    color: #8ab4f8;
+    font-size: 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.3s;
+    backdrop-filter: blur(5px);
+    font-family: "Microsoft YaHei", sans-serif;
+  }
+  
+  .qilai-back-btn:hover {
+    background: rgba(0, 150, 200, 0.4);
+    box-shadow: 0 0 15px rgba(100, 180, 255, 0.3);
+    color: #fff;
+  }
+  
+  .qilai-watermark {
+    position: fixed;
+    bottom: 15px;
+    right: 15px;
+    z-index: 99998;
+    font-size: 12px;
+    color: rgba(138, 180, 248, 0.35);
+    text-align: right;
+    line-height: 1.8;
+    pointer-events: none;
+    user-select: none;
+    font-family: "Microsoft YaHei", sans-serif;
+  }
+  
+  .qilai-watermark .title {
+    font-size: 14px;
+    font-weight: bold;
+    color: rgba(138, 180, 248, 0.45);
+    margin-bottom: 4px;
+    letter-spacing: 1px;
+  }
+  </style>
+</head>
+<body>
+  <a href="javascript:void(0);" class="qilai-back-btn" onclick="saveScrollAndReturn();">← 返回主页</a>
+  
+  <div class="qilai-watermark">
+    <div class="title">齐老师动画</div>
+    QQ 3398528250<br>
+    抖音 35320300542
+  </div>
+
+
+    <!-- 背景星空 -->
+    <div class="stars-container" id="starsContainer"></div>
+    <div class="scanline"></div>
+
+    <!-- 主要内容 -->
+    <div class="main-container">
+        <div class="title-area">
+            <h1>⚡ 人船模型 · 动量守恒</h1>
+            <p class="subtitle">Person–Boat Model &nbsp;|&nbsp; Conservation of Momentum</p>
+        </div>
+
+        <!-- 画布 -->
+        <div class="canvas-wrapper" id="canvasWrapper">
+            <canvas id="mainCanvas"></canvas>
+        </div>
+
+        <!-- 实时数据HUD -->
+        <div class="data-hud" id="dataHud">
+            <div class="hud-item person-hud">
+                👤 人动量: <span class="hud-val" id="hudPersonMom">0</span> kg·m/s
+            </div>
+            <div class="hud-item boat-hud">
+                🚤 船动量: <span class="hud-val" id="hudBoatMom">0</span> kg·m/s
+            </div>
+            <div class="hud-item total-hud">
+                Σ 总动量: <span class="hud-val" id="hudTotalMom">0</span> kg·m/s
+            </div>
+            <div class="hud-item" style="border-color:rgba(200,180,150,0.35);">
+                📏 人位移: <span class="hud-val" id="hudPersonDisp" style="color:#ffb87a;">0</span> m
+            </div>
+            <div class="hud-item" style="border-color:rgba(150,200,220,0.35);">
+                📏 船位移: <span class="hud-val" id="hudBoatDisp" style="color:#7ad0f0;">0</span> m
+            </div>
+        </div>
+
+        <!-- 控制面板 -->
+        <div class="control-panel" id="controlPanel">
+            <div class="control-group">
+                <label><span class="icon-dot person-dot"></span>人的质量 m</label>
+                <input type="range" id="massPerson" min="20" max="120" value="55" step="1">
+                <div class="val-display" id="valMassPerson">55 <span>kg</span></div>
+            </div>
+            <div class="control-group">
+                <label><span class="icon-dot boat-dot"></span>船的质量 M</label>
+                <input type="range" id="massBoat" min="40" max="350" value="160" step="1">
+                <div class="val-display" id="valMassBoat">160 <span>kg</span></div>
+            </div>
+            <div class="control-group">
+                <label><span class="icon-dot speed-dot"></span>步行速度 v<sub>rel</sub></label>
+                <input type="range" id="speedRel" min="0.4" max="3.0" value="1.5" step="0.1">
+                <div class="val-display" id="valSpeedRel">1.5 <span>m/s</span></div>
+            </div>
+            <div class="btn-row">
+                <button class="btn btn-start" id="btnStart" title="开始动画">▶ 开始</button>
+                <button class="btn btn-pause" id="btnPause" title="暂停/继续" style="display:none;">⏯ 暂停</button>
+                <button class="btn btn-reset" id="btnReset" title="重置">↺ 重置</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            // ==================== DOM元素 ====================
+            const canvas = document.getElementById('mainCanvas');
+            const ctx = canvas.getContext('2d');
+            const wrapper = document.getElementById('canvasWrapper');
+
+            const sliderMassPerson = document.getElementById('massPerson');
+            const sliderMassBoat = document.getElementById('massBoat');
+            const sliderSpeedRel = document.getElementById('speedRel');
+            const valMassPerson = document.getElementById('valMassPerson');
+            const valMassBoat = document.getElementById('valMassBoat');
+            const valSpeedRel = document.getElementById('valSpeedRel');
+            const btnStart = document.getElementById('btnStart');
+            const btnPause = document.getElementById('btnPause');
+            const btnReset = document.getElementById('btnReset');
+
+            // HUD元素
+            const hudPersonMom = document.getElementById('hudPersonMom');
+            const hudBoatMom = document.getElementById('hudBoatMom');
+            const hudTotalMom = document.getElementById('hudTotalMom');
+            const hudPersonDisp = document.getElementById('hudPersonDisp');
+            const hudBoatDisp = document.getElementById('hudBoatDisp');
+
+            // ==================== 参数 ====================
+            const BOAT_LENGTH_M = 4.0; // 船长度（米）
+            const BOAT_LENGTH_PX_RATIO = 75; // 每米对应像素 (4m = 300px)
+            const BOAT_PX = BOAT_LENGTH_M * BOAT_LENGTH_PX_RATIO; // 船在画布上的像素长度 = 300
+
+            let massPerson = parseFloat(sliderMassPerson.value); // kg
+            let massBoat = parseFloat(sliderMassBoat.value); // kg
+            let speedRel = parseFloat(sliderSpeedRel.value); // m/s, 人相对船的速度
+
+            // 动画状态
+            let progress = 0; // 0到1，人相对船移动的进度
+            let isAnimating = false;
+            let isPaused = false;
+            let animationId = null;
+            let lastTime = null;
+
+            // 画布逻辑尺寸
+            const CANVAS_W = 900;
+            const CANVAS_H = 480;
+
+            // 水面Y坐标（在画布中）
+            const WATER_Y = 295;
+
+            // 船在画布中的初始中心X（地面坐标系原点）
+            const BOAT_INIT_CENTER_X = CANVAS_W / 2; // 450
+            const BOAT_HALF_PX = BOAT_PX / 2; // 150px
+
+            // 人在船上的初始位置（船左端）
+            const PERSON_INIT_ON_BOAT_X = -BOAT_HALF_PX; // 相对船中心，在左端
+            const PERSON_FINAL_ON_BOAT_X = BOAT_HALF_PX; // 相对船中心，在右端
+
+            // 粒子系统
+            let particles = [];
+            const MAX_PARTICLES = 65;
+
+            // 水面相位
+            let wavePhase = 0;
+            let ripplePoints = []; // 涟漪
+
+            // 足迹粒子
+            let footprintParticles = [];
+
+            // ==================== 初始化画布 ====================
+            function resizeCanvas() {
+                const wrapperWidth = wrapper.clientWidth;
+                const wrapperHeight = wrapper.clientHeight;
+                const dpr = Math.min(window.devicePixelRatio || 1, 2);
+                canvas.width = CANVAS_W * dpr;
+                canvas.height = CANVAS_H * dpr;
+                canvas.style.width = wrapperWidth + 'px';
+                canvas.style.height = (wrapperWidth * CANVAS_H / CANVAS_W) + 'px';
+                ctx.setTransform(1, 0, 0, 1, 0, 0);
+                ctx.scale(dpr, dpr);
+            }
+
+            function initParticles() {
+                particles = [];
+                for (let i = 0; i < MAX_PARTICLES; i++) {
+                    particles.push({
+                        x: Math.random() * CANVAS_W,
+                        y: Math.random() * CANVAS_H,
+                        r: Math.random() * 1.8 + 0.4,
+                        vx: (Math.random() - 0.5) * 0.4,
+                        vy: (Math.random() - 0.5) * 0.3 - 0.15,
+                        alpha: Math.random() * 0.6 + 0.2,
+                        twinkleSpeed: Math.random() * 0.02 + 0.005,
+                        twinkleOffset: Math.random() * Math.PI * 2,
+                    });
+                }
+                ripplePoints = [];
+                footprintParticles = [];
+            }
+
+            // ==================== 物理计算 ====================
+            function getTotalMass() {
+                return massPerson + massBoat;
+            }
+
+            function getBoatDisplacementPx() {
+                // 船在地面坐标系中的位移（像素），向左为负
+                const ratio = massPerson / getTotalMass();
+                return -ratio * BOAT_PX; // 负值=向左
+            }
+
+            function getPersonDisplacementPx() {
+                // 人在地面坐标系中的位移（像素），向右为正
+                const ratio = massBoat / getTotalMass();
+                return ratio * BOAT_PX; // 正值=向右
+            }
+
+            function getCurrentBoatCenterX() {
+                return BOAT_INIT_CENTER_X + progress * getBoatDisplacementPx();
+            }
+
+            function getCurrentPersonGroundX() {
+                const personInitGroundX = BOAT_INIT_CENTER_X + PERSON_INIT_ON_BOAT_X;
+                return personInitGroundX + progress * getPersonDisplacementPx();
+            }
+
+            function getPersonMomentum() {
+                const vPersonGround = massBoat * speedRel / getTotalMass();
+                return massPerson * vPersonGround;
+            }
+
+            function getBoatMomentum() {
+                const vBoatGround = -massPerson * speedRel / getTotalMass();
+                return massBoat * vBoatGround;
+            }
+
+            // ==================== 绘制函数 ====================
+            function drawBackground(time) {
+                // 深空渐变
+                const grad = ctx.createRadialGradient(CANVAS_W / 2, CANVAS_H * 0.35, 50, CANVAS_W / 2, CANVAS_H * 0.5,
+                    CANVAS_W * 0.8);
+                grad.addColorStop(0, '#111d33');
+                grad.addColorStop(0.55, '#0a1322');
+                grad.addColorStop(1, '#040a14');
+                ctx.fillStyle = grad;
+                ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+
+                // 网格线（科技感）
+                ctx.strokeStyle = 'rgba(30,80,130,0.12)';
+                ctx.lineWidth = 0.5;
+                const gridSpacing = 35;
+                for (let x = gridSpacing; x < CANVAS_W; x += gridSpacing) {
+                    ctx.beginPath();
+                    ctx.moveTo(x, 0);
+                    ctx.lineTo(x, CANVAS_H);
+                    ctx.stroke();
+                }
+                for (let y = gridSpacing; y < CANVAS_H; y += gridSpacing) {
+                    ctx.beginPath();
+                    ctx.moveTo(0, y);
+                    ctx.lineTo(CANVAS_W, y);
+                    ctx.stroke();
+                }
+
+                // 粗一些的主网格线
+                ctx.strokeStyle = 'rgba(40,100,160,0.18)';
+                ctx.lineWidth = 0.8;
+                const mainGridSpacing = 140;
+                for (let x = mainGridSpacing; x < CANVAS_W; x += mainGridSpacing) {
+                    ctx.beginPath();
+                    ctx.moveTo(x, 0);
+                    ctx.lineTo(x, CANVAS_H);
+                    ctx.stroke();
+                }
+                for (let y = mainGridSpacing; y < CANVAS_H; y += mainGridSpacing) {
+                    ctx.beginPath();
+                    ctx.moveTo(0, y);
+                    ctx.lineTo(CANVAS_W, y);
+                    ctx.stroke();
+                }
+            }
+
+            function drawParticles(time) {
+                for (let p of particles) {
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    if (p.x < -10) p.x = CANVAS_W + 10;
+                    if (p.x > CANVAS_W + 10) p.x = -10;
+                    if (p.y < -10) p.y = CANVAS_H + 10;
+                    if (p.y > CANVAS_H + 10) p.y = -10;
+
+                    const twinkle = Math.sin(time * p.twinkleSpeed + p.twinkleOffset) * 0.4 + 0.6;
+                    const alpha = p.alpha * twinkle;
+                    ctx.fillStyle = `rgba(140,210,255,${alpha})`;
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    // 光晕
+                    if (twinkle > 0.75) {
+                        ctx.fillStyle = `rgba(180,230,255,${alpha * 0.4})`;
+                        ctx.beginPath();
+                        ctx.arc(p.x, p.y, p.r * 2.5, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                }
+            }
+
+            function drawWaterSurface(time) {
+                wavePhase += 0.015;
+                const baseY = WATER_Y;
+                const waveAmplitude = 6;
+
+                // 多层水面
+                for (let layer = 0; layer < 3; layer++) {
+                    const alpha = 0.25 - layer * 0.07;
+                    const amp = waveAmplitude - layer * 1.5;
+                    const freq = 0.012 + layer * 0.004;
+                    const phaseShift = layer * 1.8;
+                    ctx.strokeStyle = `rgba(30,160,210,${alpha})`;
+                    ctx.lineWidth = 2.5 - layer * 0.6;
+                    ctx.beginPath();
+                    for (let x = 0; x <= CANVAS_W; x += 4) {
+                        const y = baseY + Math.sin(x * freq + wavePhase + phaseShift) * amp +
+                            Math.sin(x * freq * 2.3 - wavePhase * 0.7 + phaseShift) * amp * 0.4;
+                        if (x === 0) ctx.moveTo(x, y);
+                        else ctx.lineTo(x, y);
+                    }
+                    ctx.stroke();
+                }
+
+                // 水面发光边缘
+                const glowGrad = ctx.createLinearGradient(0, baseY - 8, 0, baseY + 14);
+                glowGrad.addColorStop(0, 'rgba(0,160,220,0)');
+                glowGrad.addColorStop(0.35, 'rgba(0,200,240,0.2)');
+                glowGrad.addColorStop(0.6, 'rgba(0,140,200,0.35)');
+                glowGrad.addColorStop(1, 'rgba(0,60,120,0)');
+                ctx.fillStyle = glowGrad;
+                ctx.fillRect(0, baseY - 8, CANVAS_W, 22);
+
+                // 水面以下区域
+                const belowGrad = ctx.createLinearGradient(0, baseY, 0, CANVAS_H);
+                belowGrad.addColorStop(0, 'rgba(3,25,50,0.85)');
+                belowGrad.addColorStop(0.4, 'rgba(2,16,35,0.9)');
+                belowGrad.addColorStop(1, 'rgba(1,8,20,0.95)');
+                ctx.fillStyle = belowGrad;
+                ctx.fillRect(0, baseY, CANVAS_W, CANVAS_H - baseY);
+            }
+
+            function drawRipples(time) {
+                // 船附近的涟漪
+                const boatCX = getCurrentBoatCenterX();
+                const boatLeft = boatCX - BOAT_HALF_PX;
+                const boatRight = boatCX + BOAT_HALF_PX;
+
+                // 在船的两端产生涟漪
+                if (isAnimating && !isPaused && progress < 1) {
+                    if (Math.random() < 0.35) {
+                        ripplePoints.push({
+                            x: boatLeft + Math.random() * BOAT_PX * 0.2,
+                            y: WATER_Y,
+                            life: 1,
+                            radius: 2,
+                            maxRadius: 18 + Math.random() * 20,
+                        });
+                        ripplePoints.push({
+                            x: boatRight - Math.random() * BOAT_PX * 0.2,
+                            y: WATER_Y,
+                            life: 1,
+                            radius: 2,
+                            maxRadius: 16 + Math.random() * 18,
+                        });
+                    }
+                }
+
+                // 更新和绘制涟漪
+                for (let i = ripplePoints.length - 1; i >= 0; i--) {
+                    const rp = ripplePoints[i];
+                    rp.life -= 0.025;
+                    rp.radius += (rp.maxRadius - rp.radius) * 0.06;
+                    if (rp.life <= 0) {
+                        ripplePoints.splice(i, 1);
+                        continue;
+                    }
+                    const alpha = rp.life * 0.5;
+                    ctx.strokeStyle = `rgba(100,200,240,${alpha})`;
+                    ctx.lineWidth = 1.2 * rp.life;
+                    ctx.beginPath();
+                    ctx.arc(rp.x, rp.y, rp.radius, 0, Math.PI * 2);
+                    ctx.stroke();
+                }
+
+                // 限制涟漪数量
+                while (ripplePoints.length > 40) ripplePoints.shift();
+            }
+
+            function drawBoat(time) {
+                const boatCX = getCurrentBoatCenterX();
+                const boatLeft = boatCX - BOAT_HALF_PX;
+                const boatRight = boatCX + BOAT_HALF_PX;
+                const boatTop = WATER_Y - 22;
+                const boatBottom = WATER_Y + 6;
+                const boatHeight = boatBottom - boatTop;
+
+                ctx.save();
+
+                // 船体阴影（水面倒影）
+                const shadowGrad = ctx.createLinearGradient(0, WATER_Y, 0, WATER_Y + 30);
+                shadowGrad.addColorStop(0, 'rgba(0,30,60,0.5)');
+                shadowGrad.addColorStop(1, 'rgba(0,10,25,0)');
+                ctx.fillStyle = shadowGrad;
+                ctx.beginPath();
+                const shadowLeft = boatLeft + 8;
+                const shadowRight = boatRight - 8;
+                ctx.moveTo(shadowLeft, WATER_Y + 3);
+                ctx.quadraticCurveTo(boatCX, WATER_Y + 35, shadowRight, WATER_Y + 3);
+                ctx.fill();
+
+                // 船体发光光晕
+                const haloGrad = ctx.createLinearGradient(0, boatTop - 6, 0, boatBottom + 6);
+                haloGrad.addColorStop(0, 'rgba(0,180,240,0)');
+                haloGrad.addColorStop(0.5, 'rgba(0,200,255,0.25)');
+                haloGrad.addColorStop(1, 'rgba(0,140,220,0)');
+                ctx.fillStyle = haloGrad;
+                ctx.fillRect(boatLeft - 10, boatTop - 6, BOAT_PX + 20, boatHeight + 12);
+
+                // 船体主体
+                const bodyGrad = ctx.createLinearGradient(0, boatTop, 0, boatBottom);
+                bodyGrad.addColorStop(0, '#1a4058');
+                bodyGrad.addColorStop(0.3, '#1e5068');
+                bodyGrad.addColorStop(0.55, '#163848');
+                bodyGrad.addColorStop(1, '#0c2535');
+                ctx.fillStyle = bodyGrad;
+                ctx.beginPath();
+                const bowCurve = 14;
+                const sternCurve = 10;
+                ctx.moveTo(boatLeft + sternCurve, boatTop);
+                ctx.lineTo(boatRight - bowCurve, boatTop);
+                ctx.quadraticCurveTo(boatRight + 4, boatTop + 3, boatRight - 2, boatTop + boatHeight * 0.5);
+                ctx.quadraticCurveTo(boatRight + 2, boatBottom - 2, boatRight - bowCurve, boatBottom);
+                ctx.lineTo(boatLeft + sternCurve, boatBottom);
+                ctx.quadraticCurveTo(boatLeft - 4, boatBottom - 2, boatLeft - 2, boatTop + boatHeight * 0.5);
+                ctx.quadraticCurveTo(boatLeft + 1, boatTop + 2, boatLeft + sternCurve, boatTop);
+                ctx.closePath();
+                ctx.fill();
+
+                // 船体发光边框
+                ctx.strokeStyle = 'rgba(0,200,255,0.7)';
+                ctx.lineWidth = 2;
+                ctx.shadowColor = 'rgba(0,200,255,0.8)';
+                ctx.shadowBlur = 12;
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+
+                // 内部科技纹路
+                ctx.strokeStyle = 'rgba(0,180,230,0.35)';
+                ctx.lineWidth = 0.8;
+                const stripeY1 = boatTop + 7;
+                const stripeY2 = boatTop + 14;
+                ctx.beginPath();
+                ctx.moveTo(boatLeft + 25, stripeY1);
+                ctx.lineTo(boatRight - 30, stripeY1);
+                ctx.moveTo(boatLeft + 20, stripeY2);
+                ctx.lineTo(boatRight - 35, stripeY2);
+                ctx.stroke();
+
+                // 发光节点
+                const nodePositions = [
+                    boatLeft + 40, boatCX - 60, boatCX, boatCX + 60, boatRight - 40
+                ];
+                for (const nx of nodePositions) {
+                    const ny = boatTop + 10;
+                    ctx.fillStyle = 'rgba(0,220,255,0.8)';
+                    ctx.beginPath();
+                    ctx.arc(nx, ny, 3, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.fillStyle = 'rgba(150,240,255,0.5)';
+                    ctx.beginPath();
+                    ctx.arc(nx, ny, 7, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+
+                ctx.restore();
+
+                return { boatLeft, boatRight, boatTop, boatBottom, boatCX };
+            }
+
+            function drawPerson(time, boatData) {
+                const personGroundX = getCurrentPersonGroundX();
+                const personY = WATER_Y - 28;
+                const bobAmount = (isAnimating && !isPaused && progress < 1) ? Math.sin(time * 0.06) * 4 : 0;
+                const py = personY + bobAmount;
+
+                ctx.save();
+
+                // 光晕
+                const glowGrad = ctx.createRadialGradient(personGroundX, py, 4, personGroundX, py, 26);
+                glowGrad.addColorStop(0, 'rgba(255,160,100,0.7)');
+                glowGrad.addColorStop(0.4, 'rgba(255,120,70,0.35)');
+                glowGrad.addColorStop(1, 'rgba(255,80,40,0)');
+                ctx.fillStyle = glowGrad;
+                ctx.beginPath();
+                ctx.arc(personGroundX, py, 26, 0, Math.PI * 2);
+                ctx.fill();
+
+                // 身体
+                const bodyGrad = ctx.createLinearGradient(0, py - 14, 0, py + 10);
+                bodyGrad.addColorStop(0, '#ffe0c0');
+                bodyGrad.addColorStop(0.5, '#ff9966');
+                bodyGrad.addColorStop(1, '#e05540');
+                ctx.fillStyle = bodyGrad;
+                ctx.beginPath();
+                // 头部
+                ctx.arc(personGroundX, py - 10, 8, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = 'rgba(255,200,160,0.8)';
+                ctx.lineWidth = 2;
+                ctx.shadowColor = 'rgba(255,140,80,0.9)';
+                ctx.shadowBlur = 10;
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+
+                // 身体躯干
+                ctx.fillStyle = '#ff8855';
+                ctx.beginPath();
+                ctx.roundRect(personGroundX - 5, py - 1, 10, 13, 4);
+                ctx.fill();
+                ctx.strokeStyle = 'rgba(255,180,140,0.7)';
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+
+                // 腿部（简化，带走路动画）
+                const legPhase = (isAnimating && !isPaused && progress < 1) ? Math.sin(time * 0.08) * 5 : 0;
+                ctx.strokeStyle = '#e07050';
+                ctx.lineWidth = 2.5;
+                ctx.lineCap = 'round';
+                ctx.beginPath();
+                ctx.moveTo(personGroundX - 2, py + 11);
+                ctx.lineTo(personGroundX - 3 + legPhase * 0.6, py + 20);
+                ctx.moveTo(personGroundX + 2, py + 11);
+                ctx.lineTo(personGroundX + 3 - legPhase * 0.6, py + 20);
+                ctx.stroke();
+
+                // 手臂（简化）
+                const armPhase = (isAnimating && !isPaused && progress < 1) ? Math.sin(time * 0.08 + Math.PI) * 4 : 0;
+                ctx.strokeStyle = '#f09070';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(personGroundX - 3, py + 3);
+                ctx.lineTo(personGroundX - 8 + armPhase * 0.5, py + 8);
+                ctx.moveTo(personGroundX + 3, py + 3);
+                ctx.lineTo(personGroundX + 8 - armPhase * 0.5, py + 8);
+                ctx.stroke();
+
+                ctx.restore();
+
+                return { personGroundX, py };
+            }
+
+            function drawFootprints(personData, boatData) {
+                if (!isAnimating || isPaused || progress >= 1) return;
+
+                const personGroundX = personData.personGroundX;
+                const py = personData.py;
+
+                // 在人脚下产生足迹粒子
+                if (Math.random() < 0.5 && progress > 0.001 && progress < 0.999) {
+                    footprintParticles.push({
+                        x: personGroundX + (Math.random() - 0.5) * 8,
+                        y: py + 18,
+                        life: 1,
+                        alpha: 0.7,
+                        r: 1.5 + Math.random() * 2,
+                    });
+                }
+
+                // 更新和绘制足迹
+                for (let i = footprintParticles.length - 1; i >= 0; i--) {
+                    const fp = footprintParticles[i];
+                    fp.life -= 0.03;
+                    fp.alpha = fp.life * 0.6;
+                    if (fp.life <= 0) {
+                        footprintParticles.splice(i, 1);
+                        continue;
+                    }
+                    ctx.fillStyle = `rgba(255,180,140,${fp.alpha})`;
+                    ctx.beginPath();
+                    ctx.arc(fp.x, fp.y, fp.r, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                while (footprintParticles.length > 50) footprintParticles.shift();
+            }
+
+            function drawGhostMarkers() {
+                // 显示初始船位置的半透明轮廓
+                const initBoatLeft = BOAT_INIT_CENTER_X - BOAT_HALF_PX;
+                const initBoatRight = BOAT_INIT_CENTER_X + BOAT_HALF_PX;
+                const initPersonX = BOAT_INIT_CENTER_X + PERSON_INIT_ON_BOAT_X;
+
+                // 初始船轮廓
+                ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+                ctx.lineWidth = 1;
+                ctx.setLineDash([6, 8]);
+                ctx.strokeRect(initBoatLeft, WATER_Y - 22, BOAT_PX, 28);
+                ctx.setLineDash([]);
+
+                // 初始人位置标记
+                ctx.fillStyle = 'rgba(255,255,255,0.3)';
+                ctx.beginPath();
+                ctx.arc(initPersonX, WATER_Y - 28, 5, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+                ctx.lineWidth = 1;
+                ctx.setLineDash([3, 4]);
+                ctx.stroke();
+                ctx.setLineDash([]);
+
+                // 标签
+                ctx.fillStyle = 'rgba(200,210,220,0.7)';
+                ctx.font = '11px "PingFang SC","Microsoft YaHei",sans-serif';
+                ctx.fillText('初始位置', initBoatLeft, WATER_Y - 32);
+            }
+
+            function drawDisplacementArrows(boatData) {
+                if (progress < 0.005) return;
+                const boatCX = boatData.boatCX;
+                const boatDisplacement = progress * getBoatDisplacementPx();
+                const personDisplacement = progress * getPersonDisplacementPx();
+                const initPersonX = BOAT_INIT_CENTER_X + PERSON_INIT_ON_BOAT_X;
+                const currPersonX = getCurrentPersonGroundX();
+
+                // 船位移箭头（在船上方）
+                if (Math.abs(boatDisplacement) > 3) {
+                    const arrowY = WATER_Y - 50;
+                    const fromX = BOAT_INIT_CENTER_X;
+                    const toX = boatCX;
+                    drawArrow(fromX, arrowY, toX, arrowY, 'rgba(0,200,240,0.7)', '船位移');
+                }
+
+                // 人位移箭头（在人上方）
+                if (Math.abs(personDisplacement) > 3) {
+                    const arrowY = WATER_Y - 58;
+                    const fromX = initPersonX;
+                    const toX = currPersonX;
+                    drawArrow(fromX, arrowY, toX, arrowY, 'rgba(255,150,100,0.7)', '人位移');
+                }
+            }
+
+            function drawArrow(fromX, fromY, toX, toY, color, label) {
+                ctx.save();
+                ctx.strokeStyle = color;
+                ctx.lineWidth = 2;
+                ctx.setLineDash([]);
+                ctx.beginPath();
+                ctx.moveTo(fromX, fromY);
+                ctx.lineTo(toX, toY);
+                ctx.stroke();
+
+                // 箭头尖端
+                const angle = Math.atan2(toY - fromY, toX - fromX);
+                const arrowLen = 10;
+                const arrowAngle = 0.5;
+                const tipX = toX;
+                const tipY = toY;
+                ctx.fillStyle = color;
+                ctx.beginPath();
+                ctx.moveTo(tipX, tipY);
+                ctx.lineTo(
+                    tipX - arrowLen * Math.cos(angle - arrowAngle),
+                    tipY - arrowLen * Math.sin(angle - arrowAngle)
+                );
+                ctx.lineTo(
+                    tipX - arrowLen * Math.cos(angle + arrowAngle),
+                    tipY - arrowLen * Math.sin(angle + arrowAngle)
+                );
+                ctx.closePath();
+                ctx.fill();
+
+                // 标签
+                if (label) {
+                    const midX = (fromX + toX) / 2;
+                    const midY = fromY - 12;
+                    ctx.fillStyle = color.replace('0.7', '0.9');
+                    ctx.font = 'bold 11px "PingFang SC","Microsoft YaHei",sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(label, midX, midY);
+                    ctx.textAlign = 'start';
+                }
+                ctx.restore();
+            }
+
+            function drawReferenceMarkers() {
+                // 地面固定参考点（画布底部标尺）
+                const refY = WATER_Y + 35;
+                ctx.strokeStyle = 'rgba(150,180,200,0.4)';
+                ctx.lineWidth = 1;
+                ctx.setLineDash([4, 6]);
+                ctx.beginPath();
+                ctx.moveTo(30, refY);
+                ctx.lineTo(CANVAS_W - 30, refY);
+                ctx.stroke();
+                ctx.setLineDash([]);
+
+                // 中心标记
+                const cx = BOAT_INIT_CENTER_X;
+                ctx.fillStyle = 'rgba(200,210,220,0.6)';
+                ctx.beginPath();
+                ctx.moveTo(cx, refY - 8);
+                ctx.lineTo(cx - 6, refY - 16);
+                ctx.lineTo(cx + 6, refY - 16);
+                ctx.closePath();
+                ctx.fill();
+                ctx.fillStyle = 'rgba(200,210,220,0.7)';
+                ctx.font = '10px "PingFang SC","Microsoft YaHei",sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('参考原点', cx, refY - 20);
+                ctx.textAlign = 'start';
+
+                // 刻度标记
+                for (let i = -3; i <= 3; i++) {
+                    const markX = cx + i * BOAT_LENGTH_PX_RATIO;
+                    if (markX > 20 && markX < CANVAS_W - 20) {
+                        ctx.fillStyle = 'rgba(160,190,210,0.5)';
+                        ctx.fillRect(markX - 0.5, refY - 4, 1, 8);
+                        if (i !== 0) {
+                            ctx.fillStyle = 'rgba(160,190,210,0.55)';
+                            ctx.font = '9px "PingFang SC","Microsoft YaHei",sans-serif';
+                            ctx.textAlign = 'center';
+                            ctx.fillText((i > 0 ? '+' : '') + i + 'm', markX, refY + 16);
+                            ctx.textAlign = 'start';
+                        }
+                    }
+                }
+            }
+
+            function drawHUDOverlay(time) {
+                // 画布内HUD - 右上角
+                const hudX = CANVAS_W - 175;
+                const hudY = 18;
+                ctx.fillStyle = 'rgba(8,16,28,0.8)';
+                ctx.strokeStyle = 'rgba(0,170,220,0.5)';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.roundRect(hudX - 10, hudY - 5, 165, 80, 10);
+                ctx.fill();
+                ctx.stroke();
+
+                ctx.fillStyle = '#80c8e0';
+                ctx.font = 'bold 10px "PingFang SC","Microsoft YaHei",sans-serif';
+                ctx.fillText('📐 实时数据', hudX, hudY + 12);
+                ctx.fillStyle = '#c0dce8';
+                ctx.font = '9px "PingFang SC","Microsoft YaHei",sans-serif';
+                const vPerson = massBoat * speedRel / getTotalMass();
+                const vBoat = -massPerson * speedRel / getTotalMass();
+                ctx.fillText(`人地速: ${vPerson.toFixed(2)} m/s`, hudX + 2, hudY + 30);
+                ctx.fillText(`船地速: ${vBoat.toFixed(2)} m/s`, hudX + 2, hudY + 46);
+                ctx.fillText(`进度: ${(progress * 100).toFixed(1)}%`, hudX + 2, hudY + 62);
+
+                // 状态指示器
+                const statusX = 20;
+                const statusY = 18;
+                ctx.fillStyle = 'rgba(8,16,28,0.8)';
+                ctx.strokeStyle = 'rgba(0,170,220,0.5)';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.roundRect(statusX - 5, statusY - 5, 100, 28, 10);
+                ctx.fill();
+                ctx.stroke();
+                const statusColor = isAnimating && !isPaused ? '#50ffb0' : (isPaused ? '#ffc048' : '#8098a8');
+                ctx.fillStyle = statusColor;
+                ctx.font = 'bold 10px "PingFang SC","Microsoft YaHei",sans-serif';
+                const statusText = isAnimating && !isPaused ? '● 运行中' : (isPaused ? '⏸ 已暂停' : '○ 就绪');
+                ctx.fillText(statusText, statusX + 2, statusY + 13);
+            }
+
+            function drawFrame(time) {
+                ctx.clearRect(0, 0, CANVAS_W, CANVAS_H);
+
+                drawBackground(time);
+                drawParticles(time);
+                drawWaterSurface(time);
+                drawReferenceMarkers();
+                drawGhostMarkers();
+                const boatData = drawBoat(time);
+                const personData = drawPerson(time, boatData);
+                drawFootprints(personData, boatData);
+                drawRipples(time);
+                drawDisplacementArrows(boatData);
+                drawHUDOverlay(time);
+            }
+
+            // ==================== 动画循环 ====================
+            function animate(timestamp) {
+                if (!lastTime) lastTime = timestamp;
+                let deltaTime = (timestamp - lastTime) / 1000;
+                lastTime = timestamp;
+
+                // 限制最大步长防止跳帧问题
+                if (deltaTime > 0.1) deltaTime = 0.1;
+                if (deltaTime <= 0) deltaTime = 0.016;
+
+                // 更新进度
+                if (isAnimating && !isPaused && progress < 1) {
+                    const progressSpeed = speedRel / BOAT_LENGTH_M; // 每秒进度增量
+                    progress += progressSpeed * deltaTime;
+                    if (progress >= 1) {
+                        progress = 1;
+                        isAnimating = false;
+                        updateButtonStates();
+                    }
+                }
+
+                // 更新HUD
+                updateHUD();
+
+                // 绘制
+                drawFrame(timestamp);
+
+                animationId = requestAnimationFrame(animate);
+            }
+
+            function updateHUD() {
+                const pMom = (isAnimating || progress > 0) ? getPersonMomentum() : 0;
+                const bMom = (isAnimating || progress > 0) ? getBoatMomentum() : 0;
+                const totalMom = pMom + bMom;
+                const pDisp = progress * getPersonDisplacementPx() / BOAT_LENGTH_PX_RATIO;
+                const bDisp = progress * getBoatDisplacementPx() / BOAT_LENGTH_PX_RATIO;
+
+                hudPersonMom.textContent = pMom.toFixed(2);
+                hudBoatMom.textContent = bMom.toFixed(2);
+                hudTotalMom.textContent = totalMom.toFixed(2);
+                hudPersonDisp.textContent = pDisp.toFixed(3);
+                hudBoatDisp.textContent = bDisp.toFixed(3);
+
+                // 总动量高亮（始终为0）
+                if (Math.abs(totalMom) < 0.001) {
+                    hudTotalMom.style.color = '#50ffb0';
+                } else {
+                    hudTotalMom.style.color = '#ff6b6b';
+                }
+            }
+
+            function updateButtonStates() {
+                if (isAnimating && !isPaused) {
+                    btnStart.style.display = 'none';
+                    btnPause.style.display = 'inline-block';
+                    btnPause.textContent = '⏯ 暂停';
+                } else if (isAnimating && isPaused) {
+                    btnStart.style.display = 'none';
+                    btnPause.style.display = 'inline-block';
+                    btnPause.textContent = '▶ 继续';
+                } else if (!isAnimating && progress > 0 && progress < 1) {
+                    btnStart.style.display = 'none';
+                    btnPause.style.display = 'inline-block';
+                    btnPause.textContent = '▶ 继续';
+                } else {
+                    btnStart.style.display = 'inline-block';
+                    btnPause.style.display = 'none';
+                }
+            }
+
+            function startAnimation() {
+                if (progress >= 1) {
+                    // 如果已完成，先重置再开始
+                    progress = 0;
+                }
+                isAnimating = true;
+                isPaused = false;
+                lastTime = null;
+                updateButtonStates();
+            }
+
+            function pauseAnimation() {
+                if (isAnimating) {
+                    isPaused = !isPaused;
+                    lastTime = null;
+                } else if (progress > 0 && progress < 1) {
+                    // 从暂停恢复
+                    isAnimating = true;
+                    isPaused = false;
+                    lastTime = null;
+                }
+                updateButtonStates();
+            }
+
+            function resetAnimation() {
+                isAnimating = false;
+                isPaused = false;
+                progress = 0;
+                lastTime = null;
+                ripplePoints = [];
+                footprintParticles = [];
+                updateButtonStates();
+                updateHUD();
+            }
+
+            // ==================== 事件监听 ====================
+            sliderMassPerson.addEventListener('input', () => {
+                massPerson = parseFloat(sliderMassPerson.value);
+                valMassPerson.innerHTML = massPerson + ' <span>kg</span>';
+                updateHUD();
+            });
+
+            sliderMassBoat.addEventListener('input', () => {
+                massBoat = parseFloat(sliderMassBoat.value);
+                valMassBoat.innerHTML = massBoat + ' <span>kg</span>';
+                updateHUD();
+            });
+
+            sliderSpeedRel.addEventListener('input', () => {
+                speedRel = parseFloat(sliderSpeedRel.value);
+                valSpeedRel.innerHTML = speedRel.toFixed(1) + ' <span>m/s</span>';
+                updateHUD();
+            });
+
+            btnStart.addEventListener('click', startAnimation);
+            btnPause.addEventListener('click', pauseAnimation);
+            btnReset.addEventListener('click', resetAnimation);
+
+            // 键盘快捷键
+            document.addEventListener('keydown', (e) => {
+                if (e.code === 'Space') {
+                    e.preventDefault();
+                    if (isAnimating && !isPaused) {
+                        pauseAnimation();
+                    } else if (progress < 1) {
+                        startAnimation();
+                    }
+                } else if (e.code === 'KeyR') {
+                    e.preventDefault();
+                    resetAnimation();
+                }
+            });
+
+            // 响应式处理
+            window.addEventListener('resize', () => {
+                resizeCanvas();
+                initParticles();
+                lastTime = null;
+            });
+
+            // 触摸支持
+            canvas.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                if (progress >= 1) {
+                    resetAnimation();
+                }
+                if (isAnimating && !isPaused) {
+                    pauseAnimation();
+                } else if (progress < 1) {
+                    startAnimation();
+                }
+            });
+
+            // ==================== 生成背景星空 ====================
+            function createStars() {
+                const container = document.getElementById('starsContainer');
+                container.innerHTML = '';
+                for (let i = 0; i < 90; i++) {
+                    const star = document.createElement('div');
+                    star.className = 'star';
+                    const size = Math.random() * 2.2 + 0.6;
+                    star.style.width = size + 'px';
+                    star.style.height = size + 'px';
+                    star.style.left = Math.random() * 100 + '%';
+                    star.style.top = Math.random() * 100 + '%';
+                    star.style.setProperty('--dur', (Math.random() * 4 + 2.5) + 's');
+                    star.style.setProperty('--delay', (Math.random() * 5) + 's');
+                    container.appendChild(star);
+                }
+            }
+
+            // ==================== 初始化 ====================
+            function init() {
+                resizeCanvas();
+                initParticles();
+                createStars();
+                updateHUD();
+                updateButtonStates();
+                lastTime = null;
+                animationId = requestAnimationFrame(animate);
+            }
+
+            // polyfill roundRect
+            if (!ctx.roundRect) {
+                ctx.roundRect = function(x, y, w, h, r) {
+                    if (typeof r === 'number') r = { tl: r, tr: r, br: r, bl: r };
+                    ctx.beginPath();
+                    ctx.moveTo(x + r.tl, y);
+                    ctx.lineTo(x + w - r.tr, y);
+                    ctx.quadraticCurveTo(x + w, y, x + w, y + r.tr);
+                    ctx.lineTo(x + w, y + h - r.br);
+                    ctx.quadraticCurveTo(x + w, y + h, x + w - r.br, y + h);
+                    ctx.lineTo(x + r.bl, y + h);
+                    ctx.quadraticCurveTo(x, y + h, x, y + h - r.bl);
+                    ctx.lineTo(x, y + r.tl);
+                    ctx.quadraticCurveTo(x, y, x + r.tl, y);
+                    ctx.closePath();
+                };
+            }
+
+            init();
+
+            console.log('🚀 人船模型 · 动量守恒演示已就绪');
+            console.log('   🎮 操作：调节滑块 → 点击"开始" → 观察动量守恒');
+            console.log('   ⌨ 快捷键：空格键 开始/暂停 | R键 重置');
+            console.log('   📱 支持触摸：点击画布 开始/暂停');
+            console.log('   💡 提示：调节质量滑块可实时预览位移变化');
+        })();
+    </script>
+
+<style>
+.back-btn {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    padding: 10px 20px;
+    background: rgba(0, 150, 200, 0.3);
+    border: 1px solid #00ffff;
+    color: white;
+    font-size: 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    z-index: 9999;
+    transition: 0.3s;
+    backdrop-filter: blur(5px);
+}
+.back-btn:hover {
+    background: rgba(0, 150, 200, 0.6);
+    box-shadow: 0 0 15px #00ffff;
+}
+</style>
+<button class="back-btn" onclick="goBack()">⬅️ 返回</button>
+<script>
+function goBack() {
+    history.back();
+}
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        goBack();
+    }
+});
+</script>
+
+
+<div class="watermark">齐老师动画</div>
+<style>
+.watermark {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    font-size: 14px;
+    color: rgba(0, 255, 255, 0.3);
+    z-index: 9998;
+    pointer-events: none;
+    user-select: none;
+}
+</style>
+
+
+<script>
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+});
+</script>
+
+
+<style>
+.back-btn {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    padding: 10px 20px;
+    background: rgba(0, 150, 200, 0.3);
+    border: 1px solid #00ffff;
+    color: white;
+    font-size: 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    z-index: 9999;
+    transition: 0.3s;
+    backdrop-filter: blur(5px);
+}
+.back-btn:hover {
+    background: rgba(0, 150, 200, 0.6);
+    box-shadow: 0 0 15px #00ffff;
+}
+</style>
+<button class="back-btn" onclick="goBack()">⬅️ 返回</button>
+<script>
+function goBack() {
+    history.back();
+}
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        goBack();
+    }
+});
+</script>
+
+
+<div class="watermark">齐老师动画</div>
+<style>
+.watermark {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    font-size: 14px;
+    color: rgba(0, 255, 255, 0.3);
+    z-index: 9998;
+    pointer-events: none;
+    user-select: none;
+}
+</style>
+
+
+<script>
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+});
+</script>
+
+
+<style>
+.back-btn {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    padding: 10px 20px;
+    background: rgba(0, 150, 200, 0.3);
+    border: 1px solid #00ffff;
+    color: white;
+    font-size: 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    z-index: 9999;
+    transition: 0.3s;
+    backdrop-filter: blur(5px);
+}
+.back-btn:hover {
+    background: rgba(0, 150, 200, 0.6);
+    box-shadow: 0 0 15px #00ffff;
+}
+</style>
+<button class="back-btn" onclick="goBack()">⬅️ 返回</button>
+<script>
+function goBack() {
+    history.back();
+}
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        goBack();
+    }
+});
+</script>
+
+
+<div class="watermark">齐老师动画</div>
+<style>
+.watermark {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    font-size: 14px;
+    color: rgba(0, 255, 255, 0.3);
+    z-index: 9998;
+    pointer-events: none;
+    user-select: none;
+}
+</style>
+
+
+<script>
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+});
+</script>
+
+
+<style>
+.back-btn {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    padding: 10px 20px;
+    background: rgba(0, 150, 200, 0.3);
+    border: 1px solid #00ffff;
+    color: white;
+    font-size: 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    z-index: 9999;
+    transition: 0.3s;
+    backdrop-filter: blur(5px);
+}
+.back-btn:hover {
+    background: rgba(0, 150, 200, 0.6);
+    box-shadow: 0 0 15px #00ffff;
+}
+</style>
+<button class="back-btn" onclick="goBack()">⬅️ 返回</button>
+<script>
+function goBack() {
+    history.back();
+}
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        goBack();
+    }
+});
+</script>
+
+
+<div class="watermark">齐老师动画</div>
+<style>
+.watermark {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    font-size: 14px;
+    color: rgba(0, 255, 255, 0.3);
+    z-index: 9998;
+    pointer-events: none;
+    user-select: none;
+}
+</style>
+
+
+<script>
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+});
+</script>
+
+
+  <script>
+  // 返回主页（滚动位置已在主页点击链接时保存）
+  function saveScrollAndReturn() {
+    window.location.href = '../index.html';
+  }
+  
+  // 禁用右键菜单
+  document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+  });
+  
+  // 禁用开发者工具快捷键
+  document.addEventListener('keydown', function(e) {
+    // ESC返回主页 - 保存滚动位置
+    if (e.keyCode === 27) {
+      saveScrollAndReturn();
+      return false;
+    }
+    // F12
+    if (e.keyCode === 123) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+U
+    if (e.ctrlKey && e.keyCode === 85) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+I
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 73) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+J
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 74) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+C
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 67) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+S
+    if (e.ctrlKey && e.keyCode === 83) {
+      e.preventDefault();
+      return false;
+    }
+  });
+  
+  // 禁用选择
+  document.addEventListener('selectstart', function(e) {
+    // 允许输入框选择
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+      return true;
+    }
+    e.preventDefault();
+    return false;
+  });
+  </script>
+</body>
+</html>
