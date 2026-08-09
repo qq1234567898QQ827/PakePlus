@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>不在五行中 · 约束摆</title>
+    <style>
+        :root {
+            --bg: #1a1a2e;
+            --surface: #16213e;
+            --text: #e0e0e0;
+            --accent: #4da6ff;
+        }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background: var(--bg);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', 'Noto Sans SC', sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            overflow-x: hidden;
+        }
+        .container {
+            position: relative;
+            background: var(--surface);
+            border-radius: 20px;
+            padding: 20px 20px 15px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.06);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            max-width: 95vw;
+        }
+        .zen-title {
+            color: #ffffff;
+            font-size: 1.8rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            margin-bottom: 10px;
+            text-align: center;
+            text-shadow: 0 0 12px rgba(255,255,255,0.3);
+        }
+        canvas {
+            display: block;
+            cursor: grab;
+            border-radius: 12px;
+            max-width: 100%;
+            height: auto;
+        }
+        canvas:active { cursor: grabbing; }
+        canvas.dragging { cursor: grabbing; }
+
+        .btn-row {
+            display: flex;
+            gap: 10px;
+            margin-top: 8px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        button {
+            background: rgba(255,255,255,0.08);
+            color: #ddd;
+            border: 1px solid rgba(255,255,255,0.2);
+            padding: 7px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            letter-spacing: 0.03em;
+            transition: all 0.2s;
+            font-family: inherit;
+        }
+        button:hover {
+            background: rgba(255,255,255,0.16);
+            border-color: rgba(255,255,255,0.4);
+            color: #fff;
+        }
+        button:active {
+            background: rgba(255,255,255,0.22);
+            transform: scale(0.96);
+        }
+        @media (max-width: 600px) {
+            .container { padding: 12px 8px 10px; border-radius: 14px; }
+            .zen-title { font-size: 1.4rem; }
+            button { padding: 6px 16px; font-size: 0.8rem; border-radius: 16px; }
+        }
+    </style>
+
+  <style>
+  body {
+    background-color: #1a2332 !important;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+  }
+  
+  .qilai-back-btn {
+    position: fixed;
+    top: 10px;
+    left: 15px;
+    z-index: 100000;
+    padding: 8px 16px;
+    background: rgba(0, 150, 200, 0.2);
+    border: 1px solid rgba(100, 180, 255, 0.5);
+    color: #8ab4f8;
+    font-size: 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.3s;
+    backdrop-filter: blur(5px);
+    font-family: "Microsoft YaHei", sans-serif;
+  }
+  
+  .qilai-back-btn:hover {
+    background: rgba(0, 150, 200, 0.4);
+    box-shadow: 0 0 15px rgba(100, 180, 255, 0.3);
+    color: #fff;
+  }
+  
+  .qilai-watermark {
+    position: fixed;
+    bottom: 15px;
+    right: 15px;
+    z-index: 99998;
+    font-size: 12px;
+    color: rgba(138, 180, 248, 0.35);
+    text-align: right;
+    line-height: 1.8;
+    pointer-events: none;
+    user-select: none;
+    font-family: "Microsoft YaHei", sans-serif;
+  }
+  
+  .qilai-watermark .title {
+    font-size: 14px;
+    font-weight: bold;
+    color: rgba(138, 180, 248, 0.45);
+    margin-bottom: 4px;
+    letter-spacing: 1px;
+  }
+  </style>
+</head>
+<body>
+  <a href="javascript:void(0);" class="qilai-back-btn" onclick="saveScrollAndReturn();">← 返回主页</a>
+  
+  <div class="qilai-watermark">
+    <div class="title">齐老师动画</div>
+    QQ 3398528250<br>
+    抖音 35320300542
+  </div>
+
+    <div class="container">
+        <div class="zen-title">不在五行中</div>
+        <canvas id="mainCanvas" width="750" height="520" aria-label="静态约束摆，白色小球"></canvas>
+        <div class="btn-row">
+            <button id="btnReset">↺ 重置</button>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            const canvas = document.getElementById('mainCanvas');
+            const ctx = canvas.getContext('2d');
+
+            function resizeCanvas() {
+                const container = canvas.parentElement;
+                const maxWidth = Math.min(container.clientWidth - 20, 750);
+                const scale = maxWidth / 750;
+                canvas.style.width = maxWidth + 'px';
+                canvas.style.height = Math.round(520 * scale) + 'px';
+            }
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+
+            // ---------- 几何参数 ----------
+            const BAR_Y = 105;
+            const barLeft = 90;
+            const barRight = 660;
+            const barWidth = barRight - barLeft;
+            const A_X = barLeft + barWidth / 5;
+            const L = 245;
+            const THREE_QUARTERS = (3 / 4) * L;
+            const ONE_QUARTER = L / 4;
+            const B_OFFSET = Math.sqrt(L * L - THREE_QUARTERS * THREE_QUARTERS);
+            const B_X_INIT = A_X + B_OFFSET;
+            const B_X_MAX = barRight - barWidth / 10;
+            const BALL_RADIUS = 14;
+            const KNOT_RADIUS = 5;
+            const ANCHOR_RADIUS = 6;
+
+            let B_x = B_X_INIT;
+            let phi = 0.0;
+            let P_x = A_X;
+            let P_y = BAR_Y + THREE_QUARTERS;
+            let ballPos = { x: P_x + ONE_QUARTER * Math.sin(phi), y: P_y + ONE_QUARTER * Math.cos(phi) };
+
+            let isDraggingBall = false;
+            let isDraggingB = false;
+
+            function computeP() {
+                const Ax = A_X, Ay = BAR_Y;
+                const Bx = B_x, By = BAR_Y;
+                const r1 = THREE_QUARTERS;
+                const r2 = L;
+                const d = Bx - Ax;
+                if (Math.abs(d) < 0.001) return null;
+                const d_sq = d * d;
+                const r1_sq = r1 * r1;
+                const r2_sq = r2 * r2;
+                const x = (d_sq + r1_sq - r2_sq) / (2 * d);
+                const y_sq = r1_sq - x * x;
+                if (y_sq < -0.001) return null;
+                const y = Math.sqrt(Math.max(0, y_sq));
+                return { x: Ax + x, y: Ay + y };
+            }
+
+            function updateP() {
+                const newP = computeP();
+                if (newP) { P_x = newP.x; P_y = newP.y; }
+            }
+            updateP();
+
+            function getBallPos(angle) {
+                return {
+                    x: P_x + ONE_QUARTER * Math.sin(angle),
+                    y: P_y + ONE_QUARTER * Math.cos(angle)
+                };
+            }
+
+            function updateBallFromPhi() {
+                const pos = getBallPos(phi);
+                ballPos.x = pos.x;
+                ballPos.y = pos.y;
+            }
+            updateBallFromPhi();
+
+            function clampBx(x) {
+                let clamped = Math.max(x, B_X_INIT);
+                clamped = Math.min(clamped, B_X_MAX);
+                return clamped;
+            }
+
+            function getCanvasPos(e) {
+                const rect = canvas.getBoundingClientRect();
+                const scaleX = 750 / rect.width;
+                const scaleY = 520 / rect.height;
+                return { x: (e.clientX - rect.left) * scaleX, y: (e.clientY - rect.top) * scaleY };
+            }
+
+            function getTouchPos(e) {
+                if (e.touches.length === 0) return null;
+                const rect = canvas.getBoundingClientRect();
+                const scaleX = 750 / rect.width;
+                const scaleY = 520 / rect.height;
+                return { x: (e.touches[0].clientX - rect.left) * scaleX, y: (e.touches[0].clientY - rect.top) * scaleY };
+            }
+
+            function isNearBall(px, py) {
+                const dx = px - ballPos.x;
+                const dy = py - ballPos.y;
+                return Math.sqrt(dx * dx + dy * dy) < BALL_RADIUS + 18;
+            }
+
+            function isNearB(px, py) {
+                const dx = px - B_x;
+                const dy = py - BAR_Y;
+                return Math.sqrt(dx * dx + dy * dy) < ANCHOR_RADIUS + 14;
+            }
+
+            function handleDragStart(px, py) {
+                if (isNearB(px, py)) {
+                    isDraggingB = true;
+                    canvas.classList.add('dragging');
+                    document.body.style.cursor = 'grabbing';
+                    return true;
+                }
+                if (isNearBall(px, py)) {
+                    isDraggingBall = true;
+                    canvas.classList.add('dragging');
+                    document.body.style.cursor = 'grabbing';
+                    return true;
+                }
+                return false;
+            }
+
+            function handleDragMove(px, py) {
+                if (isDraggingB) {
+                    B_x = clampBx(px);
+                    updateP();
+                    updateBallFromPhi();
+                } else if (isDraggingBall) {
+                    const dx = px - P_x;
+                    const dy = py - P_y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    if (dist > 0.001) {
+                        const scale = ONE_QUARTER / Math.max(dist, ONE_QUARTER * 0.1);
+                        const clampedX = P_x + dx * Math.min(1, scale);
+                        const clampedY = P_y + dy * Math.min(1, scale);
+                        ballPos.x = clampedX;
+                        ballPos.y = clampedY;
+                        phi = Math.atan2(ballPos.x - P_x, ballPos.y - P_y);
+                    }
+                }
+            }
+
+            function handleDragEnd() {
+                if (isDraggingBall || isDraggingB) {
+                    isDraggingBall = false;
+                    isDraggingB = false;
+                    canvas.classList.remove('dragging');
+                    document.body.style.cursor = '';
+                }
+            }
+
+            canvas.addEventListener('mousedown', (e) => {
+                const pos = getCanvasPos(e);
+                if (handleDragStart(pos.x, pos.y)) e.preventDefault();
+            });
+            canvas.addEventListener('mousemove', (e) => {
+                const pos = getCanvasPos(e);
+                if (isDraggingBall || isDraggingB) {
+                    handleDragMove(pos.x, pos.y);
+                } else {
+                    canvas.style.cursor = (isNearB(pos.x, pos.y) || isNearBall(pos.x, pos.y)) ? 'grab' : 'default';
+                }
+            });
+            window.addEventListener('mouseup', () => handleDragEnd());
+            canvas.addEventListener('touchstart', (e) => {
+                const pos = getTouchPos(e);
+                if (pos && handleDragStart(pos.x, pos.y)) e.preventDefault();
+            }, { passive: false });
+            canvas.addEventListener('touchmove', (e) => {
+                if (isDraggingBall || isDraggingB) {
+                    const pos = getTouchPos(e);
+                    if (pos) handleDragMove(pos.x, pos.y);
+                    e.preventDefault();
+                }
+            }, { passive: false });
+            canvas.addEventListener('touchend', () => handleDragEnd());
+            canvas.addEventListener('touchcancel', () => handleDragEnd());
+
+            const btnReset = document.getElementById('btnReset');
+
+            btnReset.addEventListener('click', () => {
+                B_x = B_X_INIT;
+                updateP();
+                phi = 0.0;
+                updateBallFromPhi();
+            });
+
+            function drawBar() {
+                const barThickness = 10;
+                ctx.fillStyle = '#e8e8e8';
+                ctx.beginPath();
+                ctx.roundRect(barLeft, BAR_Y - barThickness / 2, barRight - barLeft, barThickness, barThickness / 2);
+                ctx.fill();
+                const grad = ctx.createLinearGradient(0, BAR_Y - barThickness / 2, 0, BAR_Y + barThickness / 2);
+                grad.addColorStop(0, '#ffffff');
+                grad.addColorStop(0.3, '#f0f0f0');
+                grad.addColorStop(0.5, '#dcdcdc');
+                grad.addColorStop(1, '#b0b0b0');
+                ctx.fillStyle = grad;
+                ctx.beginPath();
+                ctx.roundRect(barLeft, BAR_Y - barThickness / 2, barRight - barLeft, barThickness, barThickness / 2);
+                ctx.fill();
+                ctx.strokeStyle = '#999';
+                ctx.lineWidth = 1.2;
+                ctx.beginPath();
+                ctx.roundRect(barLeft, BAR_Y - barThickness / 2, barRight - barLeft, barThickness, barThickness / 2);
+                ctx.stroke();
+            }
+
+            function drawAnchorPoint(x, y, color, radius = ANCHOR_RADIUS) {
+                ctx.fillStyle = '#444';
+                ctx.beginPath();
+                ctx.arc(x, y, radius + 3, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = color;
+                ctx.beginPath();
+                ctx.arc(x, y, radius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+                ctx.lineWidth = 1.2;
+                ctx.stroke();
+            }
+
+            function drawRope(x1, y1, x2, y2, color, lineWidth = 3.2) {
+                ctx.save();
+                ctx.strokeStyle = color;
+                ctx.lineWidth = lineWidth;
+                ctx.lineCap = 'round';
+                ctx.shadowColor = 'rgba(0,0,0,0.35)';
+                ctx.shadowBlur = 4;
+                ctx.shadowOffsetX = 1;
+                ctx.shadowOffsetY = 2;
+                ctx.beginPath();
+                ctx.moveTo(x1, y1);
+                ctx.lineTo(x2, y2);
+                ctx.stroke();
+                ctx.shadowColor = 'transparent';
+                ctx.shadowBlur = 0;
+                ctx.restore();
+
+                ctx.save();
+                ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+                ctx.lineWidth = lineWidth * 0.35;
+                ctx.lineCap = 'round';
+                ctx.beginPath();
+                ctx.moveTo(x1, y1);
+                ctx.lineTo(x2, y2);
+                ctx.stroke();
+                ctx.restore();
+            }
+
+            function drawKnot(x, y) {
+                const r = KNOT_RADIUS;
+                const grad = ctx.createRadialGradient(x - 0.5, y - 0.5, r * 0.2, x, y, r);
+                grad.addColorStop(0, '#c0c0c0');
+                grad.addColorStop(0.7, '#707070');
+                grad.addColorStop(1, '#3a3a3a');
+                ctx.fillStyle = grad;
+                ctx.beginPath();
+                ctx.arc(x, y, r, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = '#999';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+            }
+
+            function drawBall(x, y) {
+                const r = BALL_RADIUS;
+                // 阴影
+                ctx.fillStyle = 'rgba(0,0,0,0.2)';
+                ctx.beginPath();
+                ctx.arc(x + 3, y + 4, r, 0, Math.PI * 2);
+                ctx.fill();
+                // 白色球体渐变
+                const grad = ctx.createRadialGradient(x - r * 0.3, y - r * 0.4, r * 0.1, x, y, r);
+                grad.addColorStop(0, '#ffffff');
+                grad.addColorStop(0.35, '#f0f0f0');
+                grad.addColorStop(0.7, '#d5d5d5');
+                grad.addColorStop(1, '#b0b0b0');
+                ctx.fillStyle = grad;
+                ctx.beginPath();
+                ctx.arc(x, y, r, 0, Math.PI * 2);
+                ctx.fill();
+                // 高光
+                ctx.fillStyle = 'rgba(255,255,255,0.7)';
+                ctx.beginPath();
+                ctx.arc(x - r * 0.35, y - r * 0.38, r * 0.32, 0, Math.PI * 2);
+                ctx.fill();
+                // 边框
+                ctx.strokeStyle = '#888';
+                ctx.lineWidth = 1.8;
+                ctx.beginPath();
+                ctx.arc(x, y, r, 0, Math.PI * 2);
+                ctx.stroke();
+                // 顶部小高光点
+                ctx.fillStyle = 'rgba(255,255,255,0.9)';
+                ctx.beginPath();
+                ctx.arc(x - r * 0.25, y - r * 0.45, r * 0.13, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            function drawArrow(fromX, fromY, toX, toY, color, lineWidth = 2.5) {
+                const dx = toX - fromX;
+                const dy = toY - fromY;
+                const len = Math.sqrt(dx * dx + dy * dy);
+                if (len < 0.5) return;
+                const ux = dx / len;
+                const uy = dy / len;
+                const headLength = 10;
+                const headAngle = 0.5;
+
+                ctx.strokeStyle = color;
+                ctx.lineWidth = lineWidth;
+                ctx.lineCap = 'round';
+                ctx.beginPath();
+                ctx.moveTo(fromX, fromY);
+                ctx.lineTo(toX - ux * headLength, toY - uy * headLength);
+                ctx.stroke();
+
+                ctx.fillStyle = color;
+                ctx.beginPath();
+                const tipX = toX;
+                const tipY = toY;
+                const leftX = tipX - headLength * (ux * Math.cos(headAngle) - uy * Math.sin(headAngle));
+                const leftY = tipY - headLength * (uy * Math.cos(headAngle) + ux * Math.sin(headAngle));
+                const rightX = tipX - headLength * (ux * Math.cos(headAngle) + uy * Math.sin(headAngle));
+                const rightY = tipY - headLength * (uy * Math.cos(headAngle) - ux * Math.sin(headAngle));
+                ctx.moveTo(tipX, tipY);
+                ctx.lineTo(leftX, leftY);
+                ctx.lineTo(rightX, rightY);
+                ctx.closePath();
+                ctx.fill();
+            }
+
+            function drawGravityArrow(x, y) {
+                const gravityLength = 50;
+                const startX = x;
+                const startY = y;
+                const endX = x;
+                const endY = y + gravityLength;
+
+                ctx.strokeStyle = '#ff6b6b';
+                ctx.lineWidth = 2.5;
+                ctx.lineCap = 'round';
+                ctx.beginPath();
+                ctx.moveTo(startX, startY);
+                ctx.lineTo(endX, endY - 10);
+                ctx.stroke();
+
+                ctx.fillStyle = '#ff6b6b';
+                ctx.beginPath();
+                const tipX = endX;
+                const tipY = endY;
+                const headLength = 10;
+                const headAngle = 0.5;
+                const leftX = tipX - headLength * Math.sin(headAngle);
+                const leftY = tipY - headLength * Math.cos(headAngle);
+                const rightX = tipX + headLength * Math.sin(headAngle);
+                const rightY = tipY - headLength * Math.cos(headAngle);
+                ctx.moveTo(tipX, tipY);
+                ctx.lineTo(leftX, leftY);
+                ctx.lineTo(rightX, rightY);
+                ctx.closePath();
+                ctx.fill();
+
+                ctx.fillStyle = '#ff6b6b';
+                ctx.font = "bold 13px 'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif";
+                ctx.textAlign = 'center';
+                ctx.fillText('mg', endX, endY + 18);
+            }
+
+            function drawForceArrows() {
+                const ax = A_X - P_x;
+                const ay = BAR_Y - P_y;
+                const lenA = Math.sqrt(ax * ax + ay * ay);
+                if (lenA < 0.001) return null;
+                const uAP_x = ax / lenA;
+                const uAP_y = ay / lenA;
+
+                const bx = B_x - P_x;
+                const by = BAR_Y - P_y;
+                const lenB = Math.sqrt(bx * bx + by * by);
+                if (lenB < 0.001) return null;
+                const uBP_x = bx / lenB;
+                const uBP_y = by / lenB;
+
+                const mx = ballPos.x - P_x;
+                const my = ballPos.y - P_y;
+                const lenM = Math.sqrt(mx * mx + my * my);
+                if (lenM < 0.001) return null;
+                const uPM_x = mx / lenM;
+                const uPM_y = my / lenM;
+
+                const a = uAP_x, b = uBP_x, c = -uPM_x;
+                const d = uAP_y, e = uBP_y, f = -uPM_y;
+                const det = a * e - b * d;
+                let T_AP, T_BP;
+                if (Math.abs(det) > 0.001) {
+                    T_AP = (c * e - b * f) / det;
+                    T_BP = (a * f - c * d) / det;
+                } else {
+                    T_AP = 1;
+                    T_BP = 1;
+                }
+                const T_PM = 1.0;
+                const forceScale = 114;
+                const sc_AP = T_AP * forceScale;
+                const sc_BP = T_BP * forceScale;
+                const sc_PM = T_PM * forceScale;
+
+                drawArrow(P_x, P_y, P_x + uAP_x * sc_AP, P_y + uAP_y * sc_AP, '#ffffff', 2.8);
+                drawArrow(P_x, P_y, P_x + uBP_x * sc_BP, P_y + uBP_y * sc_BP, '#2ecc71', 2.8);
+                drawArrow(P_x, P_y, P_x + uPM_x * sc_PM, P_y + uPM_y * sc_PM, '#f1c40f', 2.8);
+
+                return {
+                    uAP: { x: uAP_x, y: uAP_y, mag: sc_AP },
+                    uBP: { x: uBP_x, y: uBP_y, mag: sc_BP },
+                    uPM: { x: uPM_x, y: uPM_y, mag: sc_PM }
+                };
+            }
+
+            function drawForceTriangle(forces) {
+                if (!forces) return;
+                const triStartX = 550;
+                const triStartY = 370;
+                const p0 = { x: triStartX, y: triStartY };
+                const p1 = { x: p0.x + forces.uAP.x * forces.uAP.mag, y: p0.y + forces.uAP.y * forces.uAP.mag };
+                const p2 = { x: p1.x + forces.uBP.x * forces.uBP.mag, y: p1.y + forces.uBP.y * forces.uBP.mag };
+                drawArrow(p0.x, p0.y, p1.x, p1.y, '#ffffff', 2.5);
+                drawArrow(p1.x, p1.y, p2.x, p2.y, '#2ecc71', 2.5);
+                drawArrow(p2.x, p2.y, p0.x, p0.y, '#f1c40f', 2.5);
+            }
+
+            function drawLabel(x, y, text, color, fontSize = 13, fontWeight = '600') {
+                ctx.save();
+                const metrics = ctx.measureText(text);
+                const tw = metrics.width;
+                const th = fontSize;
+                ctx.fillStyle = 'rgba(0,0,0,0.6)';
+                ctx.fillRect(x - tw / 2 - 6, y - th / 2 - 3, tw + 12, th + 6);
+                ctx.fillStyle = color;
+                ctx.font = `${fontWeight} ${fontSize}px 'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(text, x, y);
+                ctx.restore();
+            }
+
+            function render() {
+                ctx.clearRect(0, 0, 750, 520);
+                ctx.fillStyle = '#1c1c2e';
+                ctx.fillRect(0, 0, 750, 520);
+                ctx.strokeStyle = 'rgba(255,255,255,0.025)';
+                ctx.lineWidth = 0.8;
+                for (let gx = 35; gx < 750; gx += 35) {
+                    ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, 520); ctx.stroke();
+                }
+                for (let gy = 35; gy < 520; gy += 35) {
+                    ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(750, gy); ctx.stroke();
+                }
+
+                drawBar();
+                drawRope(A_X, BAR_Y, P_x, P_y, '#e74c3c', 3.2);
+                drawRope(B_x, BAR_Y, P_x, P_y, '#3498db', 3.0);
+                drawRope(P_x, P_y, ballPos.x, ballPos.y, '#e74c3c', 3.2);
+
+                drawAnchorPoint(A_X, BAR_Y, '#e74c3c', ANCHOR_RADIUS);
+                drawAnchorPoint(B_x, BAR_Y, '#3498db', ANCHOR_RADIUS);
+                drawKnot(P_x, P_y);
+                drawBall(ballPos.x, ballPos.y);
+
+                drawGravityArrow(ballPos.x, ballPos.y);
+
+                drawLabel(A_X, BAR_Y - 22, 'A', '#ff6b6b', 14);
+                drawLabel(B_x, BAR_Y - 24, 'B', '#6bb5ff', 13);
+                drawLabel(P_x - 22, P_y, 'P', '#ccc', 12, '500');
+                drawLabel(ballPos.x - BALL_RADIUS - 22, ballPos.y, '小球', '#ddd', 13, '600');
+
+                const forces = drawForceArrows();
+                drawForceTriangle(forces);
+            }
+
+            function animate() {
+                render();
+                requestAnimationFrame(animate);
+            }
+
+            requestAnimationFrame(animate);
+        })();
+    </script>
+
+  <script>
+  // 返回主页（滚动位置已在主页点击链接时保存）
+  function saveScrollAndReturn() {
+    window.location.href = '../index.html';
+  }
+  
+  // 禁用右键菜单
+  document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+  });
+  
+  // 禁用开发者工具快捷键
+  document.addEventListener('keydown', function(e) {
+    // ESC返回主页 - 保存滚动位置
+    if (e.keyCode === 27) {
+      saveScrollAndReturn();
+      return false;
+    }
+    // F12
+    if (e.keyCode === 123) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+U
+    if (e.ctrlKey && e.keyCode === 85) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+I
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 73) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+J
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 74) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+C
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 67) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+S
+    if (e.ctrlKey && e.keyCode === 83) {
+      e.preventDefault();
+      return false;
+    }
+  });
+  
+  // 禁用选择
+  document.addEventListener('selectstart', function(e) {
+    // 允许输入框选择
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+      return true;
+    }
+    e.preventDefault();
+    return false;
+  });
+  </script>
+</body>
+</html>
