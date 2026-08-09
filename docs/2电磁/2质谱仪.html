@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>质谱仪 · 高中物理动画</title>
+    <style>
+        :root {
+            --bg: #1a1a2e;
+            --surface: #16213e;
+            --text: #e0e0e0;
+            --accent: #4da6ff;
+            --gold: #f0c060;
+        }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background: var(--bg);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', 'Helvetica Neue', sans-serif;
+            padding: 14px;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .main-container {
+            background: var(--surface);
+            border-radius: 18px;
+            padding: 14px 18px;
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.05);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+        .title {
+            color: #fff;
+            font-size: 1.2rem;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .badge {
+            background: #e94560;
+            color: #fff;
+            font-size: 0.6rem;
+            padding: 3px 8px;
+            border-radius: 14px;
+            letter-spacing: 0.04em;
+            font-weight: 600;
+        }
+        .badge.live {
+            background: #0f9;
+            color: #111;
+            animation: pulse-badge 1.2s ease-in-out infinite;
+        }
+        @keyframes pulse-badge {
+            0%,
+            100% {
+                box-shadow: 0 0 6px #0f9;
+            }
+            50% {
+                box-shadow: 0 0 18px #0f9, 0 0 34px #0f9;
+            }
+        }
+        canvas {
+            display: block;
+            border-radius: 12px;
+            background: #0b0f17;
+            box-shadow: inset 0 0 50px rgba(0, 0, 0, 0.45);
+            max-width: 100%;
+            height: auto;
+        }
+        .control-panel {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: center;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.02);
+            padding: 8px 14px;
+            border-radius: 28px;
+            backdrop-filter: blur(6px);
+        }
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            color: #ccc;
+            font-size: 0.72rem;
+            font-weight: 500;
+            letter-spacing: 0.03em;
+            flex-wrap: wrap;
+        }
+        button {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            color: #ddd;
+            padding: 5px 11px;
+            border-radius: 22px;
+            font-size: 0.72rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            letter-spacing: 0.03em;
+            backdrop-filter: blur(4px);
+            white-space: nowrap;
+            user-select: none;
+        }
+        button:hover {
+            background: rgba(255, 255, 255, 0.13);
+            border-color: var(--accent);
+            color: #fff;
+            box-shadow: 0 0 10px rgba(77, 166, 255, 0.35);
+        }
+        button.active {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: #000;
+            font-weight: 700;
+            box-shadow: 0 0 14px var(--accent);
+        }
+        .ion-btn {
+            min-width: 56px;
+        }
+        .ion-btn.launched {
+            background: rgba(255, 144, 96, 0.3);
+            border-color: #ff9060;
+            color: #ffccaa;
+        }
+        .clear-btn {
+            background: rgba(255, 80, 80, 0.15);
+            border-color: rgba(255, 80, 80, 0.4);
+        }
+        .clear-btn:hover {
+            background: rgba(255, 80, 80, 0.3);
+            border-color: #ff4444;
+            box-shadow: 0 0 10px rgba(255, 80, 80, 0.5);
+        }
+        .legend-row {
+            display: flex;
+            gap: 14px;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+            color: #bbb;
+            font-size: 0.72rem;
+            letter-spacing: 0.03em;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .legend-dot {
+            width: 9px;
+            height: 9px;
+            border-radius: 50%;
+            display: inline-block;
+            flex-shrink: 0;
+        }
+        .legend-dot.H {
+            background: #ff4444;
+            box-shadow: 0 0 6px #ff4444;
+        }
+        .legend-dot.D {
+            background: #4488ff;
+            box-shadow: 0 0 6px #4488ff;
+        }
+        .legend-dot.T {
+            background: #ffffff;
+            box-shadow: 0 0 6px #ffffff;
+            border: 1px solid #ccc;
+        }
+        .legend-dot.He {
+            background: #ffcc00;
+            box-shadow: 0 0 6px #ffcc00;
+        }
+    </style>
+
+  <style>
+  body {
+    background-color: #1a2332 !important;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+  }
+  
+  .qilai-back-btn {
+    position: fixed;
+    top: 10px;
+    left: 15px;
+    z-index: 100000;
+    padding: 8px 16px;
+    background: rgba(0, 150, 200, 0.2);
+    border: 1px solid rgba(100, 180, 255, 0.5);
+    color: #8ab4f8;
+    font-size: 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.3s;
+    backdrop-filter: blur(5px);
+    font-family: "Microsoft YaHei", sans-serif;
+  }
+  
+  .qilai-back-btn:hover {
+    background: rgba(0, 150, 200, 0.4);
+    box-shadow: 0 0 15px rgba(100, 180, 255, 0.3);
+    color: #fff;
+  }
+  
+  .qilai-watermark {
+    position: fixed;
+    bottom: 15px;
+    right: 15px;
+    z-index: 99998;
+    font-size: 12px;
+    color: rgba(138, 180, 248, 0.35);
+    text-align: right;
+    line-height: 1.8;
+    pointer-events: none;
+    user-select: none;
+    font-family: "Microsoft YaHei", sans-serif;
+  }
+  
+  .qilai-watermark .title {
+    font-size: 14px;
+    font-weight: bold;
+    color: rgba(138, 180, 248, 0.45);
+    margin-bottom: 4px;
+    letter-spacing: 1px;
+  }
+  </style>
+</head>
+<body>
+  <a href="javascript:void(0);" class="qilai-back-btn" onclick="saveScrollAndReturn();">← 返回主页</a>
+  
+  <div class="qilai-watermark">
+    <div class="title">齐老师动画</div>
+    QQ 3398528250<br>
+    抖音 35320300542
+  </div>
+
+    <div class="main-container">
+        <div class="title">
+            🧲 质谱仪 (Mass Spectrometer)
+            <span class="badge live">● 实时</span>
+            <span class="badge">r = mv/qB</span>
+        </div>
+        <canvas id="mainCanvas"></canvas>
+
+        <div class="control-panel">
+            <div class="control-group">
+                <span>🔬 发射粒子</span>
+                <button id="btnH" class="ion-btn">氕核</button>
+                <button id="btnD" class="ion-btn">氘核</button>
+                <button id="btnT" class="ion-btn">氚核</button>
+                <button id="btnHe" class="ion-btn">氦核</button>
+            </div>
+            <div class="control-group">
+                <button id="btnClear" class="clear-btn" title="清空所有轨迹">🗑 清空轨迹</button>
+            </div>
+        </div>
+
+        <div class="legend-row">
+            <span class="legend-item"><span class="legend-dot H"></span> 氕核 ¹H⁺</span>
+            <span class="legend-item"><span class="legend-dot D"></span> 氘核 ²H⁺</span>
+            <span class="legend-item"><span class="legend-dot T"></span> 氚核 ³H⁺</span>
+            <span class="legend-item"><span class="legend-dot He"></span> 氦核 ⁴He²⁺</span>
+            <span class="legend-item">🧲 磁场 B⊗ 向里</span>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            const canvas = document.getElementById('mainCanvas');
+            const ctx = canvas.getContext('2d');
+
+            const W = 960;
+            const H = 560;
+            canvas.width = W;
+            canvas.height = H;
+
+            function resizeCanvas() {
+                const maxWidth = Math.min(window.innerWidth - 28, 960);
+                const scale = maxWidth / W;
+                canvas.style.width = maxWidth + 'px';
+                canvas.style.height = (H * scale) + 'px';
+            }
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+
+            // 几何参数
+            const sourceX = 120;
+            const sourceY = 200;
+            const platePosX = 160;
+            const plateNegX = 190;
+            const magLeftX = 260;
+            const magRightX = 620;
+            const magTopY = 100;
+            const magBottomY = 520;
+            const entryX = magLeftX;
+            const entryY = 200;
+            const detectorX = entryX - 30;
+            const accelDuration = 18;
+
+            // 粒子定义 (氦核半径修正为与氘核相同，因比荷相等)
+            const particleDefs = [
+                { id: 'H', label: '¹H⁺', mass: 1, charge: 1, radius: 60, color: '#ff4444', glow: '#ff6666' },
+                { id: 'D', label: '²H⁺', mass: 2, charge: 1, radius: 85, color: '#4488ff', glow: '#66aaff' },
+                { id: 'T', label: '³H⁺', mass: 3, charge: 1, radius: 104, color: '#ffffff', glow: '#eeeeee' },
+                { id: 'He', label: '⁴He²⁺', mass: 4, charge: 2, radius: 85, color: '#ffcc00', glow: '#ffdd44' }
+            ];
+
+            let particleStates = new Map();
+            for (const p of particleDefs) {
+                particleStates.set(p.id, {
+                    launchTime: null,
+                    trail: [],
+                    completed: false
+                });
+            }
+
+            let animationId = null;
+
+            function launchParticle(id) {
+                const state = particleStates.get(id);
+                state.trail = [];
+                state.launchTime = performance.now();
+                state.completed = false;
+                updateButtonStyles();
+            }
+
+            function clearAllTrails() {
+                for (const p of particleDefs) {
+                    const state = particleStates.get(p.id);
+                    state.trail = [];
+                    state.launchTime = null;
+                    state.completed = false;
+                }
+                updateButtonStyles();
+            }
+
+            function updateButtonStyles() {
+                for (const p of particleDefs) {
+                    const btn = document.getElementById('btn' + p.id);
+                    const state = particleStates.get(p.id);
+                    if (state.launchTime !== null) {
+                        btn.classList.add('launched');
+                    } else {
+                        btn.classList.remove('launched');
+                    }
+                }
+            }
+
+            document.getElementById('btnH').addEventListener('click', () => launchParticle('H'));
+            document.getElementById('btnD').addEventListener('click', () => launchParticle('D'));
+            document.getElementById('btnT').addEventListener('click', () => launchParticle('T'));
+            document.getElementById('btnHe').addEventListener('click', () => launchParticle('He'));
+            document.getElementById('btnClear').addEventListener('click', clearAllTrails);
+
+            function drawSource() {
+                ctx.fillStyle = '#ff9060';
+                ctx.font = 'bold 14px "PingFang SC","Microsoft YaHei",sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('S', sourceX, sourceY);
+                ctx.beginPath();
+                ctx.arc(sourceX, sourceY, 10, 0, Math.PI * 2);
+                ctx.strokeStyle = '#ff9060';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                ctx.fillStyle = '#aaa';
+                ctx.font = 'bold 10px "PingFang SC","Microsoft YaHei",sans-serif';
+                ctx.fillText('离子源', sourceX, sourceY + 22);
+            }
+
+            function drawAccelPlates() {
+                const plateTop = sourceY - 30;
+                const plateH = 60;
+                ctx.fillStyle = '#c9a96e';
+                ctx.fillRect(platePosX, plateTop, 8, plateH);
+                ctx.fillRect(plateNegX, plateTop, 8, plateH);
+                ctx.fillStyle = '#ffffff';
+                ctx.font = 'bold 12px "PingFang SC","Microsoft YaHei",sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('+', platePosX + 4, plateTop - 10);
+                ctx.fillText('−', plateNegX + 4, plateTop - 10);
+                ctx.fillStyle = '#aaa';
+                ctx.font = 'bold 10px "PingFang SC","Microsoft YaHei",sans-serif';
+                ctx.fillText('加速电场', (platePosX + plateNegX) / 2, plateTop - 26);
+            }
+
+            function drawMagneticRegion() {
+                ctx.fillStyle = 'rgba(30, 40, 60, 0.35)';
+                ctx.strokeStyle = '#4da6ff';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.rect(magLeftX, magTopY, magRightX - magLeftX, magBottomY - magTopY);
+                ctx.fill();
+                ctx.stroke();
+
+                const cols = 8;
+                const rows = 7;
+                const stepX = (magRightX - magLeftX) / (cols + 1);
+                const stepY = (magBottomY - magTopY) / (rows + 1);
+                ctx.fillStyle = '#ffcc00';
+                ctx.font = 'bold 12px "Segoe UI","PingFang SC",sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                for (let r = 1; r <= rows; r++) {
+                    for (let c = 1; c <= cols; c++) {
+                        ctx.fillText('×', magLeftX + c * stepX, magTopY + r * stepY);
+                    }
+                }
+                ctx.fillStyle = '#ffcc00';
+                ctx.font = 'bold 13px "PingFang SC","Microsoft YaHei",sans-serif';
+                ctx.fillText('B⊗ 匀强磁场', magRightX - 90, magTopY + 25);
+
+                ctx.strokeStyle = '#ddd';
+                ctx.lineWidth = 3;
+                ctx.setLineDash([]);
+                ctx.beginPath();
+                ctx.moveTo(detectorX, entryY);
+                ctx.lineTo(detectorX, magBottomY);
+                ctx.stroke();
+                ctx.fillStyle = '#ccc';
+                ctx.font = 'bold 11px "PingFang SC","Microsoft YaHei",sans-serif';
+                ctx.textAlign = 'right';
+                ctx.fillText('探测器', detectorX - 8, entryY + 40);
+
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 2;
+                ctx.setLineDash([3, 3]);
+                ctx.beginPath();
+                ctx.moveTo(entryX - 5, entryY - 12);
+                ctx.lineTo(entryX + 5, entryY);
+                ctx.lineTo(entryX - 5, entryY + 12);
+                ctx.stroke();
+                ctx.setLineDash([]);
+                ctx.fillStyle = '#fff';
+                ctx.font = 'bold 9px "PingFang SC","Microsoft YaHei",sans-serif';
+                ctx.textAlign = 'left';
+                ctx.fillText('入射口', entryX + 12, entryY);
+            }
+
+            function drawParticles(now) {
+                for (const p of particleDefs) {
+                    const state = particleStates.get(p.id);
+                    if (state.launchTime === null) continue;
+
+                    const elapsed = (now - state.launchTime) / 1000 * 30;
+                    const r = p.radius;
+                    const centerX = entryX;
+                    const centerY = entryY + r;
+
+                    let px, py;
+                    if (elapsed < accelDuration) {
+                        const accelProgress = elapsed / accelDuration;
+                        px = sourceX + 20 + (entryX - sourceX - 20) * accelProgress;
+                        py = sourceY;
+                    } else {
+                        const magTime = elapsed - accelDuration;
+                        const maxAngle = Math.PI;
+                        const bendDuration = r * 0.7;
+                        const progress = Math.min(1, magTime / bendDuration);
+                        const currentAngle = progress * maxAngle;
+                        if (progress < 1) {
+                            px = centerX + r * Math.sin(currentAngle);
+                            py = centerY - r * Math.cos(currentAngle);
+                        } else {
+                            px = detectorX;
+                            py = entryY + 2 * r;
+                            if (!state.completed) state.completed = true;
+                        }
+                    }
+
+                    let trail = state.trail;
+                    if (trail.length === 0 || Math.abs(px - trail[trail.length - 1].x) > 0.5 || Math.abs(py -
+                            trail[trail.length - 1].y) > 0.5) {
+                        trail.push({ x: px, y: py });
+                        if (trail.length > 2000) trail.splice(0, 500);
+                    }
+
+                    if (trail.length >= 2) {
+                        ctx.strokeStyle = p.color;
+                        ctx.lineWidth = 2.5;
+                        ctx.setLineDash([]);
+                        ctx.lineCap = 'round';
+                        ctx.lineJoin = 'round';
+                        ctx.shadowColor = p.glow;
+                        ctx.shadowBlur = 4;
+                        ctx.beginPath();
+                        ctx.moveTo(trail[0].x, trail[0].y);
+                        for (let i = 1; i < trail.length; i++) {
+                            ctx.lineTo(trail[i].x, trail[i].y);
+                        }
+                        ctx.stroke();
+                        ctx.shadowBlur = 0;
+                    }
+
+                    if (state.completed) {
+                        const hitY = entryY + 2 * r;
+                        const flashAlpha = 0.5 + 0.5 * Math.sin(performance.now() / 200);
+                        ctx.fillStyle = p.color;
+                        ctx.globalAlpha = flashAlpha;
+                        ctx.beginPath();
+                        ctx.arc(detectorX, hitY, 7, 0, Math.PI * 2);
+                        ctx.fill();
+                        ctx.globalAlpha = 1;
+                        ctx.fillStyle = p.color;
+                        ctx.font = 'bold 10px "PingFang SC","Microsoft YaHei",sans-serif';
+                        ctx.textAlign = 'right';
+                        ctx.fillText(p.label, detectorX - 8, hitY + 4);
+                    }
+
+                    const glowR = 11;
+                    const glowGrad = ctx.createRadialGradient(px, py, 2, px, py, glowR);
+                    glowGrad.addColorStop(0, p.glow);
+                    glowGrad.addColorStop(1, 'rgba(0,0,0,0)');
+                    ctx.fillStyle = glowGrad;
+                    ctx.beginPath();
+                    ctx.arc(px, py, glowR, 0, Math.PI * 2);
+                    ctx.fill();
+                    const bodyGrad = ctx.createRadialGradient(px - 1, py - 1, 1, px, py, 6);
+                    bodyGrad.addColorStop(0, '#ffffff');
+                    bodyGrad.addColorStop(0.5, p.color);
+                    bodyGrad.addColorStop(1, '#000000');
+                    ctx.fillStyle = bodyGrad;
+                    ctx.beginPath();
+                    ctx.arc(px, py, 6, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.strokeStyle = 'rgba(255,255,255,0.7)';
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
+                    ctx.fillStyle = '#fff';
+                    ctx.font = 'bold 7px "Segoe UI","PingFang SC",sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(p.id, px, py);
+                }
+
+                for (const p of particleDefs) {
+                    const state = particleStates.get(p.id);
+                    if (state.launchTime === null) continue;
+                    const elapsed = (now - state.launchTime) / 1000 * 30;
+                    if (elapsed < accelDuration && elapsed > 0) {
+                        const accelProgress = elapsed / accelDuration;
+                        const beamEndX = sourceX + 20 + (entryX - sourceX - 20) * accelProgress;
+                        const glowGrad = ctx.createRadialGradient(beamEndX, sourceY, 2, beamEndX, sourceY, 10);
+                        glowGrad.addColorStop(0, p.glow);
+                        glowGrad.addColorStop(1, 'rgba(0,0,0,0)');
+                        ctx.fillStyle = glowGrad;
+                        ctx.beginPath();
+                        ctx.arc(beamEndX, sourceY, 10, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                }
+            }
+
+            function drawAnnotations() {
+                const tx = W / 2;
+                const ty = 20;
+                const text = '质谱仪原理：电场加速 → 磁场偏转 → 按比荷分离 (r ∝ mv/qB)';
+                ctx.font = 'bold 11px "PingFang SC","Microsoft YaHei",sans-serif';
+                const m = ctx.measureText(text);
+                const bw = m.width + 16;
+                const bh = 20;
+                ctx.fillStyle = 'rgba(20,20,40,0.72)';
+                ctx.strokeStyle = 'rgba(255,200,100,0.45)';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.roundRect(tx - bw / 2, ty - bh / 2, bw, bh, 5);
+                ctx.fill();
+                ctx.stroke();
+                ctx.fillStyle = '#f0c060';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(text, tx, ty);
+
+                const fx = W - 14;
+                const fy = H - 14;
+                const ftext = 'r = mv/qB    r∝√(m/q)    (相同加速电压)';
+                ctx.font = 'bold 10px "PingFang SC","Microsoft YaHei",sans-serif';
+                const fm = ctx.measureText(ftext);
+                ctx.fillStyle = 'rgba(20,20,40,0.7)';
+                ctx.strokeStyle = 'rgba(255,200,100,0.4)';
+                ctx.lineWidth = 0.8;
+                ctx.beginPath();
+                ctx.roundRect(fx - fm.width - 12, fy - 18, fm.width + 12, 18, 4);
+                ctx.fill();
+                ctx.stroke();
+                ctx.fillStyle = '#f0c060';
+                ctx.textAlign = 'right';
+                ctx.fillText(ftext, fx - 6, fy - 7);
+            }
+
+            function drawFrame(now) {
+                ctx.clearRect(0, 0, W, H);
+                ctx.strokeStyle = 'rgba(255,255,255,0.015)';
+                ctx.lineWidth = 0.4;
+                for (let gx = 0; gx < W; gx += 30) { ctx.beginPath();
+                    ctx.moveTo(gx, 0);
+                    ctx.lineTo(gx, H);
+                    ctx.stroke(); }
+                for (let gy = 0; gy < H; gy += 30) { ctx.beginPath();
+                    ctx.moveTo(0, gy);
+                    ctx.lineTo(W, gy);
+                    ctx.stroke(); }
+
+                drawAnnotations();
+                drawSource();
+                drawAccelPlates();
+                drawMagneticRegion();
+                drawParticles(now);
+            }
+
+            function animate(timestamp) {
+                drawFrame(timestamp);
+                animationId = requestAnimationFrame(animate);
+            }
+
+            function startAnimation() {
+                if (animationId) {
+                    cancelAnimationFrame(animationId);
+                    animationId = null;
+                }
+                animationId = requestAnimationFrame(animate);
+            }
+            startAnimation();
+            updateButtonStyles();
+        })();
+    </script>
+
+  <script>
+  // 返回主页（滚动位置已在主页点击链接时保存）
+  function saveScrollAndReturn() {
+    window.location.href = '../index.html';
+  }
+  
+  // 禁用右键菜单
+  document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+  });
+  
+  // 禁用开发者工具快捷键
+  document.addEventListener('keydown', function(e) {
+    // ESC返回主页 - 保存滚动位置
+    if (e.keyCode === 27) {
+      saveScrollAndReturn();
+      return false;
+    }
+    // F12
+    if (e.keyCode === 123) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+U
+    if (e.ctrlKey && e.keyCode === 85) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+I
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 73) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+J
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 74) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+C
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 67) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+S
+    if (e.ctrlKey && e.keyCode === 83) {
+      e.preventDefault();
+      return false;
+    }
+  });
+  
+  // 禁用选择
+  document.addEventListener('selectstart', function(e) {
+    // 允许输入框选择
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+      return true;
+    }
+    e.preventDefault();
+    return false;
+  });
+  </script>
+</body>
+</html>
