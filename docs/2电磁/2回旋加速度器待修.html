@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>回旋加速器 · 高中物理动画</title>
+    <style>
+        :root {
+            --bg: #1a1a2e;
+            --surface: #16213e;
+            --text: #e0e0e0;
+            --accent: #4da6ff;
+            --gold: #f0c060;
+        }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background: var(--bg);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', 'Helvetica Neue', sans-serif;
+            padding: 8px;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .main-container {
+            background: var(--surface);
+            border-radius: 14px;
+            padding: 8px 14px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.05);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+        }
+        .title {
+            color: #fff;
+            font-size: 1.1rem;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .badge {
+            background: #e94560;
+            color: #fff;
+            font-size: 0.55rem;
+            padding: 2px 6px;
+            border-radius: 10px;
+            letter-spacing: 0.04em;
+            font-weight: 600;
+        }
+        .badge.live {
+            background: #0f9;
+            color: #111;
+            animation: pulse-badge 1.2s ease-in-out infinite;
+        }
+        @keyframes pulse-badge {
+            0%,
+            100% {
+                box-shadow: 0 0 5px #0f9;
+            }
+            50% {
+                box-shadow: 0 0 14px #0f9, 0 0 26px #0f9;
+            }
+        }
+        canvas {
+            display: block;
+            border-radius: 10px;
+            background: #0b0f17;
+            box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.4);
+            max-width: 100%;
+            height: auto;
+        }
+        .control-panel {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            justify-content: center;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.02);
+            padding: 5px 10px;
+            border-radius: 22px;
+            backdrop-filter: blur(5px);
+        }
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 2px;
+            color: #ccc;
+            font-size: 0.68rem;
+            font-weight: 500;
+            letter-spacing: 0.03em;
+            flex-wrap: wrap;
+        }
+        button {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            color: #ddd;
+            padding: 3px 8px;
+            border-radius: 16px;
+            font-size: 0.66rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            letter-spacing: 0.03em;
+            backdrop-filter: blur(4px);
+            white-space: nowrap;
+            user-select: none;
+        }
+        button:hover {
+            background: rgba(255, 255, 255, 0.11);
+            border-color: var(--accent);
+            color: #fff;
+            box-shadow: 0 0 7px rgba(77, 166, 255, 0.3);
+        }
+        button.active {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: #000;
+            font-weight: 700;
+            box-shadow: 0 0 10px var(--accent);
+        }
+        .btn-sm {
+            padding: 2px 5px;
+            font-size: 0.6rem;
+            min-width: 18px;
+        }
+        .ek-btn.active {
+            background: #0f9;
+            border-color: #0f9;
+            color: #000;
+            box-shadow: 0 0 10px #0f9;
+        }
+        .speed-btn.active {
+            background: #ff9060;
+            border-color: #ff9060;
+            color: #000;
+            box-shadow: 0 0 10px #ff9060;
+        }
+        .legend-row {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+            color: #bbb;
+            font-size: 0.65rem;
+            letter-spacing: 0.03em;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 2px;
+        }
+        .legend-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            display: inline-block;
+            flex-shrink: 0;
+        }
+        .legend-dot.proton {
+            background: #ff5e5b;
+            box-shadow: 0 0 4px #ff5e5b;
+        }
+        .legend-dot.mag {
+            background: #ffcc00;
+            box-shadow: 0 0 3px #ffcc00;
+            border-radius: 2px;
+            width: 8px;
+            height: 2px;
+        }
+        .legend-dot.gap {
+            background: #0f9;
+            box-shadow: 0 0 3px #0f9;
+            width: 8px;
+            height: 2px;
+            border-radius: 1px;
+        }
+    </style>
+
+  <style>
+  body {
+    background-color: #1a2332 !important;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+  }
+  
+  .qilai-back-btn {
+    position: fixed;
+    top: 10px;
+    left: 15px;
+    z-index: 100000;
+    padding: 8px 16px;
+    background: rgba(0, 150, 200, 0.2);
+    border: 1px solid rgba(100, 180, 255, 0.5);
+    color: #8ab4f8;
+    font-size: 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.3s;
+    backdrop-filter: blur(5px);
+    font-family: "Microsoft YaHei", sans-serif;
+  }
+  
+  .qilai-back-btn:hover {
+    background: rgba(0, 150, 200, 0.4);
+    box-shadow: 0 0 15px rgba(100, 180, 255, 0.3);
+    color: #fff;
+  }
+  
+  .qilai-watermark {
+    position: fixed;
+    bottom: 15px;
+    right: 15px;
+    z-index: 99998;
+    font-size: 12px;
+    color: rgba(138, 180, 248, 0.35);
+    text-align: right;
+    line-height: 1.8;
+    pointer-events: none;
+    user-select: none;
+    font-family: "Microsoft YaHei", sans-serif;
+  }
+  
+  .qilai-watermark .title {
+    font-size: 14px;
+    font-weight: bold;
+    color: rgba(138, 180, 248, 0.45);
+    margin-bottom: 4px;
+    letter-spacing: 1px;
+  }
+  </style>
+</head>
+<body>
+  <a href="javascript:void(0);" class="qilai-back-btn" onclick="saveScrollAndReturn();">← 返回主页</a>
+  
+  <div class="qilai-watermark">
+    <div class="title">齐老师动画</div>
+    QQ 3398528250<br>
+    抖音 35320300542
+  </div>
+
+    <div class="main-container">
+        <div class="title">
+            🔄 回旋加速器 (Cyclotron)
+            <span class="badge live">● 实时</span>
+            <span class="badge">T = 2πm/qB</span>
+        </div>
+        <canvas id="mainCanvas"></canvas>
+
+        <div class="control-panel">
+            <div class="control-group">
+                <span>🧲 B</span>
+                <button id="btnBdown" class="btn-sm">−</button>
+                <span class="val" id="valB" style="min-width:30px;text-align:center;">0.048</span>
+                <button id="btnBup" class="btn-sm">+</button>
+            </div>
+            <div class="control-group">
+                <span>⚡ ΔEₖ</span>
+                <button id="btnEk40" class="btn-sm ek-btn active">40</button>
+                <button id="btnEk80" class="btn-sm ek-btn">80</button>
+            </div>
+            <div class="control-group">
+                <span>⏩ 速度</span>
+                <button id="btnSpeed05" class="btn-sm">0.5x</button>
+                <button id="btnSpeed1" class="btn-sm">1x</button>
+                <button id="btnSpeed2" class="btn-sm">2x</button>
+                <button id="btnSpeed4" class="btn-sm speed-btn active">4x</button>
+            </div>
+            <div class="control-group">
+                <button id="btnReset" title="重置粒子">↺ 重置</button>
+            </div>
+        </div>
+
+        <div class="legend-row">
+            <span class="legend-item"><span class="legend-dot proton"></span> 质子 H⁺</span>
+            <span class="legend-item"><span class="legend-dot mag"></span> 磁场 B⊗ 向里</span>
+            <span class="legend-item"><span class="legend-dot gap"></span> 加速缝隙</span>
+            <span class="legend-item">🟡 D型盒</span>
+            <span class="legend-item">➡️ 出口</span>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            const canvas = document.getElementById('mainCanvas');
+            const ctx = canvas.getContext('2d');
+
+            // ---------- 画布尺寸 ----------
+            const W = 960;
+            const H = 560;
+            canvas.width = W;
+            canvas.height = H;
+
+            function resizeCanvas() {
+                const maxWidth = Math.min(window.innerWidth - 28, 960);
+                const scale = maxWidth / W;
+                canvas.style.width = maxWidth + 'px';
+                canvas.style.height = (H * scale) + 'px';
+            }
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+
+            // ---------- D型盒参数 ----------
+            const cx = W / 2;
+            const cy = H / 2 - 6;
+            const Rmax = 210;
+            const gapWidth = 5;
+            const halfGap = gapWidth / 2;
+            const topCenterY = cy - halfGap;
+            const botCenterY = cy + halfGap;
+            const exitX = cx + Rmax;
+            const exitY = cy;
+
+            // ---------- 物理参数（默认值按要求修改） ----------
+            let B_field = 0.048;       // 默认0.048
+            let deltaEk = 40;          // 默认40
+            const qm = 16;
+            const omega0 = () => qm * B_field;
+            let timeScale = 4.0;       // 默认4倍速
+
+            // 质子状态
+            let proton = {
+                x: cx,
+                y: cy,
+                vx: 0,
+                vy: 0,
+                active: true,
+                escaped: false,
+                nAccel: 0,
+                firstAccelDone: false
+            };
+            let trailPoints = [];
+            let escapeTrail = [];
+            let gapFlash = 0;
+            let gapParticles = [];
+            let escapeFlash = 0;
+            const MAX_TRAIL = 80000;
+            const MAX_GAP_P = 50;
+            let animStartRealTime = null;
+            let lastRealTime = null;
+            let animationId = null;
+            let totalSimTime = 0;
+
+            // DOM
+            const valB = document.getElementById('valB');
+            const btnEk40 = document.getElementById('btnEk40');
+            const btnEk80 = document.getElementById('btnEk80');
+
+            function getSpeed() { return Math.sqrt(proton.vx * proton.vx + proton.vy * proton.vy); }
+            function getRadius() { const v = getSpeed(); if (omega0() < 0.0001) return 0; return v / omega0(); }
+
+            function updateBDisplay() { valB.textContent = B_field.toFixed(3); }
+            function updateEkButtons() {
+                btnEk40.classList.toggle('active', deltaEk === 40);
+                btnEk80.classList.toggle('active', deltaEk === 80);
+            }
+
+            function resetParticle() {
+                proton = { x: cx, y: cy, vx: 0, vy: 0, active: true, escaped: false, nAccel: 0, firstAccelDone: false };
+                trailPoints = [{ x: proton.x, y: proton.y }];
+                escapeTrail = [];
+                gapFlash = 0;
+                gapParticles = [];
+                escapeFlash = 0;
+                totalSimTime = 0;
+                animStartRealTime = null;
+                lastRealTime = null;
+            }
+
+            function resetSimulation() {
+                if (animationId) { cancelAnimationFrame(animationId); animationId = null; }
+                resetParticle();
+                updateBDisplay();
+                animationId = requestAnimationFrame(animate);
+            }
+
+            // 按钮事件
+            document.getElementById('btnBdown').addEventListener('click', () => { B_field = Math.max(0.015, B_field - 0.003); updateBDisplay(); resetParticle(); });
+            document.getElementById('btnBup').addEventListener('click', () => { B_field = Math.min(0.080, B_field + 0.003); updateBDisplay(); resetParticle(); });
+            btnEk40.addEventListener('click', () => { deltaEk = 40; updateEkButtons(); resetParticle(); });
+            btnEk80.addEventListener('click', () => { deltaEk = 80; updateEkButtons(); resetParticle(); });
+
+            const btnSp05 = document.getElementById('btnSpeed05');
+            const btnSp1 = document.getElementById('btnSpeed1');
+            const btnSp2 = document.getElementById('btnSpeed2');
+            const btnSp4 = document.getElementById('btnSpeed4');
+            btnSp05.addEventListener('click', () => { timeScale = 0.5; updateSpeedBtns(); });
+            btnSp1.addEventListener('click', () => { timeScale = 1.0; updateSpeedBtns(); });
+            btnSp2.addEventListener('click', () => { timeScale = 2.0; updateSpeedBtns(); });
+            btnSp4.addEventListener('click', () => { timeScale = 4.0; updateSpeedBtns(); });
+
+            function updateSpeedBtns() {
+                btnSp05.classList.toggle('active', timeScale === 0.5);
+                btnSp1.classList.toggle('active', timeScale === 1.0);
+                btnSp2.classList.toggle('active', timeScale === 2.0);
+                btnSp4.classList.toggle('active', timeScale === 4.0);
+            }
+
+            document.getElementById('btnReset').addEventListener('click', resetSimulation);
+            updateSpeedBtns();
+            updateEkButtons();
+            updateBDisplay();
+
+            // ---------- 绘制函数 ----------
+            function drawDeeBox(isTop) {
+                const r = Rmax;
+                const centerY = isTop ? topCenterY : botCenterY;
+                ctx.save();
+                ctx.beginPath();
+                if (isTop) ctx.arc(cx, centerY, r, 0, Math.PI);
+                else ctx.arc(cx, centerY, r, Math.PI, 0);
+                ctx.closePath();
+                const grad = ctx.createLinearGradient(0, cy - r, 0, cy + r);
+                if (isTop) {
+                    grad.addColorStop(0, 'rgba(190,160,120,0.14)');
+                    grad.addColorStop(0.5, 'rgba(160,135,95,0.18)');
+                    grad.addColorStop(1, 'rgba(140,115,75,0.24)');
+                } else {
+                    grad.addColorStop(0, 'rgba(140,115,75,0.24)');
+                    grad.addColorStop(0.5, 'rgba(160,135,95,0.18)');
+                    grad.addColorStop(1, 'rgba(190,160,120,0.14)');
+                }
+                ctx.fillStyle = grad;
+                ctx.fill();
+                ctx.strokeStyle = '#c9a96e';
+                ctx.lineWidth = 2.5;
+                ctx.stroke();
+                ctx.strokeStyle = '#e8d5a3';
+                ctx.lineWidth = 0.9;
+                ctx.beginPath();
+                ctx.moveTo(cx - r, centerY);
+                ctx.lineTo(cx + r, centerY);
+                ctx.stroke();
+                ctx.restore();
+            }
+
+            function drawMagSymbols() {
+                const cols = 8;
+                const rows = 7;
+                const stepX = (2 * Rmax) / (cols + 1);
+                const stepY = (2 * Rmax) / (rows + 1);
+                ctx.fillStyle = '#ffcc00';
+                ctx.font = 'bold 10px "Segoe UI","PingFang SC",sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                for (let r = 1; r <= rows; r++) {
+                    for (let c = 1; c <= cols; c++) {
+                        const mx = cx - Rmax + c * stepX;
+                        const my = cy - Rmax - halfGap + r * stepY;
+                        const inTop = (my <= cy - halfGap) && (mx - cx) * (mx - cx) + (my - topCenterY) * (my - topCenterY) < Rmax * Rmax * 0.94;
+                        const inBot = (my >= cy + halfGap) && (mx - cx) * (mx - cx) + (my - botCenterY) * (my - botCenterY) < Rmax * Rmax * 0.94;
+                        if (inTop || inBot) ctx.fillText('×', mx, my);
+                    }
+                }
+            }
+
+            function drawGapGlow() {
+                if (gapFlash > 0.01) {
+                    const alpha = gapFlash;
+                    const glowGrad = ctx.createLinearGradient(0, cy - halfGap - 3, 0, cy + halfGap + 3);
+                    glowGrad.addColorStop(0, 'rgba(0,255,150,0)');
+                    glowGrad.addColorStop(0.3, 'rgba(0,255,150,' + (alpha * 0.4) + ')');
+                    glowGrad.addColorStop(0.5, 'rgba(200,255,220,' + (alpha * 0.7) + ')');
+                    glowGrad.addColorStop(0.7, 'rgba(0,255,150,' + (alpha * 0.4) + ')');
+                    glowGrad.addColorStop(1, 'rgba(0,255,150,0)');
+                    ctx.fillStyle = glowGrad;
+                    ctx.fillRect(cx - Rmax + 2, cy - halfGap - 4, 2 * Rmax - 4, gapWidth + 8);
+                }
+                for (const gp of gapParticles) {
+                    const alpha = gp.life;
+                    ctx.fillStyle = 'rgba(200,255,220,' + alpha + ')';
+                    ctx.beginPath();
+                    ctx.arc(gp.x, gp.y, 1.2 + gp.life * 1.8, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+
+            function drawACSource() {
+                const srcX = cx + Rmax + 55;
+                const srcY = cy;
+                const srcR = 20;
+                ctx.fillStyle = 'rgba(28,28,48,0.85)';
+                ctx.strokeStyle = '#bbb';
+                ctx.lineWidth = 1.4;
+                ctx.beginPath();
+                ctx.arc(srcX, srcY, srcR, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+                ctx.strokeStyle = '#0f9';
+                ctx.lineWidth = 1.6;
+                ctx.beginPath();
+                const amp = 8;
+                const freq = 3;
+                for (let angle = -Math.PI; angle <= Math.PI; angle += 0.06) {
+                    const sx = srcX + angle / Math.PI * srcR * 0.55;
+                    const sy = srcY + Math.sin(angle * freq) * amp;
+                    if (angle === -Math.PI) ctx.moveTo(sx, sy);
+                    else ctx.lineTo(sx, sy);
+                }
+                ctx.stroke();
+                ctx.fillStyle = '#fff';
+                ctx.font = 'bold 7px "PingFang SC","Microsoft YaHei",sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('交变电源', srcX, srcY - srcR - 8);
+                ctx.fillText('~', srcX, srcY + srcR + 10);
+                ctx.strokeStyle = '#ddd';
+                ctx.lineWidth = 1.3;
+                ctx.setLineDash([3, 3]);
+                ctx.beginPath();
+                ctx.moveTo(cx + Rmax, cy - Rmax + 18);
+                ctx.lineTo(srcX - srcR, cy - srcR * 0.5);
+                ctx.moveTo(cx + Rmax, cy + Rmax - 18);
+                ctx.lineTo(srcX - srcR, cy + srcR * 0.5);
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
+
+            function drawExitMarker() {
+                const ex = exitX;
+                const ey = exitY;
+                ctx.fillStyle = 'rgba(0,0,0,0.6)';
+                ctx.fillRect(ex - 2, ey - 15, 20, 30);
+                ctx.strokeStyle = '#ff4444';
+                ctx.lineWidth = 1.8;
+                ctx.setLineDash([]);
+                ctx.beginPath();
+                ctx.moveTo(ex - 2, ey - 12);
+                ctx.lineTo(ex + 16, ey);
+                ctx.lineTo(ex - 2, ey + 12);
+                ctx.stroke();
+                ctx.fillStyle = '#ff4444';
+                ctx.font = 'bold 9px "PingFang SC","Microsoft YaHei",sans-serif';
+                ctx.textAlign = 'left';
+                ctx.fillText('出口', ex + 6, ey + 5);
+                if (escapeFlash > 0.01) {
+                    const alpha = escapeFlash;
+                    const glowGrad = ctx.createRadialGradient(ex, ey, 5, ex, ey, 35);
+                    glowGrad.addColorStop(0, 'rgba(255,200,50,' + alpha + ')');
+                    glowGrad.addColorStop(0.5, 'rgba(255,150,30,' + (alpha * 0.6) + ')');
+                    glowGrad.addColorStop(1, 'rgba(255,100,20,0)');
+                    ctx.fillStyle = glowGrad;
+                    ctx.beginPath();
+                    ctx.arc(ex, ey, 35, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+
+            function drawTrail() {
+                if (trailPoints.length >= 2) {
+                    ctx.save();
+                    ctx.lineCap = 'round';
+                    ctx.lineJoin = 'round';
+                    for (let i = 1; i < trailPoints.length; i++) {
+                        const frac = i / trailPoints.length;
+                        const hue = 25 + frac * 50;
+                        const alpha = 0.3 + frac * 0.65;
+                        ctx.strokeStyle = 'hsla(' + hue + ', 95%, 60%, ' + alpha + ')';
+                        ctx.lineWidth = 1.2 + frac * 2.8;
+                        ctx.beginPath();
+                        ctx.moveTo(trailPoints[i - 1].x, trailPoints[i - 1].y);
+                        ctx.lineTo(trailPoints[i].x, trailPoints[i].y);
+                        ctx.stroke();
+                    }
+                    ctx.restore();
+                }
+                if (escapeTrail.length >= 2) {
+                    ctx.save();
+                    ctx.strokeStyle = '#ff4444';
+                    ctx.lineWidth = 2.5;
+                    ctx.setLineDash([5, 3]);
+                    ctx.lineCap = 'round';
+                    ctx.beginPath();
+                    ctx.moveTo(escapeTrail[0].x, escapeTrail[0].y);
+                    for (let i = 1; i < escapeTrail.length; i++) {
+                        ctx.lineTo(escapeTrail[i].x, escapeTrail[i].y);
+                    }
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+                    ctx.restore();
+                }
+            }
+
+            function drawProton() {
+                const px = proton.x;
+                const py = proton.y;
+                const glowR = proton.escaped ? 12 : 9;
+                const glowGrad = ctx.createRadialGradient(px, py, 1, px, py, glowR);
+                glowGrad.addColorStop(0, proton.escaped ? 'rgba(255,200,80,0.9)' : 'rgba(255,140,100,0.85)');
+                glowGrad.addColorStop(0.5, proton.escaped ? 'rgba(255,150,40,0.4)' : 'rgba(255,80,50,0.3)');
+                glowGrad.addColorStop(1, 'rgba(255,40,20,0)');
+                ctx.fillStyle = glowGrad;
+                ctx.beginPath();
+                ctx.arc(px, py, glowR, 0, Math.PI * 2);
+                ctx.fill();
+                const bodyR = proton.escaped ? 5.5 : 4.5;
+                const bodyGrad = ctx.createRadialGradient(px - 1, py - 1, 0.5, px, py, bodyR);
+                if (proton.escaped) {
+                    bodyGrad.addColorStop(0, '#fff');
+                    bodyGrad.addColorStop(0.35, '#ffeecc');
+                    bodyGrad.addColorStop(0.75, '#ff9933');
+                    bodyGrad.addColorStop(1, '#cc6600');
+                } else {
+                    bodyGrad.addColorStop(0, '#fff');
+                    bodyGrad.addColorStop(0.35, '#ffccaa');
+                    bodyGrad.addColorStop(0.75, '#ff5e5b');
+                    bodyGrad.addColorStop(1, '#c0392b');
+                }
+                ctx.fillStyle = bodyGrad;
+                ctx.beginPath();
+                ctx.arc(px, py, bodyR, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = '#fff';
+                ctx.font = 'bold 7px "Segoe UI","PingFang SC",sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('H⁺', px, py);
+            }
+
+            function drawAnnotations() {
+                const tx = W / 2;
+                const ty = 18;
+                const text = '回旋加速器：半径 r ∝ √n ，粒子从出口沿切线射出后做匀速直线运动';
+                ctx.font = 'bold 10px "PingFang SC","Microsoft YaHei",sans-serif';
+                const m = ctx.measureText(text);
+                const bw = m.width + 14;
+                const bh = 18;
+                ctx.fillStyle = 'rgba(20,20,40,0.7)';
+                ctx.strokeStyle = 'rgba(255,200,100,0.4)';
+                ctx.lineWidth = 0.9;
+                ctx.beginPath();
+                ctx.roundRect(tx - bw / 2, ty - bh / 2, bw, bh, 4);
+                ctx.fill();
+                ctx.stroke();
+                ctx.fillStyle = '#f0c060';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(text, tx, ty);
+                const fx = W - 10;
+                const fy = H - 10;
+                const ftext = 'r = mv/qB  ∝ √n  射出后 v 不变';
+                ctx.font = 'bold 9px "PingFang SC","Microsoft YaHei",sans-serif';
+                const fm = ctx.measureText(ftext);
+                ctx.fillStyle = 'rgba(20,20,40,0.65)';
+                ctx.strokeStyle = 'rgba(255,200,100,0.35)';
+                ctx.lineWidth = 0.7;
+                ctx.beginPath();
+                ctx.roundRect(fx - fm.width - 10, fy - 16, fm.width + 10, 16, 3);
+                ctx.fill();
+                ctx.stroke();
+                ctx.fillStyle = '#f0c060';
+                ctx.textAlign = 'right';
+                ctx.fillText(ftext, fx - 5, fy - 5);
+            }
+
+            function drawStatusText() {
+                if (proton.escaped) {
+                    const sx = exitX + 60;
+                    const sy = exitY - 30;
+                    ctx.fillStyle = '#ff4444';
+                    ctx.font = 'bold 12px "PingFang SC","Microsoft YaHei",sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('粒子已射出！', sx, sy);
+                    ctx.fillText('匀速直线运动', sx, sy + 16);
+                }
+            }
+
+            function drawFrame() {
+                ctx.clearRect(0, 0, W, H);
+                ctx.strokeStyle = 'rgba(255,255,255,0.014)';
+                ctx.lineWidth = 0.3;
+                for (let gx = 0; gx < W; gx += 30) { ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, H); ctx.stroke(); }
+                for (let gy = 0; gy < H; gy += 30) { ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(W, gy); ctx.stroke(); }
+                drawAnnotations();
+                drawDeeBox(true);
+                drawDeeBox(false);
+                drawMagSymbols();
+                drawGapGlow();
+                drawACSource();
+                drawExitMarker();
+                drawTrail();
+                drawProton();
+                drawStatusText();
+                ctx.fillStyle = '#0f9';
+                ctx.font = 'bold 8px "PingFang SC","Microsoft YaHei",sans-serif';
+                ctx.textAlign = 'left';
+                ctx.fillText('缝隙(加速区)', cx + Rmax + 5, cy - 2);
+            }
+
+            function animate(timestamp) {
+                if (animStartRealTime === null) {
+                    animStartRealTime = timestamp;
+                    lastRealTime = timestamp;
+                    animationId = requestAnimationFrame(animate);
+                    return;
+                }
+                const realDt = (timestamp - lastRealTime) / 1000;
+                const simDt = Math.min(realDt * timeScale, 0.03);
+                if (simDt <= 0) { animationId = requestAnimationFrame(animate); return; }
+                totalSimTime += simDt;
+
+                if (proton.active && !proton.escaped) {
+                    if (!proton.firstAccelDone) {
+                        const deltaV = Math.sqrt(2 * deltaEk);
+                        proton.vy = deltaV;
+                        proton.y += 0.1;
+                        proton.firstAccelDone = true;
+                        proton.nAccel = 1;
+                        gapFlash = 1.0;
+                        for (let s = 0; s < 12; s++) gapParticles.push({ x: proton.x + (Math.random() - 0.5) * 22, y: cy + (Math.random() - 0.5) * gapWidth * 2.5, life: 0.6 + Math.random() * 0.6 });
+                        trailPoints.push({ x: proton.x, y: proton.y });
+                    }
+                    const omega = omega0();
+                    const ax = omega * proton.vy;
+                    const ay = -omega * proton.vx;
+                    const oldX = proton.x;
+                    const oldY = proton.y;
+                    proton.vx += ax * simDt;
+                    proton.vy += ay * simDt;
+                    proton.x += proton.vx * simDt + 0.5 * ax * simDt * simDt;
+                    proton.y += proton.vy * simDt + 0.5 * ay * simDt * simDt;
+                    if (proton.firstAccelDone && (oldY - cy) * (proton.y - cy) < 0 && Math.abs(proton.x - cx) < Rmax - 3) {
+                        const vx2 = proton.vx * proton.vx;
+                        const vy2 = proton.vy * proton.vy;
+                        const ek = 0.5 * (vx2 + vy2);
+                        const newEk = ek + deltaEk;
+                        const newVy2 = 2 * newEk - vx2;
+                        const newVy = Math.sqrt(Math.max(0, newVy2));
+                        proton.vy = (proton.vy >= 0) ? newVy : -newVy;
+                        proton.nAccel++;
+                        gapFlash = 1.0;
+                        for (let s = 0; s < 10; s++) gapParticles.push({ x: proton.x + (Math.random() - 0.5) * 20, y: cy + (Math.random() - 0.5) * gapWidth * 2, life: 0.6 + Math.random() * 0.6 });
+                    }
+                    if (trailPoints.length === 0 || Math.abs(proton.x - trailPoints[trailPoints.length - 1].x) > 0.4 || Math.abs(proton.y - trailPoints[trailPoints.length - 1].y) > 0.4) {
+                        trailPoints.push({ x: proton.x, y: proton.y });
+                        if (trailPoints.length > MAX_TRAIL) trailPoints.splice(0, 1000);
+                    }
+                    const r = getRadius();
+                    const distTop = (proton.x - cx) * (proton.x - cx) + (proton.y - topCenterY) * (proton.y - topCenterY);
+                    const distBot = (proton.x - cx) * (proton.x - cx) + (proton.y - botCenterY) * (proton.y - botCenterY);
+                    if (r > Rmax - 5 && (distTop > Rmax * Rmax || distBot > Rmax * Rmax)) {
+                        proton.escaped = true;
+                        escapeFlash = 1.0;
+                        escapeTrail.push({ x: proton.x, y: proton.y });
+                        for (let s = 0; s < 20; s++) gapParticles.push({ x: exitX + (Math.random() - 0.5) * 15, y: exitY + (Math.random() - 0.5) * 15, life: 1.0 + Math.random() * 0.8 });
+                    }
+                }
+
+                if (proton.escaped) {
+                    proton.x += proton.vx * simDt;
+                    proton.y += proton.vy * simDt;
+                    if (escapeTrail.length === 0 || Math.abs(proton.x - escapeTrail[escapeTrail.length - 1].x) > 0.8 || Math.abs(proton.y - escapeTrail[escapeTrail.length - 1].y) > 0.8) {
+                        escapeTrail.push({ x: proton.x, y: proton.y });
+                    }
+                    if (proton.x > W + 50 || proton.x < -50 || proton.y > H + 50 || proton.y < -50) proton.active = false;
+                }
+
+                gapFlash = Math.max(0, gapFlash - simDt * 2.2);
+                escapeFlash = Math.max(0, escapeFlash - simDt * 2.5);
+                for (let i = gapParticles.length - 1; i >= 0; i--) { gapParticles[i].life -= simDt * 2; if (gapParticles[i].life <= 0) gapParticles.splice(i, 1); }
+                while (gapParticles.length > MAX_GAP_P) gapParticles.shift();
+                drawFrame();
+                lastRealTime = timestamp;
+                animationId = requestAnimationFrame(animate);
+            }
+
+            resetSimulation();
+        })();
+    </script>
+
+  <script>
+  // 返回主页（滚动位置已在主页点击链接时保存）
+  function saveScrollAndReturn() {
+    window.location.href = '../index.html';
+  }
+  
+  // 禁用右键菜单
+  document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+  });
+  
+  // 禁用开发者工具快捷键
+  document.addEventListener('keydown', function(e) {
+    // ESC返回主页 - 保存滚动位置
+    if (e.keyCode === 27) {
+      saveScrollAndReturn();
+      return false;
+    }
+    // F12
+    if (e.keyCode === 123) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+U
+    if (e.ctrlKey && e.keyCode === 85) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+I
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 73) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+J
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 74) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+C
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 67) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+S
+    if (e.ctrlKey && e.keyCode === 83) {
+      e.preventDefault();
+      return false;
+    }
+  });
+  
+  // 禁用选择
+  document.addEventListener('selectstart', function(e) {
+    // 允许输入框选择
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+      return true;
+    }
+    e.preventDefault();
+    return false;
+  });
+  </script>
+</body>
+</html>
