@@ -1,0 +1,790 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>三球系统 - 动量守恒与机械能守恒演示</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background: #1a2a3a;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            font-family: "Microsoft YaHei", sans-serif;
+            color: #fff;
+            padding: 20px;
+        }
+        h2 {
+            margin-bottom: 15px;
+            color: #ffd700;
+            font-size: 22px;
+        }
+        .canvas-container {
+            position: relative;
+            border: 2px solid #4a6fa5;
+            border-radius: 8px;
+            box-shadow: 0 0 20px rgba(0, 150, 255, 0.3);
+        }
+        canvas {
+            display: block;
+            background: #1a2a3a;
+            border-radius: 6px;
+        }
+        .controls {
+            margin-top: 15px;
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        button {
+            padding: 8px 18px;
+            font-size: 15px;
+            border: none;
+            border-radius: 5px;
+            background: #4a90d9;
+            color: white;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        button:hover {
+            background: #357abd;
+        }
+        button:active {
+            background: #2a5f8f;
+        }
+        button:disabled {
+            background: #555;
+            cursor: not-allowed;
+        }
+        .mass-control {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 6px 12px;
+            border-radius: 5px;
+        }
+        .mass-control button {
+            padding: 4px 12px;
+            font-size: 14px;
+        }
+        .mass-label {
+            font-size: 14px;
+            color: #aaa;
+        }
+        .mass-value {
+            color: #88ccff;
+            font-weight: bold;
+            min-width: 40px;
+            text-align: center;
+        }
+        .info {
+            margin-top: 15px;
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr 1fr;
+            gap: 8px 20px;
+            font-size: 14px;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 12px 20px;
+            border-radius: 6px;
+        }
+        .info span {
+            color: #88ccff;
+        }
+        .label {
+            color: #aaa;
+        }
+    </style>
+
+  <style>
+  body {
+    background-color: #1a2332 !important;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+  }
+  
+  .qilai-back-btn {
+    position: fixed;
+    top: 10px;
+    left: 15px;
+    z-index: 100000;
+    padding: 8px 16px;
+    background: rgba(0, 150, 200, 0.2);
+    border: 1px solid rgba(100, 180, 255, 0.5);
+    color: #8ab4f8;
+    font-size: 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.3s;
+    backdrop-filter: blur(5px);
+    font-family: "Microsoft YaHei", sans-serif;
+  }
+  
+  .qilai-back-btn:hover {
+    background: rgba(0, 150, 200, 0.4);
+    box-shadow: 0 0 15px rgba(100, 180, 255, 0.3);
+    color: #fff;
+  }
+  
+  .qilai-watermark {
+    position: fixed;
+    bottom: 15px;
+    right: 15px;
+    z-index: 99998;
+    font-size: 12px;
+    color: rgba(138, 180, 248, 0.35);
+    text-align: right;
+    line-height: 1.8;
+    pointer-events: none;
+    user-select: none;
+    font-family: "Microsoft YaHei", sans-serif;
+  }
+  
+  .qilai-watermark .title {
+    font-size: 14px;
+    font-weight: bold;
+    color: rgba(138, 180, 248, 0.45);
+    margin-bottom: 4px;
+    letter-spacing: 1px;
+  }
+  </style>
+</head>
+<body>
+  <a href="javascript:void(0);" class="qilai-back-btn" onclick="saveScrollAndReturn();">← 返回主页</a>
+  
+  <div class="qilai-watermark">
+    <div class="title">齐老师动画</div>
+    QQ 3398528250<br>
+    抖音 35320300542
+  </div>
+
+    <h2>双/三球系统 水平动量守恒 + 机械能守恒 往复演示</h2>
+    
+    <div class="canvas-container">
+        <canvas id="canvas" width="900" height="520"></canvas>
+    </div>
+    
+    <div class="controls">
+        <button id="startBtn">开始释放</button>
+        <button id="resetBtn">重置</button>
+        <button id="traceBtn">清除轨迹</button>
+        <button id="threeBallBtn">添加白球</button>
+        
+        <div class="mass-control">
+            <button id="massDecBtn">-</button>
+            <span class="mass-label">质量比 m₂:m₁ =</span>
+            <span class="mass-value" id="massRatio">1.0</span>
+            <button id="massIncBtn">+</button>
+        </div>
+    </div>
+    
+    <div class="info">
+        <div class="label">蓝球水平速度: <span id="v1">0.000</span> m/s</div>
+        <div class="label">红球水平速度: <span id="v2x">0.000</span> m/s</div>
+        <div class="label">红球竖直速度: <span id="v2y">0.000</span> m/s</div>
+        <div class="label">白球水平速度: <span id="v0">0.000</span> m/s</div>
+        <div class="label">系统总水平动量: <span id="px">0.0000</span> kg·m/s</div>
+        <div class="label">系统总机械能: <span id="E">0.0000</span> J</div>
+        <div class="label">轻杆与水平夹角: <span id="theta">0.00</span> °</div>
+        <div class="label">弹簧弹性势能: <span id="Ep">0.000</span> J</div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const W = canvas.width;
+        const H = canvas.height;
+        
+        // 物理参数
+        const m0 = 1.0;   // 白球质量 kg（固定）
+        let m1 = 1.0;     // 蓝球质量 kg
+        let m2 = 1.0;     // 红球质量 kg（可调节）
+        let mSum = m1 + m2;
+        const L = 1.6;    // 轻杆长度 m
+        const g = 9.8;    // 重力加速度 m/s²
+        const k = 30;     // 弹簧劲度系数 N/m
+        const springRestLength = 1.2; // 弹簧原长 m
+        
+        // 模式开关
+        let threeBallMode = false;
+        
+        // 质量比调节范围
+        const minRatio = 0.2;
+        const maxRatio = 5.0;
+        const ratioStep = 0.2;
+        
+        // 状态变量
+        let x0, v0;    // 白球位置、速度
+        let x1;        // 蓝球x坐标 (m)
+        let theta;     // 轻杆与水平向右的夹角，顺时针为正 (rad)
+        let v1;        // 蓝球水平速度 (m/s)
+        let omega;     // 杆的角速度 dθ/dt (rad/s)
+        let running = false;
+        let traceBlue = [];
+        let traceRed = [];
+        let traceWhite = [];
+        const maxTrace = 1200;
+        
+        // 像素缩放：1米 = 140像素
+        const scale = 140;
+        const rodY = 180; // 水平固定杆的y像素坐标
+        
+        // 更新质量比显示
+        function updateMassDisplay() {
+            document.getElementById('massRatio').textContent = (m2 / m1).toFixed(1);
+            document.getElementById('massDecBtn').disabled = (m2 / m1) <= minRatio;
+            document.getElementById('massIncBtn').disabled = (m2 / m1) >= maxRatio;
+        }
+        
+        // 调节质量比
+        function changeMassRatio(delta) {
+            const currentRatio = m2 / m1;
+            let newRatio = currentRatio + delta;
+            newRatio = Math.max(minRatio, Math.min(maxRatio, newRatio));
+            m2 = newRatio * m1;
+            mSum = m1 + m2;
+            updateMassDisplay();
+            init();
+            document.getElementById('startBtn').textContent = '开始释放';
+        }
+        
+        // 初始化
+        function init() {
+            x1 = (W / 2 + 0.5 * L * scale) / scale;
+            theta = 0;
+            v1 = 0;
+            omega = 0;
+            
+            if (threeBallMode) {
+                x0 = x1 - springRestLength;
+                v0 = 0;
+            } else {
+                x0 = x1 - springRestLength;
+                v0 = 0;
+            }
+            
+            running = false;
+            traceBlue = [];
+            traceRed = [];
+            traceWhite = [];
+            draw();
+            updateInfo();
+        }
+        
+        // 运动微分方程（拉格朗日严格推导）
+        function computeDerivatives(x0, v0, x1, v1, theta, omega) {
+            const sinT = Math.sin(theta);
+            const cosT = Math.cos(theta);
+            const denom = m1 + m2 * cosT * cosT;
+            const deltaX = x1 - x0 - springRestLength;
+            
+            if (!threeBallMode) {
+                const alpha = (g * mSum * cosT + m2 * L * omega * omega * sinT * cosT) / (L * denom);
+                const a1 = (m2 * L * (alpha * sinT + omega * omega * cosT)) / mSum;
+                return { a0: 0, a1, alpha };
+            } else {
+                let springForce = -k * deltaX;
+                
+                // 软防撞：距离过小时叠加强排斥力，保证不穿透
+                const ballDist = x1 - x0;
+                const minSafeDist = 0.35;
+                if (ballDist < minSafeDist) {
+                    const compress = minSafeDist - ballDist;
+                    springForce += 2000 * compress * compress;
+                }
+                
+                const a1 = (m2 * L * omega * omega * cosT + m2 * g * sinT * cosT + springForce) / denom;
+                const alpha = (a1 * sinT + g * cosT) / L;
+                const a0 = -springForce / m0;
+                return { a0, a1, alpha };
+            }
+        }
+        
+        // 四阶龙格-库塔积分
+        function step(dt) {
+            // k1
+            const d1 = computeDerivatives(x0, v0, x1, v1, theta, omega);
+            const k1_x0 = v0;
+            const k1_v0 = d1.a0;
+            const k1_x1 = v1;
+            const k1_theta = omega;
+            const k1_v1 = d1.a1;
+            const k1_omega = d1.alpha;
+            
+            // k2
+            const x0_2 = x0 + 0.5 * dt * k1_x0;
+            const v0_2 = v0 + 0.5 * dt * k1_v0;
+            const x1_2 = x1 + 0.5 * dt * k1_x1;
+            const theta_2 = theta + 0.5 * dt * k1_theta;
+            const v1_2 = v1 + 0.5 * dt * k1_v1;
+            const omega_2 = omega + 0.5 * dt * k1_omega;
+            const d2 = computeDerivatives(x0_2, v0_2, x1_2, v1_2, theta_2, omega_2);
+            const k2_x0 = v0_2;
+            const k2_v0 = d2.a0;
+            const k2_x1 = v1_2;
+            const k2_theta = omega_2;
+            const k2_v1 = d2.a1;
+            const k2_omega = d2.alpha;
+            
+            // k3
+            const x0_3 = x0 + 0.5 * dt * k2_x0;
+            const v0_3 = v0 + 0.5 * dt * k2_v0;
+            const x1_3 = x1 + 0.5 * dt * k2_x1;
+            const theta_3 = theta + 0.5 * dt * k2_theta;
+            const v1_3 = v1 + 0.5 * dt * k2_v1;
+            const omega_3 = omega + 0.5 * dt * k2_omega;
+            const d3 = computeDerivatives(x0_3, v0_3, x1_3, v1_3, theta_3, omega_3);
+            const k3_x0 = v0_3;
+            const k3_v0 = d3.a0;
+            const k3_x1 = v1_3;
+            const k3_theta = omega_3;
+            const k3_v1 = d3.a1;
+            const k3_omega = d3.alpha;
+            
+            // k4
+            const x0_4 = x0 + dt * k3_x0;
+            const v0_4 = v0 + dt * k3_v0;
+            const x1_4 = x1 + dt * k3_x1;
+            const theta_4 = theta + dt * k3_theta;
+            const v1_4 = v1 + dt * k3_v1;
+            const omega_4 = omega + dt * k3_omega;
+            const d4 = computeDerivatives(x0_4, v0_4, x1_4, v1_4, theta_4, omega_4);
+            const k4_x0 = v0_4;
+            const k4_v0 = d4.a0;
+            const k4_x1 = v1_4;
+            const k4_theta = omega_4;
+            const k4_v1 = d4.a1;
+            const k4_omega = d4.alpha;
+            
+            // 更新状态
+            if (threeBallMode) {
+                x0 += (dt / 6) * (k1_x0 + 2*k2_x0 + 2*k3_x0 + k4_x0);
+                v0 += (dt / 6) * (k1_v0 + 2*k2_v0 + 2*k3_v0 + k4_v0);
+            }
+            x1 += (dt / 6) * (k1_x1 + 2*k2_x1 + 2*k3_x1 + k4_x1);
+            theta += (dt / 6) * (k1_theta + 2*k2_theta + 2*k3_theta + k4_theta);
+            v1 += (dt / 6) * (k1_v1 + 2*k2_v1 + 2*k3_v1 + k4_v1);
+            omega += (dt / 6) * (k1_omega + 2*k2_omega + 2*k3_omega + k4_omega);
+        }
+        
+        // 获取红球状态
+        function getRedBallState() {
+            const x2 = x1 + L * Math.cos(theta);
+            const y2 = L * Math.sin(theta);
+            const v2x = v1 - L * omega * Math.sin(theta);
+            const v2y = L * omega * Math.cos(theta);
+            return { x2, y2, v2x, v2y };
+        }
+        
+        // 计算系统总机械能
+        function getTotalEnergy() {
+            const state = getRedBallState();
+            const KE1 = 0.5 * m1 * v1 * v1;
+            const KE2 = 0.5 * m2 * (state.v2x * state.v2x + state.v2y * state.v2y);
+            const PE_gravity = -m2 * g * state.y2;
+            let total = KE1 + KE2 + PE_gravity;
+            
+            if (threeBallMode) {
+                const KE0 = 0.5 * m0 * v0 * v0;
+                const deltaX = x1 - x0 - springRestLength;
+                const PE_spring = 0.5 * k * deltaX * deltaX;
+                total += KE0 + PE_spring;
+                
+                // 防撞势能补充，保证能量守恒自洽
+                const ballDist = x1 - x0;
+                const minSafeDist = 0.35;
+                if (ballDist < minSafeDist) {
+                    const compress = minSafeDist - ballDist;
+                    total += (2000/3) * compress * compress * compress;
+                }
+            }
+            return total;
+        }
+        
+        // 计算弹簧弹性势能
+        function getSpringPotential() {
+            if (!threeBallMode) return 0;
+            const deltaX = x1 - x0 - springRestLength;
+            return 0.5 * k * deltaX * deltaX;
+        }
+        
+        // 计算系统总水平动量
+        function getTotalMomentumX() {
+            const state = getRedBallState();
+            let px = m1 * v1 + m2 * state.v2x;
+            if (threeBallMode) {
+                px += m0 * v0;
+            }
+            return px;
+        }
+        
+        // 绘制弹簧
+        function drawSpring(x1, y1, x2, y2, coils = 10) {
+            const dx = x2 - x1;
+            const dy = y2 - y1;
+            const len = Math.sqrt(dx*dx + dy*dy);
+            const angle = Math.atan2(dy, dx);
+            
+            ctx.save();
+            ctx.translate(x1, y1);
+            ctx.rotate(angle);
+            
+            ctx.strokeStyle = '#cccccc';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            
+            const springAmplitude = 9;
+            const segmentLen = len / (coils * 2);
+            for (let i = 0; i < coils * 2; i++) {
+                const x = i * segmentLen;
+                const y = (i % 2 === 0 ? -springAmplitude : springAmplitude);
+                ctx.lineTo(x, y);
+            }
+            ctx.lineTo(len, 0);
+            ctx.stroke();
+            ctx.restore();
+        }
+        
+        // 绘制
+        function draw() {
+            ctx.clearRect(0, 0, W, H);
+            
+            // 背景网格
+            ctx.strokeStyle = 'rgba(100, 150, 200, 0.1)';
+            ctx.lineWidth = 1;
+            for (let i = 0; i < W; i += 50) {
+                ctx.beginPath();
+                ctx.moveTo(i, 0);
+                ctx.lineTo(i, H);
+                ctx.stroke();
+            }
+            for (let i = 0; i < H; i += 50) {
+                ctx.beginPath();
+                ctx.moveTo(0, i);
+                ctx.lineTo(W, i);
+                ctx.stroke();
+            }
+            
+            const state = getRedBallState();
+            const wx = x0 * scale;
+            const bx = x1 * scale;
+            const by = rodY;
+            const rx = state.x2 * scale;
+            const ry = rodY + state.y2 * scale;
+            
+            // 绘制轨迹 - 白球
+            if (threeBallMode && traceWhite.length > 1) {
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+                ctx.lineWidth = 1.5;
+                ctx.setLineDash([5, 5]);
+                ctx.beginPath();
+                ctx.moveTo(traceWhite[0].x, traceWhite[0].y);
+                for (let i = 1; i < traceWhite.length; i++) {
+                    ctx.lineTo(traceWhite[i].x, traceWhite[i].y);
+                }
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
+            
+            // 绘制轨迹 - 蓝球
+            if (traceBlue.length > 1) {
+                ctx.strokeStyle = 'rgba(100, 150, 255, 0.5)';
+                ctx.lineWidth = 1.5;
+                ctx.setLineDash([5, 5]);
+                ctx.beginPath();
+                ctx.moveTo(traceBlue[0].x, traceBlue[0].y);
+                for (let i = 1; i < traceBlue.length; i++) {
+                    ctx.lineTo(traceBlue[i].x, traceBlue[i].y);
+                }
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
+            
+            // 绘制轨迹 - 红球
+            if (traceRed.length > 1) {
+                ctx.strokeStyle = 'rgba(255, 100, 100, 0.6)';
+                ctx.lineWidth = 1.5;
+                ctx.setLineDash([5, 5]);
+                ctx.beginPath();
+                ctx.moveTo(traceRed[0].x, traceRed[0].y);
+                for (let i = 1; i < traceRed.length; i++) {
+                    ctx.lineTo(traceRed[i].x, traceRed[i].y);
+                }
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
+            
+            // 绘制水平固定杆（黄色）
+            ctx.strokeStyle = '#ffd700';
+            ctx.lineWidth = 8;
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            ctx.moveTo(30, rodY);
+            ctx.lineTo(W - 30, rodY);
+            ctx.stroke();
+            
+            // 杆的高光
+            ctx.strokeStyle = 'rgba(255, 255, 200, 0.4)';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(30, rodY - 2);
+            ctx.lineTo(W - 30, rodY - 2);
+            ctx.stroke();
+            
+            const baseRadius = 16;
+            const r0 = baseRadius * Math.cbrt(m0);
+            const r1 = baseRadius * Math.cbrt(m1);
+            const r2 = baseRadius * Math.cbrt(m2);
+            
+            // 绘制弹簧（三球模式）
+            if (threeBallMode) {
+                drawSpring(wx + r0, rodY, bx - r1, rodY);
+            }
+            
+            // 绘制轻杆
+            ctx.strokeStyle = '#cccccc';
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.moveTo(bx, by);
+            ctx.lineTo(rx, ry);
+            ctx.stroke();
+            
+            // 绘制白球
+            if (threeBallMode) {
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+                ctx.beginPath();
+                ctx.arc(wx + 2, by + 2, r0, 0, Math.PI * 2);
+                ctx.fill();
+                
+                const whiteGrad = ctx.createRadialGradient(wx - 5, by - 5, 2, wx, by, r0);
+                whiteGrad.addColorStop(0, '#ffffff');
+                whiteGrad.addColorStop(0.5, '#eeeeee');
+                whiteGrad.addColorStop(1, '#bbbbbb');
+                ctx.fillStyle = whiteGrad;
+                ctx.beginPath();
+                ctx.arc(wx, by, r0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = '#666666';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                
+                ctx.fillStyle = '#fff';
+                ctx.font = '14px Microsoft YaHei';
+                ctx.fillText('白球 m₀', wx - 28, by - r0 - 8);
+            }
+            
+            // 绘制蓝球
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+            ctx.beginPath();
+            ctx.arc(bx + 2, by + 2, r1, 0, Math.PI * 2);
+            ctx.fill();
+            
+            const blueGrad = ctx.createRadialGradient(bx - 5, by - 5, 2, bx, by, r1);
+            blueGrad.addColorStop(0, '#66b3ff');
+            blueGrad.addColorStop(0.5, '#3388dd');
+            blueGrad.addColorStop(1, '#1a5fb4');
+            ctx.fillStyle = blueGrad;
+            ctx.beginPath();
+            ctx.arc(bx, by, r1, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = '#003366';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            
+            // 绘制红球
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+            ctx.beginPath();
+            ctx.arc(rx + 2, ry + 2, r2, 0, Math.PI * 2);
+            ctx.fill();
+            
+            const redGrad = ctx.createRadialGradient(rx - 5, ry - 5, 2, rx, ry, r2);
+            redGrad.addColorStop(0, '#ff8888');
+            redGrad.addColorStop(0.5, '#ee4444');
+            redGrad.addColorStop(1, '#b32020');
+            ctx.fillStyle = redGrad;
+            ctx.beginPath();
+            ctx.arc(rx, ry, r2, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = '#660000';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            
+            // 标注
+            ctx.fillStyle = '#fff';
+            ctx.font = '14px Microsoft YaHei';
+            ctx.fillText('蓝球 m₁', bx - 28, by - r1 - 8);
+            ctx.fillText('红球 m₂', rx + r2 + 6, ry - 5);
+            
+            // 初始高度参考线
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+            ctx.setLineDash([3, 3]);
+            ctx.beginPath();
+            ctx.moveTo(50, rodY);
+            ctx.lineTo(W - 50, rodY);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+            ctx.font = '12px Microsoft YaHei';
+            ctx.fillText('初始释放高度（零势能面）', 60, rodY - 8);
+        }
+        
+        // 更新信息面板
+        function updateInfo() {
+            const state = getRedBallState();
+            document.getElementById('v1').textContent = v1.toFixed(3);
+            document.getElementById('v2x').textContent = state.v2x.toFixed(3);
+            document.getElementById('v2y').textContent = state.v2y.toFixed(3);
+            document.getElementById('v0').textContent = threeBallMode ? v0.toFixed(3) : '--';
+            document.getElementById('px').textContent = getTotalMomentumX().toFixed(4);
+            document.getElementById('E').textContent = getTotalEnergy().toFixed(4);
+            document.getElementById('theta').textContent = (theta * 180 / Math.PI).toFixed(2);
+            document.getElementById('Ep').textContent = threeBallMode ? getSpringPotential().toFixed(3) : '--';
+        }
+        
+        // 动画循环
+        let lastTime = 0;
+        function animate(timestamp) {
+            if (!lastTime) lastTime = timestamp;
+            const dt = Math.min((timestamp - lastTime) / 1000, 0.02);
+            lastTime = timestamp;
+            
+            if (running) {
+                const subSteps = 20;
+                const subDt = dt / subSteps;
+                for (let i = 0; i < subSteps; i++) {
+                    step(subDt);
+                }
+                
+                const state = getRedBallState();
+                traceBlue.push({ x: x1 * scale, y: rodY });
+                traceRed.push({ x: state.x2 * scale, y: rodY + state.y2 * scale });
+                if (threeBallMode) {
+                    traceWhite.push({ x: x0 * scale, y: rodY });
+                }
+                
+                if (traceBlue.length > maxTrace) traceBlue.shift();
+                if (traceRed.length > maxTrace) traceRed.shift();
+                if (traceWhite.length > maxTrace) traceWhite.shift();
+                
+                updateInfo();
+            }
+            
+            draw();
+            requestAnimationFrame(animate);
+        }
+        
+        // 按钮事件
+        document.getElementById('startBtn').addEventListener('click', function() {
+            running = !running;
+            this.textContent = running ? '暂停' : '继续';
+        });
+        
+        document.getElementById('resetBtn').addEventListener('click', function() {
+            init();
+            document.getElementById('startBtn').textContent = '开始释放';
+        });
+        
+        document.getElementById('traceBtn').addEventListener('click', function() {
+            traceBlue = [];
+            traceRed = [];
+            traceWhite = [];
+        });
+        
+        document.getElementById('threeBallBtn').addEventListener('click', function() {
+            threeBallMode = !threeBallMode;
+            this.textContent = threeBallMode ? '移除白球' : '添加白球';
+            init();
+            document.getElementById('startBtn').textContent = '开始释放';
+        });
+        
+        // 质量比调节事件
+        document.getElementById('massDecBtn').addEventListener('click', function() {
+            changeMassRatio(-ratioStep);
+        });
+        
+        document.getElementById('massIncBtn').addEventListener('click', function() {
+            changeMassRatio(ratioStep);
+        });
+        
+        // 启动
+        updateMassDisplay();
+        init();
+        requestAnimationFrame(animate);
+    </script>
+
+  <script>
+  // 返回主页（滚动位置已在主页点击链接时保存）
+  function saveScrollAndReturn() {
+    window.location.href = '../index.html';
+  }
+  
+  // 禁用右键菜单
+  document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+  });
+  
+  // 禁用开发者工具快捷键
+  document.addEventListener('keydown', function(e) {
+    // ESC返回主页 - 保存滚动位置
+    if (e.keyCode === 27) {
+      saveScrollAndReturn();
+      return false;
+    }
+    // F12
+    if (e.keyCode === 123) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+U
+    if (e.ctrlKey && e.keyCode === 85) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+I
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 73) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+J
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 74) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+C
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 67) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+S
+    if (e.ctrlKey && e.keyCode === 83) {
+      e.preventDefault();
+      return false;
+    }
+  });
+  
+  // 禁用选择
+  document.addEventListener('selectstart', function(e) {
+    // 允许输入框选择
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+      return true;
+    }
+    e.preventDefault();
+    return false;
+  });
+  </script>
+</body>
+</html>
