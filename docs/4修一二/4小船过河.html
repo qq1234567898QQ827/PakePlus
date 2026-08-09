@@ -1,0 +1,907 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>小船过河 · 速度矢量合成</title>
+    <style>
+        :root {
+            --bg: #0a0e17;
+            --panel-bg: #0d1320;
+            --border: #1a2a40;
+            --text: #c8d6e5;
+            --accent: #4da6ff;
+            --accent2: #ff6b6b;
+            --gold: #f0c060;
+            --glow-blue: rgba(77, 166, 255, 0.4);
+            --glow-red: rgba(255, 107, 107, 0.4);
+            --glow-gold: rgba(240, 192, 96, 0.5);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #060a10;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', 'Helvetica Neue', sans-serif;
+            overflow: auto;
+            background-image:
+                radial-gradient(ellipse at 50% 30%, rgba(20, 60, 120, 0.25) 0%, transparent 60%),
+                radial-gradient(ellipse at 30% 60%, rgba(10, 40, 80, 0.2) 0%, transparent 50%),
+                radial-gradient(ellipse at 70% 50%, rgba(15, 35, 70, 0.2) 0%, transparent 50%);
+        }
+
+        .main-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            padding: 10px;
+            width: 100%;
+            max-width: 100vw;
+            min-height: 100vh;
+            justify-content: flex-start;
+        }
+
+        .canvas-wrapper {
+            position: relative;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow:
+                0 0 40px rgba(30, 80, 160, 0.35),
+                0 0 80px rgba(10, 40, 90, 0.25),
+                inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(100, 160, 220, 0.25);
+            transition: box-shadow 0.5s;
+            flex-shrink: 0;
+            width: 100%;
+            max-width: 95vw;
+        }
+
+        .canvas-wrapper:hover {
+            box-shadow:
+                0 0 55px rgba(40, 100, 200, 0.45),
+                0 0 100px rgba(15, 50, 100, 0.3),
+                inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+        }
+
+        canvas {
+            display: block;
+            cursor: default;
+            background: #080d16;
+            width: 100%;
+            height: auto;
+        }
+
+        .controls-panel {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+            gap: 8px 10px;
+            padding: 10px 15px;
+            background: var(--panel-bg);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.03);
+            width: 100%;
+            max-width: 95vw;
+            flex-shrink: 0;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+            min-width: 70px;
+            flex: 1;
+            max-width: 120px;
+        }
+
+        .control-label {
+            font-size: 0.65rem;
+            font-weight: 600;
+            letter-spacing: 0.03em;
+            color: #8899bb;
+            text-transform: uppercase;
+            display: flex;
+            align-items: center;
+            gap: 3px;
+        }
+
+        .dot-indicator {
+            display: inline-block;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            flex-shrink: 0;
+            box-shadow: 0 0 6px currentColor;
+        }
+
+        .dot-red { background: #ff5566; box-shadow: 0 0 8px #ff5566; }
+        .dot-blue { background: #55aaff; box-shadow: 0 0 8px #55aaff; }
+        .dot-gold { background: #f0c040; box-shadow: 0 0 8px #f0c040; }
+        .dot-white { background: #ccc; box-shadow: 0 0 6px #aaa; }
+
+        .control-value {
+            font-size: 0.7rem;
+            font-weight: 700;
+            color: #e0e8f0;
+            letter-spacing: 0.02em;
+            min-width: 40px;
+            text-align: center;
+            background: rgba(255, 255, 255, 0.04);
+            padding: 1px 5px;
+            border-radius: 4px;
+        }
+
+        input[type="range"] {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 4px;
+            border-radius: 2px;
+            background: linear-gradient(90deg, #1a2a40, #2a3d55);
+            outline: none;
+            cursor: pointer;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #e8f0f8;
+            cursor: pointer;
+            border: 2px solid #5588bb;
+            box-shadow: 0 0 10px rgba(100, 160, 220, 0.5);
+        }
+
+        .btn-row {
+            display: flex;
+            gap: 5px;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .btn {
+            padding: 5px 10px;
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.05);
+            color: #c8d6e5;
+            cursor: pointer;
+            font-size: 0.7rem;
+            font-weight: 600;
+            letter-spacing: 0.03em;
+            transition: all 0.25s;
+            backdrop-filter: blur(4px);
+            white-space: nowrap;
+        }
+
+        .btn:hover {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: rgba(255, 255, 255, 0.4);
+            box-shadow: 0 4px 18px rgba(0, 0, 0, 0.4);
+            color: #fff;
+        }
+
+        .btn.active-btn {
+            background: rgba(70, 140, 220, 0.25);
+            border-color: rgba(100, 170, 240, 0.6);
+            box-shadow: 0 0 12px rgba(60, 130, 210, 0.35);
+            color: #fff;
+        }
+
+        .legend-mini {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+            font-size: 0.65rem;
+            color: #8899bb;
+            letter-spacing: 0.02em;
+            padding: 0;
+            margin: 0;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 3px;
+        }
+
+        .legend-line {
+            width: 14px;
+            height: 2px;
+            border-radius: 1px;
+        }
+
+        .legend-line.red { background: #ff5566; box-shadow: 0 0 4px #ff5566; }
+        .legend-line.blue { background: #55aaff; box-shadow: 0 0 4px #55aaff; }
+        .legend-line.gold { background: #f0c040; box-shadow: 0 0 4px #f0c040; }
+    </style>
+
+  <style>
+  body {
+    background-color: #1a2332 !important;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+  }
+  
+  .qilai-back-btn {
+    position: fixed;
+    top: 10px;
+    left: 15px;
+    z-index: 100000;
+    padding: 8px 16px;
+    background: rgba(0, 150, 200, 0.2);
+    border: 1px solid rgba(100, 180, 255, 0.5);
+    color: #8ab4f8;
+    font-size: 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.3s;
+    backdrop-filter: blur(5px);
+    font-family: "Microsoft YaHei", sans-serif;
+  }
+  
+  .qilai-back-btn:hover {
+    background: rgba(0, 150, 200, 0.4);
+    box-shadow: 0 0 15px rgba(100, 180, 255, 0.3);
+    color: #fff;
+  }
+  
+  .qilai-watermark {
+    position: fixed;
+    bottom: 15px;
+    right: 15px;
+    z-index: 99998;
+    font-size: 12px;
+    color: rgba(138, 180, 248, 0.35);
+    text-align: right;
+    line-height: 1.8;
+    pointer-events: none;
+    user-select: none;
+    font-family: "Microsoft YaHei", sans-serif;
+  }
+  
+  .qilai-watermark .title {
+    font-size: 14px;
+    font-weight: bold;
+    color: rgba(138, 180, 248, 0.45);
+    margin-bottom: 4px;
+    letter-spacing: 1px;
+  }
+  </style>
+</head>
+<body>
+  <a href="javascript:void(0);" class="qilai-back-btn" onclick="saveScrollAndReturn();">← 返回主页</a>
+  
+  <div class="qilai-watermark">
+    <div class="title">齐老师动画</div>
+    QQ 3398528250<br>
+    抖音 35320300542
+  </div>
+
+    <div class="main-container">
+        <div class="canvas-wrapper">
+            <canvas id="mainCanvas"></canvas>
+        </div>
+
+        <div class="controls-panel" id="controlsPanel">
+            <div class="control-group">
+                <span class="control-label"><span class="dot-indicator dot-red"></span> 船静水速度</span>
+                <span class="control-value" id="valBoatSpeed">3.0</span>
+                <input type="range" id="speedBoat" min="0" max="6" step="0.1" value="3">
+            </div>
+            <div class="control-group">
+                <span class="control-label"><span class="dot-indicator dot-blue"></span> 水流速度</span>
+                <span class="control-value" id="valWaterSpeed">2.0</span>
+                <input type="range" id="speedWater" min="0" max="5" step="0.1" value="2">
+            </div>
+            <div class="control-group">
+                <span class="control-label"><span class="dot-indicator dot-white"></span> 船头角度</span>
+                <span class="control-value" id="valAngle">0°</span>
+                <input type="range" id="angleBoat" min="-90" max="90" step="1" value="0">
+            </div>
+            <div class="control-group">
+                <span class="control-label"><span class="dot-indicator" style="background:#aaa;"></span> 船体大小</span>
+                <span class="control-value" id="valSize">1.0</span>
+                <input type="range" id="sizeBoat" min="0.5" max="2.2" step="0.05" value="1">
+            </div>
+            <div class="btn-row" style="flex:2;min-width:280px;max-width:450px;">
+                <button class="btn active-btn" id="btnPlayPause">⏯️ 暂停</button>
+                <button class="btn" id="btnReset">🔄 重置</button>
+                <button class="btn" id="btnToggleCircle">⚫ 隐藏圆</button>
+                <button class="btn" id="btnToggleComponents">📐 显示分运动</button>
+            </div>
+        </div>
+        <div class="legend-mini">
+            <span class="legend-item"><span class="legend-line red"></span> v<sub>船</sub></span>
+            <span class="legend-item"><span class="legend-line blue"></span> v<sub>水</sub></span>
+            <span class="legend-item"><span class="legend-line gold"></span> v<sub>合</sub></span>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            const canvas = document.getElementById('mainCanvas');
+            const ctx = canvas.getContext('2d');
+
+            const W = 1200;
+            const H = 560;
+            canvas.width = W;
+            canvas.height = H;
+
+            const TOP_BANK_Y = 45;
+            const BOTTOM_BANK_Y = 520;
+            const RIVER_TOP = TOP_BANK_Y;
+            const RIVER_BOTTOM = BOTTOM_BANK_Y;
+
+            let boatX = 250;
+            let boatY = BOTTOM_BANK_Y - 15;
+            const boatStartX = 250;
+            const boatStartY = BOTTOM_BANK_Y - 15;
+
+            let boatSpeed = 3.0;
+            let waterSpeed = 2.0;
+            let boatAngleDeg = 0;
+            let boatScale = 1.0;
+
+            let isPaused = false;
+            let showCircle = true;
+            let showComponents = false;
+            let hasReachedBank = false;
+            let trailPoints = [];
+            let boatTrailPoints = [];
+            let waterTrailPoints = [];
+
+            let phantomBoatX = boatStartX;
+            let phantomBoatY = boatStartY;
+            let phantomWaterX = boatStartX;
+            let phantomWaterY = boatStartY;
+
+            const PIXEL_PER_UNIT = 0.85 / 3;
+            const ARROW_SCALE = 76 / 3;
+
+            // 树叶粒子
+            let leaves = [];
+            const NUM_LEAVES = 25;
+
+            function initLeaves() {
+                leaves = [];
+                for (let i = 0; i < NUM_LEAVES; i++) {
+                    leaves.push({
+                        x: Math.random() * W,
+                        y: RIVER_TOP + 10 + Math.random() * (RIVER_BOTTOM - RIVER_TOP - 20),
+                        size: 4 + Math.random() * 6,
+                        angle: Math.random() * Math.PI * 2,
+                        rotationSpeed: (Math.random() - 0.5) * 0.02,
+                        alpha: 0.4 + Math.random() * 0.3
+                    });
+                }
+            }
+            initLeaves();
+
+            function updateLeaves() {
+                const pxPerFrame = waterSpeed * PIXEL_PER_UNIT;
+                leaves.forEach(leaf => {
+                    leaf.x += pxPerFrame;
+                    leaf.angle += leaf.rotationSpeed;
+                    if (leaf.x > W + 20) {
+                        leaf.x = -20;
+                        leaf.y = RIVER_TOP + 10 + Math.random() * (RIVER_BOTTOM - RIVER_TOP - 20);
+                    }
+                    if (leaf.y < RIVER_TOP) leaf.y = RIVER_TOP + 2;
+                    if (leaf.y > RIVER_BOTTOM) leaf.y = RIVER_BOTTOM - 2;
+                });
+            }
+
+            function drawLeaves() {
+                leaves.forEach(leaf => {
+                    ctx.save();
+                    ctx.translate(leaf.x, leaf.y);
+                    ctx.rotate(leaf.angle);
+                    ctx.globalAlpha = leaf.alpha;
+                    ctx.fillStyle = '#5a8a4a';
+                    ctx.beginPath();
+                    ctx.ellipse(0, 0, leaf.size, leaf.size * 0.4, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.strokeStyle = '#3a5a2a';
+                    ctx.lineWidth = 0.5;
+                    ctx.stroke();
+                    ctx.beginPath();
+                    ctx.moveTo(-leaf.size * 0.7, 0);
+                    ctx.lineTo(leaf.size * 0.7, 0);
+                    ctx.stroke();
+                    ctx.restore();
+                });
+            }
+
+            const sliderBoatSpeed = document.getElementById('speedBoat');
+            const sliderWaterSpeed = document.getElementById('speedWater');
+            const sliderAngle = document.getElementById('angleBoat');
+            const sliderSize = document.getElementById('sizeBoat');
+            const valBoatSpeed = document.getElementById('valBoatSpeed');
+            const valWaterSpeed = document.getElementById('valWaterSpeed');
+            const valAngle = document.getElementById('valAngle');
+            const valSize = document.getElementById('valSize');
+            const btnPlayPause = document.getElementById('btnPlayPause');
+            const btnReset = document.getElementById('btnReset');
+            const btnToggleCircle = document.getElementById('btnToggleCircle');
+            const btnToggleComponents = document.getElementById('btnToggleComponents');
+
+            function resetAnimation() {
+                boatX = boatStartX;
+                boatY = boatStartY;
+                phantomBoatX = boatStartX;
+                phantomBoatY = boatStartY;
+                phantomWaterX = boatStartX;
+                phantomWaterY = boatStartY;
+                trailPoints = [];
+                boatTrailPoints = [];
+                waterTrailPoints = [];
+                hasReachedBank = false;
+                isPaused = false;
+                btnPlayPause.textContent = '⏯️ 暂停';
+                btnPlayPause.classList.add('active-btn');
+            }
+
+            function readSliders() {
+                boatSpeed = parseFloat(sliderBoatSpeed.value);
+                waterSpeed = parseFloat(sliderWaterSpeed.value);
+                boatAngleDeg = parseInt(sliderAngle.value);
+                boatScale = parseFloat(sliderSize.value);
+                updateLabels();
+            }
+
+            function updateLabels() {
+                valBoatSpeed.textContent = boatSpeed.toFixed(1) + ' m/s';
+                valWaterSpeed.textContent = waterSpeed.toFixed(1) + ' m/s';
+                valAngle.textContent = (boatAngleDeg >= 0 ? '+' : '') + boatAngleDeg + '°';
+                valSize.textContent = boatScale.toFixed(1) + '×';
+            }
+
+            sliderBoatSpeed.addEventListener('input', readSliders);
+            sliderWaterSpeed.addEventListener('input', readSliders);
+            sliderAngle.addEventListener('input', readSliders);
+            sliderSize.addEventListener('input', readSliders);
+
+            btnPlayPause.addEventListener('click', () => {
+                isPaused = !isPaused;
+                btnPlayPause.textContent = isPaused ? '▶️ 播放' : '⏯️ 暂停';
+                btnPlayPause.classList.toggle('active-btn', !isPaused);
+            });
+
+            btnReset.addEventListener('click', resetAnimation);
+
+            btnToggleCircle.addEventListener('click', () => {
+                showCircle = !showCircle;
+                btnToggleCircle.textContent = showCircle ? '⚫ 隐藏圆' : '🔴 显示圆';
+            });
+
+            btnToggleComponents.addEventListener('click', () => {
+                showComponents = !showComponents;
+                btnToggleComponents.textContent = showComponents ? '📐 隐藏分运动' : '📐 显示分运动';
+                btnToggleComponents.classList.toggle('active-btn', showComponents);
+                resetAnimation();
+            });
+
+            function drawArrow(x1, y1, x2, y2, color, lineWidth, dashPattern) {
+                const dx = x2 - x1;
+                const dy = y2 - y1;
+                const len = Math.sqrt(dx * dx + dy * dy);
+                if (len < 0.5) return;
+
+                const ux = dx / len;
+                const uy = dy / len;
+                const headLen = Math.min(12, len * 0.35);
+                const headWidth = 7;
+
+                const baseX = x2 - ux * headLen;
+                const baseY = y2 - uy * headLen;
+                const perpX = -uy * headWidth;
+                const perpY = ux * headWidth;
+
+                ctx.save();
+                ctx.strokeStyle = color;
+                ctx.fillStyle = color;
+                ctx.lineWidth = lineWidth;
+                ctx.lineCap = 'round';
+                ctx.setLineDash(dashPattern || []);
+
+                ctx.beginPath();
+                ctx.moveTo(x1, y1);
+                ctx.lineTo(baseX, baseY);
+                ctx.stroke();
+
+                ctx.setLineDash([]);
+                ctx.beginPath();
+                ctx.moveTo(x2, y2);
+                ctx.lineTo(baseX + perpX, baseY + perpY);
+                ctx.lineTo(baseX - perpX, baseY - perpY);
+                ctx.closePath();
+                ctx.fill();
+                ctx.restore();
+            }
+
+            function drawBoat(x, y, angle, scale, alpha) {
+                ctx.save();
+                ctx.globalAlpha = alpha;
+                ctx.translate(x, y);
+                ctx.rotate(angle);
+                ctx.scale(scale, scale);
+
+                const L = 32;
+                const W = 12;
+
+                ctx.fillStyle = '#c4956b';
+                ctx.strokeStyle = 'rgba(60,30,15,0.9)';
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.moveTo(L, 0);
+                ctx.lineTo(0, -W);
+                ctx.lineTo(-L, 0);
+                ctx.lineTo(0, W);
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+
+                ctx.fillStyle = 'rgba(180,130,90,0.5)';
+                ctx.beginPath();
+                ctx.moveTo(L * 0.5, 0);
+                ctx.lineTo(0, -W * 0.55);
+                ctx.lineTo(-L * 0.5, 0);
+                ctx.lineTo(0, W * 0.55);
+                ctx.closePath();
+                ctx.fill();
+
+                ctx.fillStyle = '#ff5566';
+                ctx.beginPath();
+                ctx.arc(L * 0.7, 0, 3, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.restore();
+            }
+
+            function drawBackground() {
+                const skyGrad = ctx.createLinearGradient(0, 0, 0, TOP_BANK_Y);
+                skyGrad.addColorStop(0, '#0a1220');
+                skyGrad.addColorStop(1, '#0f1a2a');
+                ctx.fillStyle = skyGrad;
+                ctx.fillRect(0, 0, W, TOP_BANK_Y);
+
+                const riverGrad = ctx.createLinearGradient(0, RIVER_TOP, 0, RIVER_BOTTOM);
+                riverGrad.addColorStop(0, '#0b2a45');
+                riverGrad.addColorStop(0.5, '#103a5c');
+                riverGrad.addColorStop(1, '#0b2a45');
+                ctx.fillStyle = riverGrad;
+                ctx.fillRect(0, RIVER_TOP, W, RIVER_BOTTOM - RIVER_TOP);
+
+                const bankGrad = ctx.createLinearGradient(0, BOTTOM_BANK_Y, 0, H);
+                bankGrad.addColorStop(0, '#1a3045');
+                bankGrad.addColorStop(1, '#0f1a2a');
+                ctx.fillStyle = bankGrad;
+                ctx.fillRect(0, BOTTOM_BANK_Y, W, H - BOTTOM_BANK_Y);
+
+                ctx.strokeStyle = 'rgba(100,170,220,0.5)';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(0, TOP_BANK_Y);
+                ctx.lineTo(W, TOP_BANK_Y);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(0, BOTTOM_BANK_Y);
+                ctx.lineTo(W, BOTTOM_BANK_Y);
+                ctx.stroke();
+
+                ctx.fillStyle = 'rgba(180,210,235,0.7)';
+                ctx.font = '12px "PingFang SC","Microsoft YaHei",sans-serif';
+                ctx.textAlign = 'right';
+                ctx.fillText('对岸', W - 15, TOP_BANK_Y - 10);
+                ctx.fillText('出发点', W - 15, BOTTOM_BANK_Y + 18);
+                ctx.textAlign = 'start';
+            }
+
+            function drawTrail(trailPoints, color, alpha) {
+                if (trailPoints.length < 2) return;
+                ctx.save();
+                ctx.setLineDash([4, 6]);
+                ctx.strokeStyle = color;
+                ctx.globalAlpha = alpha;
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(trailPoints[0].x, trailPoints[0].y);
+                for (let i = 1; i < trailPoints.length; i++) {
+                    ctx.lineTo(trailPoints[i].x, trailPoints[i].y);
+                }
+                ctx.stroke();
+                ctx.setLineDash([]);
+                ctx.restore();
+            }
+
+            function draw(boatAngleRad, vBoatX, vBoatY, vWaterX, vWaterY, vTotalX, vTotalY) {
+                ctx.clearRect(0, 0, W, H);
+                drawBackground();
+                drawLeaves();
+
+                drawTrail(trailPoints, 'rgba(240,200,100,0.45)', 1.0);
+                if (showComponents) {
+                    drawTrail(boatTrailPoints, 'rgba(255, 80, 100, 0.5)', 0.7);
+                    drawTrail(waterTrailPoints, 'rgba(80, 160, 255, 0.5)', 0.7);
+                }
+
+                const boatHeading = Math.atan2(vBoatY, vBoatX);
+                const waterHeading = 0;
+
+                if (showComponents) {
+                    if (boatSpeed > 0.01) {
+                        const boatDisplacement = boatSpeed * ARROW_SCALE;
+                        const boatDirX = vBoatX / boatSpeed;
+                        const boatDirY = vBoatY / boatSpeed;
+                        const boatCompEndX = boatStartX + boatDirX * boatDisplacement;
+                        const boatCompEndY = boatStartY + boatDirY * boatDisplacement;
+                        drawArrow(boatStartX, boatStartY, boatCompEndX, boatCompEndY, 'rgba(255, 80, 100, 0.5)', 2, [6, 5]);
+                    }
+                    if (waterSpeed > 0.01) {
+                        const waterDisplacement = waterSpeed * ARROW_SCALE;
+                        const waterCompEndX = boatStartX + waterDisplacement;
+                        drawArrow(boatStartX, boatStartY, waterCompEndX, boatStartY, 'rgba(80, 160, 255, 0.5)', 2, [6, 5]);
+                    }
+                    drawArrow(boatStartX, boatStartY, boatX, boatY, 'rgba(240, 190, 70, 0.5)', 2, [6, 5]);
+
+                    drawBoat(phantomBoatX, phantomBoatY, boatHeading, boatScale * 0.7, 0.4);
+                    drawBoat(phantomWaterX, phantomWaterY, waterHeading, boatScale * 0.7, 0.4);
+                }
+
+                drawBoat(boatX, boatY, boatHeading, boatScale, 1.0);
+
+                const cx = boatX;
+                const cy = boatY;
+                const arrowBoatLen = boatSpeed * ARROW_SCALE;
+                const arrowWaterLen = waterSpeed * ARROW_SCALE;
+                const totalSpeed = Math.sqrt(vTotalX * vTotalX + vTotalY * vTotalY);
+                const arrowTotalLen = totalSpeed * ARROW_SCALE;
+
+                if (boatSpeed > 0.01) {
+                    const boatDirX = vBoatX / boatSpeed;
+                    const boatDirY = vBoatY / boatSpeed;
+                    const redEndX = cx + boatDirX * arrowBoatLen;
+                    const redEndY = cy + boatDirY * arrowBoatLen;
+                    drawArrow(cx, cy, redEndX, redEndY, '#ff5566', 3, []);
+                }
+                if (waterSpeed > 0.01) {
+                    const blueEndX = cx + arrowWaterLen;
+                    drawArrow(cx, cy, blueEndX, cy, '#55aaff', 3, []);
+                }
+                if (totalSpeed > 0.01) {
+                    const totalDirX = vTotalX / totalSpeed;
+                    const totalDirY = vTotalY / totalSpeed;
+                    const goldEndX = cx + totalDirX * arrowTotalLen;
+                    const goldEndY = cy + totalDirY * arrowTotalLen;
+                    drawArrow(cx, cy, goldEndX, goldEndY, '#f0c040', 3, [7, 5]);
+                }
+
+                // 平行四边形辅助线
+                if (boatSpeed > 0.01 && waterSpeed > 0.01) {
+                    const boatDirX = vBoatX / boatSpeed;
+                    const boatDirY = vBoatY / boatSpeed;
+                    const redEndX = cx + boatDirX * arrowBoatLen;
+                    const redEndY = cy + boatDirY * arrowBoatLen;
+                    const blueEndX = cx + arrowWaterLen;
+                    ctx.setLineDash([3, 5]);
+                    ctx.strokeStyle = 'rgba(180,200,220,0.3)';
+                    ctx.lineWidth = 1;
+                    ctx.beginPath();
+                    ctx.moveTo(redEndX, redEndY);
+                    ctx.lineTo(redEndX + arrowWaterLen, redEndY);
+                    ctx.stroke();
+                    ctx.beginPath();
+                    ctx.moveTo(blueEndX, cy);
+                    ctx.lineTo(blueEndX + boatDirX * arrowBoatLen, cy + boatDirY * arrowBoatLen);
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+                }
+
+                if (showCircle && waterSpeed > 0.01) {
+                    const blueEndX = cx + arrowWaterLen;
+                    ctx.save();
+                    ctx.setLineDash([4, 4]);
+                    ctx.strokeStyle = 'rgba(255, 80, 100, 0.5)';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.arc(blueEndX, cy, arrowBoatLen, 0, Math.PI * 2);
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+                    ctx.restore();
+                }
+
+                // 标签
+                ctx.font = 'bold 11px "PingFang SC","Microsoft YaHei",sans-serif';
+                ctx.textAlign = 'center';
+                if (boatSpeed > 0.01) {
+                    const boatDirX = vBoatX / boatSpeed;
+                    const boatDirY = vBoatY / boatSpeed;
+                    ctx.fillStyle = '#ff7788';
+                    ctx.fillText('v船', cx + boatDirX * (arrowBoatLen + 15), cy + boatDirY * (arrowBoatLen + 15));
+                }
+                if (waterSpeed > 0.01) {
+                    ctx.fillStyle = '#77bbff';
+                    ctx.fillText('v水', cx + arrowWaterLen + 15, cy - 5);
+                }
+                if (totalSpeed > 0.01) {
+                    const totalDirX = vTotalX / totalSpeed;
+                    const totalDirY = vTotalY / totalSpeed;
+                    ctx.fillStyle = '#f5d070';
+                    ctx.fillText('v合', cx + totalDirX * (arrowTotalLen + 15), cy + totalDirY * (arrowTotalLen + 15));
+                }
+
+                ctx.fillStyle = '#fff';
+                ctx.beginPath();
+                ctx.arc(boatStartX, boatStartY, 4, 0, Math.PI * 2);
+                ctx.fill();
+
+                if (hasReachedBank) {
+                    ctx.fillStyle = 'rgba(255,220,100,0.9)';
+                    ctx.font = 'bold 14px "PingFang SC","Microsoft YaHei",sans-serif';
+                    ctx.fillText('✨ 到达对岸！按重置重新开始', boatX, boatY - 25);
+                }
+                ctx.textAlign = 'start';
+            }
+
+            function getBoatVelocityComponents() {
+                const angleRad = boatAngleDeg * Math.PI / 180;
+                const vBoatX = -boatSpeed * Math.sin(angleRad);
+                const vBoatY = -boatSpeed * Math.cos(angleRad);
+                const vWaterX = waterSpeed;
+                const vWaterY = 0;
+                const vTotalX = vBoatX + vWaterX;
+                const vTotalY = vBoatY;
+                return { vBoatX, vBoatY, vWaterX, vWaterY, vTotalX, vTotalY, angleRad };
+            }
+
+            let lastTrailTime = 0;
+
+            function animate(timestamp) {
+                if (!isPaused && !hasReachedBank) {
+                    const vel = getBoatVelocityComponents();
+                    boatX += vel.vTotalX * PIXEL_PER_UNIT;
+                    boatY += vel.vTotalY * PIXEL_PER_UNIT;
+
+                    phantomBoatX += vel.vBoatX * PIXEL_PER_UNIT;
+                    phantomBoatY += vel.vBoatY * PIXEL_PER_UNIT;
+                    phantomWaterX += vel.vWaterX * PIXEL_PER_UNIT;
+                    phantomWaterY += vel.vWaterY * PIXEL_PER_UNIT;
+
+                    updateLeaves();
+
+                    if (timestamp - lastTrailTime > 50) {
+                        trailPoints.push({ x: boatX, y: boatY });
+                        if (trailPoints.length > 400) trailPoints.shift();
+
+                        if (showComponents) {
+                            boatTrailPoints.push({ x: phantomBoatX, y: phantomBoatY });
+                            waterTrailPoints.push({ x: phantomWaterX, y: phantomWaterY });
+                            if (boatTrailPoints.length > 400) boatTrailPoints.shift();
+                            if (waterTrailPoints.length > 400) waterTrailPoints.shift();
+                        }
+
+                        lastTrailTime = timestamp;
+                    }
+
+                    if (boatY <= TOP_BANK_Y + 8) {
+                        boatY = TOP_BANK_Y + 8;
+                        hasReachedBank = true;
+                        isPaused = true;
+                        btnPlayPause.textContent = '▶️ 播放';
+                        btnPlayPause.classList.remove('active-btn');
+                    }
+
+                    if (boatY >= BOTTOM_BANK_Y - 5 || boatX < -20 || boatX > W + 20) {
+                        resetAnimation();
+                    }
+                }
+
+                const vel = getBoatVelocityComponents();
+                draw(vel.angleRad, vel.vBoatX, vel.vBoatY, vel.vWaterX, vel.vWaterY, vel.vTotalX, vel.vTotalY);
+                requestAnimationFrame(animate);
+            }
+
+            readSliders();
+            updateLabels();
+            trailPoints.push({ x: boatX, y: boatY });
+            lastTrailTime = performance.now();
+            requestAnimationFrame(animate);
+
+            window.addEventListener('keydown', (e) => {
+                switch (e.key.toLowerCase()) {
+                    case ' ':
+                        e.preventDefault();
+                        if (!hasReachedBank) {
+                            isPaused = !isPaused;
+                            btnPlayPause.textContent = isPaused ? '▶️ 播放' : '⏯️ 暂停';
+                            btnPlayPause.classList.toggle('active-btn', !isPaused);
+                        }
+                        break;
+                    case 'r':
+                        resetAnimation();
+                        break;
+                }
+            });
+        })();
+    </script>
+
+  <script>
+  // 返回主页（滚动位置已在主页点击链接时保存）
+  function saveScrollAndReturn() {
+    window.location.href = '../index.html';
+  }
+  
+  // 禁用右键菜单
+  document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+  });
+  
+  // 禁用开发者工具快捷键
+  document.addEventListener('keydown', function(e) {
+    // ESC返回主页 - 保存滚动位置
+    if (e.keyCode === 27) {
+      saveScrollAndReturn();
+      return false;
+    }
+    // F12
+    if (e.keyCode === 123) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+U
+    if (e.ctrlKey && e.keyCode === 85) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+I
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 73) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+J
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 74) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+C
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 67) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+S
+    if (e.ctrlKey && e.keyCode === 83) {
+      e.preventDefault();
+      return false;
+    }
+  });
+  
+  // 禁用选择
+  document.addEventListener('selectstart', function(e) {
+    // 允许输入框选择
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+      return true;
+    }
+    e.preventDefault();
+    return false;
+  });
+  </script>
+</body>
+</html>
