@@ -1,1043 +1,808 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>绳波干涉动画 - 相向传播</title>
-    <style>
-        :root {
-            --bg: #1a1a2e;
-            --panel-bg: #16213e;
-            --text: #e0e0e0;
-            --accent: #ff6b6b;
-            --accent2: #4ecdc4;
-            --slider-track: #2a2a4a;
-            --border: #333366;
-            --golden: #f0c060;
-            --purple: #c084fc;
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            background: var(--bg);
-            font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            padding: 10px;
-            user-select: none;
-            -webkit-user-select: none;
-        }
-
-        .container {
-            background: var(--panel-bg);
-            border-radius: 20px;
-            padding: 25px 30px 20px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), 0 0 0 1px var(--border);
-            max-width: 1200px;
-            width: 100%;
-            display: flex;
-            flex-direction: column;
-            gap: 18px;
-        }
-
-        .header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            flex-wrap: wrap;
-            gap: 12px;
-        }
-
-        .title {
-            font-size: 1.6em;
-            font-weight: 700;
-            background: linear-gradient(135deg, #ff6b6b, #ff8e8e, #4ecdc4, #6edcd6);
-            background-size: 200% 200%;
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            animation: gradientShift 4s ease infinite;
-            letter-spacing: 1px;
-        }
-        @keyframes gradientShift {
-            0%,
-            100% {
-                background-position: 0% 50%;
-            }
-            50% {
-                background-position: 100% 50%;
-            }
-        }
-
-        .time-display {
-            font-size: 0.95em;
-            color: #aab;
-            background: rgba(255, 255, 255, 0.04);
-            padding: 8px 16px;
-            border-radius: 20px;
-            letter-spacing: 0.5px;
-            font-variant-numeric: tabular-nums;
-            font-family: 'SF Mono', 'Consolas', 'Menlo', monospace;
-            white-space: nowrap;
-        }
-        .time-display span {
-            color: #ff8e8e;
-            font-weight: 600;
-        }
-
-        .canvas-wrapper {
-            position: relative;
-            background: rgba(0, 0, 0, 0.35);
-            border-radius: 14px;
-            overflow: hidden;
-            border: 1px solid var(--border);
-            box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.3);
-        }
-
-        canvas {
-            display: block;
-            width: 100%;
-            height: auto;
-            cursor: default;
-        }
-
-        .controls {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 16px;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .control-group {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            background: rgba(255, 255, 255, 0.03);
-            padding: 10px 16px;
-            border-radius: 12px;
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            transition: border-color 0.3s;
-        }
-        .control-group:hover {
-            border-color: rgba(255, 255, 255, 0.2);
-        }
-        .control-group label {
-            font-size: 0.9em;
-            font-weight: 600;
-            color: #ccc;
-            white-space: nowrap;
-            letter-spacing: 0.5px;
-            min-width: 40px;
-        }
-        .control-group label.amp-label {
-            color: #ff8e8e;
-        }
-        .control-group label.speed-label {
-            color: #6edcd6;
-        }
-
-        input[type="range"] {
-            -webkit-appearance: none;
-            width: 130px;
-            height: 6px;
-            border-radius: 3px;
-            background: var(--slider-track);
-            outline: none;
-            cursor: pointer;
-        }
-        input[type="range"]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            width: 26px;
-            height: 26px;
-            border-radius: 50%;
-            background: #fff;
-            border: 3px solid #888;
-            cursor: pointer;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-            transition: all 0.2s;
-        }
-        input[type="range"]::-webkit-slider-thumb:hover {
-            transform: scale(1.1);
-            border-color: #fff;
-            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
-        }
-        #ampSlider::-webkit-slider-thumb {
-            border-color: #ff6b6b;
-            background: #fff5f5;
-        }
-        #speedSlider::-webkit-slider-thumb {
-            border-color: #4ecdc4;
-            background: #f5fffe;
-        }
-
-        .value-badge {
-            display: inline-block;
-            min-width: 45px;
-            text-align: center;
-            font-weight: 700;
-            font-size: 0.9em;
-            padding: 3px 8px;
-            border-radius: 8px;
-            letter-spacing: 0.5px;
-        }
-        .value-badge.amp-badge {
-            background: rgba(255, 107, 107, 0.15);
-            color: #ff8e8e;
-        }
-        .value-badge.speed-badge {
-            background: rgba(78, 205, 196, 0.15);
-            color: #6edcd6;
-        }
-
-        .btn {
-            padding: 10px 22px;
-            border-radius: 25px;
-            border: none;
-            font-size: 0.95em;
-            font-weight: 600;
-            cursor: pointer;
-            letter-spacing: 1px;
-            transition: all 0.3s;
-            position: relative;
-            overflow: hidden;
-            white-space: nowrap;
-        }
-        .btn-reset {
-            background: rgba(255, 255, 255, 0.08);
-            color: #ddd;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-        .btn-reset:hover {
-            background: rgba(255, 255, 255, 0.16);
-            border-color: rgba(255, 255, 255, 0.4);
-            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
-        }
-        .btn-pause {
-            background: rgba(240, 192, 96, 0.15);
-            color: #f0c060;
-            border: 1px solid rgba(240, 192, 96, 0.3);
-            min-width: 90px;
-        }
-        .btn-pause:hover {
-            background: rgba(240, 192, 96, 0.25);
-            border-color: rgba(240, 192, 96, 0.5);
-            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
-        }
-        .btn-pause.paused {
-            background: rgba(120, 200, 120, 0.2);
-            color: #8fdf8f;
-            border-color: rgba(120, 200, 120, 0.4);
-        }
-
-        .legend {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 14px;
-            justify-content: center;
-            align-items: center;
-            padding: 4px 0;
-        }
-        .legend-item {
-            display: flex;
-            align-items: center;
-            gap: 7px;
-            font-size: 0.82em;
-            color: #bbb;
-            letter-spacing: 0.5px;
-        }
-        .legend-dot {
-            width: 13px;
-            height: 13px;
-            border-radius: 50%;
-            flex-shrink: 0;
-            box-shadow: 0 0 8px currentColor;
-        }
-        .legend-dot.red {
-            background: #ff4444;
-            box-shadow: 0 0 10px #ff4444aa;
-        }
-        .legend-dot.blue {
-            background: #4499ff;
-            box-shadow: 0 0 10px #4499ffaa;
-        }
-        .legend-dot.black {
-            background: #333;
-            border: 2px solid #888;
-            box-shadow: 0 0 6px #88888844;
-        }
-        .legend-dot.purple {
-            background: #c084fc;
-            box-shadow: 0 0 12px #c084fccc;
-            width: 15px;
-            height: 15px;
-        }
-        .legend-dot.yellow {
-            background: #f0c040;
-            box-shadow: 0 0 12px #f0c040cc;
-            width: 15px;
-            height: 15px;
-        }
-
-        .info-bar {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            justify-content: center;
-            font-size: 0.78em;
-            color: #888;
-            letter-spacing: 0.5px;
-        }
-        .info-bar span {
-            background: rgba(255, 255, 255, 0.03);
-            padding: 4px 10px;
-            border-radius: 10px;
-        }
-
-        @media (max-width: 768px) {
-            .container {
-                padding: 15px 12px 12px;
-                gap: 12px;
-                border-radius: 14px;
-            }
-            .title {
-                font-size: 1.2em;
-            }
-            .controls {
-                gap: 8px;
-            }
-            .control-group {
-                padding: 7px 10px;
-                gap: 6px;
-            }
-            .control-group label {
-                font-size: 0.75em;
-                min-width: 30px;
-            }
-            input[type="range"] {
-                width: 80px;
-            }
-            .btn {
-                padding: 8px 14px;
-                font-size: 0.8em;
-            }
-            .legend {
-                gap: 8px;
-            }
-            .legend-item {
-                font-size: 0.7em;
-                gap: 4px;
-            }
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>齐老师动画 - 高中物理动画合集</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      background-color: #1a2332;
+      font-family: "Microsoft YaHei", "微软雅黑", sans-serif;
+      color: #e0e0e0;
+      min-height: 100vh;
+    }
+    
+    .header {
+      background: linear-gradient(135deg, #1a2332 0%, #2a3a52 50%, #1a2332 100%);
+      padding: 40px 20px;
+      text-align: center;
+      border-bottom: 2px solid rgba(100, 150, 200, 0.3);
+    }
+    
+    .header h1 {
+      font-size: 36px;
+      color: #8ab4f8;
+      margin-bottom: 10px;
+      letter-spacing: 4px;
+      text-shadow: 0 0 20px rgba(138, 180, 248, 0.3);
+    }
+    
+    .header p {
+      color: #7a8ba0;
+      font-size: 16px;
+    }
+    
+    .stats {
+      display: flex;
+      justify-content: center;
+      gap: 40px;
+      margin-top: 20px;
+    }
+    
+    .stat-item {
+      text-align: center;
+    }
+    
+    .stat-number {
+      font-size: 28px;
+      font-weight: bold;
+      color: #8ab4f8;
+    }
+    
+    .stat-label {
+      font-size: 14px;
+      color: #7a8ba0;
+      margin-top: 4px;
+    }
+    
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 30px 20px;
+    }
+    
+    .category-card {
+      background: rgba(42, 58, 82, 0.5);
+      border-radius: 12px;
+      margin-bottom: 25px;
+      overflow: hidden;
+      border: 1px solid rgba(100, 150, 200, 0.15);
+      backdrop-filter: blur(10px);
+    }
+    
+    .category-header {
+      padding: 18px 24px;
+      background: rgba(30, 40, 56, 0.6);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .category-title {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    
+    .category-icon {
+      font-size: 24px;
+    }
+    
+    .category-name {
+      font-size: 20px;
+      font-weight: bold;
+      color: #e0e0e0;
+    }
+    
+    .category-count {
+      color: #8ab4f8;
+      font-size: 14px;
+      background: rgba(138, 180, 248, 0.1);
+      padding: 4px 12px;
+      border-radius: 20px;
+    }
+    
+    .file-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 12px;
+      padding: 20px;
+    }
+    
+    .file-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 16px;
+      background: rgba(26, 35, 50, 0.6);
+      border-radius: 8px;
+      color: #b0c4de;
+      text-decoration: none;
+      transition: all 0.3s ease;
+      border: 1px solid transparent;
+      font-size: 14px;
+    }
+    
+    .file-item:hover {
+      background: rgba(74, 144, 217, 0.15);
+      border-color: rgba(74, 144, 217, 0.4);
+      color: #8ab4f8;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(74, 144, 217, 0.2);
+    }
+    
+    .file-icon {
+      color: #4a90d9;
+      font-size: 10px;
+      flex-shrink: 0;
+    }
+    
+    .file-name {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    
+    .watermark {
+      position: fixed;
+      bottom: 15px;
+      right: 20px;
+      color: rgba(138, 180, 248, 0.25);
+      font-size: 13px;
+      text-align: right;
+      line-height: 1.8;
+      pointer-events: none;
+      user-select: none;
+    }
+    
+    .footer {
+      text-align: center;
+      padding: 30px;
+      color: #5a6a7a;
+      font-size: 13px;
+    }
+  </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <div class="title">🌊 绳波干涉 · 相向传播</div>
-            <div class="time-display">⏱ 时间：<span id="timeVal">0.00</span> s</div>
-        </div>
-
-        <div class="canvas-wrapper">
-            <canvas id="mainCanvas"></canvas>
-        </div>
-
-        <div class="controls">
-            <div class="control-group">
-                <label class="amp-label">📏 振幅</label>
-                <input type="range" id="ampSlider" min="10" max="60" value="32" step="1">
-                <span class="value-badge amp-badge" id="ampVal">32 px</span>
-            </div>
-            <div class="control-group">
-                <label class="speed-label">⚡ 波速</label>
-                <input type="range" id="speedSlider" min="60" max="400" value="160" step="5">
-                <span class="value-badge speed-badge" id="speedVal">160 px/s</span>
-            </div>
-            <button class="btn btn-pause" id="btnPause" title="暂停/播放">⏯ 暂停</button>
-            <button class="btn btn-reset" id="btnReset" title="重新开始">🔄 重置</button>
-        </div>
-
-        <div class="legend">
-            <div class="legend-item"><span class="legend-dot red"></span> 左波（红）</div>
-            <div class="legend-item"><span class="legend-dot blue"></span> 右波（蓝）</div>
-            <div class="legend-item"><span class="legend-dot black"></span> 叠加区域</div>
-            <div class="legend-item"><span class="legend-dot purple"></span> 加强点（波腹）</div>
-            <div class="legend-item"><span class="legend-dot yellow"></span> 减弱点（波节）</div>
-        </div>
-        <div class="info-bar">
-            <span>左波源 ↑ 向上起振</span>
-            <span>右波源 ↓ 向下起振</span>
-            <span>波源相位差 π（反相）</span>
-            <span id="infoMeet">相遇时间：-- s</span>
-        </div>
+  <div class="header">
+    <h1>齐老师动画</h1>
+    <p>高中物理动画合集</p>
+    <div class="stats">
+      <div class="stat-item">
+        <div class="stat-number">121</div>
+        <div class="stat-label">动画总数</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-number">5</div>
+        <div class="stat-label">大模块</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-number">ESC</div>
+        <div class="stat-label">快速返回</div>
+      </div>
     </div>
-
-    <script>
-        (function() {
-            const canvas = document.getElementById('mainCanvas');
-            const ctx = canvas.getContext('2d');
-
-            // DOM elements
-            const ampSlider = document.getElementById('ampSlider');
-            const speedSlider = document.getElementById('speedSlider');
-            const ampValEl = document.getElementById('ampVal');
-            const speedValEl = document.getElementById('speedVal');
-            const timeValEl = document.getElementById('timeVal');
-            const btnPause = document.getElementById('btnPause');
-            const btnReset = document.getElementById('btnReset');
-            const infoMeet = document.getElementById('infoMeet');
-
-            // Parameters
-            let amplitude = parseInt(ampSlider.value); // px
-            let waveSpeed = parseInt(speedSlider.value); // px/s
-
-            const NUM_PARTICLES = 130;
-            const PARTICLE_RADIUS = 4.5;
-            const SOURCE_RADIUS = 7;
-            const SPECIAL_RADIUS = 6.5;
-
-            // Canvas dimensions (will be set dynamically)
-            let canvasWidth, canvasHeight;
-            let marginX = 50;
-            let marginY = 80;
-            let equilY; // equilibrium Y position
-            let totalLength; // total rope length in px
-            let dx; // spacing between particles
-            let particleX = []; // x positions of particles
-
-            // Wave parameters
-            const FREQUENCY = 0.42; // Hz (fixed)
-            let omega; // angular frequency = 2*pi*f
-            let wavenumber; // k = omega / waveSpeed
-            let wavelength; // lambda = waveSpeed / frequency
-
-            // Animation state
-            let animTime = 0;
-            let paused = false;
-            let lastFrameTimestamp = null;
-
-            // Particle displacement buffers
-            let yLeft = new Float32Array(NUM_PARTICLES); // displacement from left wave
-            let yRight = new Float32Array(NUM_PARTICLES); // displacement from right wave
-            let yTotal = new Float32Array(NUM_PARTICLES); // total displacement
-            let leftArrived = new Float32Array(NUM_PARTICLES); // 0 or 1
-            let rightArrived = new Float32Array(NUM_PARTICLES); // 0 or 1
-
-            function updateDerivedParams() {
-                omega = 2 * Math.PI * FREQUENCY;
-                wavelength = waveSpeed / FREQUENCY;
-                wavenumber = (2 * Math.PI) / wavelength;
-            }
-
-            function setupCanvas() {
-                const wrapper = canvas.parentElement;
-                const wrapperWidth = wrapper.clientWidth;
-                const dpr = Math.min(window.devicePixelRatio || 1, 2); // cap for performance
-
-                canvasWidth = Math.min(wrapperWidth - 4, 1150);
-                // Aspect ratio ~ 2.5:1
-                canvasHeight = Math.round(canvasWidth / 2.6);
-                canvasHeight = Math.max(canvasHeight, 280);
-                canvasHeight = Math.min(canvasHeight, 500);
-
-                canvas.width = canvasWidth * dpr;
-                canvas.height = canvasHeight * dpr;
-                canvas.style.width = canvasWidth + 'px';
-                canvas.style.height = canvasHeight + 'px';
-                ctx.setTransform(1, 0, 0, 1, 0, 0);
-                ctx.scale(dpr, dpr);
-
-                marginX = Math.round(canvasWidth * 0.045);
-                marginY = Math.round(canvasHeight * 0.18);
-                equilY = canvasHeight / 2;
-                totalLength = canvasWidth - 2 * marginX;
-                dx = totalLength / (NUM_PARTICLES - 1);
-
-                particleX = [];
-                for (let i = 0; i < NUM_PARTICLES; i++) {
-                    particleX[i] = marginX + i * dx;
-                }
-
-                updateDerivedParams();
-                updateMeetInfo();
-            }
-
-            function updateMeetInfo() {
-                const meetTime = totalLength / (2 * waveSpeed);
-                infoMeet.textContent = `相遇时间：${meetTime.toFixed(2)} s（位置：中点）`;
-            }
-
-            function resetSimulation() {
-                animTime = 0;
-                lastFrameTimestamp = null;
-                yLeft.fill(0);
-                yRight.fill(0);
-                yTotal.fill(0);
-                leftArrived.fill(0);
-                rightArrived.fill(0);
-                updateDerivedParams();
-                updateMeetInfo();
-                timeValEl.textContent = '0.00';
-            }
-
-            function computeWaveState(t) {
-                const L = totalLength;
-                const v = waveSpeed;
-                const A = amplitude;
-                const k = wavenumber;
-                const w = omega;
-
-                const leftFront = v * t; // left wave front position from x=0
-                const rightFront = L - v * t; // right wave front position from x=L
-
-                for (let i = 0; i < NUM_PARTICLES; i++) {
-                    const x = particleX[i] - marginX; // x relative to left end (0 to L)
-                    const xFromRight = L - x; // distance from right end
-
-                    // Left wave arrival
-                    const lArr = (x <= leftFront + 0.01) ? 1 : 0;
-                    leftArrived[i] = lArr;
-                    if (lArr && i === 0) {
-                        // Left source: forced vibration
-                        yLeft[i] = A * Math.sin(w * t);
-                    } else if (lArr) {
-                        yLeft[i] = A * Math.sin(w * t - k * x);
-                    } else {
-                        yLeft[i] = 0;
-                    }
-
-                    // Right wave arrival
-                    const rArr = (xFromRight <= v * t + 0.01) ? 1 : 0;
-                    rightArrived[i] = rArr;
-                    if (rArr && i === NUM_PARTICLES - 1) {
-                        // Right source: forced vibration (opposite phase)
-                        yRight[i] = -A * Math.sin(w * t);
-                    } else if (rArr) {
-                        yRight[i] = -A * Math.sin(w * t - k * xFromRight);
-                    } else {
-                        yRight[i] = 0;
-                    }
-
-                    // Total displacement
-                    if (i === 0) {
-                        // Left source forced
-                        yTotal[i] = A * Math.sin(w * t);
-                    } else if (i === NUM_PARTICLES - 1) {
-                        // Right source forced
-                        yTotal[i] = -A * Math.sin(w * t);
-                    } else {
-                        yTotal[i] = yLeft[i] + yRight[i];
-                    }
-                }
-            }
-
-            function drawBackground() {
-                // Clear
-                ctx.fillStyle = '#0d0d1a';
-                ctx.fillRect(0, 0, canvasWidth, canvasHeight);
-
-                // Subtle grid
-                ctx.strokeStyle = 'rgba(255,255,255,0.015)';
-                ctx.lineWidth = 1;
-                const gridSpacing = 40;
-                for (let gx = marginX; gx <= canvasWidth - marginX; gx += gridSpacing) {
-                    ctx.beginPath();
-                    ctx.moveTo(gx, marginY - 10);
-                    ctx.lineTo(gx, canvasHeight - marginY + 10);
-                    ctx.stroke();
-                }
-                for (let gy = marginY; gy <= canvasHeight - marginY; gy += gridSpacing) {
-                    ctx.beginPath();
-                    ctx.moveTo(marginX - 10, gy);
-                    ctx.lineTo(canvasWidth - marginX + 10, gy);
-                    ctx.stroke();
-                }
-
-                // Equilibrium line
-                ctx.strokeStyle = 'rgba(255,255,255,0.12)';
-                ctx.lineWidth = 1.5;
-                ctx.setLineDash([8, 16]);
-                ctx.beginPath();
-                ctx.moveTo(marginX - 8, equilY);
-                ctx.lineTo(canvasWidth - marginX + 8, equilY);
-                ctx.stroke();
-                ctx.setLineDash([]);
-
-                // Labels
-                ctx.fillStyle = 'rgba(255,255,255,0.25)';
-                ctx.font = '11px "PingFang SC","Microsoft YaHei",sans-serif';
-                ctx.textAlign = 'center';
-                ctx.fillText('平衡位置', canvasWidth - marginX + 30, equilY + 4);
-            }
-
-            function drawRopeConnections() {
-                // Draw lines connecting adjacent particles
-                ctx.lineWidth = 1.3;
-                ctx.lineCap = 'round';
-
-                for (let i = 0; i < NUM_PARTICLES - 1; i++) {
-                    const x1 = particleX[i];
-                    const y1 = equilY + yTotal[i];
-                    const x2 = particleX[i + 1];
-                    const y2 = equilY + yTotal[i + 1];
-
-                    const bothLeft = leftArrived[i] > 0.5 && leftArrived[i + 1] > 0.5 && rightArrived[i] < 0.5 && rightArrived[i + 1] < 0.5;
-                    const bothRight = rightArrived[i] > 0.5 && rightArrived[i + 1] > 0.5 && leftArrived[i] < 0.5 && leftArrived[i + 1] < 0.5;
-                    const bothOverlap = leftArrived[i] > 0.5 && rightArrived[i] > 0.5 && leftArrived[i + 1] > 0.5 && rightArrived[i + 1] > 0.5;
-
-                    if (bothLeft) {
-                        ctx.strokeStyle = 'rgba(255,100,100,0.5)';
-                    } else if (bothRight) {
-                        ctx.strokeStyle = 'rgba(100,160,255,0.5)';
-                    } else if (bothOverlap) {
-                        ctx.strokeStyle = 'rgba(180,180,190,0.45)';
-                    } else {
-                        ctx.strokeStyle = 'rgba(150,150,160,0.3)';
-                    }
-
-                    ctx.beginPath();
-                    ctx.moveTo(x1, y1);
-                    ctx.lineTo(x2, y2);
-                    ctx.stroke();
-                }
-            }
-
-            function getParticleColor(i) {
-                const lArr = leftArrived[i] > 0.5;
-                const rArr = rightArrived[i] > 0.5;
-                const inOverlap = lArr && rArr;
-                const isSource = (i === 0 || i === NUM_PARTICLES - 1);
-
-                if (isSource) {
-                    if (i === 0) return 'source-left';
-                    if (i === NUM_PARTICLES - 1) return 'source-right';
-                }
-
-                if (!lArr && !rArr) return 'idle'; // no wave arrived
-                if (lArr && !rArr) return 'left-only';
-                if (rArr && !lArr) return 'right-only';
-
-                // Overlap region - check for special points
-                const absTotal = Math.abs(yTotal[i]);
-                const absLeft = Math.abs(yLeft[i]);
-                const absRight = Math.abs(yRight[i]);
-
-                // Strengthened point (antinode): total amplitude near 2A
-                if (absTotal > 1.65 * amplitude) {
-                    return 'strengthened';
-                }
-                // Weakened point (node): total near 0 but both waves have significant amplitude
-                if (absTotal < 0.28 * amplitude && absLeft > 0.3 * amplitude && absRight > 0.3 * amplitude) {
-                    return 'weakened';
-                }
-
-                return 'overlap';
-            }
-
-            function drawParticles() {
-                for (let i = 0; i < NUM_PARTICLES; i++) {
-                    const cx = particleX[i];
-                    const cy = equilY + yTotal[i];
-                    const colorType = getParticleColor(i);
-
-                    let radius = PARTICLE_RADIUS;
-                    let fillColor, strokeColor, glowColor;
-
-                    switch (colorType) {
-                        case 'source-left':
-                            radius = SOURCE_RADIUS;
-                            fillColor = '#ff4444';
-                            strokeColor = '#ff8888';
-                            glowColor = 'rgba(255,80,80,0.7)';
-                            break;
-                        case 'source-right':
-                            radius = SOURCE_RADIUS;
-                            fillColor = '#4499ff';
-                            strokeColor = '#88bbff';
-                            glowColor = 'rgba(70,150,255,0.7)';
-                            break;
-                        case 'idle':
-                            radius = PARTICLE_RADIUS;
-                            fillColor = '#555';
-                            strokeColor = '#777';
-                            glowColor = null;
-                            break;
-                        case 'left-only':
-                            radius = PARTICLE_RADIUS;
-                            fillColor = '#ff5555';
-                            strokeColor = '#ff9999';
-                            glowColor = 'rgba(255,80,80,0.35)';
-                            break;
-                        case 'right-only':
-                            radius = PARTICLE_RADIUS;
-                            fillColor = '#5599ff';
-                            strokeColor = '#99bbff';
-                            glowColor = 'rgba(70,140,255,0.35)';
-                            break;
-                        case 'overlap':
-                            radius = PARTICLE_RADIUS;
-                            fillColor = '#2a2a2a';
-                            strokeColor = '#999';
-                            glowColor = null;
-                            break;
-                        case 'strengthened':
-                            radius = SPECIAL_RADIUS;
-                            fillColor = '#c084fc';
-                            strokeColor = '#e0b0ff';
-                            glowColor = 'rgba(190,130,255,0.85)';
-                            break;
-                        case 'weakened':
-                            radius = SPECIAL_RADIUS;
-                            fillColor = '#f0c040';
-                            strokeColor = '#f8d870';
-                            glowColor = 'rgba(240,190,60,0.85)';
-                            break;
-                        default:
-                            radius = PARTICLE_RADIUS;
-                            fillColor = '#666';
-                            strokeColor = '#888';
-                            glowColor = null;
-                    }
-
-                    // Glow effect
-                    if (glowColor) {
-                        const glowGrad = ctx.createRadialGradient(cx, cy, radius * 0.5, cx, cy, radius * 2.8);
-                        glowGrad.addColorStop(0, glowColor);
-                        glowGrad.addColorStop(0.5, glowColor.replace('0.7', '0.2').replace('0.85', '0.25').replace('0.35',
-                            '0.1'));
-                        glowGrad.addColorStop(1, 'rgba(0,0,0,0)');
-                        ctx.fillStyle = glowGrad;
-                        ctx.beginPath();
-                        ctx.arc(cx, cy, radius * 2.8, 0, Math.PI * 2);
-                        ctx.fill();
-                    }
-
-                    // Main circle
-                    const mainGrad = ctx.createRadialGradient(cx - radius * 0.25, cy - radius * 0.3, radius * 0.1, cx, cy,
-                        radius);
-                    mainGrad.addColorStop(0, '#ffffff');
-                    mainGrad.addColorStop(0.35, fillColor);
-                    mainGrad.addColorStop(1, strokeColor);
-
-                    ctx.fillStyle = mainGrad;
-                    ctx.beginPath();
-                    ctx.arc(cx, cy, radius, 0, Math.PI * 2);
-                    ctx.fill();
-
-                    // Stroke
-                    ctx.strokeStyle = strokeColor;
-                    ctx.lineWidth = 1.2;
-                    ctx.stroke();
-
-                    // Small highlight dot
-                    ctx.fillStyle = 'rgba(255,255,255,0.7)';
-                    ctx.beginPath();
-                    ctx.arc(cx - radius * 0.28, cy - radius * 0.32, radius * 0.3, 0, Math.PI * 2);
-                    ctx.fill();
-                }
-            }
-
-            function drawSourceMarkers() {
-                // Left source indicator
-                const lx = particleX[0];
-                const ly = equilY + yTotal[0];
-                ctx.fillStyle = 'rgba(255,80,80,0.9)';
-                ctx.font = 'bold 12px "PingFang SC","Microsoft YaHei",sans-serif';
-                ctx.textAlign = 'center';
-                ctx.fillText('波源 L', lx, ly - SOURCE_RADIUS - 14);
-                // Up arrow for left source
-                drawSmallArrow(lx, ly - SOURCE_RADIUS - 5, 'up', '#ff6666');
-
-                // Right source indicator
-                const rx = particleX[NUM_PARTICLES - 1];
-                const ry = equilY + yTotal[NUM_PARTICLES - 1];
-                ctx.fillStyle = 'rgba(100,170,255,0.9)';
-                ctx.fillText('波源 R', rx, ry - SOURCE_RADIUS - 14);
-                // Down arrow for right source
-                drawSmallArrow(rx, ry - SOURCE_RADIUS - 5, 'down', '#6699ff');
-            }
-
-            function drawSmallArrow(ax, ay, direction, color) {
-                ctx.fillStyle = color;
-                ctx.strokeStyle = color;
-                ctx.lineWidth = 1.5;
-                const size = 7;
-                ctx.beginPath();
-                if (direction === 'up') {
-                    ctx.moveTo(ax, ay - size);
-                    ctx.lineTo(ax - size * 0.7, ay + size * 0.5);
-                    ctx.lineTo(ax + size * 0.7, ay + size * 0.5);
-                } else {
-                    ctx.moveTo(ax, ay + size);
-                    ctx.lineTo(ax - size * 0.7, ay - size * 0.5);
-                    ctx.lineTo(ax + size * 0.7, ay - size * 0.5);
-                }
-                ctx.closePath();
-                ctx.fill();
-            }
-
-            function drawWaveFrontIndicators(t) {
-                const leftFront = waveSpeed * t;
-                const rightFront = totalLength - waveSpeed * t;
-                const leftFrontX = marginX + leftFront;
-                const rightFrontX = marginX + rightFront;
-
-                // Only show if fronts are within the rope
-                if (leftFront < totalLength && leftFront > 0) {
-                    ctx.strokeStyle = 'rgba(255,130,130,0.5)';
-                    ctx.lineWidth = 1;
-                    ctx.setLineDash([3, 6]);
-                    ctx.beginPath();
-                    ctx.moveTo(leftFrontX, marginY - 5);
-                    ctx.lineTo(leftFrontX, canvasHeight - marginY + 5);
-                    ctx.stroke();
-                    ctx.setLineDash([]);
-                    ctx.fillStyle = 'rgba(255,150,150,0.8)';
-                    ctx.font = '10px "PingFang SC","Microsoft YaHei",sans-serif';
-                    ctx.textAlign = 'center';
-                    ctx.fillText('←左波波前', leftFrontX, marginY - 8);
-                }
-
-                if (rightFront > 0 && rightFront < totalLength) {
-                    ctx.strokeStyle = 'rgba(130,170,255,0.5)';
-                    ctx.lineWidth = 1;
-                    ctx.setLineDash([3, 6]);
-                    ctx.beginPath();
-                    ctx.moveTo(rightFrontX, marginY - 5);
-                    ctx.lineTo(rightFrontX, canvasHeight - marginY + 5);
-                    ctx.stroke();
-                    ctx.setLineDash([]);
-                    ctx.fillStyle = 'rgba(150,180,255,0.8)';
-                    ctx.font = '10px "PingFang SC","Microsoft YaHei",sans-serif';
-                    ctx.textAlign = 'center';
-                    ctx.fillText('右波波前→', rightFrontX, marginY - 8);
-                }
-
-                // Meeting zone highlight
-                if (leftFront >= rightFront - 1 && leftFront < totalLength && rightFront > 0) {
-                    const meetX = marginX + totalLength / 2;
-                    ctx.fillStyle = 'rgba(255,255,200,0.08)';
-                    const zoneWidth = Math.max(Math.abs(leftFront - rightFront), 30);
-                    ctx.fillRect(meetX - zoneWidth / 2, marginY, zoneWidth, canvasHeight - 2 * marginY);
-                }
-            }
-
-            function drawPhaseMarkers() {
-                // Draw small markers at antinode and node positions in the overlap zone
-                // These are theoretical positions based on the standing wave pattern
-                const L = totalLength;
-                const k = wavenumber;
-                const overlapStart = Math.max(0, Math.min(waveSpeed * animTime, L - waveSpeed * animTime));
-                const overlapEnd = Math.min(L, Math.max(waveSpeed * animTime, L - waveSpeed * animTime));
-
-                if (overlapEnd <= overlapStart + 10) return; // no significant overlap
-
-                // Theoretical node positions: sin(k(x-L/2)) = 0 => k(x-L/2) = n*pi
-                // => x = L/2 + n*pi/k = L/2 + n*lambda/2
-                const halfLambda = wavelength / 2;
-                const centerX = L / 2;
-
-                // Find nodes within the rope
-                let nMin = Math.floor((0 - centerX) / halfLambda) - 1;
-                let nMax = Math.ceil((L - centerX) / halfLambda) + 1;
-
-                for (let n = nMin; n <= nMax; n++) {
-                    const nodeX = centerX + n * halfLambda;
-                    if (nodeX > overlapStart && nodeX < overlapEnd && nodeX > 2 && nodeX < L - 2) {
-                        const screenX = marginX + nodeX;
-                        // Small marker on equilibrium line
-                        ctx.fillStyle = 'rgba(240,190,60,0.5)';
-                        ctx.beginPath();
-                        ctx.arc(screenX, equilY, 3.5, 0, Math.PI * 2);
-                        ctx.fill();
-                    }
-                    // Antinodes between nodes
-                    const antiNodeX = centerX + (n + 0.5) * halfLambda;
-                    if (antiNodeX > overlapStart && antiNodeX < overlapEnd && antiNodeX > 2 && antiNodeX < L - 2) {
-                        const screenX = marginX + antiNodeX;
-                        ctx.fillStyle = 'rgba(190,130,255,0.4)';
-                        ctx.beginPath();
-                        ctx.arc(screenX, equilY, 3, 0, Math.PI * 2);
-                        ctx.fill();
-                    }
-                }
-            }
-
-            function render(t) {
-                ctx.clearRect(0, 0, canvasWidth, canvasHeight);
-                drawBackground();
-                computeWaveState(t);
-                drawPhaseMarkers();
-                drawWaveFrontIndicators(t);
-                drawRopeConnections();
-                drawParticles();
-                drawSourceMarkers();
-
-                // Overlap zone label
-                const leftFront = waveSpeed * t;
-                const rightFront = totalLength - waveSpeed * t;
-                if (leftFront >= rightFront - 1 && leftFront < totalLength && rightFront > 0) {
-                    const midX = marginX + totalLength / 2;
-                    ctx.fillStyle = 'rgba(255,255,255,0.7)';
-                    ctx.font = 'bold 13px "PingFang SC","Microsoft YaHei",sans-serif';
-                    ctx.textAlign = 'center';
-                    ctx.fillText('干涉叠加区域', midX, canvasHeight - marginY + 28);
-                }
-            }
-
-            function animate(timestamp) {
-                if (!paused) {
-                    if (lastFrameTimestamp !== null) {
-                        const dt = (timestamp - lastFrameTimestamp) / 1000;
-                        // Clamp dt to avoid jumps
-                        const clampedDt = Math.min(dt, 0.1);
-                        animTime += clampedDt;
-                    }
-                    lastFrameTimestamp = timestamp;
-                } else {
-                    lastFrameTimestamp = null;
-                }
-
-                // Update display
-                timeValEl.textContent = animTime.toFixed(2);
-                render(animTime);
-
-                requestAnimationFrame(animate);
-            }
-
-            // Event handlers
-            ampSlider.addEventListener('input', () => {
-                amplitude = parseInt(ampSlider.value);
-                ampValEl.textContent = amplitude + ' px';
-                updateDerivedParams();
-                updateMeetInfo();
-            });
-
-            speedSlider.addEventListener('input', () => {
-                waveSpeed = parseInt(speedSlider.value);
-                speedValEl.textContent = waveSpeed + ' px/s';
-                updateDerivedParams();
-                updateMeetInfo();
-            });
-
-            btnPause.addEventListener('click', () => {
-                paused = !paused;
-                if (paused) {
-                    btnPause.textContent = '▶ 播放';
-                    btnPause.classList.add('paused');
-                } else {
-                    btnPause.textContent = '⏯ 暂停';
-                    btnPause.classList.remove('paused');
-                    lastFrameTimestamp = null;
-                }
-            });
-
-            btnReset.addEventListener('click', () => {
-                resetSimulation();
-                if (paused) {
-                    // Keep paused but render initial frame
-                    render(0);
-                }
-                updateMeetInfo();
-            });
-
-            // Handle window resize
-            let resizeTimeout;
-            window.addEventListener('resize', () => {
-                clearTimeout(resizeTimeout);
-                resizeTimeout = setTimeout(() => {
-                    const wasPaused = paused;
-                    paused = true;
-                    setupCanvas();
-                    updateDerivedParams();
-                    updateMeetInfo();
-                    render(animTime);
-                    if (!wasPaused) {
-                        paused = false;
-                        lastFrameTimestamp = null;
-                    }
-                }, 300);
-            });
-
-            // Keyboard shortcuts
-            window.addEventListener('keydown', (e) => {
-                switch (e.key.toLowerCase()) {
-                    case ' ':
-                        e.preventDefault();
-                        btnPause.click();
-                        break;
-                    case 'r':
-                        if (!e.ctrlKey && !e.metaKey) {
-                            e.preventDefault();
-                            btnReset.click();
-                        }
-                        break;
-                    case 'arrowleft':
-                        e.preventDefault();
-                        waveSpeed = Math.max(60, waveSpeed - 10);
-                        speedSlider.value = waveSpeed;
-                        speedValEl.textContent = waveSpeed + ' px/s';
-                        updateDerivedParams();
-                        updateMeetInfo();
-                        break;
-                    case 'arrowright':
-                        e.preventDefault();
-                        waveSpeed = Math.min(400, waveSpeed + 10);
-                        speedSlider.value = waveSpeed;
-                        speedValEl.textContent = waveSpeed + ' px/s';
-                        updateDerivedParams();
-                        updateMeetInfo();
-                        break;
-                    case 'arrowup':
-                        e.preventDefault();
-                        amplitude = Math.min(60, amplitude + 2);
-                        ampSlider.value = amplitude;
-                        ampValEl.textContent = amplitude + ' px';
-                        updateDerivedParams();
-                        updateMeetInfo();
-                        break;
-                    case 'arrowdown':
-                        e.preventDefault();
-                        amplitude = Math.max(10, amplitude - 2);
-                        ampSlider.value = amplitude;
-                        ampValEl.textContent = amplitude + ' px';
-                        updateDerivedParams();
-                        updateMeetInfo();
-                        break;
-                }
-            });
-
-            // Initial setup
-            setupCanvas();
-            updateDerivedParams();
-            updateMeetInfo();
-            ampValEl.textContent = amplitude + ' px';
-            speedValEl.textContent = waveSpeed + ' px/s';
-            ampSlider.value = amplitude;
-            speedSlider.value = waveSpeed;
-            render(0);
-
-            // Start animation
-            requestAnimationFrame(animate);
-
-            console.log('🌊 绳波干涉动画已就绪');
-            console.log('  - 左端波源（红色）向上起振');
-            console.log('  - 右端波源（蓝色）向下起振（相位差π）');
-            console.log('  - 紫色小球 = 振动加强点（波腹）');
-            console.log('  - 黄色小球 = 振动减弱点（波节）');
-            console.log('  - 空格键：暂停/播放');
-            console.log('  - R键：重置');
-            console.log('  - 方向键：调节参数');
-            console.log('  默认振幅：' + amplitude + 'px，波速：' + waveSpeed + 'px/s');
-            console.log('  波长：' + wavelength.toFixed(0) + 'px，频率：' + FREQUENCY + 'Hz');
-        })();
-    </script>
+  </div>
+  
+  <div class="container">
+      <div class="category-card">
+        <div class="category-header" style="border-left: 4px solid #ff6b6b;">
+          <div class="category-title">
+            <span class="category-icon">⚡</span>
+            <span class="category-name">动量模块</span>
+          </div>
+          <div class="category-count">15 个动画</div>
+        </div>
+        <div class="file-grid">
+          <a href="1动量/1%E8%88%B9%E6%89%94%E6%B2%99%E5%8C%85.html" class="file-item" target="_self" onclick="saveScrollPosition()">
+            <span class="file-icon">▶</span>
+            <span class="file-name">1船扔沙包</span>
+          </a>
+          <a href="1动量/1%E5%AD%A9%E8%BD%AE%E9%94%A4%E5%AD%90.html" class="file-item" target="_self" onclick="saveScrollPosition()">
+            <span class="file-icon">▶</span>
+            <span class="file-name">1孩轮锤子</span>
+          </a>
+          <a href="1动量/1%E7%A2%B0%E6%92%9E.html" class="file-item" target="_self" onclick="saveScrollPosition()">
+            <span class="file-icon">▶</span>
+            <span class="file-name">1碰撞</span>
+          </a>
+          <a href="1动量/1%E7%A2%B0%E6%92%9E%E5%BC%B9%E7%B0%A7.html" class="file-item" target="_self" onclick="saveScrollPosition()">
+            <span class="file-icon">▶</span>
+            <span class="file-name">1碰撞弹簧</span>
+          </a>
+          <a href="1动量/1%E7%A2%B0%E6%92%9E%E6%AF%9B%E6%AF%9B%E8%99%AB.html" class="file-item" target="_self" onclick="saveScrollPosition()">
+            <span class="file-icon">▶</span>
+            <span class="file-name">1碰撞毛毛虫</span>
+          </a>
+          <a href="1动量/1%E7%A2%B0%E6%92%9E%E7%90%83%E5%BD%A2%E5%8F%98.html" class="file-item" target="_self" onclick="saveScrollPosition()">
+            <span class="file-icon">▶</span>
+            <span class="file-name">1碰撞球形变</span>
+          </a>
+          <a href="1动量/1%E4%BA%BA%E8%88%B9%E6%A8%A1%E5%9E%8B.html" class="file-item" target="_self" onclick="saveScrollPosition()">
+            <span class="file-icon">▶</span>
+            <span class="file-name">1人船模型</span>
+          </a>
+          <a href="1动量/1%E5%8F%8C%E7%90%83%E6%9D%86%E5%8A%A8%E9%87%8F.html" class="file-item" target="_self" onclick="saveScrollPosition()">
+            <span class="file-icon">▶</span>
+            <span class="file-name">1双球杆动量</span>
+          </a>
+          <a href="1动量/1%E5%B0%8F%E7%90%83%E5%87%B9%E6%A7%BD%E5%9D%97%E4%B8%8D%E5%9B%BA%E5%AE%9A.html" class="file-item" target="_self" onclick="saveScrollPosition()">
+            <span class="file-icon">▶</span>
+            <span class="file-name">1小球凹槽块不固定</span>
+          </a>
+          <a href="1动量/1%E5%B0%8F%E7%90%83%E5%87%B9%E6%A7%BD%E5%9D%97%E5%9B%BA%E5%AE%9A.html" class="file-item" target="_self" onclick="saveScrollPosition()">
+            <span class="file-icon">▶</span>
+            <span class="file-name">1小球凹槽块固定</span>
+          </a>
+          <a href="1动量/1%E5%B0%8F%E7%90%83%E5%86%B2%E5%87%B9%E6%A7%BD.html" class="file-item" target="_self" onclick="saveScrollPosition()">
+            <span class="file-icon">▶</span>
+            <span class="file-name">1小球冲凹槽</span>
+          </a>
+          <a href="1动量/1%E5%B0%8F%E7%90%83%E8%90%BD%E4%B8%A4%E6%A7%BD.html" class="file-item" target="_self" onclick="saveScrollPosition()">
+            <span class="file-icon">▶</span>
+            <span class="file-name">1小球落两槽</span>
+          </a>
+          <a href="1动量/1%E5%B0%8F%E7%90%83%E8%90%BD%E5%85%A5%E5%87%B9%E6%A7%BD.html" class="file-item" target="_self" onclick="saveScrollPosition()">
+            <span class="file-icon">▶</span>
+            <span class="file-name">1小球落入凹槽</span>
+          </a>
+          <a href="1动量/1%E6%96%9C%E9%9D%A2%E5%8A%A8%E9%87%8F%E5%AE%88%E6%81%92%E5%8A%A8%E7%94%BB.html" class="file-item" target="_self" onclick="saveScrollPosition()">
+            <span class="file-icon">▶</span>
+            <span class="file-name">1斜面动量守恒动画</span>
+          </a>
+          <a href="1动量/1%E5%AD%90%E5%BC%B9%E6%89%93%E6%9C%A8%E5%9D%97.html" class="file-item" target="_self" onclick="saveScrollPosition()">
+            <span class="file-icon">▶</span>
+            <span class="file-name">1子弹打木块</span>
+          </a>
+        </div>
+      </div>
+      <div class="category-card">
+        <div class="category-header" style="border-left: 4px solid #4ecdc4;">
+          <div class="category-title">
+            <span class="category-icon">⚡</span>
+            <span class="category-name">电磁模块</span>
+          </div>
+          <div class="category-count">25 个动画</div>
+        </div>
+        <div class="file-grid">
+          <a href="2电磁/2%E7%A3%81%E8%81%9A%E7%84%A6%E7%A3%81%E5%8F%91%E6%95%A3.html" class="file-item" target="_self" onclick="saveScrollPosition()">
+            <span class="file-icon">▶</span>
+            <span class="file-name">2磁聚焦磁发散</span>
+          </a>
+          <a href="2电磁/2%E7%A3%81%E6%B5%81%E4%BD%93%E5%8F%91%E7%94%B5%E6%9C%BA.html" class="file-item" target="_self" onclick="saveScrollPosition()">
+            <span class="file-icon">▶</span>
+            <span class="file-name">2磁流体发电机</span>
+          </a>
+          <a href="2电磁/2%E7%A3%81%E5%81%8F%E8%BD%AC%E7%BB%88%E7%89%88.html" class="file-item" target="_self" onclick="saveScrollPosition()">
+            <span class="file-icon">▶</span>
+            <span class="file-name">2磁偏转终版</span>
+          </a>
+          <a href="2电磁/2%E7%AD%89%E8%B7%9D%E8%9E%BA%E6%97%8B%E8%BF%90%E5%8A%A8.html" class="file-item" target="_self" onclick="saveScrollPosition()">
+            <span class="file-icon">▶</span>
+            <span class="file-name">2等距螺旋运动</span>
+          </a>
+          <a href="2电磁/2%E7%94%B5%E5%9C%BA%E7%BA%BF%E7%BB%88%E7%89%88.html" class="file-item" target="_self" onclick="saveScrollPosition()">
+            <span class="file-icon">▶</span>
+            <span class="file-name">2电场线终版</span>
+          </a>
+          <a href="2电磁/2%E7%94%B5%E8%B7%AF%E5%AE%9E%E9%AA%8C%E5%AE%A4.html" class="file-item" target="_self" onclick="saveScrollPosition()">
+            <span class="file-icon">▶</span>
+            <span class="file-name">2电路实验室</span>
+          </a>
+          <a href="2电磁/2%E7%94%B5%E5%AE%B9%E5%99%A8%E5%85%85%E6%94%BE%E7%94%B5.html" class="file-item" target="_self" onclick="saveScrollPosition()">
+            <span class="file-icon">▶</span>
+            <span class="file-name">2电容器充放电</span>
+          </a>
+          <a href="2电磁/2%E7%94%B5%E5%8A%BF%E5%9B%BE.html" class="file-item" target="_self" onclick="saveScrollPosition()">
+            <span class="file-icon">▶</span>
+            <span class="file-name">2电势图</span>
+          </a>
+          <a href="2电磁/2%E6%94%BE%E5%B0%84%E6%BA%90%E7%A3%81%E5%81%8F%E8%BD%AC%E5%BD%A9%E8%89%B2.html" class="file-item" target="_self" onclick="saveScrollPosition()">
+            <span class="file-icon">▶</span>
+            <span class="file-name">2放射源磁偏转彩色</span>
+          </a>
+          <a href="2电磁/2%E6%94%BE%E5%B0%84%E6%BA%90%E7%A3%81%E5%81%8F%E8%BD%AC%E5%A4%9A%E4%B8%AA.html" class="file-item" target="_self" onclick="saveScrollPosition()">
+            <span class="file-icon">▶</span>
+            <span class="file-name">2放射源磁偏转多个</span>
+          </a>
+          <a href="2电磁/2%E5%9B%9E%E6%97%8B%E5%8A%A0%E9%80%9F%E5%BA%A6%E5%99%A8%E5%BE%85%E4%BF%AE.html" class="file-item" target="_self" onclick="saveScrollPosition()">
+            <span class="file-icon">▶</span>
+            <span class="file-name">2回旋加速度器待修</span>
+          </a>
+          <a href="2电磁/2%E9%9C%8D%E5%B0%94%E5%85%83%E4%BB%B6.html" class="file-item" target="_self" onclick="saveScrollPosition()">
+            <span class="file-icon">▶</span>
+            <span class="file-name">2霍尔元件</span>
+          </a>
+          <a href="2电磁/2%E4%BA%A4%E5%8F%98%E7%94%B5%E5%9C%BA%E6%8A%9B%E4%BD%93.html" class="file-item" target="_self" onclick="saveScrollPosition()">
+            <span class="file-icon">▶</span>
+            <span class="file-name">2交变电场抛体</span>
+          </a>
+          <a href="2电磁/2%E9%9D%99%E7%94%B5%E5%B1%8F%E8%94%BD.html" class="file-item" target="_self" onclick="saveScrollPosition()">
+            <span class="file-icon">▶</span>
+            <span class="file-name">2静电屏蔽</span>
+          </a>
+          <a href="2电磁/2%E7%B2%92%E5%AD%90%E8%BF%90%E5%8A%A8%E5%AE%9E%E9%AA%8C%E5%AE%A4.html" class="file-item" target="_self" onclick="saveScrollPosition()">
+            <span class="file-icon">▶</span>
+            <span class="file-name">2粒子运动实验室</span>
+          </a>
+          <a href="2电磁/2%E8%9E%BA%E6%97%8B%E5%8F%98%E6%8D%A22.html" class="file-item" target="_self" onclick="saveScrollPosition()">
+            <span class="file-icon">▶</span>
+            <span class="file-name">2螺旋变换2</span>
+          </a>
+          <a href="2电磁/2%E8%9E%BA%E6%97%8B%E6%B5%8B%E5%BE%AE%E5%99%A8.html" class="file-item" target="_self" onclick="saveScrollPosition()">
+            <span class="file-icon">▶</span>
+            <span class="file-name">2螺旋测微器</span>
+          </a>
+          <a href="2电磁/2%E8%9E%BA%E6%97%8B%E5%89%8D%E8%BF%9B%E5%8F%AF%E8%B0%83.html" class="file-item" target="_self" onclick="saveScrollPosition()">
+            <span class="file-icon">▶</span>
+            <span class="file-name">2螺旋前进可调</span>
+          </a>
+          <a href="2电磁/2%E9%85%8D%E9%80%9F%E6%B3%95.html" class="file-item" target="_self" onclick="saveScrollPosition()">
+            <span class="file-icon">▶</span>
+            <span class="file-name">2配速法</span>
+          </a>
+          <a href="2电磁/2%E9%80%9F%E5%BA%A6%E9%80%89%E6%8B%A9%E5%99%A8.html" class="file-item" target="_self" onclick="saveScrollPosition()">
+            <span class="file-icon">▶</span>
+            <span class="file-name">2速度选择器</span>
+          </a>
+          <a href="2电磁/2%E6%B8%B8%E6%A0%87%E5%8D%A1%E5%B0%BA.html" class="file-item" target="_self" onclick="saveScrollPosition()">
+            <span class="file-icon">▶</span>
+            <span class="file-name">2游标卡尺</span>
+          </a>
+          <a href="2电磁/2%E5%8F%B3%E6%89%8B%E8%9E%BA%E6%97%8B%E5%8F%98%E6%8D%A2.html" class="file-item" target="_self" onclick="saveScrollPosition()">
+            <span class="file-icon">▶</span>
+            <span class="file-name">2右手螺旋变换</span>
+          </a>
+          <a href="2电磁/2%E6%8C%AF%E8%8D%A1%E7%94%B5%E8%B7%AF.html" class="file-item" target="_self" onclick="saveScrollPosition()">
+            <span class="file-icon">▶</span>
+            <span class="file-name">2振荡电路</span>
+          </a>
+          <a href="2电磁/2%E8%B4%A8%E8%B0%B1%E4%BB%AA.html" class="file-item" target="_self" onclick="saveScrollPosition()">
+            <span class="file-icon">▶</span>
+            <span class="file-name">2质谱仪</span>
+          </a>
+          <a href="2电磁/2%E7%BB%84%E5%90%88%E5%9C%BA.html" class="file-item" target="_self" onclick="saveScrollPosition()">
+            <span class="file-icon">▶</span>
+            <span class="file-name">2组合场</span>
+          </a>
+        </div>
+      </div>
+      <div class="category-card">
+        <div class="category-header" style="border-left: 4px solid #ffe66d;">
+          <div class="category-title">
+            <span class="category-icon">✨</span>
+            <span class="category-name">选修模块</span>
+          </div>
+          <div class="category-count">34 个动画</div>
+        </div>
+        <div class="file-grid">
+          <a href="3选修/3%E5%8D%8A%E5%9C%86%E7%8E%BB%E7%92%83%E6%9F%B1.html" class="file-item" target="_self" onclick="saveScrollPosition()">
+            <span class="file-icon">▶</span>
+            <span class="file-name">3半圆玻璃柱</span>
+          </a>
+          <a href="3选修/3%E6%B3%A2%E7%9A%84%E5%8F%A0%E5%8A%A0.html" class="file-item" target="_self" onclick="saveScrollPosition()">
+            <span class="file-icon">▶</span>
+            <span class="file-name">3波的叠加</span>
+          </a>
+          <a href="3选修/3%E6%B3%A2%E7%9A%84%E5%8F%A0%E5%8A%A0%E5%91%A8%E6%9C%9F%E4%B8%8D%E5%90%8C.html" class="file-item" target="_self" onclick="saveScrollPosition()">
+            <span class="file-icon">▶</span>
+            <span class="file-name">3波的叠加周期不同</span>
+          </a>
+          <a href="3选修/3%E6%B3%A2%E7%9A%84%E5%B9%B2%E6%B6%89xy%E8%BD%B4.html" class="file-item" target="_self" onclick="saveScrollPosition()">
+            <span class="file-icon">▶</span>
+            <span class="file-name">3波的干涉xy轴</span>
+          </a>
+          <a href="3选修/3%E6%B3%A2%E7%9A%84%E5%BD%A2%E6%88%90%E4%BC%A0%E6%92%AD.html" class="file-item" target="_self" onclick="saveScrollPosition()">
+            <span class="file-icon">▶</span>
+            <span class="file-name">3波的形成传播</span>
+          </a>
+          <a href="3选修/3%E6%B3%A2%E5%8F%8D%E5%B0%84%E5%91%A8%E6%9C%9F.html" class="file-item" target="_self" onclick="saveScrollPosition()">
+            <span class="file-icon">▶</span>
+            <span class="file-name">3波反射周期</span>
+          </a>
+          <a href="3选修/3%E6%B3%A2%E5%BE%80%E4%B8%A4%E8%BE%B9%E4%BC%A0.html" class="file-item" target="_self" onclick="saveScrollPosition()">
+            <span class="file-icon">▶</span>
+            <span class="file-name">3波往两边传</span>
+          </a>
+          <a href="3选修/3%E6%89%93%E6%B0%94%E7%AD%92%E7%AF%AE%E7%90%83.html" class="file-item" target="_self" onclick="saveScrollPosition()">
+            <span class="file-icon">▶</span>
+            <span class="file-name">3打气筒篮球</span>
+          </a>
+          <a href="3选修/3%E5%BC%B9%E7%B0%A7%E6%8C%AF%E5%AD%90.html" class="file-item" target="_self" onclick="saveScrollPosition()">
+            <span class="file-icon">▶</span>
+            <span class="file-name">3弹簧振子</span>
+          </a>
+          <a href="3选修/3%E5%9C%B0%E7%90%83%E9%9A%A7%E9%81%93.html" class="file-item" target="_self" onclick="saveScrollPosition()">
+            <span class="file-icon">▶</span>
+            <span class="file-name">3地球隧道</span>
+          </a>
+          <a href="3选修/3%E5%A4%9A%E6%99%AE%E5%8B%92%E6%95%88%E5%BA%94.html" class="file-item" target="_self" onclick="saveScrollPosition()">
+            <span class="file-icon">▶</span>
+            <span class="file-name">3多普勒效应</span>
+          </a>
+          <a href="3选修/3%E5%B9%B2%E6%B6%89%E5%8A%A0%E5%BC%BA%E7%82%B9%E5%87%8F%E5%BC%B1%E7%82%B9.html" class="file-item" target="_self" onclick="saveScrollPosition()">
+            <span class="file-icon">▶</span>
+            <span class="file-name">3干涉加强点减弱点</span>
+          </a>
+          <a href="3选修/3%E5%B9%B2%E6%B6%89%E8%B5%B7%E6%8C%AF%E6%96%B9%E5%90%91%E7%9B%B8%E5%90%8C.html" class="file-item" target="_self" onclick="saveScrollPosition()">
+            <span class="file-icon">▶</span>
+            <span class="file-name">3干涉起振方向相同</span>
+          </a>
+          <a href="3选修/3%E5%85%89%E7%94%B5%E6%95%88%E5%BA%941.html" class="file-item" target="_self" onclick="saveScrollPosition()">
+            <span class="file-icon">▶</span>
+            <span class="file-name">3光电效应1</span>
+          </a>
+          <a href="3选修/3%E5%85%89%E7%94%B5%E6%95%88%E5%BA%942.html" class="file-item" target="_self" onclick="saveScrollPosition()">
+            <span class="file-icon">▶</span>
+            <span class="file-name">3光电效应2</span>
+          </a>
+          <a href="3选修/3%E5%85%89%E7%94%B5%E6%95%88%E5%BA%943.html" class="file-item" target="_self" onclick="saveScrollPosition()">
+            <span class="file-icon">▶</span>
+            <span class="file-name">3光电效应3</span>
+          </a>
+          <a href="3选修/3%E5%85%89%E7%BA%A4.html" class="file-item" target="_self" onclick="saveScrollPosition()">
+            <span class="file-icon">▶</span>
+            <span class="file-name">3光纤</span>
+          </a>
+          <a href="3选修/3%E5%85%89%E6%8A%98%E5%B0%84%E7%8E%BB%E7%92%83%E6%9F%B1.html" class="file-item" target="_self" onclick="saveScrollPosition()">
+            <span class="file-icon">▶</span>
+            <span class="file-name">3光折射玻璃柱</span>
+          </a>
+          <a href="3选修/3%E5%85%89%E6%8A%98%E5%B0%84%E7%8E%BB%E7%92%83%E7%A0%96.html" class="file-item" target="_self" onclick="saveScrollPosition()">
+            <span class="file-icon">▶</span>
+            <span class="file-name">3光折射玻璃砖</span>
+          </a>
+          <a href="3选修/3%E6%B9%96%E5%BA%95%E7%82%B9%E7%BA%BF%E5%85%89%E6%BA%90%E5%85%A8%E5%8F%8D%E5%B0%84.html" class="file-item" target="_self" onclick="saveScrollPosition()">
+            <span class="file-icon">▶</span>
+            <span class="file-name">3湖底点线光源全反射</span>
+          </a>
+          <a href="3选修/3%E7%90%86%E6%83%B3%E9%93%BE%E5%BC%8F.html" class="file-item" target="_self" onclick="saveScrollPosition()">
+            <span class="file-icon">▶</span>
+            <span class="file-name">3理想链式</span>
+          </a>
+          <a href="3选修/3%E5%8A%88%E5%B0%96%E5%B9%B2%E6%B6%89%E5%87%B9%E5%87%B8.html" class="file-item" target="_self" onclick="saveScrollPosition()">
+            <span class="file-icon">▶</span>
+            <span class="file-name">3劈尖干涉凹凸</span>
+          </a>
+          <a href="3选修/3%E5%81%8F%E6%8C%AF.html" class="file-item" target="_self" onclick="saveScrollPosition()">
+            <span class="file-icon">▶</span>
+            <span class="file-name">3偏振</span>
+          </a>
+          <a href="3选修/3%E6%B0%94%E4%BD%93%E5%88%86%E5%AD%90%E7%83%AD%E8%BF%90%E5%8A%A8.html" class="file-item" target="_self" onclick="saveScrollPosition()">
+            <span class="file-icon">▶</span>
+            <span class="file-name">3气体分子热运动</span>
+          </a>
+          <a href="3选修/3%E4%B8%89%E6%A3%B1%E9%95%9C%E5%8D%8A%E5%9C%86%E6%9F%B1.html" class="file-item" target="_self" onclick="saveScrollPosition()">
+            <span class="file-icon">▶</span>
+            <span class="file-name">3三棱镜半圆柱</span>
+          </a>
+          <a href="3选修/3%E8%89%B2%E6%95%A3.html" class="file-item" target="_self" onclick="saveScrollPosition()">
+            <span class="file-icon">▶</span>
+            <span class="file-name">3色散</span>
+          </a>
+          <a href="3选修/3%E6%B2%99%E6%91%86.html" class="file-item" target="_self" onclick="saveScrollPosition()">
+            <span class="file-icon">▶</span>
+            <span class="file-name">3沙摆</span>
+          </a>
+          <a href="3选修/3%E5%8F%8C%E5%BC%B9%E7%B0%A7%E6%8C%AF%E5%AD%90%E7%9B%B8%E4%BD%8D%E5%B7%AE.html" class="file-item" target="_self" onclick="saveScrollPosition()">
+            <span class="file-icon">▶</span>
+            <span class="file-name">3双弹簧振子相位差</span>
+          </a>
+          <a href="3选修/3%E5%8F%8C%E7%BC%9D%E5%B9%B2%E6%B6%89.html" class="file-item" target="_self" onclick="saveScrollPosition()">
+            <span class="file-icon">▶</span>
+            <span class="file-name">3双缝干涉</span>
+          </a>
+          <a href="3选修/3%E5%8F%8C%E5%9C%86%E5%91%A8%E7%9B%B8%E4%BD%8D%E5%B7%AE.html" class="file-item" target="_self" onclick="saveScrollPosition()">
+            <span class="file-icon">▶</span>
+            <span class="file-name">3双圆周相位差</span>
+          </a>
+          <a href="3选修/3%E9%9A%8F%E6%9C%BA%E9%93%BE%E5%BC%8F.html" class="file-item" target="_self" onclick="saveScrollPosition()">
+            <span class="file-icon">▶</span>
+            <span class="file-name">3随机链式</span>
+          </a>
+          <a href="3选修/3%E8%A1%8D%E5%B0%84.html" class="file-item" target="_self" onclick="saveScrollPosition()">
+            <span class="file-icon">▶</span>
+            <span class="file-name">3衍射</span>
+          </a>
+          <a href="3选修/3%E5%9C%86%E5%91%A8%E6%8A%95%E5%BD%B1%E7%AE%80%E8%B0%90.html" class="file-item" target="_self" onclick="saveScrollPosition()">
+            <span class="file-icon">▶</span>
+            <span class="file-name">3圆周投影简谐</span>
+          </a>
+          <a href="3选修/3%E6%8A%98%E5%B0%84%E5%85%A8%E5%8F%8D%E5%B0%84.html" class="file-item" target="_self" onclick="saveScrollPosition()">
+            <span class="file-icon">▶</span>
+            <span class="file-name">3折射全反射</span>
+          </a>
+        </div>
+      </div>
+      <div class="category-card">
+        <div class="category-header" style="border-left: 4px solid #a8e6cf;">
+          <div class="category-title">
+            <span class="category-icon">🎯</span>
+            <span class="category-name">必修一二模块</span>
+          </div>
+          <div class="category-count">43 个动画</div>
+        </div>
+        <div class="file-grid">
+          <a href="4修一二/4%E6%9D%BF%E5%9D%97.html" class="file-item" target="_self" onclick="saveScrollPosition()">
+            <span class="file-icon">▶</span>
+            <span class="file-name">4板块</span>
+          </a>
+          <a href="4修一二/4%E5%8C%85%E7%BB%9C%E7%BA%BF.html" class="file-item" target="_self" onclick="saveScrollPosition()">
+            <span class="file-icon">▶</span>
+            <span class="file-name">4包络线</span>
+          </a>
+          <a href="4修一二/4%E5%8F%98%E8%BD%A8.html" class="file-item" target="_self" onclick="saveScrollPosition()">
+            <span class="file-icon">▶</span>
+            <span class="file-name">4变轨</span>
+          </a>
+          <a href="4修一二/4%E9%BD%BF%E8%BD%AE%E9%93%BE%E6%9D%A1.html" class="file-item" target="_self" onclick="saveScrollPosition()">
+            <span class="file-icon">▶</span>
+            <span class="file-name">4齿轮链条</span>
+          </a>
+          <a href="4修一二/4%E4%BC%A0%E9%80%81%E5%B8%A6.html" class="file-item" target="_self" onclick="saveScrollPosition()">
+            <span class="file-icon">▶</span>
+            <span class="file-name">4传送带</span>
+          </a>
+          <a href="4修一二/4%E7%AD%89%E6%95%88%E5%8D%95%E6%91%86.html" class="file-item" target="_self" onclick="saveScrollPosition()">
+            <span class="file-icon">▶</span>
+            <span class="file-name">4等效单摆</span>
+          </a>
+          <a href="4修一二/4%E7%AD%89%E6%95%88%E6%99%BE%E8%A1%A3%E6%9E%B6.html" class="file-item" target="_self" onclick="saveScrollPosition()">
+            <span class="file-icon">▶</span>
+            <span class="file-name">4等效晾衣架</span>
+          </a>
+          <a href="4修一二/4%E7%AD%89%E6%95%88%E6%8A%9B%E4%BD%93.html" class="file-item" target="_self" onclick="saveScrollPosition()">
+            <span class="file-icon">▶</span>
+            <span class="file-name">4等效抛体</span>
+          </a>
+          <a href="4修一二/4%E7%AD%89%E6%95%88%E5%9C%86%E9%94%A5%E6%91%86.html" class="file-item" target="_self" onclick="saveScrollPosition()">
+            <span class="file-icon">▶</span>
+            <span class="file-name">4等效圆锥摆</span>
+          </a>
+          <a href="4修一二/4%E5%8A%A8%E6%80%81%E4%B8%89%E8%A7%92%E5%BD%A2.html" class="file-item" target="_self" onclick="saveScrollPosition()">
+            <span class="file-icon">▶</span>
+            <span class="file-name">4动态三角形</span>
+          </a>
+          <a href="4修一二/4%E9%A3%9E%E6%9C%BA%E6%8A%95%E5%BC%B9.html" class="file-item" target="_self" onclick="saveScrollPosition()">
+            <span class="file-icon">▶</span>
+            <span class="file-name">4飞机投弹</span>
+          </a>
+          <a href="4修一二/4%E8%BE%85%E5%8A%A9%E5%9C%861.html" class="file-item" target="_self" onclick="saveScrollPosition()">
+            <span class="file-icon">▶</span>
+            <span class="file-name">4辅助圆1</span>
+          </a>
+          <a href="4修一二/4%E8%BE%85%E5%8A%A9%E5%9C%862.html" class="file-item" target="_self" onclick="saveScrollPosition()">
+            <span class="file-icon">▶</span>
+            <span class="file-name">4辅助圆2</span>
+          </a>
+          <a href="4修一二/4%E5%90%84%E7%A7%8D%E5%8D%AB%E6%98%9F.html" class="file-item" target="_self" onclick="saveScrollPosition()">
+            <span class="file-icon">▶</span>
+            <span class="file-name">4各种卫星</span>
+          </a>
+          <a href="4修一二/4%E5%85%B3%E8%81%94%E9%80%9F%E5%BA%A6.html" class="file-item" target="_self" onclick="saveScrollPosition()">
+            <span class="file-icon">▶</span>
+            <span class="file-name">4关联速度</span>
+          </a>
+          <a href="4修一二/4%E5%85%B3%E8%81%94%E9%80%9F%E5%BA%A6%E5%9B%9B%E6%83%85%E6%99%AF.html" class="file-item" target="_self" onclick="saveScrollPosition()">
+            <span class="file-icon">▶</span>
+            <span class="file-name">4关联速度四情景</span>
+          </a>
+          <a href="4修一二/4%E5%BC%80%E6%99%AE%E5%8B%92%E7%AC%AC%E4%BA%8C%E5%AE%9A%E5%BE%8B.html" class="file-item" target="_self" onclick="saveScrollPosition()">
+            <span class="file-icon">▶</span>
+            <span class="file-name">4开普勒第二定律</span>
+          </a>
+          <a href="4修一二/4%E6%8B%89%E6%A0%BC%E6%9C%97%E6%97%A5%E7%82%B9.html" class="file-item" target="_self" onclick="saveScrollPosition()">
+            <span class="file-icon">▶</span>
+            <span class="file-name">4拉格朗日点</span>
+          </a>
+          <a href="4修一二/4%E6%99%BE%E8%A1%A3%E6%9E%B6%E7%BB%88%E7%89%88.html" class="file-item" target="_self" onclick="saveScrollPosition()">
+            <span class="file-icon">▶</span>
+            <span class="file-name">4晾衣架终版</span>
+          </a>
+          <a href="4修一二/4%E6%91%A9%E6%93%A6%E8%A7%92.html" class="file-item" target="_self" onclick="saveScrollPosition()">
+            <span class="file-icon">▶</span>
+            <span class="file-name">4摩擦角</span>
+          </a>
+          <a href="4修一二/4%E5%B9%B3%E8%A1%A1%E9%97%AE%E9%A2%986.html" class="file-item" target="_self" onclick="saveScrollPosition()">
+            <span class="file-icon">▶</span>
+            <span class="file-name">4平衡问题6</span>
+          </a>
+          <a href="4修一二/4%E5%80%BE%E6%96%9C%E4%BC%A0%E9%80%81%E5%B8%A6.html" class="file-item" target="_self" onclick="saveScrollPosition()">
+            <span class="file-icon">▶</span>
+            <span class="file-name">4倾斜传送带</span>
+          </a>
+          <a href="4修一二/4%E4%B8%89%E8%A7%92%E5%BD%A2%E5%9B%9B%E8%BE%B9%E5%BD%A2%E5%AE%9A%E5%88%99.html" class="file-item" target="_self" onclick="saveScrollPosition()">
+            <span class="file-icon">▶</span>
+            <span class="file-name">4三角形四边形定则</span>
+          </a>
+          <a href="4修一二/4%E4%B8%89%E7%BB%B4%E6%B0%B4%E5%B9%B3%E4%BC%A0%E9%80%81%E5%B8%A6.html" class="file-item" target="_self" onclick="saveScrollPosition()">
+            <span class="file-icon">▶</span>
+            <span class="file-name">4三维水平传送带</span>
+          </a>
+          <a href="4修一二/4%E4%B8%89%E6%98%9F%E7%B3%BB%E7%BB%9F.html" class="file-item" target="_self" onclick="saveScrollPosition()">
+            <span class="file-icon">▶</span>
+            <span class="file-name">4三星系统</span>
+          </a>
+          <a href="4修一二/4%E7%AB%96%E7%9B%B4%E9%9D%A2%E5%9C%86%E5%91%A8%E8%BF%90%E5%8A%A8.html" class="file-item" target="_self" onclick="saveScrollPosition()">
+            <span class="file-icon">▶</span>
+            <span class="file-name">4竖直面圆周运动</span>
+          </a>
+          <a href="4修一二/4%E5%8F%8C%E6%98%9F%E7%B3%BB%E7%BB%9F.html" class="file-item" target="_self" onclick="saveScrollPosition()">
+            <span class="file-icon">▶</span>
+            <span class="file-name">4双星系统</span>
+          </a>
+          <a href="4修一二/4%E5%9B%9B%E6%98%9F%E7%B3%BB%E7%BB%9F.html" class="file-item" target="_self" onclick="saveScrollPosition()">
+            <span class="file-icon">▶</span>
+            <span class="file-name">4四星系统</span>
+          </a>
+          <a href="4修一二/4%E5%A4%AA%E9%98%B3%E5%9C%B0%E7%90%83%E6%9C%88%E4%BA%AE.html" class="file-item" target="_self" onclick="saveScrollPosition()">
+            <span class="file-icon">▶</span>
+            <span class="file-name">4太阳地球月亮</span>
+          </a>
+          <a href="4修一二/4%E6%A4%AD%E5%9C%86%E8%A7%84.html" class="file-item" target="_self" onclick="saveScrollPosition()">
+            <span class="file-icon">▶</span>
+            <span class="file-name">4椭圆规</span>
+          </a>
+          <a href="4修一二/4%E7%9B%B8%E4%BC%BC%E4%B8%89%E8%A7%92%E5%BD%A2.html" class="file-item" target="_self" onclick="saveScrollPosition()">
+            <span class="file-icon">▶</span>
+            <span class="file-name">4相似三角形</span>
+          </a>
+          <a href="4修一二/4%E5%B0%8F%E8%88%B9%E8%BF%87%E6%B2%B3.html" class="file-item" target="_self" onclick="saveScrollPosition()">
+            <span class="file-icon">▶</span>
+            <span class="file-name">4小船过河</span>
+          </a>
+          <a href="4修一二/4%E5%B0%8F%E7%90%83%E5%8D%8A%E5%9C%86%E6%9F%B1.html" class="file-item" target="_self" onclick="saveScrollPosition()">
+            <span class="file-icon">▶</span>
+            <span class="file-name">4小球半圆柱</span>
+          </a>
+          <a href="4修一二/4%E5%B0%8F%E7%90%83%E5%86%B2%E5%9B%BA%E5%AE%9A%E5%8D%8A%E5%9C%86%E8%BD%A8.html" class="file-item" target="_self" onclick="saveScrollPosition()">
+            <span class="file-icon">▶</span>
+            <span class="file-name">4小球冲固定半圆轨</span>
+          </a>
+          <a href="4修一二/4%E5%B0%8F%E7%90%83%E5%86%B2%E5%9B%BA%E5%AE%9A%E5%9C%86%E8%BD%A8.html" class="file-item" target="_self" onclick="saveScrollPosition()">
+            <span class="file-icon">▶</span>
+            <span class="file-name">4小球冲固定圆轨</span>
+          </a>
+          <a href="4修一二/4%E6%96%9C%E9%9D%A2%E4%B8%B4%E7%95%8C%E5%88%86%E7%A6%BB.html" class="file-item" target="_self" onclick="saveScrollPosition()">
+            <span class="file-icon">▶</span>
+            <span class="file-name">4斜面临界分离</span>
+          </a>
+          <a href="4修一二/4%E6%96%9C%E4%B8%8A%E6%8A%9B.html" class="file-item" target="_self" onclick="saveScrollPosition()">
+            <span class="file-icon">▶</span>
+            <span class="file-name">4斜上抛</span>
+          </a>
+          <a href="4修一二/4%E6%96%9C%E4%B8%8A%E6%8A%9B%E6%8C%A1%E6%9D%BF.html" class="file-item" target="_self" onclick="saveScrollPosition()">
+            <span class="file-icon">▶</span>
+            <span class="file-name">4斜上抛挡板</span>
+          </a>
+          <a href="4修一二/4%E6%98%9F%E4%B8%8B%E7%82%B9.html" class="file-item" target="_self" onclick="saveScrollPosition()">
+            <span class="file-icon">▶</span>
+            <span class="file-name">4星下点</span>
+          </a>
+          <a href="4修一二/4%E4%B8%80%E5%AE%9A%E9%AB%98%E5%BA%A6%E6%96%9C%E4%B8%8A%E6%8A%9B.html" class="file-item" target="_self" onclick="saveScrollPosition()">
+            <span class="file-icon">▶</span>
+            <span class="file-name">4一定高度斜上抛</span>
+          </a>
+          <a href="4修一二/4%E5%AE%87%E5%AE%99%E9%80%9F%E5%BA%A6.html" class="file-item" target="_self" onclick="saveScrollPosition()">
+            <span class="file-icon">▶</span>
+            <span class="file-name">4宇宙速度</span>
+          </a>
+          <a href="4修一二/4%E8%BF%BD%E5%8F%8A%E7%9B%B8%E9%81%87%E5%AD%99%E6%82%9F%E7%A9%BA.html" class="file-item" target="_self" onclick="saveScrollPosition()">
+            <span class="file-icon">▶</span>
+            <span class="file-name">4追及相遇孙悟空</span>
+          </a>
+          <a href="4修一二/4%E8%87%AA%E7%94%B1%E8%90%BD%E4%BD%93%2B%E7%AE%80%E8%B0%90%E8%BF%90%E5%8A%A8.html" class="file-item" target="_self" onclick="saveScrollPosition()">
+            <span class="file-icon">▶</span>
+            <span class="file-name">4自由落体+简谐运动</span>
+          </a>
+        </div>
+      </div>
+      <div class="category-card">
+        <div class="category-header" style="border-left: 4px solid #dda0dd;">
+          <div class="category-title">
+            <span class="category-icon">📚</span>
+            <span class="category-name">其他</span>
+          </div>
+          <div class="category-count">4 个动画</div>
+        </div>
+        <div class="file-grid">
+          <a href="其他/6%2026%E6%B2%B3%E5%8D%97%E7%AC%AC7%E9%A2%98.html" class="file-item" target="_self" onclick="saveScrollPosition()">
+            <span class="file-icon">▶</span>
+            <span class="file-name">6 26河南第7题</span>
+          </a>
+          <a href="其他/6%2026%E6%B2%B3%E5%8D%97%E5%8E%8B%E8%BD%B4.html" class="file-item" target="_self" onclick="saveScrollPosition()">
+            <span class="file-icon">▶</span>
+            <span class="file-name">6 26河南压轴</span>
+          </a>
+          <a href="其他/6%2026%E6%B1%9F%E8%8B%8F%E9%AB%98%E8%80%83%E9%A2%98.html" class="file-item" target="_self" onclick="saveScrollPosition()">
+            <span class="file-icon">▶</span>
+            <span class="file-name">6 26江苏高考题</span>
+          </a>
+          <a href="其他/6%E5%85%89%E6%9D%9F%E7%BC%9A.html" class="file-item" target="_self" onclick="saveScrollPosition()">
+            <span class="file-icon">▶</span>
+            <span class="file-name">6光束缚</span>
+          </a>
+        </div>
+      </div>
+  </div>
+  
+  <div class="footer">
+    齐老师动画 · 高中物理教学动画合集
+  </div>
+  
+  <div class="watermark">
+    QQ 3398528250<br>
+    抖音 35320300542
+  </div>
+  
+  <script>
+    // 恢复滚动位置
+    function restoreScrollPosition() {
+      try {
+        var scrollTop = localStorage.getItem('qilai_scroll_top');
+        if (scrollTop !== null) {
+          window.scrollTo(0, parseInt(scrollTop));
+        }
+      } catch(e) {}
+    }
+    // DOM加载完立即恢复
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', restoreScrollPosition);
+    } else {
+      restoreScrollPosition();
+    }
+    // load事件再兜底一次
+    window.addEventListener('load', function() {
+      setTimeout(restoreScrollPosition, 10);
+    });
+    
+    // 点击动画链接时保存当前滚动位置
+    function saveScrollPosition() {
+      try {
+        localStorage.setItem('qilai_scroll_top', window.pageYOffset || document.documentElement.scrollTop);
+      } catch(e) {}
+      return true;
+    }
+    
+    // 禁用右键菜单
+    document.addEventListener('contextmenu', function(e) {
+      e.preventDefault();
+      return false;
+    });
+    
+    // 禁用开发者工具快捷键
+    document.addEventListener('keydown', function(e) {
+      // F12
+      if (e.keyCode === 123) {
+        e.preventDefault();
+        return false;
+      }
+      // Ctrl+U
+      if (e.ctrlKey && e.keyCode === 85) {
+        e.preventDefault();
+        return false;
+      }
+      // Ctrl+Shift+I
+      if (e.ctrlKey && e.shiftKey && e.keyCode === 73) {
+        e.preventDefault();
+        return false;
+      }
+      // Ctrl+Shift+J
+      if (e.ctrlKey && e.shiftKey && e.keyCode === 74) {
+        e.preventDefault();
+        return false;
+      }
+      // Ctrl+S
+      if (e.ctrlKey && e.keyCode === 83) {
+        e.preventDefault();
+        return false;
+      }
+    });
+  </script>
 </body>
 </html>
