@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>白光的色散 - 三棱镜演示动画</title>
+<style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    body {
+        width: 100vw;
+        height: 100vh;
+        background: #0a0e1a;
+        background-image: 
+            radial-gradient(circle at 25% 25%, rgba(30, 80, 160, 0.2) 0%, transparent 50%),
+            radial-gradient(circle at 75% 75%, rgba(20, 60, 120, 0.15) 0%, transparent 50%),
+            linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+        background-size: 100% 100%, 100% 100%, 40px 40px, 40px 40px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        overflow: hidden;
+        font-family: "Microsoft YaHei", sans-serif;
+    }
+    
+    .stage {
+        position: relative;
+        width: 960px;
+        height: 600px;
+        border: 1px solid rgba(100, 180, 255, 0.35);
+        border-radius: 6px;
+        box-shadow: 
+            0 0 25px rgba(80, 150, 255, 0.25),
+            inset 0 0 40px rgba(40, 100, 200, 0.08);
+        background: rgba(10, 18, 35, 0.55);
+    }
+    
+    /* 科技边角 */
+    .corner {
+        position: absolute;
+        width: 22px;
+        height: 22px;
+        border: 2px solid #4fc3f7;
+        box-shadow: 0 0 10px rgba(79, 195, 247, 0.7);
+        z-index: 20;
+    }
+    .tl { top: -2px; left: -2px; border-right: none; border-bottom: none; }
+    .tr { top: -2px; right: -2px; border-left: none; border-bottom: none; }
+    .bl { bottom: -2px; left: -2px; border-right: none; border-top: none; }
+    .br { bottom: -2px; right: -2px; border-left: none; border-top: none; }
+    
+    .title {
+        position: absolute;
+        top: 18px;
+        width: 100%;
+        text-align: center;
+        font-size: 22px;
+        color: #c9e2ff;
+        letter-spacing: 6px;
+        text-shadow: 0 0 12px rgba(100, 180, 255, 0.6);
+        z-index: 10;
+        font-weight: 500;
+    }
+    
+    .note {
+        position: absolute;
+        top: 58px;
+        width: 100%;
+        text-align: center;
+        font-size: 20px;
+        color: #ff3333;
+        text-shadow: 0 0 12px rgba(255, 50, 50, 0.8);
+        z-index: 10;
+        font-weight: 600;
+    }
+    
+    canvas {
+        display: block;
+        width: 100%;
+        height: 100%;
+    }
+    
+    .tag {
+        position: absolute;
+        font-size: 14px;
+        color: #90caf9;
+        text-shadow: 0 0 6px rgba(100, 180, 255, 0.6);
+        pointer-events: none;
+        z-index: 15;
+        font-weight: 500;
+    }
+
+    /* 入射角度控制条 */
+    .control {
+        position: absolute;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 8px 16px;
+        background: rgba(15, 30, 55, 0.7);
+        border: 1px solid rgba(100, 180, 255, 0.3);
+        border-radius: 4px;
+        z-index: 20;
+        font-size: 14px;
+        color: #90caf9;
+    }
+
+    .control input[type="range"] {
+        width: 200px;
+        accent-color: #4fc3f7;
+        cursor: pointer;
+    }
+
+    .control-value {
+        min-width: 45px;
+        text-align: right;
+        font-family: monospace;
+    }
+</style>
+
+  <style>
+  body {
+    background-color: #1a2332 !important;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+  }
+  
+  .qilai-back-btn {
+    position: fixed;
+    top: 10px;
+    left: 15px;
+    z-index: 100000;
+    padding: 8px 16px;
+    background: rgba(0, 150, 200, 0.2);
+    border: 1px solid rgba(100, 180, 255, 0.5);
+    color: #8ab4f8;
+    font-size: 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.3s;
+    backdrop-filter: blur(5px);
+    font-family: "Microsoft YaHei", sans-serif;
+  }
+  
+  .qilai-back-btn:hover {
+    background: rgba(0, 150, 200, 0.4);
+    box-shadow: 0 0 15px rgba(100, 180, 255, 0.3);
+    color: #fff;
+  }
+  
+  .qilai-watermark {
+    position: fixed;
+    bottom: 15px;
+    right: 15px;
+    z-index: 99998;
+    font-size: 12px;
+    color: rgba(138, 180, 248, 0.35);
+    text-align: right;
+    line-height: 1.8;
+    pointer-events: none;
+    user-select: none;
+    font-family: "Microsoft YaHei", sans-serif;
+  }
+  
+  .qilai-watermark .title {
+    font-size: 14px;
+    font-weight: bold;
+    color: rgba(138, 180, 248, 0.45);
+    margin-bottom: 4px;
+    letter-spacing: 1px;
+  }
+  </style>
+</head>
+<body>
+  <a href="javascript:void(0);" class="qilai-back-btn" onclick="saveScrollAndReturn();">← 返回主页</a>
+  
+  <div class="qilai-watermark">
+    <div class="title">齐老师动画</div>
+    QQ 3398528250<br>
+    抖音 35320300542
+  </div>
+
+    <div class="stage">
+        <div class="corner tl"></div>
+        <div class="corner tr"></div>
+        <div class="corner bl"></div>
+        <div class="corner br"></div>
+        
+        <div class="title">白 光 的 色 散</div>
+        <div class="note">紫光偏折最狠，红光偏折最小</div>
+        
+        <canvas id="view"></canvas>
+        
+        <div class="tag" style="left: 90px; top: 210px;">白光入射</div>
+        <div class="tag" style="right: 190px; top: 290px;">荧光屏</div>
+        
+        <!-- 入射角度调节 -->
+        <div class="control">
+            <span class="control-label">入射仰角</span>
+            <input type="range" id="angleSlider" min="-20" max="0" value="0" step="0.5">
+            <span class="control-value" id="angleValue">0°</span>
+        </div>
+    </div>
+
+<script>
+const canvas = document.getElementById('view');
+const ctx = canvas.getContext('2d');
+canvas.width = 960;
+canvas.height = 600;
+
+// ===================== 三棱镜几何 =====================
+const prism = {
+    top:    { x: 460, y: 140 },
+    left:   { x: 360, y: 313.2 },
+    right:  { x: 560, y: 313.2 }
+};
+
+// 左侧斜边中点（固定入射点）
+const incident = {
+    x: (prism.top.x + prism.left.x) / 2,
+    y: (prism.top.y + prism.left.y) / 2
+};
+
+// ===================== 竖直荧光屏幕 =====================
+const screen = {
+    x: 750,
+    width: 10,
+    top: 120,
+    bottom: 490
+};
+
+// ===================== 全局参数 =====================
+let incidentAngleDeg = 0;
+const normal1Angle = Math.PI / 6; // 左侧法线角度 30°
+
+// ===================== 七色光参数（大幅拉大折射率差）=====================
+const spectrum = [
+    { name: '红',   hex: '#ff3333', n: 1.440, glow: '#ff6666' },
+    { name: '橙',   hex: '#ff8f1f', n: 1.450, glow: '#ffb04d' },
+    { name: '黄',   hex: '#ffdd22', n: 1.460, glow: '#ffee66' },
+    { name: '绿',   hex: '#2ecc5c', n: 1.470, glow: '#66e088' },
+    { name: '青',   hex: '#00c7d1', n: 1.480, glow: '#4de0e8' },
+    { name: '蓝',   hex: '#2676ff', n: 1.490, glow: '#66a3ff' },
+    { name: '紫',   hex: '#9933ff', n: 1.500, glow: '#bb77ff' }
+];
+
+// ===================== 折射路径计算 =====================
+let paths = [];
+
+function calcPaths() {
+    const results = [];
+    const A = Math.PI / 3; // 棱镜顶角 60°
+    const angleRad = incidentAngleDeg * Math.PI / 180;
+    const i1 = normal1Angle - angleRad;
+
+    spectrum.forEach(light => {
+        const n = light.n;
+        const r1 = Math.asin(Math.sin(i1) / n);
+        const r2 = A - r1;
+
+        if (n * Math.sin(r2) > 1) return;
+
+        const e = Math.asin(n * Math.sin(r2));
+        const insideAngle = normal1Angle - r1;
+        const normal2Angle = -Math.PI / 6;
+        const exitAngle = normal2Angle + e;
+
+        const insideSlope = Math.tan(insideAngle);
+        const insideB = incident.y - insideSlope * incident.x;
+
+        const rightSlope = (prism.right.y - prism.top.y) / (prism.right.x - prism.top.x);
+        const rightB = prism.top.y - rightSlope * prism.top.x;
+
+        const exitX = (rightB - insideB) / (insideSlope - rightSlope);
+        const exitY = insideSlope * exitX + insideB;
+
+        const screenY = exitY + Math.tan(exitAngle) * (screen.x - exitX);
+
+        results.push({
+            light: light,
+            exitX: exitX,
+            exitY: exitY,
+            exitAngle: exitAngle,
+            insideAngle: insideAngle,
+            screenY: screenY
+        });
+    });
+
+    return results;
+}
+
+paths = calcPaths();
+
+// ===================== 粒子系统 =====================
+let whiteDust = [];
+let colorDust = [];
+
+class WhiteDust {
+    constructor() { this.reset(); }
+    reset() {
+        const angleRad = incidentAngleDeg * Math.PI / 180;
+        const dist = 50 + Math.random() * 280;
+        this.x = incident.x + Math.cos(angleRad + Math.PI) * dist;
+        this.y = incident.y + Math.sin(angleRad + Math.PI) * dist;
+
+        const perpX = -Math.sin(angleRad);
+        const perpY = Math.cos(angleRad);
+        const offset = (Math.random() - 0.5) * 10;
+        this.x += perpX * offset;
+        this.y += perpY * offset;
+
+        this.spd = 3 + Math.random() * 2.5;
+        this.alpha = 0.4 + Math.random() * 0.6;
+        this.size = 1.5 + Math.random() * 2;
+    }
+    update() {
+        const angleRad = incidentAngleDeg * Math.PI / 180;
+        this.x += Math.cos(angleRad) * this.spd;
+        this.y += Math.sin(angleRad) * this.spd;
+
+        const dx = this.x - incident.x;
+        const dy = this.y - incident.y;
+        const proj = dx * Math.cos(angleRad) + dy * Math.sin(angleRad);
+        if (proj >= 0) this.reset();
+    }
+    draw() {
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(255,255,255,${this.alpha})`;
+        ctx.shadowColor = '#fff';
+        ctx.shadowBlur = 8;
+        ctx.fill();
+        ctx.shadowBlur = 0;
+    }
+}
+
+class ColorDust {
+    constructor(path) {
+        this.path = path;
+        this.reset();
+    }
+    reset() {
+        this.x = this.path.exitX + Math.random() * 8;
+        this.y = this.path.exitY + (Math.random() - 0.5) * 3;
+        this.spd = 2.5 + Math.random() * 2;
+        this.alpha = 0.9;
+        this.size = 1.2 + Math.random() * 1.5;
+    }
+    update() {
+        this.x += Math.cos(this.path.exitAngle) * this.spd;
+        this.y += Math.sin(this.path.exitAngle) * this.spd;
+        if (this.x >= screen.x || this.y > 570 || this.y < 30) {
+            this.alpha -= 0.05;
+        }
+    }
+    draw() {
+        if (this.alpha <= 0) return;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        ctx.fillStyle = this.path.light.hex;
+        ctx.globalAlpha = this.alpha;
+        ctx.shadowColor = this.path.light.glow;
+        ctx.shadowBlur = 10;
+        ctx.fill();
+        ctx.shadowBlur = 0;
+        ctx.globalAlpha = 1;
+    }
+}
+
+function initParticles() {
+    whiteDust = [];
+    colorDust = [];
+
+    for (let i = 0; i < 40; i++) {
+        whiteDust.push(new WhiteDust());
+    }
+
+    paths.forEach(p => {
+        for (let i = 0; i < 12; i++) {
+            const d = new ColorDust(p);
+            const maxDist = screen.x - p.exitX;
+            d.x = p.exitX + Math.random() * maxDist;
+            d.y = p.exitY + Math.tan(p.exitAngle) * (d.x - p.exitX);
+            d.alpha = 0.2 + Math.random() * 0.6;
+            colorDust.push(d);
+        }
+    });
+}
+
+initParticles();
+
+// ===================== 绘制函数 =====================
+
+// 1. 实心浅蓝色三棱镜
+function drawPrism() {
+    ctx.save();
+
+    const grad = ctx.createLinearGradient(
+        prism.left.x, prism.top.y,
+        prism.right.x, prism.right.y
+    );
+    grad.addColorStop(0, '#b3d9ff');
+    grad.addColorStop(0.5, '#87ceeb');
+    grad.addColorStop(1, '#6bb3e0');
+
+    ctx.beginPath();
+    ctx.moveTo(prism.top.x, prism.top.y);
+    ctx.lineTo(prism.right.x, prism.right.y);
+    ctx.lineTo(prism.left.x, prism.left.y);
+    ctx.closePath();
+
+    ctx.fillStyle = grad;
+    ctx.globalAlpha = 0.92;
+    ctx.fill();
+    ctx.globalAlpha = 1;
+
+    ctx.strokeStyle = '#e0f0ff';
+    ctx.lineWidth = 3;
+    ctx.shadowColor = 'rgba(150, 200, 255, 0.9)';
+    ctx.shadowBlur = 12;
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    ctx.beginPath();
+    ctx.moveTo(prism.top.x - 8, prism.top.y + 20);
+    ctx.lineTo(prism.left.x + 18, prism.left.y - 15);
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+    ctx.lineWidth = 10;
+    ctx.lineCap = 'round';
+    ctx.stroke();
+
+    ctx.restore();
+}
+
+// 2. 入射白光光束
+function drawIncidentBeam() {
+    const angleRad = incidentAngleDeg * Math.PI / 180;
+    const beamLength = 320;
+
+    const startX = incident.x + Math.cos(angleRad + Math.PI) * beamLength;
+    const startY = incident.y + Math.sin(angleRad + Math.PI) * beamLength;
+
+    const perpX = -Math.sin(angleRad);
+    const perpY = Math.cos(angleRad);
+
+    const grad = ctx.createLinearGradient(startX, startY, incident.x, incident.y);
+    grad.addColorStop(0, 'rgba(255,255,255,0)');
+    grad.addColorStop(0.25, 'rgba(255,255,255,0.25)');
+    grad.addColorStop(1, 'rgba(255,255,255,0.95)');
+
+    ctx.beginPath();
+    ctx.moveTo(startX + perpX * 7, startY + perpY * 7);
+    ctx.lineTo(incident.x + perpX * 5, incident.y + perpY * 5);
+    ctx.lineTo(incident.x - perpX * 5, incident.y - perpY * 5);
+    ctx.lineTo(startX - perpX * 7, startY - perpY * 7);
+    ctx.closePath();
+
+    ctx.fillStyle = grad;
+    ctx.shadowColor = '#ffffff';
+    ctx.shadowBlur = 18;
+    ctx.fill();
+    ctx.shadowBlur = 0;
+}
+
+// 3. 棱镜内部色光
+function drawInsideRays() {
+    paths.forEach(p => {
+        ctx.beginPath();
+        ctx.moveTo(incident.x, incident.y);
+        ctx.lineTo(p.exitX, p.exitY);
+        ctx.strokeStyle = p.light.hex;
+        ctx.lineWidth = 2;
+        ctx.globalAlpha = 0.9;
+        ctx.shadowColor = p.light.glow;
+        ctx.shadowBlur = 8;
+        ctx.stroke();
+    });
+    ctx.globalAlpha = 1;
+    ctx.shadowBlur = 0;
+}
+
+// 4. 出射光谱光束
+function drawExitBeams() {
+    paths.forEach(p => {
+        const endX = screen.x;
+        const endY = p.screenY;
+
+        const grad = ctx.createLinearGradient(p.exitX, p.exitY, endX, endY);
+        grad.addColorStop(0, p.light.hex);
+        grad.addColorStop(0.6, p.light.hex + 'dd');
+        grad.addColorStop(1, p.light.hex + '44');
+
+        const perpX = -Math.sin(p.exitAngle);
+        const perpY = Math.cos(p.exitAngle);
+
+        ctx.beginPath();
+        ctx.moveTo(p.exitX + perpX * 2.5, p.exitY + perpY * 2.5);
+        ctx.lineTo(endX + perpX * 2, endY + perpY * 2);
+        ctx.lineTo(endX - perpX * 2, endY - perpY * 2);
+        ctx.lineTo(p.exitX - perpX * 2.5, p.exitY - perpY * 2.5);
+        ctx.closePath();
+
+        ctx.fillStyle = grad;
+        ctx.globalAlpha = 0.85;
+        ctx.shadowColor = p.light.glow;
+        ctx.shadowBlur = 10;
+        ctx.fill();
+    });
+    ctx.globalAlpha = 1;
+    ctx.shadowBlur = 0;
+}
+
+// 5. 竖直荧光屏幕
+function drawScreen() {
+    ctx.save();
+
+    const grad = ctx.createLinearGradient(screen.x - screen.width/2, 0, screen.x + screen.width/2, 0);
+    grad.addColorStop(0, 'rgba(180, 220, 255, 0.15)');
+    grad.addColorStop(0.3, 'rgba(200, 230, 255, 0.25)');
+    grad.addColorStop(0.5, 'rgba(220, 240, 255, 0.3)');
+    grad.addColorStop(0.7, 'rgba(200, 230, 255, 0.25)');
+    grad.addColorStop(1, 'rgba(180, 220, 255, 0.15)');
+
+    ctx.fillStyle = grad;
+    ctx.fillRect(screen.x - screen.width/2, screen.top, screen.width, screen.bottom - screen.top);
+
+    ctx.strokeStyle = 'rgba(150, 210, 255, 0.6)';
+    ctx.lineWidth = 1.5;
+    ctx.shadowColor = 'rgba(100, 180, 255, 0.5)';
+    ctx.shadowBlur = 8;
+    ctx.strokeRect(screen.x - screen.width/2, screen.top, screen.width, screen.bottom - screen.top);
+    ctx.shadowBlur = 0;
+
+    paths.forEach(p => {
+        if (p.screenY < screen.top || p.screenY > screen.bottom) return;
+
+        const spotGrad = ctx.createRadialGradient(
+            screen.x, p.screenY, 0,
+            screen.x, p.screenY, 20
+        );
+        spotGrad.addColorStop(0, p.light.hex + 'ff');
+        spotGrad.addColorStop(0.3, p.light.hex + '77');
+        spotGrad.addColorStop(1, 'transparent');
+
+        ctx.fillStyle = spotGrad;
+        ctx.fillRect(screen.x - 25, p.screenY - 20, 50, 40);
+    });
+
+    ctx.restore();
+}
+
+// ===================== 滑块交互 =====================
+const slider = document.getElementById('angleSlider');
+const valueDisplay = document.getElementById('angleValue');
+
+slider.addEventListener('input', (e) => {
+    incidentAngleDeg = parseFloat(e.target.value);
+    valueDisplay.textContent = incidentAngleDeg.toFixed(1) + '°';
+    paths = calcPaths();
+    initParticles();
+});
+
+// ===================== 主动画循环 =====================
+function loop() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    drawExitBeams();
+    drawScreen();
+    drawPrism();
+    drawIncidentBeam();
+    drawInsideRays();
+
+    whiteDust.forEach(d => { d.update(); d.draw(); });
+    colorDust.forEach(d => { d.update(); d.draw(); });
+
+    colorDust = colorDust.filter(d => d.alpha > 0);
+    if (colorDust.length < 70) {
+        paths.forEach(p => {
+            if (Math.random() < 0.15) colorDust.push(new ColorDust(p));
+        });
+    }
+
+    requestAnimationFrame(loop);
+}
+
+loop();
+</script>
+
+  <script>
+  // 返回主页（滚动位置已在主页点击链接时保存）
+  function saveScrollAndReturn() {
+    window.location.href = '../index.html';
+  }
+  
+  // 禁用右键菜单
+  document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+  });
+  
+  // 禁用开发者工具快捷键
+  document.addEventListener('keydown', function(e) {
+    // ESC返回主页 - 保存滚动位置
+    if (e.keyCode === 27) {
+      saveScrollAndReturn();
+      return false;
+    }
+    // F12
+    if (e.keyCode === 123) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+U
+    if (e.ctrlKey && e.keyCode === 85) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+I
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 73) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+J
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 74) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+C
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 67) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+S
+    if (e.ctrlKey && e.keyCode === 83) {
+      e.preventDefault();
+      return false;
+    }
+  });
+  
+  // 禁用选择
+  document.addEventListener('selectstart', function(e) {
+    // 允许输入框选择
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+      return true;
+    }
+    e.preventDefault();
+    return false;
+  });
+  </script>
+</body>
+</html>
