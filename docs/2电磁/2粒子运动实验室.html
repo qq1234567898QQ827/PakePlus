@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>高中物理 · 电磁场模拟</title>
+    <style>
+        :root {
+            --bg: #1a1d23;
+            --panel-bg: #21252b;
+            --text: #e0e0e0;
+            --text-secondary: #a0a0a0;
+            --accent: #4da6ff;
+            --border: #3a3d45;
+            --input-bg: #2a2d35;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif; background: var(--bg); color: var(--text); display: flex; height: 100vh; overflow: hidden; user-select: none; }
+        .panel { width: 340px; min-width: 340px; background: var(--panel-bg); border-right: 1px solid var(--border); display: flex; flex-direction: column; padding: 14px; gap: 10px; overflow-y: auto; z-index: 10; box-shadow: 2px 0 20px rgba(0,0,0,0.3); }
+        .section { background: #282c34; border-radius: 10px; padding: 12px 14px; border: 1px solid var(--border); }
+        .section-title { font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: var(--accent); margin-bottom: 10px; }
+        .row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
+        .row label { font-size: 0.75rem; color: var(--text-secondary); min-width: 52px; }
+        .value-tag { font-size: 0.7rem; color: var(--accent); background: #1e2130; padding: 2px 6px; border-radius: 4px; }
+        select, input[type="range"] { background: var(--input-bg); border: 1px solid var(--border); color: var(--text); border-radius: 6px; padding: 5px 8px; font-size: 0.75rem; outline: none; }
+        select { flex: 1; min-width: 90px; }
+        input[type="range"] { flex: 1; min-width: 60px; }
+        .btn-row { display: flex; gap: 6px; flex-wrap: wrap; }
+        button { padding: 7px 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--btn-bg); color: var(--text); cursor: pointer; font-size: 0.7rem; font-weight: 600; transition: 0.2s; white-space: nowrap; }
+        button:hover { background: #353a45; }
+        button.primary { background: var(--accent); color: #fff; }
+        button.active { background: #ffb347 !important; color: #000 !important; }
+        button.danger { background: #c0392b; color: #fff; }
+        button.locked { opacity: 0.6; cursor: not-allowed; }
+        .field-btn { flex: 1; padding: 6px 0; }
+        .canvas-container { flex: 1; position: relative; display: flex; align-items: center; justify-content: center; background: #1a1d25; cursor: crosshair; }
+        .canvas-container.arrow-mode { cursor: grab; }
+        canvas { border-radius: 4px; box-shadow: 0 0 40px rgba(0,0,0,0.5); }
+        .canvas-toolbar { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); display: flex; gap: 8px; background: rgba(20,22,28,0.85); backdrop-filter: blur(8px); padding: 6px 14px; border-radius: 30px; z-index: 20; border: 1px solid rgba(255,255,255,0.15); }
+        .canvas-toolbar button { padding: 5px 12px; font-size: 0.68rem; border-radius: 20px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.2); color: #ccc; }
+        .canvas-toolbar button:hover { background: rgba(255,255,255,0.15); }
+        .canvas-toolbar button.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+        .canvas-toolbar button.active { background: #ffb347; color: #000; border-color: #ffb347; }
+        .canvas-toolbar button.danger { background: #c0392b; color: #fff; border-color: #c0392b; }
+        .source-info { font-size: 0.65rem; color: #ccc; margin-top: 2px; text-align: center; }
+    </style>
+
+  <style>
+  body {
+    background-color: #1a2332 !important;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+  }
+  
+  .qilai-back-btn {
+    position: fixed;
+    top: 10px;
+    left: 15px;
+    z-index: 100000;
+    padding: 8px 16px;
+    background: rgba(0, 150, 200, 0.2);
+    border: 1px solid rgba(100, 180, 255, 0.5);
+    color: #8ab4f8;
+    font-size: 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.3s;
+    backdrop-filter: blur(5px);
+    font-family: "Microsoft YaHei", sans-serif;
+  }
+  
+  .qilai-back-btn:hover {
+    background: rgba(0, 150, 200, 0.4);
+    box-shadow: 0 0 15px rgba(100, 180, 255, 0.3);
+    color: #fff;
+  }
+  
+  .qilai-watermark {
+    position: fixed;
+    bottom: 15px;
+    right: 15px;
+    z-index: 99998;
+    font-size: 12px;
+    color: rgba(138, 180, 248, 0.35);
+    text-align: right;
+    line-height: 1.8;
+    pointer-events: none;
+    user-select: none;
+    font-family: "Microsoft YaHei", sans-serif;
+  }
+  
+  .qilai-watermark .title {
+    font-size: 14px;
+    font-weight: bold;
+    color: rgba(138, 180, 248, 0.45);
+    margin-bottom: 4px;
+    letter-spacing: 1px;
+  }
+  </style>
+</head>
+<body>
+  <a href="javascript:void(0);" class="qilai-back-btn" onclick="saveScrollAndReturn();">← 返回主页</a>
+  
+  <div class="qilai-watermark">
+    <div class="title">齐老师动画</div>
+    QQ 3398528250<br>
+    抖音 35320300542
+  </div>
+
+<div class="panel">
+    <div class="section">
+        <div class="section-title">场管理</div>
+        <div style="display:flex;gap:6px;margin-bottom:8px;align-items:center;">
+            <button id="btnPrevField">◀</button>
+            <span id="currentFieldLabel" style="color:#ffb347;font-weight:700;min-width:60px;text-align:center;">场 1/1</span>
+            <button id="btnNextField">▶</button>
+            <span id="currentFieldTypeDisplay" style="font-size:0.7rem;color:#ffb347;margin-left:auto;"></span>
+        </div>
+        <div class="btn-row">
+            <button id="btnAddElectricField" class="field-btn" style="background:#5c3a1e;color:#ffb347;">⚡ 电场</button>
+            <button id="btnAddMagneticField" class="field-btn" style="background:#1e3a5f;color:#4da6ff;">🧲 磁场</button>
+        </div>
+        <button id="btnRemoveCurrentField" class="danger" style="margin-top:4px;width:100%;">🗑️ 删除当前场</button>
+        <div class="row" style="margin-top:4px;"><label>形状</label>
+            <select id="fieldShape">
+                <option value="circle">圆形</option>
+                <option value="rectangle" selected>矩形</option>
+                <option value="triangle">三角形</option>
+                <option value="square">正方形</option>
+                <option value="ring">环形</option>
+            </select>
+        </div>
+        <div class="row"><label>大小</label><input type="range" id="fieldSize" min="160" max="800" value="400"><span class="value-tag" id="fieldSizeVal">400</span></div>
+        <div class="row"><label>强度</label><input type="range" id="fieldStrength" min="50" max="500" value="200" step="10"><span class="value-tag" id="fieldStrengthVal">200</span></div>
+        <div class="row" id="bfieldDirRow" style="display:none;"><label>B方向</label><select id="bfieldDirection"><option value="into">⊗ 向里</option><option value="out">⊙ 向外</option></select></div>
+        <div class="row" id="efieldAngleRow"><label>E方向</label><input type="range" id="efieldAngle" min="0" max="360" value="90"><span class="value-tag" id="efieldAngleVal">90°</span></div>
+    </div>
+
+    <div class="section">
+        <div class="section-title">粒子设置</div>
+        <div class="btn-row" style="margin-bottom:8px;">
+            <button id="btnSingleParticle" class="primary">🎯 单个粒子</button>
+            <button id="btnAddSource">☢️ 放射源</button>
+        </div>
+        <div class="row"><label>电荷</label><select id="chargeSign"><option value="positive">正电荷</option><option value="negative">负电荷</option></select></div>
+        <div class="row"><label>质量</label><input type="range" id="particleMass" min="0.1" max="5" value="1" step="0.1"><span class="value-tag" id="particleMassVal">1.0</span></div>
+        <div class="row"><label>速率</label><input type="range" id="initialSpeed" min="30" max="600" value="150"><span class="value-tag" id="initialSpeedVal">150</span></div>
+        <div class="row" id="singleAngleRow"><label>方向</label><input type="range" id="initialAngle" min="0" max="360" value="90"><span class="value-tag" id="initialAngleVal">90°</span></div>
+        <div class="row"><label>重力</label><input type="checkbox" id="gravityToggle"></div>
+        <div class="row" style="margin-top:4px;">
+            <label>扇形范围</label>
+            <button class="range-btn" data-range="90">90°</button>
+            <button class="range-btn" data-range="60">60°</button>
+            <button class="range-btn" data-range="120">120°</button>
+            <button class="range-btn" data-range="180">180°</button>
+        </div>
+        <div class="source-info" id="sourceInfo">点击放射源后可设角度</div>
+    </div>
+
+    <div class="section">
+        <div style="display:flex;align-items:center;justify-content:space-between;">
+            <span class="section-title" style="margin-bottom:0;">障碍物</span>
+            <div style="display:flex;gap:4px;">
+                <button id="btnAddBounce" style="flex:none;padding:5px 10px;">🔄 弹性挡板</button>
+                <button id="btnAddAbsorb" style="flex:none;padding:5px 10px;">🟤 吸收挡板</button>
+            </div>
+        </div>
+    </div>
+    <div style="text-align:center;font-size:0.7rem;color:var(--text-secondary);margin-top:6px;">粒子：<span id="particleCount">0</span> | FPS：<span id="fpsDisplay">60</span></div>
+</div>
+
+<div class="canvas-container" id="canvasContainer">
+    <canvas id="mainCanvas"></canvas>
+    <div class="canvas-toolbar">
+        <button class="primary" id="btnPause">▶ 播放</button>
+        <button id="btnReplay">🔄 重新播放</button>
+        <button id="btnReset">🔄 重置</button>
+        <button id="btnClearTrails">🧹 清除轨迹</button>
+        <button class="danger" id="btnDeleteSelected">🗑️ 删除选中</button>
+        <button id="btnArrowMode">🏹 箭头拖拽</button>
+    </div>
+    <div style="position:absolute;bottom:20px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.7);color:#aaa;padding:6px 16px;border-radius:20px;font-size:0.7rem;pointer-events:none;" id="hintOverlay">取消拖拽，可以删除选中对象</div>
+</div>
+
+<script>
+(function() {
+    const canvas = document.getElementById('mainCanvas');
+    const ctx = canvas.getContext('2d');
+    const container = document.getElementById('canvasContainer');
+
+    // DOM 元素
+    const btnPrevField = document.getElementById('btnPrevField');
+    const btnNextField = document.getElementById('btnNextField');
+    const currentFieldLabel = document.getElementById('currentFieldLabel');
+    const currentFieldTypeDisplay = document.getElementById('currentFieldTypeDisplay');
+    const btnAddElectricField = document.getElementById('btnAddElectricField');
+    const btnAddMagneticField = document.getElementById('btnAddMagneticField');
+    const btnRemoveCurrentField = document.getElementById('btnRemoveCurrentField');
+    const fieldShapeSelect = document.getElementById('fieldShape');
+    const fieldSizeSlider = document.getElementById('fieldSize');
+    const fieldSizeVal = document.getElementById('fieldSizeVal');
+    const fieldStrengthSlider = document.getElementById('fieldStrength');
+    const fieldStrengthVal = document.getElementById('fieldStrengthVal');
+    const bfieldDirRow = document.getElementById('bfieldDirRow');
+    const bfieldDirectionSelect = document.getElementById('bfieldDirection');
+    const efieldAngleRow = document.getElementById('efieldAngleRow');
+    const efieldAngleSlider = document.getElementById('efieldAngle');
+    const efieldAngleVal = document.getElementById('efieldAngleVal');
+    const btnSingleParticle = document.getElementById('btnSingleParticle');
+    const btnAddSource = document.getElementById('btnAddSource');
+    const chargeSignSelect = document.getElementById('chargeSign');
+    const particleMassSlider = document.getElementById('particleMass');
+    const particleMassVal = document.getElementById('particleMassVal');
+    const initialSpeedSlider = document.getElementById('initialSpeed');
+    const initialSpeedVal = document.getElementById('initialSpeedVal');
+    const initialAngleSlider = document.getElementById('initialAngle');
+    const initialAngleVal = document.getElementById('initialAngleVal');
+    const gravityToggle = document.getElementById('gravityToggle');
+    const btnPause = document.getElementById('btnPause');
+    const btnReplay = document.getElementById('btnReplay');
+    const btnArrowMode = document.getElementById('btnArrowMode');
+    const btnClearTrails = document.getElementById('btnClearTrails');
+    const btnAddBounce = document.getElementById('btnAddBounce');
+    const btnAddAbsorb = document.getElementById('btnAddAbsorb');
+    const btnDeleteSelected = document.getElementById('btnDeleteSelected');
+    const btnReset = document.getElementById('btnReset');
+    const particleCountSpan = document.getElementById('particleCount');
+    const fpsDisplay = document.getElementById('fpsDisplay');
+    const rangeButtons = document.querySelectorAll('.range-btn');
+    const sourceInfo = document.getElementById('sourceInfo');
+
+    let fields = [];
+    let currentFieldIndex = 0;
+    let particles = [];
+    const MAX_PARTICLES = 400;
+    let obstacles = [];
+    let sources = [];
+    let chargeSign = 'positive';
+    let particleMass = 1.0;
+    let initialSpeed = 150;
+    let initialAngleDeg = 90;
+    let gravityEnabled = false;
+    let isPaused = true;
+    let arrowMode = false;
+    let defaultAngleRange = 360;
+    let sourceColorIndex = 0;
+    const sourceColors = [
+        '#ff6b6b','#ffb347','#4da6ff','#51cf66','#ff6eb4','#a78bfa',
+        '#f97316','#06b6d4','#84cc16','#ec4899','#8b5cf6','#14b8a6'
+    ];
+
+    let canvasWidth = 800, canvasHeight = 540;
+    let lastFrameTime = performance.now();
+    let fpsCounter = 0, fpsTime = performance.now(), currentFPS = 60;
+
+    let isDragging = false;
+    let dragTarget = null;
+    let dragFieldIndex = -1;
+    let dragSourceRef = null;
+    let dragObstacleRef = null;
+    let dragObstacleMode = null;
+    let dragStartPos = {x:0, y:0};
+    let dragOffsetX = 0, dragOffsetY = 0;
+    let mouseDownPos = {x:0, y:0};
+    let mouseX = 0, mouseY = 0;
+    let selectedObject = null;
+    let selectedSource = null;
+
+    function createField(type, shape, size, strength, direction, efieldAngleDeg, cx, cy) {
+        return { type, shape, size, strength, direction, efieldAngleDeg, centerX: cx, centerY: cy };
+    }
+    function getCurrentField() {
+        if (!fields.length) return null;
+        if (currentFieldIndex >= fields.length) currentFieldIndex = fields.length - 1;
+        return fields[currentFieldIndex];
+    }
+
+    // 判断点是否在场内（新增正方形和环形）
+    function isInsideField(px, py, f) {
+        const cx = f.centerX, cy = f.centerY, s = f.size;
+        if (f.shape === 'circle') return (px-cx)**2 + (py-cy)**2 <= s*s;
+        if (f.shape === 'rectangle') {
+            const w = s, h = s*0.7;
+            return px >= cx-w/2 && px <= cx+w/2 && py >= cy-h/2 && py <= cy+h/2;
+        }
+        if (f.shape === 'triangle') {
+            const h = s*Math.sqrt(3)/2, topY = cy - h*2/3, bottomY = cy + h/3;
+            return pointInTriangle(px, py, cx, topY, cx-s/2, bottomY, cx+s/2, bottomY);
+        }
+        if (f.shape === 'square') {
+            const half = s * 0.6; // 正方形边长使用 0.6 倍大小参数，与矩形面积相近
+            return px >= cx-half && px <= cx+half && py >= cy-half && py <= cy+half;
+        }
+        if (f.shape === 'ring') {
+            const outerR = s;
+            const innerR = s * 0.5;
+            const dist = Math.hypot(px-cx, py-cy);
+            return dist <= outerR && dist >= innerR;
+        }
+        return false;
+    }
+    function pointInTriangle(px, py, ax, ay, bx, by, cx, cy) {
+        const v0x = cx-ax, v0y = cy-ay, v1x = bx-ax, v1y = by-ay, v2x = px-ax, v2y = py-ay;
+        const dot00 = v0x*v0x+v0y*v0y, dot01 = v0x*v1x+v0y*v1y, dot02 = v0x*v2x+v0y*v2y;
+        const dot11 = v1x*v1x+v1y*v1y, dot12 = v1x*v2x+v1y*v2y;
+        const inv = 1/(dot00*dot11 - dot01*dot01 + 1e-10);
+        const u = (dot11*dot02 - dot01*dot12)*inv, v = (dot00*dot12 - dot01*dot02)*inv;
+        return u>=0 && v>=0 && u+v<=1;
+    }
+    function findFieldAt(px, py) { for (let i = fields.length-1; i >= 0; i--) if (isInsideField(px, py, fields[i])) return i; return -1; }
+
+    function getTotalForce(px, py, vx, vy, charge) {
+        let fx = 0, fy = 0;
+        for (const f of fields) {
+            if (!isInsideField(px, py, f)) continue;
+            if (f.type === 'magnetic') { const Bz = f.direction === 'into' ? f.strength : -f.strength; fx += charge * vy * Bz; fy += -charge * vx * Bz; }
+            else { const rad = f.efieldAngleDeg * Math.PI/180; fx += charge * f.strength * Math.cos(rad); fy += charge * f.strength * Math.sin(rad); }
+        }
+        return {fx, fy};
+    }
+    function closestPointOnSegment(px, py, x1, y1, x2, y2) {
+        const dx = x2-x1, dy = y2-y1; const t = ((px-x1)*dx + (py-y1)*dy) / (dx*dx + dy*dy + 1e-10);
+        const ct = Math.max(0, Math.min(1, t)); return {x: x1 + ct*dx, y: y1 + ct*dy};
+    }
+    function handleObstacleCollision(p) {
+        for (const obs of obstacles) {
+            const {p1, p2, type} = obs; const cp = closestPointOnSegment(p.x, p.y, p1.x, p1.y, p2.x, p2.y);
+            const dist = Math.hypot(p.x - cp.x, p.y - cp.y);
+            if (dist < 6) {
+                if (type === 'absorb') { p.alive = false; return; }
+                else if (type === 'bounce') { if (dist < 0.01) continue; const nx = (p.x - cp.x) / dist; const ny = (p.y - cp.y) / dist; const dot = p.vx * nx + p.vy * ny; p.vx -= 2 * dot * nx; p.vy -= 2 * dot * ny; p.x += nx * (6 - dist); p.y += ny * (6 - dist); }
+            }
+        }
+    }
+    class Particle {
+        constructor(x,y,vx,vy,charge,mass,color) { this.x=x; this.y=y; this.vx=vx; this.vy=vy; this.charge=charge; this.mass=mass; this.color=color; this.trail=[]; this.alive=true; this.age=0; }
+    }
+    function createParticle(x,y,speed,angleDeg,charge,mass,color) {
+        const rad = angleDeg * Math.PI/180; return new Particle(x, y, speed*Math.cos(rad), -speed*Math.sin(rad), charge, mass, color);
+    }
+    function emitBurst(src) {
+        const count = 40; const halfRange = src.angleRange / 2; const centerAngle = initialAngleDeg;
+        const startAngle = centerAngle - halfRange; const step = src.angleRange / count;
+        for (let i = 0; i < count; i++) {
+            let angleDeg = startAngle + i * step + step / 2;
+            angleDeg = ((angleDeg % 360) + 360) % 360;
+            if (particles.length < MAX_PARTICLES) particles.push(createParticle(src.x, src.y, initialSpeed, angleDeg, chargeSign==='positive'?1:-1, particleMass, src.color));
+        }
+    }
+    function updateParticle(p, dt) {
+        const subSteps = 20; const subDt = dt / subSteps;
+        for (let s = 0; s < subSteps; s++) {
+            const f1 = getTotalForce(p.x, p.y, p.vx, p.vy, p.charge); const ax1 = f1.fx / p.mass; const ay1 = f1.fy / p.mass + (gravityEnabled ? 300 : 0);
+            const halfVx = p.vx + ax1 * subDt * 0.5; const halfVy = p.vy + ay1 * subDt * 0.5; const halfX = p.x + p.vx * subDt * 0.5; const halfY = p.y + p.vy * subDt * 0.5;
+            const f2 = getTotalForce(halfX, halfY, halfVx, halfVy, p.charge); const ax2 = f2.fx / p.mass; const ay2 = f2.fy / p.mass + (gravityEnabled ? 300 : 0);
+            p.vx += ax2 * subDt; p.vy += ay2 * subDt; p.x += p.vx * subDt; p.y += p.vy * subDt;
+            handleObstacleCollision(p); if (!p.alive) break;
+        }
+        if (p.alive) { p.trail.push({x:p.x, y:p.y}); if (p.trail.length > 200) p.trail.shift(); p.age += dt; if (p.x<-400||p.x>canvasWidth+400||p.y<-400||p.y>canvasHeight+400) p.alive = false; if (p.age > 60) p.alive = false; }
+    }
+    function updateCount() { particleCountSpan.textContent = particles.length; }
+
+    // 绘制场区域（新增正方形和环形）
+    function drawFieldShape(f, isSelected) {
+        const cx = f.centerX, cy = f.centerY, s = f.size;
+        const color = f.type === 'magnetic' ? '#4da6ff' : '#ffb347';
+        const strokeColor = isSelected ? '#ffb347' : color;
+        ctx.save();
+        ctx.setLineDash([8,5]);
+        ctx.lineWidth = isSelected ? 3.5 : 2.2;
+        ctx.strokeStyle = strokeColor;
+        ctx.fillStyle = strokeColor + '15';
+        if (f.shape === 'circle') { ctx.beginPath(); ctx.arc(cx, cy, s, 0, Math.PI*2); ctx.fill(); ctx.stroke(); }
+        else if (f.shape === 'rectangle') { const w = s, h = s*0.7; ctx.beginPath(); ctx.rect(cx-w/2, cy-h/2, w, h); ctx.fill(); ctx.stroke(); }
+        else if (f.shape === 'triangle') { const h = s*Math.sqrt(3)/2, topY = cy - h*2/3, bottomY = cy + h/3; ctx.beginPath(); ctx.moveTo(cx, topY); ctx.lineTo(cx-s/2, bottomY); ctx.lineTo(cx+s/2, bottomY); ctx.closePath(); ctx.fill(); ctx.stroke(); }
+        else if (f.shape === 'square') { const half = s * 0.6; ctx.beginPath(); ctx.rect(cx-half, cy-half, half*2, half*2); ctx.fill(); ctx.stroke(); }
+        else if (f.shape === 'ring') { ctx.beginPath(); ctx.arc(cx, cy, s, 0, Math.PI*2); ctx.arc(cx, cy, s*0.5, 0, Math.PI*2, true); ctx.fill('evenodd'); ctx.stroke(); }
+        ctx.setLineDash([]);
+        ctx.restore();
+    }
+
+    function drawFieldLines(f) {
+        const cx = f.centerX, cy = f.centerY, s = f.size;
+        const spacing = 28;
+        let minX, maxX, minY, maxY;
+        if (f.shape === 'circle') { minX=cx-s; maxX=cx+s; minY=cy-s; maxY=cy+s; }
+        else if (f.shape === 'rectangle') { const w=s, h=s*0.7; minX=cx-w/2; maxX=cx+w/2; minY=cy-h/2; maxY=cy+h/2; }
+        else if (f.shape === 'triangle') { const h=s*Math.sqrt(3)/2; minX=cx-s/2; maxX=cx+s/2; minY=cy-h*2/3; maxY=cy+h/3; }
+        else if (f.shape === 'square') { const half = s*0.6; minX=cx-half; maxX=cx+half; minY=cy-half; maxY=cy+half; }
+        else if (f.shape === 'ring') { minX=cx-s; maxX=cx+s; minY=cy-s; maxY=cy+s; }
+        ctx.save();
+        ctx.font = '14px "Segoe UI","PingFang SC"'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        if (f.type === 'magnetic') {
+            ctx.fillStyle = 'rgba(180,210,240,0.55)'; const symbol = f.direction === 'into' ? '×' : '·';
+            for (let x = Math.floor(minX/spacing)*spacing+spacing/2; x <= maxX; x += spacing)
+                for (let y = Math.floor(minY/spacing)*spacing+spacing/2; y <= maxY; y += spacing)
+                    if (isInsideField(x, y, f)) ctx.fillText(symbol, x, y);
+        } else {
+            const rad = f.efieldAngleDeg * Math.PI/180; const arrowLen = 14;
+            ctx.strokeStyle = 'rgba(220,150,60,0.65)'; ctx.lineWidth = 1.5; ctx.fillStyle = 'rgba(220,150,60,0.65)';
+            for (let x = Math.floor(minX/spacing)*spacing+spacing/2; x <= maxX; x += spacing)
+                for (let y = Math.floor(minY/spacing)*spacing+spacing/2; y <= maxY; y += spacing) {
+                    if (!isInsideField(x, y, f)) continue;
+                    const ex = x + arrowLen * Math.cos(rad); const ey = y + arrowLen * Math.sin(rad);
+                    ctx.beginPath(); ctx.moveTo(x - arrowLen*0.4*Math.cos(rad), y - arrowLen*0.4*Math.sin(rad)); ctx.lineTo(ex, ey); ctx.stroke();
+                    ctx.beginPath(); ctx.moveTo(ex, ey); ctx.lineTo(ex - 5*Math.cos(rad + 2.5), ey - 5*Math.sin(rad + 2.5)); ctx.lineTo(ex - 5*Math.cos(rad - 2.5), ey - 5*Math.sin(rad - 2.5)); ctx.closePath(); ctx.fill();
+                }
+        }
+        ctx.restore();
+    }
+
+    function drawField(f, isSelected) { drawFieldShape(f, isSelected); drawFieldLines(f); }
+    function drawObstacle(obs) { const {p1, p2, type} = obs; const isSelected = (selectedObject && selectedObject.type==='obstacle' && selectedObject.ref === obs); ctx.strokeStyle = type==='bounce'?'#4caf50':'#8B4513'; ctx.lineWidth = isSelected ? 4 : 3; ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y); ctx.stroke(); }
+
+    function drawAll() {
+        ctx.clearRect(0,0,canvasWidth,canvasHeight); ctx.strokeStyle = 'rgba(255,255,255,0.03)';
+        for (let x=40; x<canvasWidth; x+=40) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,canvasHeight); ctx.stroke(); }
+        for (let y=40; y<canvasHeight; y+=40) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(canvasWidth,y); ctx.stroke(); }
+        fields.forEach((f,i) => drawField(f, selectedObject && selectedObject.type==='field' && selectedObject.index===i));
+        obstacles.forEach(drawObstacle);
+        sources.forEach(src => {
+            const isSel = (selectedSource === src) || (selectedObject && selectedObject.type==='source' && selectedObject.ref === src);
+            ctx.fillStyle = src.color; ctx.beginPath(); ctx.arc(src.x, src.y, 9, 0, Math.PI*2); ctx.fill();
+            ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(src.x, src.y, 5, 0, Math.PI*2); ctx.fill();
+            if (isSel) { ctx.strokeStyle = '#ffb347'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(src.x, src.y, 11, 0, Math.PI*2); ctx.stroke(); }
+            if (src.locked) { ctx.fillStyle = '#fff'; ctx.font = 'bold 9px "Segoe UI"'; ctx.textAlign = 'center'; ctx.fillText('🔒', src.x, src.y - 14); }
+        });
+        particles.forEach(p => {
+            if (!p.alive) return; const isSel = selectedObject && selectedObject.type==='particle' && selectedObject.ref === p;
+            let inField = false; for (const f of fields) if (isInsideField(p.x, p.y, f)) { inField = true; break; }
+            const bodyColor = inField ? '#ffffff' : p.color; const glowColor = inField ? '#ffff00' : p.color;
+            ctx.fillStyle = glowColor; ctx.beginPath(); ctx.arc(p.x, p.y, 6, 0, Math.PI*2); ctx.fill();
+            ctx.fillStyle = bodyColor; ctx.beginPath(); ctx.arc(p.x, p.y, 4, 0, Math.PI*2); ctx.fill();
+            if (isSel) { ctx.strokeStyle = '#ffb347'; ctx.lineWidth = 2.5; ctx.stroke(); }
+            if (p.trail.length>1) { ctx.strokeStyle = p.color + '88'; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(p.trail[0].x, p.trail[0].y); for (let i=1; i<p.trail.length; i++) ctx.lineTo(p.trail[i].x, p.trail[i].y); ctx.stroke(); }
+        });
+        ctx.save(); ctx.globalAlpha = 0.6; ctx.fillStyle = '#aaaaaa'; ctx.font = '12px "Segoe UI","PingFang SC"'; ctx.textAlign = 'center'; ctx.fillText('取消拖拽，可以删除选中对象', canvasWidth/2, canvasHeight - 15); ctx.restore();
+        ctx.save(); ctx.globalAlpha = 0.5; ctx.fillStyle = '#ffffff'; ctx.font = 'italic 14px "Segoe UI","PingFang SC"'; ctx.textAlign = 'right'; ctx.textBaseline = 'bottom'; ctx.fillText('理想化模型', canvasWidth - 15, canvasHeight - 10); ctx.restore();
+    }
+
+    function gameLoop(ts) {
+        if (!isPaused) { let dt = (ts - lastFrameTime) / 1000; lastFrameTime = ts; if (dt > 0.1) dt = 0.1; particles.forEach(p => { if (p.alive) updateParticle(p, dt); }); particles = particles.filter(p => p.alive); updateCount(); } else { lastFrameTime = ts; }
+        drawAll(); fpsCounter++; if (ts - fpsTime >= 1000) { currentFPS = Math.round(fpsCounter / ((ts - fpsTime)/1000)); fpsCounter = 0; fpsTime = ts; fpsDisplay.textContent = currentFPS; }
+        requestAnimationFrame(gameLoop);
+    }
+    function resize() { const rect = container.getBoundingClientRect(); canvasWidth = Math.max(500, rect.width-20); canvasHeight = Math.max(350, rect.height-20); canvas.width = canvasWidth; canvas.height = canvasHeight; fields.forEach(f => { f.centerX = Math.max(50, Math.min(canvasWidth-50, f.centerX)); f.centerY = Math.max(50, Math.min(canvasHeight-50, f.centerY)); }); }
+    window.addEventListener('resize', resize); resize();
+    function getPos(e) { const rect = canvas.getBoundingClientRect(); return { x: (e.clientX - rect.left) * (canvasWidth / rect.width), y: (e.clientY - rect.top) * (canvasHeight / rect.height) }; }
+    function findObstacleAt(px, py) { for (const obs of obstacles) { const cp = closestPointOnSegment(px, py, obs.p1.x, obs.p1.y, obs.p2.x, obs.p2.y); if (Math.hypot(px-cp.x, py-cp.y) < 8) return obs; } return null; }
+    function findSourceAt(px, py) { for (const src of sources) { if (Math.hypot(px - src.x, py - src.y) < 22) return src; } return null; }
+
+    function deleteSelectedObject() {
+        if (!selectedObject) return;
+        if (selectedObject.type === 'field') { if (fields.length > 1) { fields.splice(selectedObject.index, 1); if (currentFieldIndex >= fields.length) currentFieldIndex = fields.length - 1; syncUI(); } }
+        else if (selectedObject.type === 'source') { const idx = sources.indexOf(selectedObject.ref); if (idx > -1) { sources.splice(idx, 1); if (selectedSource === selectedObject.ref) selectedSource = null; } }
+        else if (selectedObject.type === 'particle') { const idx = particles.indexOf(selectedObject.ref); if (idx > -1) particles.splice(idx, 1); updateCount(); }
+        else if (selectedObject.type === 'obstacle') { obstacles = obstacles.filter(o => o !== selectedObject.ref); }
+        selectedObject = null; updateSourceInfo();
+    }
+
+    function replay() { particles = []; for (const src of sources) emitBurst(src); updateCount(); if (isPaused) { isPaused = false; btnPause.textContent = '⏯️ 暂停'; btnPause.classList.remove('primary'); } }
+
+    function setSourceAngleRange(range) {
+        if (selectedSource) {
+            if (!selectedSource.locked) { selectedSource.angleRange = range; selectedSource.locked = true; updateSourceInfo(); flashHint(`放射源角度已锁定为 ${range}°`); }
+            else { flashHint('该放射源已锁定，无法更改角度'); }
+        } else if (sources.length > 0) {
+            const lastSrc = sources[sources.length-1];
+            if (!lastSrc.locked) { lastSrc.angleRange = range; lastSrc.locked = true; selectedSource = lastSrc; updateSourceInfo(); flashHint(`最后一个放射源角度已锁定为 ${range}°`); }
+            else { flashHint('所有放射源均已锁定，请创建新放射源'); }
+        } else { defaultAngleRange = range; flashHint(`默认扇形范围设为 ${range}°（新放射源将使用此范围）`); }
+    }
+
+    function updateSourceInfo() {
+        if (selectedSource) { sourceInfo.textContent = selectedSource.locked ? `选中源：${selectedSource.angleRange}° 🔒` : `选中源：${selectedSource.angleRange}° (可设)`; }
+        else if (sources.length > 0) { const last = sources[sources.length-1]; sourceInfo.textContent = last.locked ? `${sources.length}个源 | 最新：${last.angleRange}° 🔒` : `${sources.length}个源 | 最新：${last.angleRange}° (可设)`; }
+        else { sourceInfo.textContent = '点击放射源后可设角度'; }
+    }
+
+    function flashHint(msg) { const hint = document.getElementById('hintOverlay'); hint.textContent = msg; hint.style.color = '#ffb347'; setTimeout(() => { hint.textContent = '取消拖拽，可以删除选中对象'; hint.style.color = '#aaa'; }, 2000); }
+
+    canvas.addEventListener('mousedown', (e) => {
+        const pos = getPos(e); mouseX = pos.x; mouseY = pos.y; mouseDownPos = {x: pos.x, y: pos.y};
+        if (arrowMode) { return; }
+        const obs = findObstacleAt(pos.x, pos.y); if (obs) { selectedObject = {type:'obstacle', ref:obs}; selectedSource = null; updateSourceInfo(); isDragging = true; dragTarget = 'obstacle'; dragObstacleRef = obs; const d1=Math.hypot(pos.x-obs.p1.x,pos.y-obs.p1.y), d2=Math.hypot(pos.x-obs.p2.x,pos.y-obs.p2.y); dragObstacleMode = d1<12?'p1':(d2<12?'p2':'move'); if(dragObstacleMode==='move')dragStartPos={x:pos.x,y:pos.y}; container.classList.add('dragging'); return; }
+        const fIdx = findFieldAt(pos.x, pos.y); if (fIdx >= 0) { selectedObject = {type:'field', index: fIdx}; selectedSource = null; currentFieldIndex = fIdx; syncUI(); updateSourceInfo(); isDragging = true; dragTarget = 'field'; dragFieldIndex = fIdx; dragOffsetX = fields[fIdx].centerX - pos.x; dragOffsetY = fields[fIdx].centerY - pos.y; container.classList.add('dragging'); return; }
+        const src = findSourceAt(pos.x, pos.y); if (src) { selectedSource = src; selectedObject = {type:'source', ref: src}; updateSourceInfo(); isDragging = true; dragTarget = 'source'; dragSourceRef = src; dragOffsetX = src.x - pos.x; dragOffsetY = src.y - pos.y; container.classList.add('dragging'); return; }
+        const p = particles.find(p => p.alive && Math.hypot(p.x-pos.x, p.y-pos.y) < 12); if (p) { selectedObject = {type:'particle', ref: p}; selectedSource = null; updateSourceInfo(); }
+    });
+    canvas.addEventListener('mousemove', (e) => {
+        const pos = getPos(e); mouseX = pos.x; mouseY = pos.y; if (!isDragging) return;
+        if (dragTarget === 'obstacle' && dragObstacleRef) { const obs = dragObstacleRef; if (dragObstacleMode==='p1'){obs.p1.x=pos.x;obs.p1.y=pos.y;} else if(dragObstacleMode==='p2'){obs.p2.x=pos.x;obs.p2.y=pos.y;} else { const dx=pos.x-dragStartPos.x, dy=pos.y-dragStartPos.y; obs.p1.x+=dx; obs.p1.y+=dy; obs.p2.x+=dx; obs.p2.y+=dy; dragStartPos={x:pos.x,y:pos.y}; } }
+        else if (dragTarget === 'field' && dragFieldIndex >= 0) { fields[dragFieldIndex].centerX = pos.x + dragOffsetX; fields[dragFieldIndex].centerY = pos.y + dragOffsetY; }
+        else if (dragTarget === 'source' && dragSourceRef) { dragSourceRef.x = pos.x + dragOffsetX; dragSourceRef.y = pos.y + dragOffsetY; }
+    });
+    canvas.addEventListener('mouseup', () => { isDragging = false; dragTarget = null; dragFieldIndex = -1; dragObstacleRef = null; dragObstacleMode = null; dragSourceRef = null; container.classList.remove('dragging'); });
+
+    function syncUI() {
+        const f = getCurrentField(); if (!f) { currentFieldLabel.textContent = '无场'; currentFieldTypeDisplay.textContent = ''; return; }
+        fieldShapeSelect.value = f.shape; fieldSizeSlider.value = f.size; fieldSizeVal.textContent = f.size;
+        if (f.type === 'electric') { fieldStrengthSlider.min = 50; fieldStrengthSlider.max = 500; fieldStrengthSlider.step = 10; bfieldDirRow.style.display = 'none'; efieldAngleRow.style.display = 'flex'; efieldAngleSlider.value = f.efieldAngleDeg; efieldAngleVal.textContent = f.efieldAngleDeg + '°'; }
+        else { fieldStrengthSlider.min = 0.1; fieldStrengthSlider.max = 5.0; fieldStrengthSlider.step = 0.1; bfieldDirRow.style.display = 'flex'; efieldAngleRow.style.display = 'none'; bfieldDirectionSelect.value = f.direction; }
+        fieldStrengthSlider.value = f.strength; fieldStrengthVal.textContent = f.strength.toFixed(1);
+        currentFieldLabel.textContent = `场 ${currentFieldIndex+1}/${fields.length}`; currentFieldTypeDisplay.innerHTML = f.type==='magnetic' ? '🧲 磁场' : '⚡ 电场';
+    }
+    function applyShapeSize() { const f = getCurrentField(); if (!f) return; f.shape = fieldShapeSelect.value; f.size = +fieldSizeSlider.value; }
+    function applyStrength() { const f = getCurrentField(); if (!f) return; f.strength = +fieldStrengthSlider.value; }
+    function applyDirection() { const f = getCurrentField(); if (!f) return; if (f.type==='magnetic') f.direction = bfieldDirectionSelect.value; else f.efieldAngleDeg = +efieldAngleSlider.value; }
+
+    btnPrevField.onclick = () => { if (fields.length) { currentFieldIndex = (currentFieldIndex-1+fields.length)%fields.length; syncUI(); } };
+    btnNextField.onclick = () => { if (fields.length) { currentFieldIndex = (currentFieldIndex+1)%fields.length; syncUI(); } };
+    btnAddElectricField.onclick = () => { if (fields.length >= 8) return; fields.push(createField('electric', 'rectangle', 400, 200, 'into', 90, canvasWidth/2, canvasHeight/2)); currentFieldIndex = fields.length-1; syncUI(); };
+    btnAddMagneticField.onclick = () => { if (fields.length >= 8) return; fields.push(createField('magnetic', 'rectangle', 400, 4.0, 'into', 90, canvasWidth/2, canvasHeight/2)); currentFieldIndex = fields.length-1; syncUI(); };
+    btnRemoveCurrentField.onclick = () => { if (fields.length <= 1) return; fields.splice(currentFieldIndex, 1); if (currentFieldIndex >= fields.length) currentFieldIndex = fields.length-1; syncUI(); };
+    fieldShapeSelect.onchange = applyShapeSize; fieldSizeSlider.oninput = () => { const f = getCurrentField(); if (f) f.size = +fieldSizeSlider.value; fieldSizeVal.textContent = fieldSizeSlider.value; };
+    fieldStrengthSlider.oninput = () => { const f = getCurrentField(); if (f) f.strength = +fieldStrengthSlider.value; fieldStrengthVal.textContent = (+fieldStrengthSlider.value).toFixed(1); };
+    bfieldDirectionSelect.onchange = applyDirection; efieldAngleSlider.oninput = () => { const f = getCurrentField(); if (f && f.type==='electric') { f.efieldAngleDeg = +efieldAngleSlider.value; efieldAngleVal.textContent = efieldAngleSlider.value + '°'; } };
+
+    btnSingleParticle.onclick = () => { particles.push(createParticle(canvasWidth/2, canvasHeight/2, initialSpeed, initialAngleDeg, chargeSign==='positive'?1:-1, particleMass, '#ff5252')); updateCount(); };
+    btnAddSource.onclick = () => {
+        const color = sourceColors[sourceColorIndex % sourceColors.length]; sourceColorIndex++;
+        const newSrc = { x: canvasWidth/2, y: canvasHeight/2, angleRange: defaultAngleRange, locked: false, color };
+        sources.push(newSrc); selectedSource = newSrc; updateSourceInfo();
+    };
+
+    btnPause.onclick = () => { if (isPaused) { for (const src of sources) emitBurst(src); updateCount(); } isPaused = !isPaused; btnPause.textContent = isPaused ? '▶ 播放' : '⏯️ 暂停'; btnPause.classList.toggle('primary', !isPaused); };
+    btnReplay.onclick = replay;
+    btnArrowMode.onclick = () => { arrowMode = !arrowMode; btnArrowMode.classList.toggle('active', arrowMode); container.classList.toggle('arrow-mode', arrowMode); };
+    btnClearTrails.onclick = () => { particles.forEach(p => p.trail = []); };
+    btnAddBounce.onclick = () => { obstacles.push({p1:{x:200,y:150}, p2:{x:500,y:200}, type:'bounce'}); };
+    btnAddAbsorb.onclick = () => { obstacles.push({p1:{x:200,y:350}, p2:{x:500,y:400}, type:'absorb'}); };
+    btnDeleteSelected.onclick = deleteSelectedObject;
+    btnReset.onclick = () => {
+        fields = [createField('electric','rectangle',400,200,'into',90,canvasWidth/2,canvasHeight/2)]; currentFieldIndex = 0; obstacles = []; selectedObject = null; selectedSource = null;
+        particles = []; sources = []; arrowMode = false; isPaused = true; sourceColorIndex = 0;
+        chargeSign = 'positive'; particleMass = 1.0; initialSpeed = 150; initialAngleDeg = 90; gravityEnabled = false; defaultAngleRange = 360;
+        chargeSignSelect.value = 'positive'; particleMassSlider.value = 1; initialSpeedSlider.value = 150; initialAngleSlider.value = 90;
+        particleMassVal.textContent = '1.0'; initialSpeedVal.textContent = '150'; initialAngleVal.textContent = '90°'; gravityToggle.checked = false;
+        btnPause.textContent = '▶ 播放'; btnPause.classList.add('primary'); btnArrowMode.classList.remove('active'); container.classList.remove('arrow-mode');
+        syncUI(); updateCount(); updateSourceInfo();
+    };
+
+    rangeButtons.forEach(btn => { btn.addEventListener('click', () => { const range = parseInt(btn.dataset.range); setSourceAngleRange(range); }); });
+    chargeSignSelect.onchange = () => { chargeSign = chargeSignSelect.value; };
+    particleMassSlider.oninput = () => { particleMass = +particleMassSlider.value; particleMassVal.textContent = particleMass.toFixed(1); };
+    initialSpeedSlider.oninput = () => { initialSpeed = +initialSpeedSlider.value; initialSpeedVal.textContent = initialSpeed; };
+    initialAngleSlider.oninput = () => { initialAngleDeg = +initialAngleSlider.value; initialAngleVal.textContent = initialAngleDeg + '°'; };
+    gravityToggle.onchange = () => { gravityEnabled = gravityToggle.checked; };
+    window.addEventListener('keydown', (e) => { if (e.key === ' ') { e.preventDefault(); btnPause.click(); } else if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); deleteSelectedObject(); } });
+
+    fields = [createField('electric','rectangle',400,200,'into',90,canvasWidth/2,canvasHeight/2)]; currentFieldIndex = 0; syncUI(); updateCount();
+    requestAnimationFrame(gameLoop);
+})();
+</script>
+
+  <script>
+  // 返回主页（滚动位置已在主页点击链接时保存）
+  function saveScrollAndReturn() {
+    window.location.href = '../index.html';
+  }
+  
+  // 禁用右键菜单
+  document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+  });
+  
+  // 禁用开发者工具快捷键
+  document.addEventListener('keydown', function(e) {
+    // ESC返回主页 - 保存滚动位置
+    if (e.keyCode === 27) {
+      saveScrollAndReturn();
+      return false;
+    }
+    // F12
+    if (e.keyCode === 123) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+U
+    if (e.ctrlKey && e.keyCode === 85) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+I
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 73) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+J
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 74) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+C
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 67) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+S
+    if (e.ctrlKey && e.keyCode === 83) {
+      e.preventDefault();
+      return false;
+    }
+  });
+  
+  // 禁用选择
+  document.addEventListener('selectstart', function(e) {
+    // 允许输入框选择
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+      return true;
+    }
+    e.preventDefault();
+    return false;
+  });
+  </script>
+</body>
+</html>
