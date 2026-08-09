@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <title>钢球冲上完整圆轨道 · 木质纹理</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #0a0c16;
+      font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 15px;
+      user-select: none;
+    }
+    .container {
+      background: #12162a;
+      border-radius: 24px;
+      padding: 18px 22px 14px;
+      box-shadow: 0 20px 45px rgba(0,0,0,0.6), 0 0 0 1px #2a2d4a;
+      max-width: 950px;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; color: #d0d0e0; }
+    .title { font-size: 1.3rem; font-weight: 700; }
+    .badge { background: #20233b; padding: 4px 14px; border-radius: 18px; font-size: 0.7rem; color: #aaa; }
+    .canvas-wrapper {
+      background: #050510; border-radius: 16px; overflow: hidden;
+      box-shadow: inset 0 0 25px #00000050, 0 0 0 1px #2d3050;
+      position: relative; width: 100%; aspect-ratio: 16/9; min-height: 250px;
+    }
+    canvas { display: block; width: 100%; height: 100%; }
+    .hint-overlay {
+      position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
+      background: rgba(0,0,0,0.65); color: #ffcc80; padding: 6px 18px;
+      border-radius: 20px; font-size: 0.8rem; pointer-events: none;
+      backdrop-filter: blur(4px); white-space: nowrap; z-index: 10;
+    }
+    .control-panel { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; }
+    .slider-box { flex: 2 1 260px; display: flex; flex-direction: column; gap: 4px; }
+    .slider-header { display: flex; justify-content: space-between; color: #ccc; font-size: 0.85rem; }
+    .speed-val { font-weight: 700; color: white; }
+    .speed-slider {
+      width: 100%; height: 10px; border-radius: 5px;
+      background: linear-gradient(to right, #e05555 0%, #e0a040 40%, #5cb878 70%, #5cb878 100%);
+      -webkit-appearance: none; appearance: none; outline: none; cursor: pointer;
+    }
+    .speed-slider::-webkit-slider-thumb {
+      -webkit-appearance: none; width: 26px; height: 26px; border-radius: 50%;
+      background: white; border: 3px solid #3a3f5a; box-shadow: 0 2px 10px black;
+    }
+    .btn-group { display: flex; gap: 8px; flex-shrink: 0; }
+    .btn {
+      padding: 10px 18px; border-radius: 25px; border: none; font-weight: 600;
+      font-size: 0.85rem; cursor: pointer; transition: 0.2s; letter-spacing: 0.4px; font-family: inherit;
+    }
+    .btn-launch { background: #4da6ff; color: white; box-shadow: 0 4px 14px #4da6ff60; }
+    .btn-launch:hover { background: #6dbaff; transform: translateY(-1px); }
+    .btn-reset { background: #2b2e44; color: #ddd; }
+    .btn-auto { background: transparent; border: 2px solid #3a3f5a; color: #aaa; }
+    .btn-auto.active { background: #1a302a; border-color: #5cb878; color: #5cb878; }
+    .legend { display: flex; gap: 16px; justify-content: center; color: #999; font-size: 0.7rem; flex-wrap: wrap; }
+    .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 4px; }
+  </style>
+
+  <style>
+  body {
+    background-color: #1a2332 !important;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+  }
+  
+  .qilai-back-btn {
+    position: fixed;
+    top: 10px;
+    left: 15px;
+    z-index: 100000;
+    padding: 8px 16px;
+    background: rgba(0, 150, 200, 0.2);
+    border: 1px solid rgba(100, 180, 255, 0.5);
+    color: #8ab4f8;
+    font-size: 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.3s;
+    backdrop-filter: blur(5px);
+    font-family: "Microsoft YaHei", sans-serif;
+  }
+  
+  .qilai-back-btn:hover {
+    background: rgba(0, 150, 200, 0.4);
+    box-shadow: 0 0 15px rgba(100, 180, 255, 0.3);
+    color: #fff;
+  }
+  
+  .qilai-watermark {
+    position: fixed;
+    bottom: 15px;
+    right: 15px;
+    z-index: 99998;
+    font-size: 12px;
+    color: rgba(138, 180, 248, 0.35);
+    text-align: right;
+    line-height: 1.8;
+    pointer-events: none;
+    user-select: none;
+    font-family: "Microsoft YaHei", sans-serif;
+  }
+  
+  .qilai-watermark .title {
+    font-size: 14px;
+    font-weight: bold;
+    color: rgba(138, 180, 248, 0.45);
+    margin-bottom: 4px;
+    letter-spacing: 1px;
+  }
+  </style>
+</head>
+<body>
+  <a href="javascript:void(0);" class="qilai-back-btn" onclick="saveScrollAndReturn();">← 返回主页</a>
+  
+  <div class="qilai-watermark">
+    <div class="title">齐老师动画</div>
+    QQ 3398528250<br>
+    抖音 35320300542
+  </div>
+
+<div class="container">
+  <div class="header">
+    <div class="title">⚙️ 钢球冲上完整圆轨道（轨道居中）</div>
+    <span class="badge">木质纹理 · 弹性碰撞</span>
+  </div>
+  <div class="canvas-wrapper" id="wrapper">
+    <canvas id="canvas"></canvas>
+    <div class="hint-overlay" id="hint">点击「发射」或按空格键启动</div>
+  </div>
+  <div class="legend">
+    <span><span class="dot" style="background:#e05555;"></span>速度为零原路滑回</span>
+    <span><span class="dot" style="background:#e0a040;"></span>脱离轨道斜抛</span>
+    <span><span class="dot" style="background:#5cb878;"></span>安全通过/圆周运动</span>
+    <span>临界 v₀ = √(5gR) ≈ 553 px/s</span>
+  </div>
+  <div class="control-panel">
+    <div class="slider-box">
+      <div class="slider-header"><span>🚀 初速度 v₀</span><span class="speed-val" id="speedDisplay">450 px/s</span></div>
+      <input type="range" class="speed-slider" id="speedSlider" min="200" max="750" value="450" step="2">
+      <div style="display:flex;justify-content:space-between;font-size:0.6rem;color:#777;padding:0 4px;">
+        <span>200</span><span style="color:#e0a040;">√(2gR)≈350</span><span style="color:#5cb878;">√(5gR)≈553</span><span>750</span>
+      </div>
+    </div>
+    <div class="btn-group">
+      <button class="btn btn-launch" id="btnLaunch">🚀 发射</button>
+      <button class="btn btn-reset" id="btnReset">↺ 重置</button>
+      <button class="btn btn-auto" id="btnAuto">🔄 自动</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  (function() {
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const wrapper = document.getElementById('wrapper');
+    const hint = document.getElementById('hint');
+    const speedSlider = document.getElementById('speedSlider');
+    const speedDisplay = document.getElementById('speedDisplay');
+    const btnLaunch = document.getElementById('btnLaunch');
+    const btnReset = document.getElementById('btnReset');
+    const btnAuto = document.getElementById('btnAuto');
+
+    // 物理参数
+    const R = 120;                  // 轨道基准半径
+    const G = 600;                  // 重力加速度
+    const BALL_RADIUS = 10;         // 小球半径
+    const TRACK_THICK = 16;         // 轨道厚度
+    const TRACK_INNER = R - TRACK_THICK/2;  // 轨道内壁半径
+    const TRACK_OUTER = R + TRACK_THICK/2;  // 轨道外壁半径
+    const ballOrbitRadius = TRACK_INNER - BALL_RADIUS; // 小球中心绕轨道运行的半径（贴内壁）
+    const V_REACH_TOP = Math.sqrt(2 * G * ballOrbitRadius); // 到达最高点的临界速度
+    const V_PASS = Math.sqrt(5 * G * ballOrbitRadius);     // 安全通过的临界速度
+
+    // 画布逻辑尺寸，轨道居中
+    const W = 900, H = 500;
+    const CENTER_X = 450;
+    const ENTRY_Y = 370;            // 地面线Y坐标
+    const CENTER_Y = ENTRY_Y - TRACK_INNER; // 轨道圆心Y（保证内壁最低点与地面相切）
+    const EXIT_Y = CENTER_Y - TRACK_INNER;  // 轨道最高点Y
+    const EXIT_X = CENTER_X;
+    const ENTRY_X = CENTER_X;
+    const START_X = 100; 
+    const START_Y = ENTRY_Y - BALL_RADIUS;  // 小球初始Y（底部贴地面）
+
+    const STATE = { IDLE:0, APPROACH:1, ON_TRACK:2, DETACHED:3, EXITED:4, GROUNDED:5 };
+    let simState = STATE.IDLE;
+    let ballX = START_X, ballY = START_Y;
+    let ballVx = 450, ballVy = 0;
+    let theta = Math.PI/2;
+    let trackMovingUp = true;
+    let trail = [];
+    let detached = false;
+    let autoMode = false, autoTimer = null;
+    let currentV0 = 450;
+
+    // 木质纹理缓存
+    let woodPatternCanvas = null;
+    let woodPatternCtx = null;
+
+    // 获取小球在轨道上的位置（贴内壁）
+    function getPosFromTheta(th) {
+        return { x: CENTER_X + ballOrbitRadius * Math.cos(th), y: CENTER_Y + ballOrbitRadius * Math.sin(th) };
+    }
+    
+    // 获取切线向量
+    function tangentVec(th, movingUp) {
+        return movingUp ? { x: Math.sin(th), y: -Math.cos(th) } : { x: -Math.sin(th), y: Math.cos(th) };
+    }
+
+    // 重置模拟状态
+    function reset() {
+        simState = STATE.IDLE;
+        ballX = START_X; ballY = START_Y;
+        ballVx = currentV0; ballVy = 0;
+        theta = Math.PI/2;
+        trackMovingUp = true;
+        trail = [];
+        detached = false;
+        hint.style.display = 'block';
+    }
+
+    // 发射小球
+    function launch() {
+        reset();
+        simState = STATE.APPROACH;
+        ballVx = currentV0;
+        trail = [{x:ballX, y:ballY}];
+        hint.style.display = 'none';
+    }
+
+    // 小球脱离轨道处理
+    function detach(th, movingUp) {
+        const h = ballOrbitRadius * (1 - Math.sin(th));
+        const vSq = Math.max(0, currentV0*currentV0 - 2*G*h);
+        const v = Math.sqrt(vSq);
+        const tv = tangentVec(th, movingUp);
+        ballVx = v * tv.x;
+        ballVy = v * tv.y;
+        const pos = getPosFromTheta(th);
+        ballX = pos.x; ballY = pos.y;
+        simState = STATE.DETACHED;
+        detached = true;
+        trail.push({x:ballX, y:ballY, detach:true});
+    }
+
+    // 处理轨道碰撞
+    function handleTrackCollision() {
+        const dx = ballX - CENTER_X;
+        const dy = ballY - CENTER_Y;
+        const dist = Math.sqrt(dx*dx + dy*dy);
+        
+        // 小球在轨道内侧，不碰撞
+        if (dist < ballOrbitRadius) return false;
+        
+        const angle = Math.atan2(dy, dx);
+        // 底部缺口区域（小球进入或离开轨道的位置）
+        const minAngle = Math.PI/2 - 0.15;
+        const maxAngle = Math.PI/2 + 0.15;
+        
+        if (angle > minAngle && angle < maxAngle) {
+            if (ballY >= ENTRY_Y - BALL_RADIUS) {
+                ballY = ENTRY_Y - BALL_RADIUS; 
+                ballVy = 0;
+                simState = STATE.GROUNDED;
+                trail.push({x:ballX, y:ballY});
+                return true;
+            }
+            return false;
+        }
+        
+        // 弹性碰撞计算
+        const nx = dx / dist;
+        const ny = dy / dist;
+        const vn = ballVx * nx + ballVy * ny;
+        ballVx -= 2 * vn * nx;
+        ballVy -= 2 * vn * ny;
+        // 碰撞后小球贴内壁
+        ballX = CENTER_X + ballOrbitRadius * nx;
+        ballY = CENTER_Y + ballOrbitRadius * ny;
+        trail.push({x:ballX, y:ballY, bounce:true});
+        return true;
+    }
+
+    // 物理更新
+    function updatePhysics(dt) {
+        const maxDt = 1/30;
+        const steps = Math.max(1, Math.floor(dt / maxDt));
+        const subDt = dt / steps;
+
+        for (let s=0; s<steps; s++) {
+            switch (simState) {
+                case STATE.APPROACH:
+                    ballX += ballVx * subDt;
+                    // 到达轨道入口
+                    if (ballX >= ENTRY_X) {
+                        ballX = ENTRY_X; 
+                        ballY = ENTRY_Y - BALL_RADIUS;
+                        simState = STATE.ON_TRACK;
+                        theta = Math.PI/2;
+                        trackMovingUp = true;
+                        trail.push({x:ballX, y:ballY});
+                    }
+                    break;
+                case STATE.ON_TRACK: {
+                    const sinT = Math.sin(theta);
+                    const h = ballOrbitRadius * (1 - sinT);
+                    let vSq = currentV0*currentV0 - 2*G*h;
+                    
+                    // 速度不足，开始下滑
+                    if (trackMovingUp && vSq < 0) {
+                        const maxSin = 1 - (currentV0*currentV0)/(2*G*ballOrbitRadius);
+                        theta = Math.asin(Math.max(-1, Math.min(1, maxSin)));
+                        vSq = 0;
+                        trackMovingUp = false;
+                    }
+                    
+                    const v = Math.sqrt(Math.max(0, vSq));
+                    const N_over_m = vSq/ballOrbitRadius + G * sinT;
+                    
+                    // 支持力不足，脱离轨道
+                    if (N_over_m < -0.1 && v > 0.8) {
+                        detach(theta, trackMovingUp);
+                        break;
+                    }
+                    
+                    // 低速时的微动处理
+                    if (v < 0.5) {
+                        const a_t = -G * Math.cos(theta);
+                        if (trackMovingUp && a_t < -0.01) trackMovingUp = false;
+                        else if (!trackMovingUp && a_t > 0.01) trackMovingUp = true;
+                        const smallV = 0.6;
+                        const dTheta = (trackMovingUp ? -smallV : smallV) / ballOrbitRadius * subDt;
+                        theta += dTheta;
+                        // 角度规范化
+                        while (theta > Math.PI) theta -= 2*Math.PI;
+                        while (theta < -Math.PI) theta += 2*Math.PI;
+                    } else {
+                        // 正常速度下的角度变化
+                        const dTheta = (trackMovingUp ? -v : v) / ballOrbitRadius * subDt;
+                        theta += dTheta;
+                        // 角度规范化
+                        while (theta > Math.PI) theta -= 2*Math.PI;
+                        while (theta < -Math.PI) theta += 2*Math.PI;
+                    }
+                    
+                    // 检查是否回到底部
+                    if (theta > Math.PI/2 - 0.05 && theta < Math.PI/2 + 0.05 && !trackMovingUp) {
+                        theta = Math.PI/2;
+                        ballX = ENTRY_X; 
+                        ballY = ENTRY_Y - BALL_RADIUS;
+                        ballVx = -currentV0;
+                        ballVy = 0;
+                        simState = STATE.GROUNDED;
+                        trail.push({x:ballX, y:ballY});
+                        break;
+                    }
+                    
+                    // 更新小球位置和速度
+                    const pos = getPosFromTheta(theta);
+                    ballX = pos.x; ballY = pos.y;
+                    const tv = tangentVec(theta, trackMovingUp);
+                    ballVx = v * tv.x; 
+                    ballVy = v * tv.y;
+                    break;
+                }
+                case STATE.DETACHED:
+                    // 自由落体
+                    ballVy += G * subDt;
+                    ballX += ballVx * subDt;
+                    ballY += ballVy * subDt;
+                    // 检测碰撞
+                    if (handleTrackCollision()) break;
+                    // 落地检测
+                    if (ballY >= ENTRY_Y - BALL_RADIUS && simState === STATE.DETACHED) {
+                        ballY = ENTRY_Y - BALL_RADIUS; 
+                        ballVy = 0;
+                        simState = STATE.GROUNDED;
+                        trail.push({x:ballX, y:ballY});
+                    }
+                    break;
+                case STATE.EXITED:
+                case STATE.GROUNDED:
+                    // 落地后水平运动
+                    if (ballVy === 0 && ballY === ENTRY_Y - BALL_RADIUS) ballX += ballVx * subDt;
+                    if ((ballX > W+80 || ballX < -80) && autoMode) scheduleAuto();
+                    break;
+            }
+        }
+
+        // 记录轨迹
+        if (simState !== STATE.IDLE && simState !== STATE.GROUNDED) {
+            const now = performance.now()/1000;
+            if (!trail.lastTime || now - trail.lastTime > 0.03) {
+                trail.push({x:ballX, y:ballY});
+                trail.lastTime = now;
+                if (trail.length > 500) trail.shift();
+            }
+        }
+    }
+
+    // 自动模式调度
+    function scheduleAuto() {
+        if (!autoMode) return;
+        clearTimeout(autoTimer);
+        autoTimer = setTimeout(() => {
+            if (autoMode) {
+                const speeds = [280, 340, 350, 410, 500, 553, 720];
+                currentV0 = speeds[Math.floor(Math.random()*speeds.length)];
+                speedSlider.value = currentV0;
+                updateSpeedDisplay();
+                launch();
+            }
+        }, 1800);
+    }
+
+    // 生成木质纹理
+    function createWoodTexture() {
+        const size = 400;
+        woodPatternCanvas = document.createElement('canvas');
+        woodPatternCanvas.width = size;
+        woodPatternCanvas.height = size;
+        woodPatternCtx = woodPatternCanvas.getContext('2d');
+
+        woodPatternCtx.fillStyle = '#b07a4c';
+        woodPatternCtx.fillRect(0, 0, size, size);
+
+        for (let y = 0; y < size; y += 3) {
+            woodPatternCtx.fillStyle = `rgba(80, 45, 20, ${0.08 + Math.random() * 0.12})`;
+            woodPatternCtx.fillRect(0, y, size, 2);
+        }
+        for (let y = 0; y < size; y += 12) {
+            woodPatternCtx.fillStyle = `rgba(50, 25, 5, ${0.15 + Math.random() * 0.2})`;
+            woodPatternCtx.fillRect(0, y, size, 1.5);
+        }
+        for (let i = 0; i < 80; i++) {
+            const x = Math.random() * size;
+            const y = Math.random() * size;
+            woodPatternCtx.fillStyle = `rgba(0,0,0,${0.02 + Math.random()*0.04})`;
+            woodPatternCtx.fillRect(x, y, Math.random()*40+10, 0.5);
+        }
+    }
+
+    // 绘制木质轨道
+    function drawWoodTrack() {
+        if (!woodPatternCanvas) createWoodTexture();
+
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(CENTER_X, CENTER_Y, TRACK_OUTER, 0, Math.PI * 2);
+        ctx.arc(CENTER_X, CENTER_Y, TRACK_INNER, 0, Math.PI * 2, true);
+        ctx.closePath();
+        ctx.clip();
+
+        const pattern = ctx.createPattern(woodPatternCanvas, 'repeat');
+        ctx.fillStyle = pattern;
+        ctx.fillRect(CENTER_X - TRACK_OUTER, CENTER_Y - TRACK_OUTER, TRACK_OUTER*2, TRACK_OUTER*2);
+
+        ctx.strokeStyle = '#3a1e0a';
+        ctx.lineWidth = 2.5;
+        ctx.stroke();
+        ctx.restore();
+
+        // 内沿高光
+        ctx.beginPath();
+        ctx.arc(CENTER_X, CENTER_Y, TRACK_INNER+1, 0, Math.PI * 2);
+        ctx.strokeStyle = '#ffe0b0';
+        ctx.lineWidth = 1.8;
+        ctx.stroke();
+    }
+
+    // 绘制场景
+    function drawScene() {
+        ctx.clearRect(0,0,W,H);
+
+        // 背景网格
+        ctx.fillStyle = '#ffffff06';
+        for (let i=0;i<W;i+=35) for (let j=0;j<H;j+=35) ctx.fillRect(i,j,1,1);
+
+        // 水平地面区域
+        ctx.fillStyle = '#1e2030';
+        ctx.fillRect(0, ENTRY_Y, W, H - ENTRY_Y);
+        ctx.fillStyle = '#2a2c3c';
+        for (let x=20; x<W; x+=45) {
+            ctx.fillRect(x, ENTRY_Y+4, 15, 3);
+            ctx.fillRect(x+20, ENTRY_Y+14, 12, 2);
+        }
+        ctx.strokeStyle = '#4a4c60';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(0, ENTRY_Y);
+        ctx.lineTo(W, ENTRY_Y);
+        ctx.stroke();
+
+        // 木质纹理完整圆环
+        drawWoodTrack();
+
+        // 标记最高点
+        ctx.fillStyle = '#ffffff60';
+        ctx.beginPath(); ctx.arc(CENTER_X, CENTER_Y - TRACK_INNER, 4, 0, 2*Math.PI); ctx.fill();
+        ctx.fillStyle = '#ccc';
+        ctx.font = '11px "Segoe UI", "PingFang SC", "Microsoft YaHei"';
+        ctx.fillText('最高点', CENTER_X - 30, CENTER_Y - TRACK_INNER - 12);
+
+        // 标记起始点
+        ctx.fillStyle = '#ffffff60';
+        ctx.beginPath(); ctx.arc(ENTRY_X, ENTRY_Y, 4, 0, 2*Math.PI); ctx.fill();
+        ctx.fillStyle = '#ccc';
+        ctx.fillText('起点', ENTRY_X + 15, ENTRY_Y - 10);
+
+        // 绘制小球
+        if (simState !== STATE.IDLE) {
+            drawBall(ballX, ballY);
+            // 绘制速度箭头
+            if (simState === STATE.APPROACH) drawArrow(ballX,ballY,ballVx,ballVy);
+            if (simState === STATE.ON_TRACK) {
+                const h = ballOrbitRadius*(1-Math.sin(theta));
+                const vSq = Math.max(0, currentV0*currentV0 - 2*G*h);
+                const v = Math.sqrt(vSq);
+                const tv = tangentVec(theta, trackMovingUp);
+                drawArrow(ballX,ballY, v*tv.x, v*tv.y);
+            }
+            if (simState === STATE.DETACHED) drawArrow(ballX,ballY,ballVx,ballVy);
+            if (simState === STATE.GROUNDED && Math.abs(ballVx) > 2) drawArrow(ballX,ballY,ballVx,0);
+        } else {
+            drawBall(START_X, START_Y, 0.5);
+        }
+
+        // 绘制轨迹
+        if (trail.length > 1) {
+            ctx.beginPath();
+            ctx.strokeStyle = '#ffaa30';
+            ctx.lineWidth = 2.5;
+            ctx.lineCap = 'round';
+            for (let i=1; i<trail.length; i++) {
+                const p = trail[i];
+                if (p.detach) {
+                    ctx.fillStyle = '#ff5555';
+                    ctx.beginPath(); ctx.arc(p.x,p.y,5,0,2*Math.PI); ctx.fill();
+                    continue;
+                }
+                if (p.bounce) {
+                    ctx.fillStyle = '#55ff55';
+                    ctx.beginPath(); ctx.arc(p.x,p.y,4,0,2*Math.PI); ctx.fill();
+                    continue;
+                }
+                ctx.moveTo(trail[i-1].x, trail[i-1].y);
+                ctx.lineTo(p.x, p.y);
+            }
+            ctx.stroke();
+        }
+    }
+
+    // 绘制小球
+    function drawBall(x,y,alpha=1) {
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        ctx.shadowColor = 'rgba(200, 220, 255, 0.7)';
+        ctx.shadowBlur = 12;
+
+        const grad = ctx.createRadialGradient(x-3, y-3, 2, x, y, BALL_RADIUS);
+        grad.addColorStop(0, '#ffffff');
+        grad.addColorStop(0.2, '#e0e0f0');
+        grad.addColorStop(0.5, '#a0a0c0');
+        grad.addColorStop(0.8, '#404060');
+        grad.addColorStop(1, '#181830');
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(x, y, BALL_RADIUS, 0, 2*Math.PI);
+        ctx.fill();
+
+        ctx.shadowColor = 'transparent';
+        ctx.shadowBlur = 0;
+
+        ctx.strokeStyle = '#00000060';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+
+        ctx.fillStyle = '#ffffffc0';
+        ctx.beginPath();
+        ctx.arc(x-2.5, y-2.5, 2.2, 0, 2*Math.PI);
+        ctx.fill();
+
+        ctx.restore();
+    }
+
+    // 绘制速度箭头
+    function drawArrow(x,y,vx,vy) {
+        const speed = Math.sqrt(vx*vx+vy*vy);
+        if (speed<2) return;
+        const sc = 0.2, len = speed*sc;
+        const ang = Math.atan2(vy, vx);
+        const tipX = x + len*Math.cos(ang), tipY = y + len*Math.sin(ang);
+        ctx.save();
+        ctx.strokeStyle = '#ffdd55'; ctx.lineWidth=2.2;
+        ctx.beginPath(); ctx.moveTo(x,y); ctx.lineTo(tipX,tipY); ctx.stroke();
+        ctx.fillStyle = '#ffdd55';
+        ctx.beginPath(); ctx.moveTo(tipX,tipY);
+        ctx.lineTo(tipX-10*Math.cos(ang-0.7), tipY-10*Math.sin(ang-0.7));
+        ctx.lineTo(tipX-10*Math.cos(ang+0.7), tipY-10*Math.sin(ang+0.7));
+        ctx.closePath(); ctx.fill();
+        ctx.restore();
+    }
+
+    // 更新速度显示
+    function updateSpeedDisplay() {
+        currentV0 = parseInt(speedSlider.value);
+        speedDisplay.textContent = currentV0 + ' px/s';
+    }
+
+    // 调整画布大小
+    function resizeCanvas() {
+        const rect = wrapper.getBoundingClientRect();
+        if (rect.width <= 0 || rect.height <= 0) {
+            requestAnimationFrame(resizeCanvas);
+            return;
+        }
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        canvas.width = W * dpr;
+        canvas.height = H * dpr;
+        canvas.style.width = '100%';
+        canvas.style.height = '100%';
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.scale(dpr, dpr);
+    }
+
+    // 事件监听
+    window.addEventListener('resize', resizeCanvas);
+    window.addEventListener('load', resizeCanvas);
+    if (document.readyState === 'complete') resizeCanvas();
+    else document.addEventListener('DOMContentLoaded', resizeCanvas);
+
+    // 动画循环
+    let lastTime = performance.now()/1000;
+    function animate(ts) {
+        const now = ts/1000;
+        let dt = now - lastTime;
+        if (dt > 0.2) dt = 0.2;
+        if (dt <= 0) dt = 1/60;
+        lastTime = now;
+        if (simState !== STATE.IDLE) updatePhysics(dt);
+        drawScene();
+        requestAnimationFrame(animate);
+    }
+
+    // 初始化
+    resizeCanvas();
+    requestAnimationFrame(animate);
+
+    // 控件事件绑定
+    speedSlider.addEventListener('input', () => {
+        updateSpeedDisplay();
+        if (simState === STATE.IDLE || simState === STATE.GROUNDED) reset();
+    });
+    btnLaunch.addEventListener('click', () => { 
+        currentV0 = parseInt(speedSlider.value); 
+        updateSpeedDisplay(); 
+        launch(); 
+    });
+    btnReset.addEventListener('click', () => { 
+        currentV0 = parseInt(speedSlider.value); 
+        updateSpeedDisplay(); 
+        reset(); 
+    });
+    btnAuto.addEventListener('click', () => {
+        autoMode = !autoMode;
+        btnAuto.classList.toggle('active', autoMode);
+        btnAuto.textContent = autoMode ? '🔄 自动(开)' : '🔄 自动';
+        if (autoMode && (simState===STATE.IDLE||simState===STATE.GROUNDED)) scheduleAuto();
+        else if (!autoMode) clearTimeout(autoTimer);
+    });
+    document.addEventListener('keydown', (e) => {
+        if (e.target.tagName==='INPUT' && e.target.type==='range') return;
+        if (e.code==='Space') { e.preventDefault(); btnLaunch.click(); }
+        else if (e.code==='KeyR') btnReset.click();
+        else if (e.code==='KeyA') btnAuto.click();
+        else if (e.code==='ArrowLeft') { 
+            speedSlider.value = Math.max(200, parseInt(speedSlider.value)-10); 
+            updateSpeedDisplay(); 
+            if(simState===STATE.IDLE||simState===STATE.GROUNDED) reset(); 
+        }
+        else if (e.code==='ArrowRight') { 
+            speedSlider.value = Math.min(750, parseInt(speedSlider.value)+10); 
+            updateSpeedDisplay(); 
+            if(simState===STATE.IDLE||simState===STATE.GROUNDED) reset(); 
+        }
+    });
+    canvas.addEventListener('click', () => { 
+        if (simState===STATE.IDLE || simState===STATE.GROUNDED) btnLaunch.click(); 
+    });
+
+    // 初始更新
+    updateSpeedDisplay();
+    reset();
+  })();
+</script>
+
+  <script>
+  // 返回主页（滚动位置已在主页点击链接时保存）
+  function saveScrollAndReturn() {
+    window.location.href = '../index.html';
+  }
+  
+  // 禁用右键菜单
+  document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+  });
+  
+  // 禁用开发者工具快捷键
+  document.addEventListener('keydown', function(e) {
+    // ESC返回主页 - 保存滚动位置
+    if (e.keyCode === 27) {
+      saveScrollAndReturn();
+      return false;
+    }
+    // F12
+    if (e.keyCode === 123) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+U
+    if (e.ctrlKey && e.keyCode === 85) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+I
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 73) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+J
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 74) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+C
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 67) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+S
+    if (e.ctrlKey && e.keyCode === 83) {
+      e.preventDefault();
+      return false;
+    }
+  });
+  
+  // 禁用选择
+  document.addEventListener('selectstart', function(e) {
+    // 允许输入框选择
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+      return true;
+    }
+    e.preventDefault();
+    return false;
+  });
+  </script>
+</body>
+</html>
