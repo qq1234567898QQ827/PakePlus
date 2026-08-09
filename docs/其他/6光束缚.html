@@ -1,0 +1,990 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>光纤原理 - 激光全内反射（无预绘路径）</title>
+    <style>
+        :root {
+            --bg: #0a0a18;
+            --panel-bg: #111130;
+            --accent: #ff2222;
+            --glass: rgba(70, 130, 200, 0.28);
+            --glass-border: rgba(130, 180, 240, 0.65);
+            --info-bg: rgba(15, 15, 45, 0.9);
+        }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background: var(--bg);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        .main-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 14px;
+            padding: 16px;
+            max-width: 1540px;
+            width: 100%;
+        }
+        .title-section h1 {
+            font-size: 1.5rem;
+            color: #ff5555;
+            text-shadow: 0 0 14px rgba(255, 0, 0, 0.55);
+            margin-bottom: 4px;
+            text-align: center;
+            letter-spacing: 0.04em;
+        }
+        .subtitle {
+            font-size: 0.8rem;
+            color: #8899bb;
+            text-align: center;
+        }
+        .canvas-wrapper {
+            background: var(--panel-bg);
+            border-radius: 16px;
+            padding: 6px;
+            box-shadow: 0 16px 38px rgba(0, 0, 0, 0.7);
+            width: 100%;
+            max-width: 1500px;
+            aspect-ratio: 1500 / 850;
+        }
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            border-radius: 12px;
+            background: #0c0c26;
+        }
+        .controls-panel {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 14px;
+            align-items: center;
+            justify-content: center;
+            background: var(--panel-bg);
+            border-radius: 14px;
+            padding: 14px 20px;
+            width: 100%;
+            max-width: 1500px;
+            box-shadow: 0 8px 22px rgba(0, 0, 0, 0.5);
+        }
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .control-group label {
+            color: #c0cde0;
+            font-size: 0.85rem;
+            font-weight: 500;
+            white-space: nowrap;
+        }
+        .control-group input[type="range"] {
+            -webkit-appearance: none;
+            width: 130px;
+            height: 6px;
+            border-radius: 3px;
+            background: #2a2a48;
+            outline: none;
+            cursor: pointer;
+        }
+        .control-group input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: #ff3333;
+            border: 2px solid #fff;
+            box-shadow: 0 0 16px #ff3333;
+            cursor: pointer;
+        }
+        .angle-display {
+            display: inline-block;
+            min-width: 44px;
+            text-align: center;
+            font-weight: 700;
+            font-size: 1rem;
+            color: #ff4444;
+            background: rgba(255, 60, 60, 0.15);
+            border-radius: 6px;
+            padding: 2px 8px;
+        }
+        .preset-btn {
+            padding: 5px 11px;
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.04);
+            color: #c0cde0;
+            cursor: pointer;
+            font-size: 0.76rem;
+            transition: all 0.2s;
+            font-family: inherit;
+            white-space: nowrap;
+        }
+        .preset-btn:hover {
+            background: rgba(255, 60, 60, 0.2);
+            border-color: #ff5555;
+            color: #ff5555;
+        }
+        .preset-btn.active {
+            background: rgba(255, 60, 60, 0.3);
+            border-color: #ff3333;
+            color: #ff3333;
+            box-shadow: 0 0 14px rgba(255, 0, 0, 0.5);
+            font-weight: 600;
+        }
+        .toggle-btn {
+            padding: 8px 20px;
+            border-radius: 22px;
+            border: 2px solid #ff4444;
+            background: rgba(255, 50, 50, 0.2);
+            color: #ff5555;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            transition: all 0.3s;
+            font-family: inherit;
+            min-width: 90px;
+            text-align: center;
+            box-shadow: 0 0 18px rgba(255, 0, 0, 0.35);
+        }
+        .toggle-btn.on {
+            background: #ff3333;
+            color: #fff;
+            border-color: #ff3333;
+            box-shadow: 0 0 28px rgba(255, 0, 0, 0.6);
+            animation: glowPulse 1.2s ease-in-out infinite;
+        }
+        .toggle-btn.off {
+            background: rgba(100, 100, 120, 0.2);
+            color: #8899aa;
+            border-color: #556;
+            box-shadow: none;
+        }
+        @keyframes glowPulse {
+            0%,
+            100% {
+                box-shadow: 0 0 22px rgba(255, 0, 0, 0.5);
+            }
+            50% {
+                box-shadow: 0 0 38px rgba(255, 0, 0, 0.85);
+            }
+        }
+        .info-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: center;
+            width: 100%;
+            max-width: 1500px;
+        }
+        .info-card {
+            background: var(--info-bg);
+            border-radius: 10px;
+            padding: 8px 12px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            text-align: center;
+            min-width: 70px;
+            flex: 1;
+        }
+        .info-val {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: #ff5555;
+        }
+        .info-label {
+            font-size: 0.6rem;
+            color: #8899bb;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+        .warning .info-val {
+            color: #ff3333;
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0%,
+            100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.5;
+            }
+        }
+        @media (max-width: 700px) {
+            .controls-panel {
+                gap: 10px;
+                padding: 10px 14px;
+            }
+            .control-group input[type="range"] {
+                width: 90px;
+            }
+            .preset-btn {
+                padding: 4px 8px;
+                font-size: 0.7rem;
+            }
+            .toggle-btn {
+                padding: 6px 14px;
+                font-size: 0.8rem;
+                min-width: 70px;
+            }
+        }
+    </style>
+
+  <style>
+  body {
+    background-color: #1a2332 !important;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+  }
+  
+  .qilai-back-btn {
+    position: fixed;
+    top: 10px;
+    left: 15px;
+    z-index: 100000;
+    padding: 8px 16px;
+    background: rgba(0, 150, 200, 0.2);
+    border: 1px solid rgba(100, 180, 255, 0.5);
+    color: #8ab4f8;
+    font-size: 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.3s;
+    backdrop-filter: blur(5px);
+    font-family: "Microsoft YaHei", sans-serif;
+  }
+  
+  .qilai-back-btn:hover {
+    background: rgba(0, 150, 200, 0.4);
+    box-shadow: 0 0 15px rgba(100, 180, 255, 0.3);
+    color: #fff;
+  }
+  
+  .qilai-watermark {
+    position: fixed;
+    bottom: 15px;
+    right: 15px;
+    z-index: 99998;
+    font-size: 12px;
+    color: rgba(138, 180, 248, 0.35);
+    text-align: right;
+    line-height: 1.8;
+    pointer-events: none;
+    user-select: none;
+    font-family: "Microsoft YaHei", sans-serif;
+  }
+  
+  .qilai-watermark .title {
+    font-size: 14px;
+    font-weight: bold;
+    color: rgba(138, 180, 248, 0.45);
+    margin-bottom: 4px;
+    letter-spacing: 1px;
+  }
+  </style>
+</head>
+<body>
+  <a href="javascript:void(0);" class="qilai-back-btn" onclick="saveScrollAndReturn();">← 返回主页</a>
+  
+  <div class="qilai-watermark">
+    <div class="title">齐老师动画</div>
+    QQ 3398528250<br>
+    抖音 35320300542
+  </div>
+
+    <div class="main-container">
+        <div class="title-section">
+            <h1>🔴 光纤原理 · 光束缚演示</h1>
+            <p class="subtitle">平行玻璃砖 — 激光在界面总是全内反射，无法逃逸</p>
+        </div>
+        <div class="canvas-wrapper">
+            <canvas id="mainCanvas" width="1500" height="850"></canvas>
+        </div>
+        <div class="controls-panel">
+            <div class="control-group">
+                <label for="angleSlider">入射角 θ₁</label>
+                <input type="range" id="angleSlider" min="0" max="85" value="35" step="0.5">
+                <span class="angle-display" id="angleDisplay">35°</span>
+            </div>
+            <div style="display:flex; gap:5px; flex-wrap:wrap;">
+                <button class="preset-btn" data-angle="0">0°</button>
+                <button class="preset-btn" data-angle="15">15°</button>
+                <button class="preset-btn active" data-angle="35">35°</button>
+                <button class="preset-btn" data-angle="55">55°</button>
+                <button class="preset-btn" data-angle="75">75°</button>
+                <button class="preset-btn" data-angle="84">84°</button>
+            </div>
+            <button class="toggle-btn on" id="toggleBtn" title="开启/关闭激光光源">🔫 开</button>
+        </div>
+        <div class="info-row">
+            <div class="info-card"><div class="info-val" id="valTheta1">35.0°</div><div class="info-label">入射角</div></div>
+            <div class="info-card"><div class="info-val" id="valTheta2">22.5°</div><div class="info-label">折射角</div></div>
+            <div class="info-card"><div class="info-val" id="valIncidence">67.5°</div><div class="info-label">界面入射角</div></div>
+            <div class="info-card"><div class="info-val" style="color:#4ecb71;">41.8°</div><div class="info-label">临界角</div></div>
+            <div class="info-card warning"><div class="info-val" id="valStatus">全内反射</div><div class="info-label">状态</div></div>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            const canvas = document.getElementById('mainCanvas');
+            const ctx = canvas.getContext('2d');
+
+            const W = 1500,
+                H = 850;
+            canvas.width = W;
+            canvas.height = H;
+
+            const N_AIR = 1.0;
+            const N_GLASS = 1.5;
+            const CRITICAL_RAD = Math.asin(N_AIR / N_GLASS);
+            const CRITICAL_DEG = CRITICAL_RAD * 180 / Math.PI;
+
+            const glassX = 150,
+                glassY = 230,
+                glassW = 1240,
+                glassH = 180;
+            const entryX = glassX;
+            const entryY = glassY + glassH / 2;
+            const SOURCE_DISTANCE = 130;
+
+            let theta1Deg = 35;
+            let isLaserOn = true;
+
+            let bullets = [];
+            let particles = [];
+            let fireTimer = 0;
+            const FIRE_INTERVAL = 0.38 / 3;
+
+            let currentPathData = null;
+
+            function roundRect(x, y, w, h, r) {
+                ctx.beginPath();
+                ctx.moveTo(x + r, y);
+                ctx.lineTo(x + w - r, y);
+                ctx.arcTo(x + w, y, x + w, y + r, r);
+                ctx.lineTo(x + w, y + h - r);
+                ctx.arcTo(x + w, y + h, x + w - r, y + h, r);
+                ctx.lineTo(x + r, y + h);
+                ctx.arcTo(x, y + h, x, y + h - r, r);
+                ctx.lineTo(x, y + r);
+                ctx.arcTo(x, y, x + r, y, r);
+                ctx.closePath();
+            }
+
+            // 计算光路（所有界面全反射）
+            function calculatePath(theta1Rad) {
+                const theta2Rad = Math.asin(Math.sin(theta1Rad) * N_AIR / N_GLASS);
+                const cosT2 = Math.cos(theta2Rad);
+                const sinT2 = Math.sin(theta2Rad);
+                const maxX = glassX + glassW;
+                const points = [];
+
+                const srcX = entryX - SOURCE_DISTANCE * Math.cos(theta1Rad);
+                const srcY = entryY + SOURCE_DISTANCE * Math.sin(theta1Rad);
+                points.push({ x: srcX, y: srcY, type: 'source' });
+                points.push({ x: entryX, y: entryY, type: 'entry' });
+
+                let cx = entryX,
+                    cy = entryY;
+                let dx = cosT2,
+                    dy = -sinT2;
+                const reflectionPoints = [];
+                const MAX_BOUNCES = 50;
+                let bounceCount = 0;
+
+                while (bounceCount < MAX_BOUNCES) {
+                    let tLeft = Infinity,
+                        tRight = Infinity,
+                        tUp = Infinity,
+                        tDown = Infinity;
+                    if (dx < -1e-9) tLeft = (glassX - cx) / dx;
+                    if (dx > 1e-9) tRight = (maxX - cx) / dx;
+                    if (dy < -1e-9) tUp = (glassY - cy) / dy;
+                    if (dy > 1e-9) tDown = (glassY + glassH - cy) / dy;
+
+                    const t = Math.min(tLeft, tRight, tUp, tDown);
+                    if (t <= 0 || !isFinite(t)) break;
+
+                    const nx = cx + dx * t;
+                    const ny = cy + dy * t;
+                    points.push({ x: nx, y: ny, type: 'reflect' });
+
+                    let side = '';
+                    if (t === tLeft) side = 'left';
+                    else if (t === tRight) side = 'right';
+                    else if (t === tUp) side = 'top';
+                    else if (t === tDown) side = 'bottom';
+
+                    const incAngle = Math.PI / 2 - theta2Rad;
+                    reflectionPoints.push({
+                        x: nx,
+                        y: ny,
+                        side: side,
+                        isTotal: true,
+                        incAngleDeg: incAngle * 180 / Math.PI
+                    });
+
+                    if (side === 'left' || side === 'right') {
+                        dx = -dx;
+                    } else if (side === 'top' || side === 'bottom') {
+                        dy = -dy;
+                    }
+
+                    cx = nx;
+                    cy = ny;
+                    bounceCount++;
+                }
+
+                return {
+                    points,
+                    reflectionPoints,
+                    theta2Rad,
+                    bounced: bounceCount > 0,
+                    sourcePos: points[0]
+                };
+            }
+
+            function computeSegmentData(points) {
+                const segLengths = [];
+                const cumulative = [0];
+                let total = 0;
+                for (let i = 0; i < points.length - 1; i++) {
+                    const dx = points[i + 1].x - points[i].x;
+                    const dy = points[i + 1].y - points[i].y;
+                    const len = Math.sqrt(dx * dx + dy * dy);
+                    segLengths.push(len);
+                    total += len;
+                    cumulative.push(total);
+                }
+                return { segLengths, cumulative, totalLength: total };
+            }
+
+            function getPositionOnPath(pathData, distance) {
+                const { points, segLengths, cumulative, totalLength } = pathData;
+                const dist = Math.max(0, Math.min(distance, totalLength));
+                let segIdx = 0;
+                for (let i = 0; i < cumulative.length - 1; i++) {
+                    if (dist >= cumulative[i] && dist <= cumulative[i + 1]) {
+                        segIdx = i;
+                        break;
+                    }
+                }
+                if (dist >= totalLength) segIdx = segLengths.length - 1;
+                const segStart = cumulative[segIdx];
+                const segLen = segLengths[segIdx];
+                const t = segLen > 0 ? (dist - segStart) / segLen : 0;
+                const p0 = points[segIdx];
+                const p1 = points[segIdx + 1];
+                return {
+                    x: p0.x + (p1.x - p0.x) * t,
+                    y: p0.y + (p1.y - p0.y) * t,
+                    segIdx,
+                    t,
+                    pointType: p1.type
+                };
+            }
+
+            class Bullet {
+                constructor(pathData, speed) {
+                    this.pathData = pathData;
+                    this.speed = speed;
+                    this.distance = 0;
+                    this.alive = true;
+                    this.trailHistory = [];
+                    this.totalDist = pathData.totalLength;
+                }
+                update(dt) {
+                    this.distance += this.speed * dt;
+                    if (this.distance >= this.totalDist) {
+                        this.distance = this.totalDist;
+                        this.alive = false;
+                    }
+                    const pos = getPositionOnPath(this.pathData, this.distance);
+                    this.trailHistory.push({ x: pos.x, y: pos.y, life: 0.4 });
+                    while (this.trailHistory.length > 12) {
+                        this.trailHistory.shift();
+                    }
+                    for (const t of this.trailHistory) {
+                        t.life -= dt;
+                    }
+                    this.trailHistory = this.trailHistory.filter(t => t.life > 0);
+                }
+                getPosition() {
+                    return getPositionOnPath(this.pathData, this.distance);
+                }
+                hasJustPassedReflectionPoint(prevDist) {
+                    const reflPts = this.pathData.reflectionPoints || [];
+                    for (const rp of reflPts) {
+                        const ptIdx = this.pathData.points.findIndex(
+                            p => Math.abs(p.x - rp.x) < 1 && Math.abs(p.y - rp.y) < 1 && p.type === 'reflect'
+                        );
+                        if (ptIdx >= 0) {
+                            const refDist = this.pathData.cumulative[ptIdx];
+                            if (prevDist < refDist && this.distance >= refDist) {
+                                return rp;
+                            }
+                        }
+                    }
+                    return null;
+                }
+            }
+
+            class SparkParticle {
+                constructor(x, y, vx, vy, life, color, size) {
+                    this.x = x;
+                    this.y = y;
+                    this.vx = vx;
+                    this.vy = vy;
+                    this.life = life;
+                    this.maxLife = life;
+                    this.color = color;
+                    this.size = size;
+                    this.alive = true;
+                }
+                update(dt) {
+                    this.x += this.vx * dt;
+                    this.y += this.vy * dt;
+                    this.life -= dt;
+                    if (this.life <= 0) this.alive = false;
+                }
+                draw(ctx) {
+                    const alpha = Math.max(0, this.life / this.maxLife);
+                    const s = this.size * (0.3 + 0.7 * alpha);
+                    const grad = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, s);
+                    grad.addColorStop(0, this.color.replace('1)', `${alpha})`).replace('rgb', 'rgba'));
+                    grad.addColorStop(0.5, this.color.replace('1)', `${alpha*0.5})`).replace('rgb', 'rgba'));
+                    grad.addColorStop(1, 'rgba(0,0,0,0)');
+                    ctx.fillStyle = grad;
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, s, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+
+            function spawnSparks(x, y, count, color, spread) {
+                for (let i = 0; i < count; i++) {
+                    const angle = Math.random() * Math.PI * 2;
+                    const speed = spread * (0.4 + Math.random() * 1.2);
+                    const vx = Math.cos(angle) * speed;
+                    const vy = Math.sin(angle) * speed;
+                    const life = 0.25 + Math.random() * 0.7;
+                    const size = 1 + Math.random() * 3;
+                    particles.push(new SparkParticle(x, y, vx, vy, life, color, size));
+                }
+                while (particles.length > 200) particles.shift();
+            }
+
+            function drawLaserEmitter(sourcePos, entryPos, isOn) {
+                const sx = sourcePos.x;
+                const sy = sourcePos.y;
+                const dx = entryPos.x - sx;
+                const dy = entryPos.y - sy;
+                const angle = Math.atan2(dy, dx);
+
+                ctx.save();
+                ctx.translate(sx, sy);
+                ctx.rotate(angle);
+
+                const bodyW = 30;
+                const bodyH = 18;
+                const bodyLen = 34;
+                const grad = ctx.createLinearGradient(0, -bodyH / 2, 0, bodyH / 2);
+                if (isOn) {
+                    grad.addColorStop(0, '#555');
+                    grad.addColorStop(0.3, '#888');
+                    grad.addColorStop(0.5, '#aaa');
+                    grad.addColorStop(0.7, '#777');
+                    grad.addColorStop(1, '#444');
+                } else {
+                    grad.addColorStop(0, '#3a3a3a');
+                    grad.addColorStop(0.5, '#555');
+                    grad.addColorStop(1, '#2a2a2a');
+                }
+                ctx.fillStyle = grad;
+                ctx.strokeStyle = '#666';
+                ctx.lineWidth = 1.5;
+                roundRect(-bodyLen, -bodyH / 2, bodyLen + 8, bodyH, 4);
+                ctx.fill();
+                ctx.stroke();
+
+                if (isOn) {
+                    const glowGrad = ctx.createRadialGradient(8, 0, 0, 8, 0, 16);
+                    glowGrad.addColorStop(0, 'rgba(255,200,200,0.95)');
+                    glowGrad.addColorStop(0.2, 'rgba(255,60,60,0.8)');
+                    glowGrad.addColorStop(0.5, 'rgba(255,0,0,0.4)');
+                    glowGrad.addColorStop(1, 'rgba(255,0,0,0)');
+                    ctx.fillStyle = glowGrad;
+                    ctx.beginPath();
+                    ctx.arc(8, 0, 16, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+
+                ctx.fillStyle = isOn ? '#ff0000' : '#552222';
+                ctx.shadowColor = isOn ? '#ff0000' : 'transparent';
+                ctx.shadowBlur = isOn ? 10 : 0;
+                ctx.beginPath();
+                ctx.arc(-bodyLen + 12, -bodyH / 2 - 3, 4, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.shadowBlur = 0;
+
+                ctx.restore();
+            }
+
+            function drawScene(dt) {
+                ctx.clearRect(0, 0, W, H);
+
+                const bg = ctx.createRadialGradient(W / 2, H / 2, 0, W / 2, H / 2, W * 0.6);
+                bg.addColorStop(0, '#12122c');
+                bg.addColorStop(1, '#08081a');
+                ctx.fillStyle = bg;
+                ctx.fillRect(0, 0, W, H);
+
+                // 绘制玻璃砖
+                ctx.fillStyle = 'rgba(80, 140, 210, 0.24)';
+                ctx.strokeStyle = 'rgba(140, 190, 240, 0.65)';
+                ctx.lineWidth = 2.6;
+                roundRect(glassX, glassY, glassW, glassH, 12);
+                ctx.fill();
+                ctx.stroke();
+
+                ctx.fillStyle = 'rgba(200, 220, 240, 0.65)';
+                ctx.font = '16px "PingFang SC", "Microsoft YaHei", sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('玻璃 n = 1.5', glassX + glassW / 2, glassY + glassH / 2 + 6);
+                ctx.fillStyle = 'rgba(180, 200, 220, 0.45)';
+                ctx.font = '13px sans-serif';
+                ctx.fillText('空气 n=1.0', glassX + glassW / 2, glassY - 16);
+                ctx.fillText('空气 n=1.0', glassX + glassW / 2, glassY + glassH + 24);
+
+                const pathData = currentPathData;
+                const { points, reflectionPoints, theta2Rad, bounced, sourcePos } = pathData;
+
+                // ----- 不再绘制完整光路（预绘路径）-----
+                // 之前的绘制完整光路及光晕的代码已移除
+
+                // 绘制反射点法线（仍保留，帮助理解界面）
+                for (const rp of reflectionPoints) {
+                    if (!rp.isTotal) continue;
+                    const isVertical = (rp.side === 'top' || rp.side === 'bottom');
+                    ctx.strokeStyle = 'rgba(255,255,255,0.45)';
+                    ctx.lineWidth = 1.2;
+                    ctx.setLineDash([6, 5]);
+                    ctx.beginPath();
+                    if (isVertical) {
+                        ctx.moveTo(rp.x, rp.y - 28);
+                        ctx.lineTo(rp.x, rp.y + 28);
+                    } else {
+                        ctx.moveTo(rp.x - 28, rp.y);
+                        ctx.lineTo(rp.x + 28, rp.y);
+                    }
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+
+                    const glow = ctx.createRadialGradient(rp.x, rp.y, 0, rp.x, rp.y, 12);
+                    glow.addColorStop(0, 'rgba(255,80,80,0.6)');
+                    glow.addColorStop(0.6, 'rgba(255,0,0,0.15)');
+                    glow.addColorStop(1, 'rgba(0,0,0,0)');
+                    ctx.fillStyle = glow;
+                    ctx.beginPath();
+                    ctx.arc(rp.x, rp.y, 12, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+
+                // 入口法线
+                ctx.strokeStyle = 'rgba(255,255,255,0.45)';
+                ctx.lineWidth = 1.2;
+                ctx.setLineDash([6, 5]);
+                ctx.beginPath();
+                ctx.moveTo(entryX - 28, entryY);
+                ctx.lineTo(entryX + 28, entryY);
+                ctx.stroke();
+                ctx.setLineDash([]);
+
+                ctx.fillStyle = '#ff3333';
+                ctx.beginPath();
+                ctx.arc(entryX, entryY, 4, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = '#fff';
+                ctx.lineWidth = 1.8;
+                ctx.setLineDash([]);
+                ctx.stroke();
+
+                // 绘制子弹
+                for (const bullet of bullets) {
+                    const pos = bullet.getPosition();
+                    // 拖尾
+                    for (let i = 0; i < bullet.trailHistory.length; i++) {
+                        const t = bullet.trailHistory[i];
+                        const alpha = Math.max(0, t.life / 0.4);
+                        const trailSize = 3 + (i / bullet.trailHistory.length) * 9;
+                        const trailGrad = ctx.createRadialGradient(t.x, t.y, 0, t.x, t.y, trailSize);
+                        trailGrad.addColorStop(0, `rgba(255,100,60,${alpha*0.9})`);
+                        trailGrad.addColorStop(0.5, `rgba(255,30,10,${alpha*0.5})`);
+                        trailGrad.addColorStop(1, 'rgba(0,0,0,0)');
+                        ctx.fillStyle = trailGrad;
+                        ctx.beginPath();
+                        ctx.arc(t.x, t.y, trailSize, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                    // 子弹主体
+                    const mainGlow = ctx.createRadialGradient(pos.x, pos.y, 0, pos.x, pos.y, 16);
+                    mainGlow.addColorStop(0, 'rgba(255,255,220,1)');
+                    mainGlow.addColorStop(0.08, 'rgba(255,255,180,0.95)');
+                    mainGlow.addColorStop(0.2, 'rgba(255,100,40,0.8)');
+                    mainGlow.addColorStop(0.45, 'rgba(255,20,10,0.4)');
+                    mainGlow.addColorStop(0.7, 'rgba(255,0,0,0.1)');
+                    mainGlow.addColorStop(1, 'rgba(0,0,0,0)');
+                    ctx.fillStyle = mainGlow;
+                    ctx.beginPath();
+                    ctx.arc(pos.x, pos.y, 16, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.fillStyle = '#ffffff';
+                    ctx.beginPath();
+                    ctx.arc(pos.x, pos.y, 3.5, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+
+                // 粒子
+                for (const p of particles) {
+                    p.draw(ctx);
+                }
+
+                // 激光发射器
+                drawLaserEmitter(sourcePos, points[1], isLaserOn);
+
+                // 更新信息面板
+                const theta2Deg = theta2Rad * 180 / Math.PI;
+                const incDeg = 90 - theta2Deg;
+                document.getElementById('valTheta1').textContent = theta1Deg.toFixed(1) + '°';
+                document.getElementById('valTheta2').textContent = theta2Deg.toFixed(1) + '°';
+                document.getElementById('valIncidence').textContent = bounced ? incDeg.toFixed(1) + '°' : '—';
+                document.getElementById('valStatus').textContent = bounced ? '全内反射' : '折射出射';
+            }
+
+            function updatePathData() {
+                const theta1Rad = theta1Deg * Math.PI / 180;
+                const calc = calculatePath(theta1Rad);
+                const segData = computeSegmentData(calc.points);
+                currentPathData = {
+                    points: calc.points,
+                    reflectionPoints: calc.reflectionPoints,
+                    theta2Rad: calc.theta2Rad,
+                    bounced: calc.bounced,
+                    sourcePos: calc.sourcePos,
+                    segLengths: segData.segLengths,
+                    cumulative: segData.cumulative,
+                    totalLength: segData.totalLength,
+                };
+            }
+
+            function fireBullet() {
+                if (!currentPathData || currentPathData.totalLength < 1) return;
+                const speed = 520 + Math.random() * 180;
+                const bullet = new Bullet(currentPathData, speed);
+                bullets.push(bullet);
+            }
+
+            let lastTime = performance.now();
+
+            function animate(timestamp) {
+                let dt = (timestamp - lastTime) / 1000;
+                if (dt <= 0) dt = 0.016;
+                if (dt > 0.15) dt = 0.15;
+                lastTime = timestamp;
+
+                if (isLaserOn) {
+                    fireTimer += dt;
+                    while (fireTimer >= FIRE_INTERVAL) {
+                        fireTimer -= FIRE_INTERVAL;
+                        fireBullet();
+                    }
+                }
+
+                for (const bullet of bullets) {
+                    const prevDist = bullet.distance;
+                    bullet.update(dt);
+                    const rp = bullet.hasJustPassedReflectionPoint(prevDist);
+                    if (rp && rp.isTotal) {
+                        spawnSparks(rp.x, rp.y, 10, 'rgb(255,80,40)', 50);
+                    }
+                    if (!bullet.alive && bullet.distance >= bullet.totalDist) {
+                        const pos = bullet.getPosition();
+                        spawnSparks(pos.x, pos.y, 6, 'rgb(255,120,60)', 35);
+                    }
+                }
+                bullets = bullets.filter(b => b.alive);
+
+                for (const p of particles) {
+                    p.update(dt);
+                }
+                particles = particles.filter(p => p.alive);
+
+                drawScene(dt);
+
+                requestAnimationFrame(animate);
+            }
+
+            // 控件事件
+            document.getElementById('angleSlider').addEventListener('input', function(e) {
+                theta1Deg = +e.target.value;
+                document.getElementById('angleDisplay').textContent = theta1Deg.toFixed(1) + '°';
+                updatePresetButtons();
+                updatePathData();
+                bullets = [];
+                particles = [];
+                fireTimer = 0;
+            });
+
+            document.querySelectorAll('.preset-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    theta1Deg = +this.dataset.angle;
+                    document.getElementById('angleSlider').value = theta1Deg;
+                    document.getElementById('angleDisplay').textContent = theta1Deg.toFixed(1) + '°';
+                    updatePresetButtons();
+                    updatePathData();
+                    bullets = [];
+                    particles = [];
+                    fireTimer = 0;
+                });
+            });
+
+            function updatePresetButtons() {
+                document.querySelectorAll('.preset-btn').forEach(b => {
+                    b.classList.toggle('active', Math.abs(+b.dataset.angle - theta1Deg) < 0.3);
+                });
+            }
+
+            const toggleBtn = document.getElementById('toggleBtn');
+            toggleBtn.addEventListener('click', function() {
+                isLaserOn = !isLaserOn;
+                if (isLaserOn) {
+                    toggleBtn.textContent = '🔫 开';
+                    toggleBtn.classList.remove('off');
+                    toggleBtn.classList.add('on');
+                    fireTimer = FIRE_INTERVAL * 0.8;
+                } else {
+                    toggleBtn.textContent = '🔫 关';
+                    toggleBtn.classList.remove('on');
+                    toggleBtn.classList.add('off');
+                    fireTimer = 0;
+                }
+            });
+
+            window.addEventListener('keydown', function(e) {
+                if (e.key === 'ArrowRight' || e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    theta1Deg = Math.min(85, theta1Deg + 1);
+                } else if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    theta1Deg = Math.max(0, theta1Deg - 1);
+                } else if (e.key === ' ' || e.key === 'Spacebar') {
+                    e.preventDefault();
+                    isLaserOn = !isLaserOn;
+                    if (isLaserOn) {
+                        toggleBtn.textContent = '🔫 开';
+                        toggleBtn.classList.remove('off');
+                        toggleBtn.classList.add('on');
+                        fireTimer = FIRE_INTERVAL * 0.8;
+                    } else {
+                        toggleBtn.textContent = '🔫 关';
+                        toggleBtn.classList.remove('on');
+                        toggleBtn.classList.add('off');
+                        fireTimer = 0;
+                    }
+                    return;
+                }
+                document.getElementById('angleSlider').value = theta1Deg;
+                document.getElementById('angleDisplay').textContent = theta1Deg.toFixed(1) + '°';
+                updatePresetButtons();
+                updatePathData();
+                bullets = [];
+                particles = [];
+                fireTimer = 0;
+            });
+
+            updatePathData();
+            updatePresetButtons();
+            lastTime = performance.now();
+            requestAnimationFrame(animate);
+        })();
+    </script>
+
+  <script>
+  // 返回主页（滚动位置已在主页点击链接时保存）
+  function saveScrollAndReturn() {
+    window.location.href = '../index.html';
+  }
+  
+  // 禁用右键菜单
+  document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+  });
+  
+  // 禁用开发者工具快捷键
+  document.addEventListener('keydown', function(e) {
+    // ESC返回主页 - 保存滚动位置
+    if (e.keyCode === 27) {
+      saveScrollAndReturn();
+      return false;
+    }
+    // F12
+    if (e.keyCode === 123) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+U
+    if (e.ctrlKey && e.keyCode === 85) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+I
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 73) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+J
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 74) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+C
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 67) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+S
+    if (e.ctrlKey && e.keyCode === 83) {
+      e.preventDefault();
+      return false;
+    }
+  });
+  
+  // 禁用选择
+  document.addEventListener('selectstart', function(e) {
+    // 允许输入框选择
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+      return true;
+    }
+    e.preventDefault();
+    return false;
+  });
+  </script>
+</body>
+</html>
