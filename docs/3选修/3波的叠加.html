@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>绳波叠加 · 可调振幅与方向 · 质点模式</title>
+    <style>
+        * {
+            user-select: none;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: radial-gradient(circle at 20% 30%, #0a1428, #03070f);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Segoe UI', 'Roboto', 'Poppins', 'Noto Sans', system-ui, sans-serif;
+            padding: 20px;
+            margin: 0;
+        }
+
+        .card {
+            background: rgba(8, 20, 30, 0.78);
+            backdrop-filter: blur(4px);
+            border-radius: 2rem;
+            padding: 1.2rem 1.5rem 1.5rem 1.5rem;
+            box-shadow: 0 20px 32px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(72, 187, 255, 0.3);
+            transition: all 0.2s;
+            max-width: 1000px;
+            margin: auto;
+        }
+
+        canvas {
+            display: block;
+            margin: 0 auto;
+            border-radius: 24px;
+            box-shadow: 0 12px 28px rgba(0, 0, 0, 0.6);
+            cursor: pointer;
+            background: #010a12;
+            width: 100%;
+            height: auto;
+        }
+
+        #ropeCanvas {
+            background: #010a12;
+        }
+
+        .title-section {
+            text-align: center;
+            margin-bottom: 0.8rem;
+        }
+
+        .title-main {
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: linear-gradient(120deg, #f5d98f, #7bc5ff);
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .sub {
+            font-size: 0.78rem;
+            color: #aaccee;
+            margin-top: 5px;
+            border-top: 1px dashed #3a7799;
+            display: inline-block;
+            padding-top: 5px;
+        }
+
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 0.9rem;
+            align-items: center;
+            margin: 1rem 0 0.8rem 0;
+            background: #07121ed4;
+            padding: 0.6rem 1.2rem;
+            border-radius: 48px;
+            backdrop-filter: blur(8px);
+        }
+
+        button {
+            background: #1f4058;
+            border: none;
+            font-weight: 600;
+            font-size: 0.85rem;
+            padding: 0.4rem 1.1rem;
+            border-radius: 40px;
+            color: #f0f9ff;
+            cursor: pointer;
+            transition: 0.2s;
+            font-family: inherit;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+            border: 1px solid #4682b0;
+        }
+
+        button:hover {
+            background: #2e6a8a;
+            transform: scale(1.02);
+            border-color: #7ac7ff;
+        }
+
+        .param-group {
+            background: #0a1a28aa;
+            border-radius: 32px;
+            padding: 0.2rem 0.9rem;
+            display: inline-flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .param-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.8rem;
+            color: #c2e2ff;
+        }
+
+        .param-item label {
+            font-weight: 500;
+        }
+
+        input[type="range"] {
+            width: 110px;
+            cursor: pointer;
+            background: #2c5a70;
+            height: 3px;
+            border-radius: 10px;
+        }
+
+        .direction-select {
+            background: #1a3b4e;
+            border: 1px solid #4f9bc0;
+            border-radius: 24px;
+            padding: 0.2rem 0.5rem;
+            font-size: 0.75rem;
+            cursor: pointer;
+            color: white;
+        }
+
+        .legend {
+            display: flex;
+            justify-content: center;
+            gap: 1.5rem;
+            margin-top: 10px;
+            margin-bottom: 6px;
+            font-size: 0.72rem;
+            flex-wrap: wrap;
+        }
+
+        .legend span {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .color-badge {
+            width: 20px;
+            height: 3px;
+            border-radius: 4px;
+            display: inline-block;
+        }
+
+        .info-panel {
+            background: #030d15b3;
+            border-radius: 20px;
+            padding: 6px 16px;
+            text-align: center;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+            color: #bbdef5;
+            margin-top: 12px;
+            border: 1px solid #2a6f8f;
+        }
+
+        footer {
+            font-size: 0.65rem;
+            color: #6b8faa;
+            text-align: center;
+            margin-top: 10px;
+        }
+
+        @media (max-width: 780px) {
+            .controls { gap: 0.6rem; padding: 0.5rem 0.8rem; }
+            .param-group { gap: 8px; padding: 0.2rem 0.5rem; }
+            .param-item { gap: 4px; font-size: 0.7rem; }
+            input[type="range"] { width: 80px; }
+        }
+    </style>
+
+  <style>
+  body {
+    background-color: #1a2332 !important;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+  }
+  
+  .qilai-back-btn {
+    position: fixed;
+    top: 10px;
+    left: 15px;
+    z-index: 100000;
+    padding: 8px 16px;
+    background: rgba(0, 150, 200, 0.2);
+    border: 1px solid rgba(100, 180, 255, 0.5);
+    color: #8ab4f8;
+    font-size: 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.3s;
+    backdrop-filter: blur(5px);
+    font-family: "Microsoft YaHei", sans-serif;
+  }
+  
+  .qilai-back-btn:hover {
+    background: rgba(0, 150, 200, 0.4);
+    box-shadow: 0 0 15px rgba(100, 180, 255, 0.3);
+    color: #fff;
+  }
+  
+  .qilai-watermark {
+    position: fixed;
+    bottom: 15px;
+    right: 15px;
+    z-index: 99998;
+    font-size: 12px;
+    color: rgba(138, 180, 248, 0.35);
+    text-align: right;
+    line-height: 1.8;
+    pointer-events: none;
+    user-select: none;
+    font-family: "Microsoft YaHei", sans-serif;
+  }
+  
+  .qilai-watermark .title {
+    font-size: 14px;
+    font-weight: bold;
+    color: rgba(138, 180, 248, 0.45);
+    margin-bottom: 4px;
+    letter-spacing: 1px;
+  }
+  </style>
+</head>
+<body>
+  <a href="javascript:void(0);" class="qilai-back-btn" onclick="saveScrollAndReturn();">← 返回主页</a>
+  
+  <div class="qilai-watermark">
+    <div class="title">齐老师动画</div>
+    QQ 3398528250<br>
+    抖音 35320300542
+  </div>
+
+<div>
+    <div class="card">
+        <div class="title-section">
+            <div class="title-main">
+                🧬 绳波叠加 · 两端相向传播 🧬
+            </div>
+            <div class="sub">独立传播 + 线性叠加 | 可调振幅 & 起振方向 | 质点模式显示</div>
+        </div>
+
+        <canvas id="ropeCanvas" width="900" height="420" style="width:100%; height:auto; max-width:900px; aspect-ratio:900/420"></canvas>
+
+        <div class="controls">
+            <button id="playPauseBtn">⏸️ 暂停</button>
+            <button id="resetBtn">🔄 重新传播</button>
+            <button id="particleBtn">● 看做质点</button>
+            <div class="param-group">
+                <div class="param-item">
+                    <span style="color:#ff4d4d">◀ 左波</span>
+                    <input type="range" id="leftAmpSlider" min="0" max="70" step="1" value="50">
+                    <span id="leftAmpVal">50</span>
+                    <select id="leftDirSelect" class="direction-select">
+                        <option value="up">↑ 向上起振</option>
+                        <option value="down">↓ 向下起振</option>
+                    </select>
+                </div>
+                <div class="param-item">
+                    <span style="color:#4d7bff">右波 ▶</span>
+                    <input type="range" id="rightAmpSlider" min="0" max="70" step="1" value="50">
+                    <span id="rightAmpVal">50</span>
+                    <select id="rightDirSelect" class="direction-select">
+                        <option value="up">↑ 向上起振</option>
+                        <option value="down">↓ 向下起振</option>
+                    </select>
+                </div>
+            </div>
+            <div class="param-item">
+                <span>🐌 波速</span>
+                <input type="range" id="speedSlider" min="60" max="220" step="5" value="130">
+                <span id="speedValue">130 px/s</span>
+            </div>
+            <label class="param-item" style="background:#0a1a28aa; padding:0.2rem 0.8rem; border-radius:32px;">
+                <input type="checkbox" id="showComponentsCheckbox" checked> 显示分波
+            </label>
+        </div>
+
+        <div class="legend">
+            <span><div class="color-badge" style="background: #FFB347; box-shadow:0 0 4px #ffaa66;"></div> 合波 (总位移)</span>
+            <span><div class="color-badge" style="background: #ff4d4d; opacity:0.8;"></div> 左行波包 (红色)</span>
+            <span><div class="color-badge" style="background: #4d7bff; opacity:0.8;"></div> 右行波包 (蓝色)</span>
+            <span><div class="color-badge" style="background: #ffffff77; width:12px; height:12px; border-radius:10px;"></div> 相遇区 → 叠加干涉</span>
+            <span><span style="color:#ffcc88">⚡ 同相叠加增强 &nbsp;|&nbsp; 反相叠加减弱</span></span>
+        </div>
+
+        <div class="info-panel">
+            🌊 波的叠加原理：合位移 = 左波贡献 + 右波贡献 &nbsp;&nbsp;|&nbsp;&nbsp;
+            🎛️ 可独立调节左/右波的 <strong>振幅</strong> 与 <strong>起振方向</strong> (极性) → 直观展示相长/相消干涉<br>
+            🟡 点击「看做质点」将绳子离散为黄色质点，直观显示介质中各点的振动
+        </div>
+        <footer>两个独立波包从两端相向运动 | 同向极性 → 叠加区振幅增大 | 反向极性 → 叠加区振幅减小甚至抵消 | 周期性自动循环</footer>
+    </div>
+</div>
+
+<script>
+    (function(){
+        // ---------- 画布元素 ----------
+        const canvas = document.getElementById('ropeCanvas');
+        const ctx = canvas.getContext('2d');
+        const width = 900;
+        const height = 420;
+        canvas.width = width;
+        canvas.height = height;
+        
+        // ---------- 波包参数 ----------
+        let speed = 130;                // 波速 (px/秒)
+        let leftAmplitude = 50;         // 左波振幅(px) 默认50
+        let rightAmplitude = 50;        // 右波振幅(px)
+        let leftPolarity = 1;           // 1: 向上起振, -1: 向下起振
+        let rightPolarity = 1;
+        
+        // 波包形状参数 (平滑凸起，cos² 形状)
+        const pulseWidth = 140;
+        const halfWidth = pulseWidth / 2;
+        
+        // 波包位置 (中心坐标)
+        let leftCenter = -halfWidth;
+        let rightCenter = width + halfWidth;
+        
+        // 质点模式
+        let showParticles = false;      // 默认关闭
+        
+        // 动画控制
+        let animationId = null;
+        let isPlaying = true;
+        let lastTimestamp = null;
+        
+        // UI 元素绑定
+        const playPauseBtn = document.getElementById('playPauseBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const particleBtn = document.getElementById('particleBtn');
+        const leftAmpSlider = document.getElementById('leftAmpSlider');
+        const leftAmpVal = document.getElementById('leftAmpVal');
+        const rightAmpSlider = document.getElementById('rightAmpSlider');
+        const rightAmpVal = document.getElementById('rightAmpVal');
+        const leftDirSelect = document.getElementById('leftDirSelect');
+        const rightDirSelect = document.getElementById('rightDirSelect');
+        const speedSlider = document.getElementById('speedSlider');
+        const speedValueSpan = document.getElementById('speedValue');
+        const showComponentsCheck = document.getElementById('showComponentsCheckbox');
+        
+        let showComponents = showComponentsCheck.checked;
+        
+        // 波包形状函数
+        function getPacketShapeValue(x, center, amplitude, polarity) {
+            const dx = x - center;
+            const absDx = Math.abs(dx);
+            if (absDx >= halfWidth) return 0;
+            const t = (dx / pulseWidth) * Math.PI;
+            const cosVal = Math.cos(t);
+            const envelope = cosVal * cosVal;
+            return polarity * amplitude * envelope;
+        }
+        
+        function getTotalDisplacement(x, leftC, rightC, leftAmp, leftPol, rightAmp, rightPol) {
+            const yLeft = getPacketShapeValue(x, leftC, leftAmp, leftPol);
+            const yRight = getPacketShapeValue(x, rightC, rightAmp, rightPol);
+            return yLeft + yRight;
+        }
+        
+        // 绘图辅助
+        function drawGridAndAxes() {
+            ctx.save();
+            const equilibriumY = height / 2;
+            ctx.beginPath();
+            ctx.moveTo(0, equilibriumY);
+            ctx.lineTo(width, equilibriumY);
+            ctx.strokeStyle = "#6ca6d0";
+            ctx.lineWidth = 1.2;
+            ctx.stroke();
+            
+            ctx.beginPath();
+            ctx.setLineDash([6, 10]);
+            ctx.strokeStyle = "#2a6070aa";
+            ctx.lineWidth = 0.5;
+            for(let x = 0; x <= width; x += 50) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, height);
+                ctx.stroke();
+            }
+            for(let offset = -40; offset <= 40; offset += 20) {
+                let y = equilibriumY + offset;
+                if(y > 10 && y < height-10) {
+                    ctx.beginPath();
+                    ctx.moveTo(0, y);
+                    ctx.lineTo(width, y);
+                    ctx.stroke();
+                }
+            }
+            ctx.setLineDash([]);
+            
+            ctx.fillStyle = "#b0d4ff";
+            ctx.beginPath();
+            ctx.arc(0, equilibriumY, 4, 0, 2*Math.PI);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(width, equilibriumY, 4, 0, 2*Math.PI);
+            ctx.fill();
+            ctx.fillStyle = "#ffffffcc";
+            ctx.font = "bold 9px 'Segoe UI'";
+            ctx.fillText("固定端", 6, equilibriumY-4);
+            ctx.fillText("固定端", width-32, equilibriumY-4);
+            
+            ctx.fillStyle = "#80c0ff";
+            ctx.font = "9px monospace";
+            ctx.fillText("← 右行波包", 30, equilibriumY-18);
+            ctx.fillText("左行波包 →", width-120, equilibriumY-18);
+            ctx.restore();
+        }
+        
+        // 绘制单个波包 (颜色已改为红/蓝)
+        function drawPacket(center, amplitude, polarity, color, lineWidthVal, alpha = 0.7, isDashed = false) {
+            ctx.beginPath();
+            let first = true;
+            for (let x = 0; x <= width; x += 2) {
+                const yOffset = getPacketShapeValue(x, center, amplitude, polarity);
+                const canvasY = height/2 - yOffset;
+                if (first) {
+                    ctx.moveTo(x, canvasY);
+                    first = false;
+                } else {
+                    ctx.lineTo(x, canvasY);
+                }
+            }
+            if (isDashed) ctx.setLineDash([8, 6]);
+            else ctx.setLineDash([]);
+            ctx.strokeStyle = color;
+            ctx.lineWidth = lineWidthVal;
+            ctx.globalAlpha = alpha;
+            ctx.stroke();
+            ctx.setLineDash([]);
+            ctx.globalAlpha = 1.0;
+        }
+        
+        // 绘制合波
+        function drawTotalWave(leftC, rightC, leftAmp, leftPol, rightAmp, rightPol, color, lineWidth, alpha = 1.0, glow = false) {
+            ctx.beginPath();
+            let first = true;
+            for (let x = 0; x <= width; x += 2) {
+                const totalY = getTotalDisplacement(x, leftC, rightC, leftAmp, leftPol, rightAmp, rightPol);
+                const canvasY = height/2 - totalY;
+                if (first) {
+                    ctx.moveTo(x, canvasY);
+                    first = false;
+                } else {
+                    ctx.lineTo(x, canvasY);
+                }
+            }
+            ctx.strokeStyle = color;
+            ctx.lineWidth = lineWidth;
+            ctx.globalAlpha = alpha;
+            if (glow) {
+                ctx.shadowBlur = 6;
+                ctx.shadowColor = "#ffb347";
+            } else {
+                ctx.shadowBlur = 0;
+            }
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+            ctx.globalAlpha = 1.0;
+        }
+        
+        // 绘制质点 (黄色小球) 在合波曲线上
+        function drawParticles(leftC, rightC, leftAmp, leftPol, rightAmp, rightPol) {
+            const step = 6; // 质点间距 (px)
+            const radius = 3.5;
+            ctx.save();
+            for (let x = 0; x <= width; x += step) {
+                const totalY = getTotalDisplacement(x, leftC, rightC, leftAmp, leftPol, rightAmp, rightPol);
+                const canvasY = height/2 - totalY;
+                ctx.beginPath();
+                ctx.arc(x, canvasY, radius, 0, 2 * Math.PI);
+                ctx.fillStyle = "#FFD700";
+                ctx.shadowBlur = 8;
+                ctx.shadowColor = "#ffaa00";
+                ctx.fill();
+                // 加一个小高光
+                ctx.beginPath();
+                ctx.arc(x-1, canvasY-1, radius*0.4, 0, 2*Math.PI);
+                ctx.fillStyle = "#FFF8DC";
+                ctx.shadowBlur = 0;
+                ctx.fill();
+            }
+            ctx.restore();
+        }
+        
+        // 高亮叠加区域
+        function highlightOverlapRegion(leftC, rightC) {
+            const distance = Math.abs(leftC - rightC);
+            if (distance < pulseWidth + 20) {
+                let leftBound = Math.min(leftC, rightC) - halfWidth;
+                let rightBound = Math.max(leftC, rightC) + halfWidth;
+                leftBound = Math.max(0, leftBound);
+                rightBound = Math.min(width, rightBound);
+                if (leftBound < rightBound) {
+                    ctx.fillStyle = "#ffdd8840";
+                    ctx.fillRect(leftBound, 0, rightBound - leftBound, height);
+                    ctx.beginPath();
+                    ctx.rect(leftBound, 0, rightBound - leftBound, height);
+                    ctx.strokeStyle = "#ffb34780";
+                    ctx.lineWidth = 1.2;
+                    ctx.stroke();
+                }
+            }
+        }
+        
+        function drawStatusOverlay(leftC, rightC, leftPol, rightPol, leftAmp, rightAmp) {
+            const distance = Math.abs(leftC - rightC);
+            let statusMsg = "";
+            const overlapStrong = distance < pulseWidth * 0.8;
+            if (overlapStrong) {
+                const product = leftPol * rightPol;
+                if (product > 0) statusMsg = "✨ 相遇区 · 同相叠加 → 振幅增强 ✨";
+                else if (product < 0) statusMsg = "🌀 相遇区 · 反相叠加 → 振幅减弱/抵消 🌀";
+                else statusMsg = "✨ 相遇叠加中 ✨";
+            } else {
+                statusMsg = "▶ 相向传播 · 独立前行 ◀";
+            }
+            ctx.font = "500 12px 'Segoe UI', 'JetBrains Mono'";
+            ctx.fillStyle = "#f7e5c2";
+            ctx.shadowBlur = 0;
+            ctx.fillText(statusMsg, width/2 - 150, 35);
+            
+            ctx.font = "10px monospace";
+            ctx.fillStyle = "#ff9999";
+            ctx.fillText(`左波: 振幅=${leftAmp}px  |  方向: ${leftPol === 1 ? '↑向上' : '↓向下'}`, 20, 62);
+            ctx.fillStyle = "#99b5ff";
+            ctx.fillText(`右波: 振幅=${rightAmp}px  |  方向: ${rightPol === 1 ? '↑向上' : '↓向下'}`, width-210, 62);
+            ctx.fillStyle = "#ffcd94";
+            ctx.fillText(`波速: ${speed} px/s  |  波宽: ${pulseWidth} px`, 20, 90);
+            if (overlapStrong && leftAmp>0 && rightAmp>0) {
+                const totalMax = leftAmp + rightAmp;
+                ctx.fillStyle = "#ffaa77";
+                ctx.fillText(`⚡ 最大合振幅 ≈ ${totalMax} px (线性叠加)`, width/2-130, 112);
+            }
+        }
+        
+        // 主绘图
+        function drawCanvas(leftC, rightC) {
+            if (!canvas.isConnected) return;
+            ctx.clearRect(0, 0, width, height);
+            ctx.fillStyle = "#010a12";
+            ctx.fillRect(0, 0, width, height);
+            
+            drawGridAndAxes();
+            highlightOverlapRegion(leftC, rightC);
+            
+            // 绘制分波 (左红右蓝)
+            if (showComponents) {
+                drawPacket(leftC, leftAmplitude, leftPolarity, "#ff4d4d", 2.2, 0.7, false);   // 红色
+                drawPacket(rightC, rightAmplitude, rightPolarity, "#4d7bff", 2.2, 0.7, false); // 蓝色
+                // 波包中心点
+                ctx.beginPath();
+                ctx.arc(leftC, height/2, 4, 0, 2*Math.PI);
+                ctx.fillStyle = "#ff4d4daa";
+                ctx.fill();
+                ctx.beginPath();
+                ctx.arc(rightC, height/2, 4, 0, 2*Math.PI);
+                ctx.fillStyle = "#4d7bffaa";
+                ctx.fill();
+            }
+            
+            // 合波 (金色)
+            drawTotalWave(leftC, rightC, leftAmplitude, leftPolarity, rightAmplitude, rightPolarity, "#FFB347", 3.2, 0.98, true);
+            drawTotalWave(leftC, rightC, leftAmplitude, leftPolarity, rightAmplitude, rightPolarity, "#FFD966", 1.6, 0.8, false);
+            
+            // 质点模式：在合波上画黄色小球
+            if (showParticles) {
+                drawParticles(leftC, rightC, leftAmplitude, leftPolarity, rightAmplitude, rightPolarity);
+            }
+            
+            drawStatusOverlay(leftC, rightC, leftPolarity, rightPolarity, leftAmplitude, rightAmplitude);
+        }
+        
+        // 位置更新
+        function updatePositions(deltaTime) {
+            if (!isPlaying) return;
+            leftCenter += speed * deltaTime;
+            rightCenter -= speed * deltaTime;
+            
+            const leftOut = leftCenter - halfWidth > width;
+            const rightOut = rightCenter + halfWidth < 0;
+            if (leftOut && rightOut) {
+                leftCenter = -halfWidth;
+                rightCenter = width + halfWidth;
+            }
+            if (leftCenter - halfWidth > width + 200) leftCenter = -halfWidth;
+            if (rightCenter + halfWidth < -200) rightCenter = width + halfWidth;
+        }
+        
+        // 动画循环
+        let frameRequest = null;
+        let lastFrameTime = null;
+        
+        function animateFrame(nowMs) {
+            if (!isPlaying) {
+                if (frameRequest) cancelAnimationFrame(frameRequest);
+                frameRequest = null;
+                return;
+            }
+            if (lastFrameTime === null) {
+                lastFrameTime = nowMs;
+                frameRequest = requestAnimationFrame(animateFrame);
+                return;
+            }
+            let delta = Math.min(0.033, (nowMs - lastFrameTime) / 1000);
+            if (delta > 0) {
+                updatePositions(delta);
+            }
+            lastFrameTime = nowMs;
+            drawCanvas(leftCenter, rightCenter);
+            frameRequest = requestAnimationFrame(animateFrame);
+        }
+        
+        function startAnimation() {
+            if (frameRequest) cancelAnimationFrame(frameRequest);
+            lastFrameTime = null;
+            isPlaying = true;
+            playPauseBtn.innerHTML = "⏸️ 暂停";
+            frameRequest = requestAnimationFrame(animateFrame);
+        }
+        
+        function pauseAnimation() {
+            if (frameRequest) {
+                cancelAnimationFrame(frameRequest);
+                frameRequest = null;
+            }
+            isPlaying = false;
+            playPauseBtn.innerHTML = "▶️ 启动";
+            drawCanvas(leftCenter, rightCenter);
+        }
+        
+        function togglePlayPause() {
+            if (isPlaying) pauseAnimation();
+            else startAnimation();
+        }
+        
+        function resetSimulation() {
+            leftCenter = -halfWidth;
+            rightCenter = width + halfWidth;
+            lastFrameTime = null;
+            if (isPlaying) {
+                drawCanvas(leftCenter, rightCenter);
+            } else {
+                drawCanvas(leftCenter, rightCenter);
+            }
+        }
+        
+        // UI 更新函数
+        function updateLeftAmplitude() {
+            let val = parseFloat(leftAmpSlider.value);
+            leftAmplitude = val;
+            leftAmpVal.innerText = val;
+            if (!isPlaying) drawCanvas(leftCenter, rightCenter);
+        }
+        
+        function updateRightAmplitude() {
+            let val = parseFloat(rightAmpSlider.value);
+            rightAmplitude = val;
+            rightAmpVal.innerText = val;
+            if (!isPlaying) drawCanvas(leftCenter, rightCenter);
+        }
+        
+        function updateLeftDirection() {
+            leftPolarity = leftDirSelect.value === "up" ? 1 : -1;
+            if (!isPlaying) drawCanvas(leftCenter, rightCenter);
+        }
+        
+        function updateRightDirection() {
+            rightPolarity = rightDirSelect.value === "up" ? 1 : -1;
+            if (!isPlaying) drawCanvas(leftCenter, rightCenter);
+        }
+        
+        function updateSpeed() {
+            speed = parseFloat(speedSlider.value);
+            speedValueSpan.innerText = speed + " px/s";
+            if (!isPlaying) drawCanvas(leftCenter, rightCenter);
+        }
+        
+        function updateShowComponents() {
+            showComponents = showComponentsCheck.checked;
+            drawCanvas(leftCenter, rightCenter);
+        }
+        
+        // 质点模式切换
+        function toggleParticles() {
+            showParticles = !showParticles;
+            particleBtn.innerHTML = showParticles ? '● 隐藏质点' : '● 看做质点';
+            drawCanvas(leftCenter, rightCenter);
+        }
+        
+        // 事件绑定
+        leftAmpSlider.addEventListener('input', updateLeftAmplitude);
+        rightAmpSlider.addEventListener('input', updateRightAmplitude);
+        leftDirSelect.addEventListener('change', updateLeftDirection);
+        rightDirSelect.addEventListener('change', updateRightDirection);
+        speedSlider.addEventListener('input', updateSpeed);
+        showComponentsCheck.addEventListener('change', updateShowComponents);
+        playPauseBtn.addEventListener('click', togglePlayPause);
+        resetBtn.addEventListener('click', resetSimulation);
+        particleBtn.addEventListener('click', toggleParticles);
+        
+        // 初始化UI显示
+        function initUI() {
+            leftAmpVal.innerText = leftAmpSlider.value;
+            rightAmpVal.innerText = rightAmpSlider.value;
+            speedValueSpan.innerText = speedSlider.value + " px/s";
+            leftAmplitude = parseFloat(leftAmpSlider.value);
+            rightAmplitude = parseFloat(rightAmpSlider.value);
+            leftPolarity = leftDirSelect.value === "up" ? 1 : -1;
+            rightPolarity = rightDirSelect.value === "up" ? 1 : -1;
+            speed = parseFloat(speedSlider.value);
+            showComponents = showComponentsCheck.checked;
+            particleBtn.innerHTML = '● 看做质点';
+        }
+        
+        function init() {
+            initUI();
+            leftCenter = -halfWidth;
+            rightCenter = width + halfWidth;
+            drawCanvas(leftCenter, rightCenter);
+            startAnimation();
+        }
+        
+        init();
+        
+        window.addEventListener('resize', () => {
+            drawCanvas(leftCenter, rightCenter);
+        });
+    })();
+</script>
+
+  <script>
+  // 返回主页（滚动位置已在主页点击链接时保存）
+  function saveScrollAndReturn() {
+    window.location.href = '../index.html';
+  }
+  
+  // 禁用右键菜单
+  document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+  });
+  
+  // 禁用开发者工具快捷键
+  document.addEventListener('keydown', function(e) {
+    // ESC返回主页 - 保存滚动位置
+    if (e.keyCode === 27) {
+      saveScrollAndReturn();
+      return false;
+    }
+    // F12
+    if (e.keyCode === 123) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+U
+    if (e.ctrlKey && e.keyCode === 85) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+I
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 73) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+J
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 74) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+C
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 67) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+S
+    if (e.ctrlKey && e.keyCode === 83) {
+      e.preventDefault();
+      return false;
+    }
+  });
+  
+  // 禁用选择
+  document.addEventListener('selectstart', function(e) {
+    // 允许输入框选择
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+      return true;
+    }
+    e.preventDefault();
+    return false;
+  });
+  </script>
+</body>
+</html>
