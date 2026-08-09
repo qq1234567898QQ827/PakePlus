@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>等效重力场 · 晾衣架模型（圆形重物）</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background: #f5f7fa;
+            font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+            padding: 20px;
+            max-width: 1100px;
+            width: 100%;
+        }
+        .canvas-box {
+            flex: 1 1 650px;
+            min-width: 500px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: #ffffff;
+            border-radius: 12px;
+            border: 1px solid #e0e3e8;
+        }
+        canvas {
+            width: 100%;
+            height: auto;
+            max-height: 550px;
+            display: block;
+        }
+        .control-panel {
+            flex: 0 0 280px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            background: #f8fafd;
+            padding: 16px;
+            border-radius: 12px;
+            border: 1px solid #e0e3e8;
+        }
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        label {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #2c3e50;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        input[type="range"] {
+            width: 100%;
+            cursor: pointer;
+            accent-color: #3498db;
+        }
+        .value-display {
+            font-weight: 500;
+            color: #2980b9;
+            background: #eaf2f8;
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+        }
+        .info-box {
+            background: #eef6fb;
+            border-radius: 10px;
+            padding: 12px;
+            margin-top: 8px;
+            font-size: 0.9rem;
+            color: #1a3e5c;
+            border: 1px solid #c8dbe8;
+            line-height: 1.6;
+        }
+        .info-box span {
+            font-weight: 700;
+            color: #0b4f6c;
+        }
+        button {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+            font-size: 0.95rem;
+        }
+        button:hover {
+            background: #2c81ba;
+        }
+        h3 {
+            margin: 0 0 6px 0;
+            color: #2c3e50;
+            font-size: 1.2rem;
+            border-bottom: 2px solid #d4e6f1;
+            padding-bottom: 6px;
+        }
+        .warning {
+            color: #c0392b;
+            font-weight: 700;
+            margin-top: 4px;
+        }
+    </style>
+
+  <style>
+  body {
+    background-color: #1a2332 !important;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+  }
+  
+  .qilai-back-btn {
+    position: fixed;
+    top: 10px;
+    left: 15px;
+    z-index: 100000;
+    padding: 8px 16px;
+    background: rgba(0, 150, 200, 0.2);
+    border: 1px solid rgba(100, 180, 255, 0.5);
+    color: #8ab4f8;
+    font-size: 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.3s;
+    backdrop-filter: blur(5px);
+    font-family: "Microsoft YaHei", sans-serif;
+  }
+  
+  .qilai-back-btn:hover {
+    background: rgba(0, 150, 200, 0.4);
+    box-shadow: 0 0 15px rgba(100, 180, 255, 0.3);
+    color: #fff;
+  }
+  
+  .qilai-watermark {
+    position: fixed;
+    bottom: 15px;
+    right: 15px;
+    z-index: 99998;
+    font-size: 12px;
+    color: rgba(138, 180, 248, 0.35);
+    text-align: right;
+    line-height: 1.8;
+    pointer-events: none;
+    user-select: none;
+    font-family: "Microsoft YaHei", sans-serif;
+  }
+  
+  .qilai-watermark .title {
+    font-size: 14px;
+    font-weight: bold;
+    color: rgba(138, 180, 248, 0.45);
+    margin-bottom: 4px;
+    letter-spacing: 1px;
+  }
+  </style>
+</head>
+<body>
+  <a href="javascript:void(0);" class="qilai-back-btn" onclick="saveScrollAndReturn();">← 返回主页</a>
+  
+  <div class="qilai-watermark">
+    <div class="title">齐老师动画</div>
+    QQ 3398528250<br>
+    抖音 35320300542
+  </div>
+
+    <div class="container">
+        <div class="canvas-box">
+            <canvas id="canvas" width="700" height="500"></canvas>
+        </div>
+        <div class="control-panel">
+            <h3>⚙️ 参数调节</h3>
+            <div class="control-group">
+                <label>左悬挂点高度 <span class="value-display" id="yA_val">1.50</span></label>
+                <input type="range" id="yA_slider" min="0.2" max="3.8" value="1.5" step="0.01">
+            </div>
+            <div class="control-group">
+                <label>右悬挂点高度 <span class="value-display" id="yB_val">1.50</span></label>
+                <input type="range" id="yB_slider" min="0.2" max="3.8" value="1.5" step="0.01">
+            </div>
+            <div class="control-group">
+                <label>绳总长 L <span class="value-display" id="L_val">3.50</span></label>
+                <input type="range" id="L_slider" min="2.2" max="7.0" value="3.5" step="0.1">
+            </div>
+            <div class="control-group">
+                <label>杆间距 d <span class="value-display" id="d_val">2.00</span></label>
+                <input type="range" id="d_slider" min="0.8" max="3.5" value="2.0" step="0.1">
+            </div>
+            <div class="control-group">
+                <label>等效重力倾角 θ <span class="value-display" id="theta_val">10°</span></label>
+                <input type="range" id="theta_slider" min="0" max="30" value="10" step="0.5">
+            </div>
+            <div class="control-group">
+                <label>重物质量 m (kg) <span class="value-display" id="m_val">1.0</span></label>
+                <input type="range" id="m_slider" min="0.5" max="3.0" value="1.0" step="0.1">
+            </div>
+            <div class="control-group">
+                <label>等效重力加速度 g' <span class="value-display" id="g_val">9.8</span></label>
+                <input type="range" id="g_slider" min="1.0" max="15.0" value="9.8" step="0.1">
+            </div>
+            <button id="resetBtn">↺ 重置默认</button>
+            <div class="info-box" id="infoBox">
+                <span>张力 T</span> = -- N<br>
+                <span>半夹角 α</span> = --°<br>
+                <span>左绳段</span> = --<br>
+                <span>右绳段</span> = --
+            </div>
+            <div id="warningMsg" class="warning"></div>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            const canvas = document.getElementById('canvas');
+            const ctx = canvas.getContext('2d');
+            const width = canvas.width, height = canvas.height;
+
+            const wxMin = -2.8, wxMax = 2.8, wyMin = -0.4, wyMax = 5.2;
+
+            function toCanvasX(wx) { return (wx - wxMin) / (wxMax - wxMin) * width; }
+            function toCanvasY(wy) { return (wy - wyMin) / (wyMax - wyMin) * height; }
+
+            let d = 2.0;
+            let yA = 1.5;
+            let yB = 1.5;
+            let L = 3.5;
+            let thetaDeg = 10;
+            let m = 1.0;
+            let gPrime = 9.8;
+            let solveResult = null;
+
+            const yASlider = document.getElementById('yA_slider');
+            const yBSlider = document.getElementById('yB_slider');
+            const LSlider = document.getElementById('L_slider');
+            const dSlider = document.getElementById('d_slider');
+            const thetaSlider = document.getElementById('theta_slider');
+            const mSlider = document.getElementById('m_slider');
+            const gSlider = document.getElementById('g_slider');
+
+            const yAVal = document.getElementById('yA_val');
+            const yBVal = document.getElementById('yB_val');
+            const LVal = document.getElementById('L_val');
+            const dVal = document.getElementById('d_val');
+            const thetaVal = document.getElementById('theta_val');
+            const mVal = document.getElementById('m_val');
+            const gVal = document.getElementById('g_val');
+            const infoBox = document.getElementById('infoBox');
+            const warningMsg = document.getElementById('warningMsg');
+
+            function solvePosition() {
+                const xA = -d / 2, xB = d / 2;
+                const theta = thetaDeg * Math.PI / 180;
+                const gx = Math.sin(theta), gy = Math.cos(theta);
+                const distAB = Math.sqrt(d * d + (yB - yA) * (yB - yA));
+                if (L < distAB - 1e-8) return null;
+
+                let xP = 0;
+                let yP = (yA + yB) / 2 + Math.sqrt(Math.max(0, (L/2)*(L/2) - (d/2)*(d/2)));
+                if (yP <= Math.max(yA, yB)) yP = Math.max(yA, yB) + 0.3;
+
+                for (let iter = 0; iter < 40; iter++) {
+                    const dxA = xA - xP, dyA = yA - yP;
+                    const dxB = xB - xP, dyB = yB - yP;
+                    const lenA = Math.sqrt(dxA*dxA + dyA*dyA);
+                    const lenB = Math.sqrt(dxB*dxB + dyB*dyB);
+                    if (lenA < 1e-9 || lenB < 1e-9) { xP += 0.001; yP += 0.001; continue; }
+
+                    const cosA = (dxA*gx + dyA*gy)/lenA;
+                    const cosB = (dxB*gx + dyB*gy)/lenB;
+                    const f1 = cosA - cosB;
+                    const f2 = lenA + lenB - L;
+                    if (Math.abs(f1) < 1e-8 && Math.abs(f2) < 1e-8) return { xP, yP, lenA, lenB, cosA };
+
+                    const dcosA_dxP = (-gx + cosA*dxA/lenA)/lenA;
+                    const dcosA_dyP = (-gy + cosA*dyA/lenA)/lenA;
+                    const dcosB_dxP = (-gx + cosB*dxB/lenB)/lenB;
+                    const dcosB_dyP = (-gy + cosB*dyB/lenB)/lenB;
+
+                    const J11 = dcosA_dxP - dcosB_dxP;
+                    const J12 = dcosA_dyP - dcosB_dyP;
+                    const J21 = -dxA/lenA - dxB/lenB;
+                    const J22 = -dyA/lenA - dyB/lenB;
+                    const det = J11*J22 - J12*J21;
+                    if (Math.abs(det) < 1e-12) { xP += (Math.random()-0.5)*0.02; yP += (Math.random()-0.5)*0.02; continue; }
+
+                    const delta_x = (-f1*J22 - J12*(-f2))/det;
+                    const delta_y = (J11*(-f2) - (-f1)*J21)/det;
+                    xP += delta_x; yP += delta_y;
+                    xP = Math.min(Math.max(xP, -d/2+0.001), d/2-0.001);
+                    if (yP < Math.min(yA, yB)-0.5) yP = Math.min(yA, yB)-0.5;
+                }
+                return null;
+            }
+
+            function drawArrow(x1, y1, x2, y2, color, lineWidth = 2.5, headSize = 10) {
+                const angle = Math.atan2(y2 - y1, x2 - x1);
+                ctx.strokeStyle = color;
+                ctx.fillStyle = color;
+                ctx.lineWidth = lineWidth;
+                ctx.beginPath();
+                ctx.moveTo(x1, y1);
+                ctx.lineTo(x2, y2);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(x2, y2);
+                ctx.lineTo(
+                    x2 - headSize * Math.cos(angle - Math.PI/6),
+                    y2 - headSize * Math.sin(angle - Math.PI/6)
+                );
+                ctx.lineTo(
+                    x2 - headSize * Math.cos(angle + Math.PI/6),
+                    y2 - headSize * Math.sin(angle + Math.PI/6)
+                );
+                ctx.closePath();
+                ctx.fill();
+            }
+
+            function draw() {
+                ctx.clearRect(0, 0, width, height);
+                const xA_w = -d/2, xB_w = d/2;
+                const yTop = 0.2, yBottom = 4.5;
+
+                // 竖直杆
+                ctx.strokeStyle = '#5d6d7e'; ctx.lineWidth = 4; ctx.lineCap = 'round';
+                ctx.beginPath(); ctx.moveTo(toCanvasX(xA_w), toCanvasY(yTop)); ctx.lineTo(toCanvasX(xA_w), toCanvasY(yBottom)); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(toCanvasX(xB_w), toCanvasY(yTop)); ctx.lineTo(toCanvasX(xB_w), toCanvasY(yBottom)); ctx.stroke();
+
+                const theta = thetaDeg * Math.PI/180;
+                const gx = Math.sin(theta), gy = Math.cos(theta);
+
+                // 过A、B平行于等效重力的灰色虚线
+                const dashLen = 2.5;
+                ctx.save();
+                ctx.strokeStyle = '#95a5a6';
+                ctx.lineWidth = 1.5;
+                ctx.setLineDash([6, 4]);
+                ctx.beginPath();
+                ctx.moveTo(toCanvasX(xA_w), toCanvasY(yA));
+                ctx.lineTo(toCanvasX(xA_w + gx * dashLen), toCanvasY(yA + gy * dashLen));
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(toCanvasX(xB_w), toCanvasY(yB));
+                ctx.lineTo(toCanvasX(xB_w + gx * dashLen), toCanvasY(yB + gy * dashLen));
+                ctx.stroke();
+                ctx.restore();
+
+                const ax = toCanvasX(xA_w), ay = toCanvasY(yA);
+                const bx = toCanvasX(xB_w), by = toCanvasY(yB);
+                ctx.fillStyle = '#e74c3c'; ctx.strokeStyle = '#b03a2e'; ctx.lineWidth = 2;
+                [{x:ax,y:ay},{x:bx,y:by}].forEach(p => { ctx.beginPath(); ctx.arc(p.x,p.y,6,0,2*Math.PI); ctx.fill(); ctx.stroke(); });
+                ctx.fillStyle = '#2c3e50'; ctx.font = 'bold 14px "Microsoft YaHei"';
+                ctx.fillText('A', ax-15, ay-8); ctx.fillText('B', bx+8, by-8);
+
+                if (!solveResult) {
+                    warningMsg.textContent = '⚠️ 绳长不足，无平衡位置';
+                    infoBox.innerHTML = '<span>张力 T</span> = -- N<br><span>半夹角 α</span> = --°<br><span>左绳段</span> = --<br><span>右绳段</span> = --';
+                    return;
+                }
+                warningMsg.textContent = '';
+                const { xP, yP, lenA, lenB, cosA } = solveResult;
+                const px = toCanvasX(xP), py = toCanvasY(yP);
+
+                // 绳子
+                ctx.strokeStyle = '#2980b9'; ctx.lineWidth = 3; ctx.lineCap = 'round';
+                ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(px, py); ctx.lineTo(bx, by); ctx.stroke();
+
+                // 滑轮
+                ctx.fillStyle = '#f39c12'; ctx.strokeStyle = '#d68910'; ctx.lineWidth = 2;
+                ctx.beginPath(); ctx.arc(px, py, 9, 0, 2*Math.PI); ctx.fill(); ctx.stroke();
+                ctx.fillStyle = '#2c3e50'; ctx.font = 'bold 13px "Microsoft YaHei"'; ctx.fillText('P', px+12, py-8);
+
+                // 计算张力和半夹角α (确保为正)
+                const cosAlpha = Math.min(1, Math.max(0, -cosA));
+                const alpha = Math.acos(cosAlpha);
+                const G = m * gPrime;
+                const T = (G / (2 * cosAlpha));
+                const alphaDeg = (alpha * 180 / Math.PI).toFixed(1);
+                const Tdisp = T.toFixed(2);
+
+                // 力矢量长度：设定重力对应基础长度 baseLen (世界坐标)
+                const baseLen = 0.65;
+                const gravityLen = baseLen;
+                const tensionLen = (T / G) * baseLen;
+
+                // 红色等效重力箭头
+                drawArrow(px, py, toCanvasX(xP + gx * gravityLen), toCanvasY(yP + gy * gravityLen), '#e74c3c', 3.2, 12);
+
+                // 黑色左拉力 (指向A)
+                const leftDirX = (xA_w - xP) / lenA;
+                const leftDirY = (yA - yP) / lenA;
+                drawArrow(px, py, toCanvasX(xP + leftDirX * tensionLen), toCanvasY(yP + leftDirY * tensionLen), '#2c3e50', 2.8, 10);
+
+                // 黑色右拉力 (指向B)
+                const rightDirX = (xB_w - xP) / lenB;
+                const rightDirY = (yB - yP) / lenB;
+                drawArrow(px, py, toCanvasX(xP + rightDirX * tensionLen), toCanvasY(yP + rightDirY * tensionLen), '#2c3e50', 2.8, 10);
+
+                // 红色虚线反向延长线
+                const revLen = 0.7 * 1.15;
+                ctx.save(); ctx.strokeStyle = '#e74c3c'; ctx.lineWidth = 2.5; ctx.setLineDash([7, 5]);
+                ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(toCanvasX(xP - gx * revLen), toCanvasY(yP - gy * revLen)); ctx.stroke(); ctx.restore();
+
+                // 黑色圆形重物（球形效果）
+                const wd = 0.55; // 放置在重力箭头稍远处
+                const wx = xP + gx * wd;
+                const wy = yP + gy * wd;
+                const wcx = toCanvasX(wx);
+                const wcy = toCanvasY(wy);
+                const radius = 12; // 圆形半径
+
+                // 绘制球形渐变
+                const gradient = ctx.createRadialGradient(wcx - 3, wcy - 3, 2, wcx, wcy, radius);
+                gradient.addColorStop(0, '#555');
+                gradient.addColorStop(0.7, '#111');
+                gradient.addColorStop(1, '#000');
+                ctx.fillStyle = gradient;
+                ctx.beginPath();
+                ctx.arc(wcx, wcy, radius, 0, 2 * Math.PI);
+                ctx.fill();
+                ctx.strokeStyle = '#000';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+
+                // 画布左侧红色张力标注
+                ctx.fillStyle = '#e74c3c';
+                ctx.font = 'bold 20px "Microsoft YaHei"';
+                ctx.fillText(`张力 T = ${Tdisp} N`, 20, 40);
+
+                infoBox.innerHTML = `
+                    <span>张力 T</span> = ${Tdisp} N<br>
+                    <span>半夹角 α</span> = ${alphaDeg}°<br>
+                    <span>左绳段</span> = ${lenA.toFixed(3)}<br>
+                    <span>右绳段</span> = ${lenB.toFixed(3)}
+                `;
+            }
+
+            function update() {
+                yA = +yASlider.value;
+                yB = +yBSlider.value;
+                d = +dSlider.value;
+                thetaDeg = +thetaSlider.value;
+                m = +mSlider.value;
+                gPrime = +gSlider.value;
+
+                const distAB = Math.sqrt(d * d + (yB - yA) * (yB - yA));
+                const minL = Math.max(2.2, distAB + 0.05);
+                const maxL = 7.0;
+                LSlider.min = minL;
+                LSlider.max = maxL;
+                if (L < minL) L = minL;
+                if (L > maxL) L = maxL;
+                LSlider.value = L;
+
+                yAVal.textContent = yA.toFixed(2);
+                yBVal.textContent = yB.toFixed(2);
+                LVal.textContent = L.toFixed(2);
+                dVal.textContent = d.toFixed(2);
+                thetaVal.textContent = thetaDeg+'°';
+                mVal.textContent = m.toFixed(1);
+                gVal.textContent = gPrime.toFixed(1);
+
+                solveResult = solvePosition();
+                draw();
+            }
+
+            function resetDefaults() {
+                yASlider.value=1.5; yBSlider.value=1.5; LSlider.value=3.5; dSlider.value=2.0;
+                thetaSlider.value=10; mSlider.value=1.0; gSlider.value=9.8;
+                L = 3.5; d = 2.0; yA = 1.5; yB = 1.5;
+                const distAB = Math.sqrt(d * d + (yB - yA) * (yB - yA));
+                LSlider.min = Math.max(2.2, distAB + 0.05);
+                LSlider.max = 7.0;
+                update();
+            }
+
+            [yASlider, yBSlider, dSlider, thetaSlider, mSlider, gSlider].forEach(s => s.addEventListener('input', update));
+            LSlider.addEventListener('input', () => { L = +LSlider.value; update(); });
+            document.getElementById('resetBtn').addEventListener('click', resetDefaults);
+
+            update();
+        })();
+    </script>
+
+  <script>
+  // 返回主页（滚动位置已在主页点击链接时保存）
+  function saveScrollAndReturn() {
+    window.location.href = '../index.html';
+  }
+  
+  // 禁用右键菜单
+  document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+  });
+  
+  // 禁用开发者工具快捷键
+  document.addEventListener('keydown', function(e) {
+    // ESC返回主页 - 保存滚动位置
+    if (e.keyCode === 27) {
+      saveScrollAndReturn();
+      return false;
+    }
+    // F12
+    if (e.keyCode === 123) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+U
+    if (e.ctrlKey && e.keyCode === 85) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+I
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 73) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+J
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 74) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+C
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 67) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+S
+    if (e.ctrlKey && e.keyCode === 83) {
+      e.preventDefault();
+      return false;
+    }
+  });
+  
+  // 禁用选择
+  document.addEventListener('selectstart', function(e) {
+    // 允许输入框选择
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+      return true;
+    }
+    e.preventDefault();
+    return false;
+  });
+  </script>
+</body>
+</html>
