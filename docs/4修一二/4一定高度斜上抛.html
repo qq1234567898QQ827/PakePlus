@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>斜上抛运动 · 深井演示 (2倍深度)</title>
+    <style>
+        :root {
+            --bg: #161e2c;
+            --panel-bg: #1c2636;
+            --text: #d0d8e4;
+            --accent: #e74c3c;
+            --slider-track: #2a3648;
+            --border: #2d3a4f;
+        }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body {
+            background:#0f1720; display:flex; justify-content:center; align-items:center;
+            min-height:100vh; font-family:'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;
+            padding:10px; user-select:none;
+        }
+        .container {
+            background:var(--panel-bg); border-radius:20px; padding:20px 24px 24px;
+            box-shadow:0 20px 60px rgba(0,0,0,0.5),0 0 0 1px var(--border);
+            display:flex; flex-direction:column; gap:16px; max-width:1050px; width:100%;
+        }
+        .title-area { display:flex; align-items:center; gap:12px; }
+        .title-icon {
+            width:42px; height:42px; border-radius:12px;
+            background:linear-gradient(135deg,#e74c3c,#c0392b);
+            display:flex; align-items:center; justify-content:center; font-size:22px;
+            box-shadow:0 4px 15px rgba(231,76,60,0.4);
+        }
+        .title { font-size:1.35rem; font-weight:700; color:#fff; }
+        .title-sub { font-size:0.8rem; color:#8899b4; }
+        .main-content { display:flex; gap:16px; align-items:stretch; }
+        .canvas-wrapper {
+            flex:1; border-radius:14px; overflow:hidden;
+            box-shadow:0 0 0 2px var(--border); background:#111827;
+            aspect-ratio:800/800; min-width:0;
+        }
+        canvas { display:block; width:100%; height:100%; border-radius:14px; }
+        .control-panel {
+            display:flex; flex-direction:column; gap:16px; width:220px;
+            flex-shrink:0; justify-content:flex-start;
+        }
+        .slider-group { display:flex; flex-direction:column; gap:6px; }
+        .slider-group label {
+            font-size:0.8rem; font-weight:600; color:#a0b4cc;
+            display:flex; align-items:center; gap:6px;
+        }
+        .icon-dot { width:8px; height:8px; border-radius:50%; }
+        .icon-dot.speed { background:#ff6b6b; box-shadow:0 0 8px #ff6b6b; }
+        .icon-dot.angle { background:#f0c060; box-shadow:0 0 8px #f0c060; }
+        .slider-row { display:flex; flex-direction:column; gap:4px; }
+        input[type=range] {
+            -webkit-appearance:none; width:100%; height:8px; border-radius:4px;
+            background:#2a3648; outline:none; cursor:pointer;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance:none; width:26px; height:26px; border-radius:50%;
+            background:#fff; border:3px solid #e74c3c; cursor:pointer;
+            box-shadow:0 4px 14px rgba(0,0,0,0.4);
+        }
+        .slider-value {
+            font-size:0.85rem; font-weight:700; color:#fff; text-align:center;
+            background:#2a3648; padding:4px 8px; border-radius:8px;
+        }
+        .btn {
+            padding:12px 16px; border-radius:10px; border:none; font-weight:700;
+            font-size:0.9rem; cursor:pointer; transition:0.2s; display:flex;
+            align-items:center; justify-content:center; gap:7px; width:100%; font-family:inherit;
+        }
+        .btn-launch { background:linear-gradient(135deg,#e74c3c,#c0392b); color:#fff; box-shadow:0 6px 20px rgba(231,76,60,0.35); }
+        .btn-launch:hover { transform:translateY(-2px); box-shadow:0 8px 28px rgba(231,76,60,0.55); }
+        .btn-reset { background:#2a3648; color:#c0ccdc; }
+        .btn-reset:hover { background:#354558; color:#fff; }
+        .btn-pause { background:#3a5068; color:#d0d8e4; }
+        .btn-pause:hover { background:#4a6078; }
+        .btn-toggle { background:#2d3a4f; color:#c0ccdc; border:1px solid #3a4a5f; }
+        .btn-toggle:hover { background:#3e4f65; color:#fff; }
+        @media (max-width:800px) {
+            .main-content { flex-direction:column; }
+            .control-panel { width:100%; flex-direction:row; flex-wrap:wrap; gap:10px; }
+            .slider-group { flex:1; min-width:120px; }
+            .btn { width:auto; flex:1; min-width:70px; }
+            .canvas-wrapper { aspect-ratio:4/3; }
+        }
+    </style>
+
+  <style>
+  body {
+    background-color: #1a2332 !important;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+  }
+  
+  .qilai-back-btn {
+    position: fixed;
+    top: 10px;
+    left: 15px;
+    z-index: 100000;
+    padding: 8px 16px;
+    background: rgba(0, 150, 200, 0.2);
+    border: 1px solid rgba(100, 180, 255, 0.5);
+    color: #8ab4f8;
+    font-size: 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.3s;
+    backdrop-filter: blur(5px);
+    font-family: "Microsoft YaHei", sans-serif;
+  }
+  
+  .qilai-back-btn:hover {
+    background: rgba(0, 150, 200, 0.4);
+    box-shadow: 0 0 15px rgba(100, 180, 255, 0.3);
+    color: #fff;
+  }
+  
+  .qilai-watermark {
+    position: fixed;
+    bottom: 15px;
+    right: 15px;
+    z-index: 99998;
+    font-size: 12px;
+    color: rgba(138, 180, 248, 0.35);
+    text-align: right;
+    line-height: 1.8;
+    pointer-events: none;
+    user-select: none;
+    font-family: "Microsoft YaHei", sans-serif;
+  }
+  
+  .qilai-watermark .title {
+    font-size: 14px;
+    font-weight: bold;
+    color: rgba(138, 180, 248, 0.45);
+    margin-bottom: 4px;
+    letter-spacing: 1px;
+  }
+  </style>
+</head>
+<body>
+  <a href="javascript:void(0);" class="qilai-back-btn" onclick="saveScrollAndReturn();">← 返回主页</a>
+  
+  <div class="qilai-watermark">
+    <div class="title">齐老师动画</div>
+    QQ 3398528250<br>
+    抖音 35320300542
+  </div>
+
+<div class="container">
+    <div class="title-area">
+        <div class="title-icon">🚀</div>
+        <div>
+            <div class="title">斜上抛运动 · 深井演示 (2倍深度)</div>
+            <div class="title-sub">红球落地黄球停 · 黄球始终跟随红球时间</div>
+        </div>
+    </div>
+    <div class="main-content">
+        <div class="canvas-wrapper"><canvas id="mainCanvas"></canvas></div>
+        <div class="control-panel">
+            <div class="slider-group">
+                <label><span class="icon-dot speed"></span> 初速度大小</label>
+                <div class="slider-row">
+                    <input type="range" id="speedSlider" min="4" max="28" value="15" step="0.5">
+                    <span class="slider-value" id="speedVal">15.0 m/s</span>
+                </div>
+            </div>
+            <div class="slider-group">
+                <label><span class="icon-dot angle"></span> 抛出角度 (-90°~90°)</label>
+                <div class="slider-row">
+                    <input type="range" id="angleSlider" min="-90" max="90" value="45" step="1">
+                    <span class="slider-value" id="angleVal">+45°</span>
+                </div>
+            </div>
+            <button class="btn btn-launch" id="btnLaunch">▶ 发射</button>
+            <button class="btn btn-pause" id="btnPause">⏸️ 暂停</button>
+            <button class="btn btn-toggle" id="btnToggleLines">🔗 隐藏连线</button>
+            <button class="btn btn-reset" id="btnReset">↺ 重置</button>
+        </div>
+    </div>
+</div>
+<script>
+    (function() {
+        const canvas = document.getElementById('mainCanvas');
+        const ctx = canvas.getContext('2d');
+        const speedSlider = document.getElementById('speedSlider');
+        const angleSlider = document.getElementById('angleSlider');
+        const speedVal = document.getElementById('speedVal');
+        const angleVal = document.getElementById('angleVal');
+        const btnLaunch = document.getElementById('btnLaunch');
+        const btnPause = document.getElementById('btnPause');
+        const btnReset = document.getElementById('btnReset');
+        const btnToggleLines = document.getElementById('btnToggleLines');
+
+        const G = 10;
+        const CANVAS_W = 800, CANVAS_H = 800;
+        const GROUND_Y = 415;
+        const FIXED_ORIGIN_X = 100, FIXED_ORIGIN_Y = 300;
+        const SCALE = 7.8;
+        const WELL_BOTTOM_Y = CANVAS_H;
+        let h0;
+
+        const YELLOW_RADIUS = 11;
+        const WELL_WIDTH = YELLOW_RADIUS * 2 * 1.5;
+
+        let v0 = 15, angleDeg = 45;
+        let showConnections = true;
+        let angleRad, v0x, v0y, tLand, rangeX, hMax;
+        let redTrajectory = [], blueTrajectory = [], yellowTrajectory = [];
+        let animState = 'idle';
+        let animStartTime = 0, currentPhysTime = 0;
+
+        function updatePhysics() {
+            h0 = (GROUND_Y - FIXED_ORIGIN_Y) / SCALE;
+            angleRad = angleDeg * Math.PI / 180;
+            v0x = v0 * Math.cos(angleRad);
+            v0y = v0 * Math.sin(angleRad);
+            const disc = v0y * v0y + 2 * G * h0;
+            tLand = (disc < 0) ? 100 : (v0y + Math.sqrt(disc)) / G;
+            rangeX = v0x * tLand;
+            const tMax = v0y / G;
+            hMax = tMax > 0 ? h0 + v0y * tMax - 0.5 * G * tMax * tMax : h0;
+
+            redTrajectory = [];
+            for (let i = 0; i <= 300; i++) {
+                const t = (i / 300) * tLand;
+                const px = t * v0x, py = h0 + v0y * t - 0.5 * G * t * t;
+                if (py < -0.05) break;
+                redTrajectory.push({ sx: FIXED_ORIGIN_X + px * SCALE, sy: GROUND_Y - py * SCALE });
+            }
+            if (redTrajectory.length && redTrajectory[redTrajectory.length - 1].sy < GROUND_Y - 0.1) {
+                redTrajectory.push({ sx: FIXED_ORIGIN_X + rangeX * SCALE, sy: GROUND_Y });
+            }
+
+            // 蓝球轨迹延伸到井底
+            blueTrajectory = [{ sx: FIXED_ORIGIN_X, sy: FIXED_ORIGIN_Y }];
+            const pyBottom = -(CANVAS_H - GROUND_Y) / SCALE;
+            let tBlueBottom;
+            if (Math.abs(v0y) > 0.001) {
+                tBlueBottom = (pyBottom - h0) / v0y;
+            } else {
+                tBlueBottom = tLand;
+            }
+            if (tBlueBottom < 0) tBlueBottom = tLand * 2;
+            if (tBlueBottom > tLand * 3) tBlueBottom = tLand * 3;
+            const blueEndPx = v0x * tBlueBottom;
+            const blueEndPy = h0 + v0y * tBlueBottom;
+            blueTrajectory.push({ sx: FIXED_ORIGIN_X + blueEndPx * SCALE, sy: GROUND_Y - blueEndPy * SCALE });
+
+            // 黄球轨迹延伸到井底
+            yellowTrajectory = [
+                { sx: FIXED_ORIGIN_X, sy: FIXED_ORIGIN_Y },
+                { sx: FIXED_ORIGIN_X, sy: WELL_BOTTOM_Y }
+            ];
+        }
+
+        function getRedState(t) {
+            t = Math.min(Math.max(t, 0), tLand);
+            const px = v0x * t, py = Math.max(h0 + v0y * t - 0.5 * G * t * t, 0);
+            const vx = v0x, vy = v0y - G * t;
+            return { px, py, sx: FIXED_ORIGIN_X + px * SCALE, sy: GROUND_Y - py * SCALE, vx, vy, v: Math.sqrt(vx * vx + vy * vy) };
+        }
+
+        function getBlueState(t) {
+            t = Math.min(Math.max(t, 0), tLand);
+            const px = v0x * t, py = h0 + v0y * t;
+            return { px, py, sx: FIXED_ORIGIN_X + px * SCALE, sy: GROUND_Y - py * SCALE };
+        }
+
+        function getYellowState(t) {
+            // 黄球严格跟随红球时间，不做py最小值限制
+            // 当红球落地时，t=tLand，黄球停在对应位置
+            t = Math.min(Math.max(t, 0), tLand);
+            let py = h0 - 0.5 * G * t * t;
+            // 不做硬限制，让黄球可以一直下落
+            // 即使py非常负（超出画布），黄球也会继续运动直到t=tLand
+            return { px: 0, py, sx: FIXED_ORIGIN_X, sy: GROUND_Y - py * SCALE };
+        }
+
+        function drawBg() {
+            const grad = ctx.createRadialGradient(280, 200, 50, 400, 400, 700);
+            grad.addColorStop(0, '#1e3048');
+            grad.addColorStop(0.5, '#182435');
+            grad.addColorStop(1, '#0f1923');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+            ctx.strokeStyle = 'rgba(255,255,255,0.03)';
+            ctx.lineWidth = 0.5;
+            for (let x = 40; x < CANVAS_W; x += 40) {
+                ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, CANVAS_H); ctx.stroke();
+            }
+            for (let y = 40; y < CANVAS_H; y += 40) {
+                ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(CANVAS_W, y); ctx.stroke();
+            }
+        }
+
+        function drawGround() {
+            ctx.strokeStyle = 'rgba(180,200,220,0.5)';
+            ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.moveTo(0, GROUND_Y); ctx.lineTo(CANVAS_W, GROUND_Y); ctx.stroke();
+            const fill = ctx.createLinearGradient(0, GROUND_Y, 0, CANVAS_H);
+            fill.addColorStop(0, 'rgba(40,55,70,0.7)');
+            fill.addColorStop(1, 'rgba(15,22,32,0.95)');
+            ctx.fillStyle = fill;
+            ctx.fillRect(0, GROUND_Y + 2, CANVAS_W, CANVAS_H - GROUND_Y);
+        }
+
+        function drawWellInterior() {
+            const wellLeft = FIXED_ORIGIN_X - WELL_WIDTH / 2;
+            const wellRight = FIXED_ORIGIN_X + WELL_WIDTH / 2;
+            ctx.fillStyle = 'rgba(6, 10, 18, 0.97)';
+            ctx.fillRect(wellLeft, GROUND_Y, WELL_WIDTH, CANVAS_H - GROUND_Y);
+            const grad = ctx.createLinearGradient(0, GROUND_Y, 0, GROUND_Y + 25);
+            grad.addColorStop(0, 'rgba(180,200,220,0.12)');
+            grad.addColorStop(1, 'rgba(6,10,18,0)');
+            ctx.fillStyle = grad;
+            ctx.fillRect(wellLeft, GROUND_Y, WELL_WIDTH, 25);
+            const bottomGrad = ctx.createLinearGradient(0, CANVAS_H - 30, 0, CANVAS_H);
+            bottomGrad.addColorStop(0, 'rgba(6,10,18,0)');
+            bottomGrad.addColorStop(1, 'rgba(20,30,50,0.5)');
+            ctx.fillStyle = bottomGrad;
+            ctx.fillRect(wellLeft, CANVAS_H - 30, WELL_WIDTH, 30);
+        }
+
+        function drawWellEdges() {
+            const wellLeft = FIXED_ORIGIN_X - WELL_WIDTH / 2;
+            const wellRight = FIXED_ORIGIN_X + WELL_WIDTH / 2;
+            ctx.strokeStyle = 'rgba(150,170,190,0.7)';
+            ctx.lineWidth = 2.5;
+            ctx.beginPath();
+            ctx.moveTo(wellLeft, GROUND_Y);
+            ctx.lineTo(wellLeft, CANVAS_H);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(wellRight, GROUND_Y);
+            ctx.lineTo(wellRight, CANVAS_H);
+            ctx.stroke();
+            ctx.strokeStyle = 'rgba(200,220,240,0.5)';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(wellLeft, GROUND_Y);
+            ctx.lineTo(wellRight, GROUND_Y);
+            ctx.stroke();
+            ctx.strokeStyle = 'rgba(100,120,140,0.4)';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(wellLeft, CANVAS_H);
+            ctx.lineTo(wellRight, CANVAS_H);
+            ctx.stroke();
+        }
+
+        function drawTrajectory(points, color, dash) {
+            if (points.length < 2) return;
+            ctx.save();
+            ctx.setLineDash(dash);
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 2.5;
+            ctx.shadowColor = color;
+            ctx.shadowBlur = 6;
+            ctx.beginPath();
+            ctx.moveTo(points[0].sx, points[0].sy);
+            for (let i = 1; i < points.length; i++) ctx.lineTo(points[i].sx, points[i].sy);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            ctx.restore();
+        }
+
+        function drawBall(sx, sy, color, r = 12) {
+            ctx.save();
+            const glow = ctx.createRadialGradient(sx, sy, r * 0.3, sx, sy, r * 2.2);
+            glow.addColorStop(0, color + '99');
+            glow.addColorStop(1, color + '00');
+            ctx.fillStyle = glow;
+            ctx.beginPath(); ctx.arc(sx, sy, r * 2.2, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = 'rgba(0,0,0,0.3)';
+            ctx.beginPath(); ctx.arc(sx + 2, sy + 3, r, 0, Math.PI * 2); ctx.fill();
+            const ball = ctx.createRadialGradient(sx - r * 0.28, sy - r * 0.35, r * 0.08, sx, sy, r);
+            ball.addColorStop(0, '#fff');
+            ball.addColorStop(0.3, color);
+            ball.addColorStop(1, '#000');
+            ctx.fillStyle = ball;
+            ctx.beginPath(); ctx.arc(sx, sy, r, 0, Math.PI * 2); ctx.fill();
+            ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+            ctx.lineWidth = 1;
+            ctx.beginPath(); ctx.arc(sx, sy, r - 1, 0, Math.PI * 2); ctx.stroke();
+            ctx.restore();
+        }
+
+        function drawArrow(fromX, fromY, toX, toY, color, lw = 2.5, dash = []) {
+            const dx = toX - fromX, dy = toY - fromY;
+            const len = Math.sqrt(dx * dx + dy * dy);
+            if (len < 0.5) return;
+            const ux = dx / len, uy = dy / len, sz = Math.min(13, len * 0.4);
+            ctx.save();
+            ctx.strokeStyle = color;
+            ctx.lineWidth = lw;
+            ctx.lineCap = 'round';
+            ctx.shadowColor = color;
+            ctx.shadowBlur = 5;
+            if (dash.length) ctx.setLineDash(dash);
+            ctx.beginPath();
+            ctx.moveTo(fromX, fromY);
+            ctx.lineTo(toX, toY);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            const tipX = toX, tipY = toY;
+            const ax1 = tipX - sz * ux + sz * 0.45 * uy;
+            const ay1 = tipY - sz * uy - sz * 0.45 * ux;
+            const ax2 = tipX - sz * ux - sz * 0.45 * uy;
+            const ay2 = tipY - sz * uy + sz * 0.45 * ux;
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.moveTo(tipX, tipY);
+            ctx.lineTo(ax1, ay1);
+            ctx.lineTo(ax2, ay2);
+            ctx.fill();
+            ctx.restore();
+        }
+
+        function drawConnection(fromX, fromY, toX, toY, color, dash) {
+            ctx.save();
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 2.2;
+            ctx.setLineDash(dash);
+            ctx.shadowColor = color;
+            ctx.shadowBlur = 4;
+            ctx.beginPath();
+            ctx.moveTo(fromX, fromY);
+            ctx.lineTo(toX, toY);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            ctx.restore();
+        }
+
+        function getReverseIntersection(redSx, redSy, redVx, redVy) {
+            const ox = FIXED_ORIGIN_X, oy = FIXED_ORIGIN_Y;
+            const dBlueX = v0x, dBlueY = -v0y;
+            const dRedX = -redVx, dRedY = redVy;
+            const det = dBlueX * dRedY - dBlueY * dRedX;
+            if (Math.abs(det) < 1e-6) return null;
+            const t2 = ((redSx - ox) * dBlueY - (redSy - oy) * dBlueX) / det;
+            if (t2 > 0) return { x: redSx + t2 * dRedX, y: redSy + t2 * dRedY };
+            return null;
+        }
+
+        function drawRedVectorsAndReverse(red) {
+            const sx = red.sx, sy = red.sy, vx = red.vx, vy = red.vy, totalV = red.v;
+            const vecScale = 4.5;
+            if (Math.abs(vx) > 0.1) {
+                const ex = sx + vx * vecScale;
+                drawArrow(sx + 1, sy, ex, sy, 'rgba(100,200,255,0.8)', 2.2);
+                ctx.fillStyle = 'rgba(180,220,255,0.9)';
+                ctx.font = 'bold 11px "Segoe UI","PingFang SC","Microsoft YaHei"';
+                ctx.fillText('vₓ=' + vx.toFixed(1), ex + 6, sy - 6);
+            }
+            if (Math.abs(vy) > 0.15) {
+                const ey = sy - vy * vecScale;
+                const col = vy > 0 ? 'rgba(120,255,180,0.8)' : 'rgba(255,180,100,0.8)';
+                drawArrow(sx + 1, sy, sx, ey, col, 2.2);
+                ctx.fillStyle = col;
+                ctx.fillText('vᵧ=' + vy.toFixed(1), sx - 40, ey - 8);
+            }
+            if (totalV > 0.2) {
+                const angle = Math.atan2(vy, vx);
+                const ex = sx + totalV * vecScale * Math.cos(angle);
+                const ey = sy - totalV * vecScale * Math.sin(angle);
+                drawArrow(sx, sy, ex, ey, '#ffd966', 3.0);
+                ctx.fillStyle = '#ffd966';
+                ctx.font = 'bold 12px "Segoe UI","PingFang SC","Microsoft YaHei"';
+                ctx.fillText('v=' + totalV.toFixed(1), ex + 8, ey - 10);
+            }
+            if (Math.abs(vx) > 0.1 && Math.abs(vy) > 0.15 && totalV > 0.2) {
+                const angle = Math.atan2(vy, vx);
+                const ex = sx + vx * vecScale, ey = sy - vy * vecScale;
+                const tipX = sx + totalV * vecScale * Math.cos(angle);
+                const tipY = sy - totalV * vecScale * Math.sin(angle);
+                ctx.save();
+                ctx.strokeStyle = 'rgba(255,255,255,0.35)';
+                ctx.lineWidth = 1;
+                ctx.setLineDash([4, 4]);
+                ctx.beginPath(); ctx.moveTo(ex, sy); ctx.lineTo(tipX, tipY); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(sx, ey); ctx.lineTo(tipX, tipY); ctx.stroke();
+                ctx.setLineDash([]);
+                ctx.restore();
+            }
+            if (totalV > 0.1) {
+                const intersection = getReverseIntersection(sx, sy, vx, vy);
+                let endX, endY;
+                if (intersection) {
+                    endX = intersection.x; endY = intersection.y;
+                } else {
+                    const angle = Math.atan2(vy, vx);
+                    endX = sx - totalV * vecScale * Math.cos(angle);
+                    endY = sy + totalV * vecScale * Math.sin(angle);
+                }
+                drawArrow(sx, sy, endX, endY, 'rgba(255,255,255,0.85)', 2.2, [6, 5]);
+                ctx.fillStyle = 'rgba(255,255,255,0.8)';
+                ctx.font = 'bold 11px "Segoe UI","PingFang SC","Microsoft YaHei"';
+                ctx.fillText('反向延长', endX - 55, endY - 10);
+            }
+        }
+
+        function drawBlueVector(sx, sy) {
+            const vecScale = 4.5;
+            const angle = Math.atan2(v0y, v0x);
+            const len = v0 * vecScale;
+            const ex = sx + len * Math.cos(angle);
+            const ey = sy - len * Math.sin(angle);
+            drawArrow(sx, sy, ex, ey, 'rgba(52,152,219,0.9)', 2.8);
+            ctx.fillStyle = 'rgba(52,152,219,0.9)';
+            ctx.font = 'bold 11px "Segoe UI","PingFang SC","Microsoft YaHei"';
+            ctx.fillText('v₀=' + v0.toFixed(1), ex + 8, ey - 10);
+        }
+
+        function drawVelocityTriangle(t) {
+            const baseX = 660, baseY = 100;
+            const vecScale = 3.2;
+            const gtVal = G * Math.min(t, tLand);
+            const red = getRedState(Math.min(t, tLand));
+            const vCur = red.v, vxCur = red.vx, vyCur = red.vy;
+            const v0Angle = angleRad;
+            const v0Len = v0 * vecScale;
+            const v0EndX = baseX + v0Len * Math.cos(v0Angle);
+            const v0EndY = baseY - v0Len * Math.sin(v0Angle);
+            const vAngle = Math.atan2(vyCur, vxCur);
+            const vLen = vCur * vecScale;
+            const vEndX = baseX + vLen * Math.cos(vAngle);
+            const vEndY = baseY - vLen * Math.sin(vAngle);
+            const gtLen = gtVal * vecScale;
+
+            ctx.strokeStyle = 'rgba(255,255,255,0.8)';
+            ctx.lineWidth = 2.2;
+            ctx.setLineDash([5, 4]);
+            ctx.beginPath();
+            ctx.moveTo(v0EndX, v0EndY);
+            ctx.lineTo(v0EndX, v0EndY + gtLen);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            drawArrow(v0EndX, v0EndY, v0EndX, v0EndY + gtLen, 'rgba(255,255,255,0.8)', 2.2);
+            ctx.fillStyle = '#fff';
+            ctx.font = 'bold 12px "Segoe UI","PingFang SC","Microsoft YaHei"';
+            ctx.fillText('gt', v0EndX + 8, v0EndY + gtLen / 2);
+
+            drawArrow(baseX, baseY, v0EndX, v0EndY, 'rgba(52,152,219,0.9)', 2.8);
+            ctx.fillStyle = 'rgba(52,152,219,0.9)';
+            ctx.fillText('v₀', v0EndX + 6, v0EndY - 8);
+
+            drawArrow(baseX, baseY, vEndX, vEndY, '#ffd966', 2.8);
+            ctx.fillStyle = '#ffd966';
+            ctx.fillText('v', vEndX + 8, vEndY - 8);
+
+            ctx.fillStyle = '#fff';
+            ctx.beginPath(); ctx.arc(baseX, baseY, 3, 0, 2 * Math.PI); ctx.fill();
+        }
+
+        function drawFrame(red, blue, yellow, t) {
+            ctx.clearRect(0, 0, CANVAS_W, CANVAS_H);
+            drawBg();
+            drawGround();
+            drawWellInterior();
+
+            drawTrajectory(redTrajectory, 'rgba(231,76,60,0.7)', [10, 7]);
+            drawTrajectory(blueTrajectory, 'rgba(52,152,219,0.6)', [6, 6]);
+            drawTrajectory(yellowTrajectory, 'rgba(241,196,15,0.6)', [4, 6]);
+
+            if (showConnections) {
+                if (red && blue) drawConnection(blue.sx, blue.sy, red.sx, red.sy, 'rgba(46,204,113,0.8)', [8, 5]);
+                if (red && yellow) drawConnection(yellow.sx, yellow.sy, red.sx, red.sy, 'rgba(241,196,15,0.8)', [5, 5]);
+            }
+
+            if (yellow) drawBall(yellow.sx, yellow.sy, '#f1c40f', YELLOW_RADIUS);
+            drawWellEdges();
+
+            if (blue) {
+                drawBall(blue.sx, blue.sy, '#3498db', 11);
+                drawBlueVector(blue.sx, blue.sy);
+            }
+            if (red) {
+                drawRedVectorsAndReverse(red);
+                drawBall(red.sx, red.sy, '#e74c3c', 13);
+            }
+
+            ctx.strokeStyle = 'rgba(255,255,255,0.6)';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([3, 3]);
+            ctx.beginPath();
+            ctx.arc(FIXED_ORIGIN_X, FIXED_ORIGIN_Y, 8, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            ctx.fillStyle = '#fff';
+            ctx.beginPath(); ctx.arc(FIXED_ORIGIN_X, FIXED_ORIGIN_Y, 3.5, 0, Math.PI * 2); ctx.fill();
+
+            if (rangeX > 0.01) {
+                const lx = FIXED_ORIGIN_X + rangeX * SCALE;
+                ctx.fillStyle = 'rgba(255,180,140,0.8)';
+                ctx.beginPath(); ctx.arc(lx, GROUND_Y, 5, 0, Math.PI * 2); ctx.fill();
+            }
+
+            drawVelocityTriangle(t);
+        }
+
+        function resetAnim() {
+            animState = 'idle'; currentPhysTime = 0;
+            btnPause.textContent = '⏸️ 暂停';
+        }
+
+        function launch() {
+            resetAnim();
+            animState = 'flying';
+            animStartTime = performance.now();
+            currentPhysTime = 0;
+        }
+
+        function animate(ts) {
+            if (animState === 'flying') {
+                const elapsed = (ts - animStartTime) / 1000;
+                currentPhysTime = Math.min(elapsed, tLand);
+            }
+            const t = (animState === 'idle') ? 0 : currentPhysTime;
+            const red = (animState !== 'idle') ? getRedState(t) : null;
+            const blue = (animState !== 'idle') ? getBlueState(t) : null;
+            const yellow = (animState !== 'idle') ? getYellowState(t) : null;
+            drawFrame(red, blue, yellow, t);
+
+            if (animState === 'flying' && currentPhysTime >= tLand) {
+                animState = 'landed';
+            }
+            requestAnimationFrame(animate);
+        }
+
+        function onParamChange() {
+            updatePhysics(); resetAnim();
+            drawFrame(null, null, null, 0);
+        }
+
+        speedSlider.addEventListener('input', () => {
+            v0 = +speedSlider.value;
+            speedVal.textContent = v0.toFixed(1) + ' m/s';
+            onParamChange();
+        });
+        angleSlider.addEventListener('input', () => {
+            angleDeg = +angleSlider.value;
+            angleVal.textContent = (angleDeg >= 0 ? '+' : '') + angleDeg + '°';
+            onParamChange();
+        });
+        btnLaunch.addEventListener('click', () => { updatePhysics(); launch(); });
+        btnPause.addEventListener('click', () => {
+            if (animState === 'flying') {
+                animState = 'paused'; btnPause.textContent = '▶️ 继续';
+            } else if (animState === 'paused') {
+                animState = 'flying';
+                animStartTime = performance.now() - currentPhysTime * 1000;
+                btnPause.textContent = '⏸️ 暂停';
+            }
+        });
+        btnReset.addEventListener('click', () => { updatePhysics(); resetAnim(); drawFrame(null, null, null, 0); });
+        btnToggleLines.addEventListener('click', () => {
+            showConnections = !showConnections;
+            btnToggleLines.innerHTML = showConnections ? '🔗 隐藏连线' : '🔗 显示连线';
+            const t = (animState === 'idle') ? 0 : currentPhysTime;
+            const red = (animState !== 'idle') ? getRedState(t) : null;
+            const blue = (animState !== 'idle') ? getBlueState(t) : null;
+            const yellow = (animState !== 'idle') ? getYellowState(t) : null;
+            drawFrame(red, blue, yellow, t);
+        });
+        document.addEventListener('keydown', e => {
+            if (e.key === ' ') { e.preventDefault(); updatePhysics(); launch(); }
+            else if (e.key === 'p') { e.preventDefault(); btnPause.click(); }
+            else if (e.key === 'r') { e.preventDefault(); btnReset.click(); }
+        });
+
+        function resize() {
+            const wrapper = canvas.parentElement;
+            const rect = wrapper.getBoundingClientRect();
+            const dpr = devicePixelRatio || 1;
+            canvas.style.width = rect.width + 'px';
+            canvas.style.height = rect.width * (CANVAS_H / CANVAS_W) + 'px';
+            canvas.width = CANVAS_W * dpr;
+            canvas.height = CANVAS_H * dpr;
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+            updatePhysics(); resetAnim();
+            drawFrame(null, null, null, 0);
+        }
+        window.addEventListener('resize', resize);
+
+        speedVal.textContent = v0.toFixed(1) + ' m/s';
+        angleVal.textContent = (angleDeg >= 0 ? '+' : '') + angleDeg + '°';
+        updatePhysics();
+        resize();
+        requestAnimationFrame(animate);
+    })();
+</script>
+
+  <script>
+  // 返回主页（滚动位置已在主页点击链接时保存）
+  function saveScrollAndReturn() {
+    window.location.href = '../index.html';
+  }
+  
+  // 禁用右键菜单
+  document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+  });
+  
+  // 禁用开发者工具快捷键
+  document.addEventListener('keydown', function(e) {
+    // ESC返回主页 - 保存滚动位置
+    if (e.keyCode === 27) {
+      saveScrollAndReturn();
+      return false;
+    }
+    // F12
+    if (e.keyCode === 123) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+U
+    if (e.ctrlKey && e.keyCode === 85) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+I
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 73) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+J
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 74) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+C
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 67) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+S
+    if (e.ctrlKey && e.keyCode === 83) {
+      e.preventDefault();
+      return false;
+    }
+  });
+  
+  // 禁用选择
+  document.addEventListener('selectstart', function(e) {
+    // 允许输入框选择
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+      return true;
+    }
+    e.preventDefault();
+    return false;
+  });
+  </script>
+</body>
+</html>
