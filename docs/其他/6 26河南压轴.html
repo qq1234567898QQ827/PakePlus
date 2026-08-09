@@ -1,0 +1,1232 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>球壳与小球竖直上抛动画</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #081522;
+      --ink: #eef8fb;
+      --muted: #afc5cf;
+      --line: rgba(166, 205, 221, 0.28);
+      --panel: rgba(10, 27, 42, 0.86);
+      --ceiling: #9cd7e8;
+      --floor: #9f988c;
+      --shell: #ffd447;
+      --shell-fill: rgba(255, 212, 71, 0.16);
+      --ball: #ff6547;
+      --ball-glow: rgba(255, 101, 71, 0.24);
+      --gold: #ffd447;
+      --green: #65d6a0;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background:
+        radial-gradient(circle at 18% 12%, rgba(73, 154, 184, 0.28), transparent 32%),
+        linear-gradient(180deg, #0d2637 0%, #07121e 62%, #040910 100%),
+        repeating-linear-gradient(90deg, rgba(160, 210, 225, 0.035) 0 1px, transparent 1px 44px);
+      color: var(--ink);
+      font-family: "Microsoft YaHei", "Noto Sans SC", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    main {
+      width: min(1180px, calc(100vw - 28px));
+      margin: 0 auto;
+      padding: 22px 0 28px;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: end;
+      gap: 18px;
+      margin-bottom: 14px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(22px, 3vw, 34px);
+      line-height: 1.12;
+      font-weight: 800;
+      letter-spacing: 0;
+    }
+
+    .subtitle {
+      margin: 7px 0 0;
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.6;
+    }
+
+    .badge {
+      flex: 0 0 auto;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid var(--line);
+      background: rgba(7, 18, 30, 0.72);
+      border-radius: 999px;
+      padding: 9px 12px;
+      font-size: 14px;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 0 5px rgba(47, 138, 91, 0.12);
+    }
+
+    .app {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 330px;
+      gap: 16px;
+      align-items: stretch;
+    }
+
+    .stage,
+    .side {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      border-radius: 8px;
+      box-shadow: 0 18px 44px rgba(0, 0, 0, 0.28);
+    }
+
+    .stage {
+      position: relative;
+      overflow: hidden;
+      min-height: 650px;
+    }
+
+    #scene {
+      width: 100%;
+      height: 650px;
+      display: block;
+    }
+
+    .caption {
+      position: absolute;
+      left: 14px;
+      bottom: 12px;
+      right: 14px;
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      pointer-events: none;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .caption span {
+      background: rgba(6, 16, 28, 0.76);
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      padding: 7px 9px;
+    }
+
+    .side {
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .controls {
+      display: grid;
+      grid-template-columns: 48px 48px 1fr;
+      gap: 8px;
+      align-items: center;
+    }
+
+    button {
+      appearance: none;
+      border: 1px solid var(--line);
+      background: rgba(12, 31, 47, 0.95);
+      color: var(--ink);
+      border-radius: 7px;
+      height: 42px;
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    button:hover {
+      border-color: #93a29d;
+      background: rgba(17, 43, 64, 0.95);
+    }
+
+    .speed {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      height: 42px;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      padding: 0 10px;
+      background: rgba(12, 31, 47, 0.95);
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .speed input {
+      width: 100%;
+      accent-color: var(--shell);
+    }
+
+    .timebar {
+      display: grid;
+      gap: 8px;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--ball);
+    }
+
+    .time-row {
+      display: flex;
+      justify-content: space-between;
+      font-variant-numeric: tabular-nums;
+      font-size: 14px;
+      color: var(--muted);
+    }
+
+    .phase {
+      border-left: 4px solid var(--ball);
+      background: rgba(255, 101, 71, 0.12);
+      border-radius: 7px;
+      padding: 10px 12px;
+      line-height: 1.55;
+      font-size: 15px;
+      min-height: 72px;
+    }
+
+    .mass-control,
+    .graph-box {
+      border-top: 1px solid var(--line);
+      padding-top: 14px;
+    }
+
+    .mass-control label {
+      display: grid;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.4;
+    }
+
+    .mass-control strong {
+      color: var(--ink);
+      font-variant-numeric: tabular-nums;
+    }
+
+    #graph {
+      width: 100%;
+      height: 190px;
+      display: block;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: #081522;
+    }
+
+    .facts,
+    .calc {
+      border-top: 1px solid var(--line);
+      padding-top: 14px;
+    }
+
+    h2 {
+      margin: 0 0 9px;
+      font-size: 16px;
+      line-height: 1.25;
+    }
+
+    dl {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px 12px;
+      margin: 0;
+      font-size: 14px;
+    }
+
+    dt {
+      color: var(--muted);
+    }
+
+    dd {
+      margin: 0;
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+      text-align: right;
+    }
+
+    .formula {
+      display: grid;
+      gap: 8px;
+      margin-top: 6px;
+      font-size: 14px;
+      line-height: 1.55;
+      color: var(--muted);
+    }
+
+    .formula code {
+      display: block;
+      color: var(--ink);
+      background: rgba(5, 15, 26, 0.78);
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      padding: 8px 9px;
+      overflow-x: auto;
+    }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      border-top: 1px solid var(--line);
+      padding-top: 14px;
+    }
+
+    .legend span {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .swatch {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+
+    .swatch.shell {
+      border: 3px solid var(--shell);
+      background: var(--shell-fill);
+    }
+
+    .swatch.ball {
+      background: var(--ball);
+    }
+
+    .swatch.hit {
+      background: var(--gold);
+    }
+
+    @media (max-width: 900px) {
+      main {
+        width: min(100% - 20px, 720px);
+        padding-top: 14px;
+      }
+
+      header {
+        display: block;
+      }
+
+      .badge {
+        margin-top: 10px;
+      }
+
+      .app {
+        grid-template-columns: 1fr;
+      }
+
+      .stage {
+        min-height: 560px;
+      }
+
+      #scene {
+        height: 560px;
+      }
+    }
+  </style>
+
+  <style>
+  body {
+    background-color: #1a2332 !important;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+  }
+  
+  .qilai-back-btn {
+    position: fixed;
+    top: 10px;
+    left: 15px;
+    z-index: 100000;
+    padding: 8px 16px;
+    background: rgba(0, 150, 200, 0.2);
+    border: 1px solid rgba(100, 180, 255, 0.5);
+    color: #8ab4f8;
+    font-size: 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.3s;
+    backdrop-filter: blur(5px);
+    font-family: "Microsoft YaHei", sans-serif;
+  }
+  
+  .qilai-back-btn:hover {
+    background: rgba(0, 150, 200, 0.4);
+    box-shadow: 0 0 15px rgba(100, 180, 255, 0.3);
+    color: #fff;
+  }
+  
+  .qilai-watermark {
+    position: fixed;
+    bottom: 15px;
+    right: 15px;
+    z-index: 99998;
+    font-size: 12px;
+    color: rgba(138, 180, 248, 0.35);
+    text-align: right;
+    line-height: 1.8;
+    pointer-events: none;
+    user-select: none;
+    font-family: "Microsoft YaHei", sans-serif;
+  }
+  
+  .qilai-watermark .title {
+    font-size: 14px;
+    font-weight: bold;
+    color: rgba(138, 180, 248, 0.45);
+    margin-bottom: 4px;
+    letter-spacing: 1px;
+  }
+  </style>
+</head>
+<body>
+  <a href="javascript:void(0);" class="qilai-back-btn" onclick="saveScrollAndReturn();">← 返回主页</a>
+  
+  <div class="qilai-watermark">
+    <div class="title">齐老师动画</div>
+    QQ 3398528250<br>
+    抖音 35320300542
+  </div>
+
+  <main>
+    <header>
+      <div>
+        <h1>球壳与小球竖直上抛</h1>
+        <p class="subtitle">球壳撞天花板后反弹，小球仍向上运动；相对运动决定第 1 次内碰撞的位置和时刻。</p>
+      </div>
+      <div class="badge"><i class="dot" aria-hidden="true"></i>球壳已放大显示，便于观察内部小球</div>
+    </header>
+
+    <section class="app" aria-label="物理动画">
+      <div class="stage">
+        <canvas id="scene" width="900" height="650" aria-label="球壳与小球动画画布"></canvas>
+        <div class="caption">
+          <span>主图按真实高度运动，球壳和小球单独放大绘制</span>
+          <span>时间范围：0s 到多次内碰撞后的 1.80s</span>
+        </div>
+      </div>
+
+      <aside class="side">
+        <div class="controls" aria-label="播放控制">
+          <button id="play" title="播放或暂停">▶</button>
+          <button id="reset" title="回到开始">↺</button>
+          <label class="speed" title="播放速度">
+            <span>速率</span>
+            <input id="speed" type="range" min="0.3" max="2.5" step="0.1" value="1" />
+          </label>
+        </div>
+
+        <div class="timebar">
+          <input id="scrub" type="range" min="0" max="1.8" step="0.001" value="0" aria-label="时间轴" />
+          <div class="time-row">
+            <span id="timeText">t = 0.000 s</span>
+            <span id="speedText">1.0×</span>
+          </div>
+        </div>
+
+        <div class="phase" id="phaseText">起抛瞬间：球壳在地面上，小球位于球壳内下端，二者速度同为 11 m/s。</div>
+
+        <section class="mass-control">
+          <label>
+            <span>质量比 <strong id="massText">m球:m壳 = 1.00:1</strong></span>
+            <input id="massRatio" type="range" min="0.1" max="1" step="0.05" value="1" />
+          </label>
+        </section>
+
+        <section class="graph-box">
+          <h2>速度-时间图像</h2>
+          <canvas id="graph" width="320" height="190" aria-label="球与球壳速度时间图像"></canvas>
+        </section>
+
+        <section class="facts">
+          <h2>已知量</h2>
+          <dl>
+            <dt>球壳直径 D</dt><dd>0.25 m</dd>
+            <dt>球壳上端距天花板 h</dt><dd>6 m</dd>
+            <dt>初速度 v0</dt><dd>11 m/s</dd>
+            <dt>重力加速度 g</dt><dd>10 m/s²</dd>
+            <dt>撞顶后到第 1 次内碰撞</dt><dd>0.10 s</dd>
+          </dl>
+        </section>
+
+        <section class="calc">
+          <h2>关键计算</h2>
+          <div class="formula">
+            <code>v顶² = v0² - 2gh = 121 - 120 = 1</code>
+            <code>t顶 = (11 - 1) / 10 = 1.00 s</code>
+            <code>相对速度 = 1 - (-1) = 2.00 m/s</code>
+            <code>0.10s 内相对位移 = 0.20 m</code>
+            <code>小球直径 d = D - 0.20 = 0.05 m</code>
+            <code>内碰撞后速度由质量比决定，默认按 m球:m壳 = 1:1 演示</code>
+          </div>
+        </section>
+
+        <div class="legend" aria-label="图例">
+          <span><i class="swatch shell"></i>球壳</span>
+          <span><i class="swatch ball"></i>小球</span>
+          <span><i class="swatch hit"></i>碰撞点</span>
+        </div>
+      </aside>
+    </section>
+  </main>
+
+  <script>
+    const params = {
+      D: 0.25,
+      h: 6,
+      v0: 11,
+      g: 10,
+      dtAfterCeiling: 0.1
+    };
+
+    const topHitSpeed = Math.sqrt(params.v0 * params.v0 - 2 * params.g * params.h);
+    const tCeiling = (params.v0 - topHitSpeed) / params.g;
+    const tFirstHit = tCeiling + params.dtAfterCeiling;
+    const endTime = 1.8;
+    const relativeTravel = 2 * topHitSpeed * params.dtAfterCeiling;
+    const ballDiameter = params.D - relativeTravel;
+    const ballRadius = ballDiameter / 2;
+    const shellRadius = params.D / 2;
+    const ceilingHeight = params.h + params.D;
+
+    const canvas = document.getElementById("scene");
+    const ctx = canvas.getContext("2d");
+    const graphCanvas = document.getElementById("graph");
+    const graphCtx = graphCanvas.getContext("2d");
+    const playButton = document.getElementById("play");
+    const resetButton = document.getElementById("reset");
+    const scrub = document.getElementById("scrub");
+    const speed = document.getElementById("speed");
+    const massRatio = document.getElementById("massRatio");
+    const massText = document.getElementById("massText");
+    const timeText = document.getElementById("timeText");
+    const speedText = document.getElementById("speedText");
+    const phaseText = document.getElementById("phaseText");
+
+    scrub.max = endTime.toFixed(3);
+
+    let t = 0;
+    let playing = true;
+    let lastFrame = performance.now();
+
+    const css = getComputedStyle(document.documentElement);
+    const colors = {
+      ink: css.getPropertyValue("--ink").trim(),
+      muted: css.getPropertyValue("--muted").trim(),
+      line: css.getPropertyValue("--line").trim(),
+      ceiling: css.getPropertyValue("--ceiling").trim(),
+      floor: css.getPropertyValue("--floor").trim(),
+      shell: css.getPropertyValue("--shell").trim(),
+      ball: css.getPropertyValue("--ball").trim(),
+      gold: css.getPropertyValue("--gold").trim(),
+      green: css.getPropertyValue("--green").trim()
+    };
+
+    function currentMassRatio() {
+      return Number(massRatio.value);
+    }
+
+    function elasticInternal(ub, us, ratio) {
+      return {
+        ball: ((ratio - 1) / (ratio + 1)) * ub + (2 / (ratio + 1)) * us,
+        shell: ((2 * ratio) / (ratio + 1)) * ub + ((1 - ratio) / (ratio + 1)) * us
+      };
+    }
+
+    function advanceState(state, toTime) {
+      const dt = toTime - state.time;
+      return {
+        time: toTime,
+        yShell: state.yShell + state.vShell * dt - 0.5 * params.g * dt * dt,
+        yBall: state.yBall + state.vBall * dt - 0.5 * params.g * dt * dt,
+        vShell: state.vShell - params.g * dt,
+        vBall: state.vBall - params.g * dt
+      };
+    }
+
+    function buildMotion(ratio) {
+      const segments = [];
+      const events = [];
+      let state = {
+        time: 0,
+        yShell: shellRadius,
+        yBall: ballRadius,
+        vShell: params.v0,
+        vBall: params.v0
+      };
+
+      function addSegment(end) {
+        segments.push({
+          start: state.time,
+          end,
+          yShell: state.yShell,
+          yBall: state.yBall,
+          vShell: state.vShell,
+          vBall: state.vBall
+        });
+        state = advanceState(state, end);
+      }
+
+      addSegment(tCeiling);
+      state.vShell = -state.vShell;
+      events.push({ time: tCeiling, type: "ceiling", label: "球壳撞天花板" });
+
+      addSegment(tFirstHit);
+      let updated = elasticInternal(state.vBall, state.vShell, ratio);
+      state.vBall = updated.ball;
+      state.vShell = updated.shell;
+      events.push({ time: tFirstHit, type: "inner", side: "top", label: "小球撞壳内上端" });
+
+      let next = tFirstHit + params.dtAfterCeiling;
+      let hitTop = false;
+      while (next < endTime + 0.0001) {
+        addSegment(Math.min(next, endTime));
+        if (next <= endTime + 0.0001) {
+          updated = elasticInternal(state.vBall, state.vShell, ratio);
+          state.vBall = updated.ball;
+          state.vShell = updated.shell;
+          events.push({
+            time: next,
+            type: "inner",
+            side: hitTop ? "top" : "bottom",
+            label: hitTop ? "小球撞壳内上端" : "小球撞壳内下端"
+          });
+        }
+        hitTop = !hitTop;
+        next += params.dtAfterCeiling;
+      }
+
+      if (segments[segments.length - 1].end < endTime) {
+        addSegment(endTime);
+      }
+
+      return { segments, events };
+    }
+
+    function stateAt(time, motion) {
+      const segments = motion.segments;
+      let segment = segments[segments.length - 1];
+      for (let i = 0; i < segments.length; i++) {
+        const item = segments[i];
+        const isLast = i === segments.length - 1;
+        if (time >= item.start - 0.000001 && (time < item.end - 0.000001 || isLast)) {
+          segment = item;
+          break;
+        }
+      }
+      const dt = Math.max(0, Math.min(time, segment.end) - segment.start);
+      return {
+        yShell: segment.yShell + segment.vShell * dt - 0.5 * params.g * dt * dt,
+        yBall: segment.yBall + segment.vBall * dt - 0.5 * params.g * dt * dt,
+        vShell: segment.vShell - params.g * dt,
+        vBall: segment.vBall - params.g * dt
+      };
+    }
+
+    function shellTopDistance(time, motion) {
+      const state = stateAt(time, motion);
+      return ceilingHeight - (state.yShell + shellRadius);
+    }
+
+    function nearestEvent(time, motion, windowSize = 0.018) {
+      return motion.events.find((event) => Math.abs(event.time - time) <= windowSize);
+    }
+
+    function phaseFor(time, motion) {
+      const event = nearestEvent(time, motion, 0.01);
+      if (event?.type === "ceiling") {
+        return "球壳与天花板发生弹性碰撞：球壳速度由 +1 m/s 瞬时变为 -1 m/s，小球仍以 +1 m/s 向上。";
+      }
+      if (event?.type === "inner") {
+        return `${event.label}，发生完全弹性碰撞；碰后速度由质量比决定，图像中表现为球和壳速度同时跳变。`;
+      }
+      if (time < tCeiling) {
+        const remaining = Math.max(0, tCeiling - time).toFixed(3);
+        return `共同上升：球壳和小球都只受重力，二者相对位置不变。距离球壳撞天花板还剩 ${remaining} s。`;
+      }
+      if (time < tFirstHit) {
+        const rel = (2 * topHitSpeed * (time - tCeiling)).toFixed(3);
+        return `相对靠近阶段：球壳向下、小球仍向上，相对位移已达 ${rel} m。`;
+      }
+      const state = stateAt(time, motion);
+      const relV = (state.vBall - state.vShell).toFixed(2);
+      return `内碰撞后继续运动：球与壳的相对速度为 ${relV} m/s，下一次碰撞会在相对位移走完 0.20 m 时发生。`;
+    }
+
+    function setupCanvas() {
+      const rect = canvas.getBoundingClientRect();
+      const dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+      canvas.width = Math.round(rect.width * dpr);
+      canvas.height = Math.round(rect.height * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      return { w: rect.width, h: rect.height };
+    }
+
+    function roundedRect(x, y, w, h, r) {
+      const rr = Math.min(r, w / 2, h / 2);
+      ctx.beginPath();
+      ctx.moveTo(x + rr, y);
+      ctx.lineTo(x + w - rr, y);
+      ctx.quadraticCurveTo(x + w, y, x + w, y + rr);
+      ctx.lineTo(x + w, y + h - rr);
+      ctx.quadraticCurveTo(x + w, y + h, x + w - rr, y + h);
+      ctx.lineTo(x + rr, y + h);
+      ctx.quadraticCurveTo(x, y + h, x, y + h - rr);
+      ctx.lineTo(x, y + rr);
+      ctx.quadraticCurveTo(x, y, x + rr, y);
+      ctx.closePath();
+    }
+
+    function drawArrow(x1, y1, x2, y2, label, color) {
+      const head = 8;
+      ctx.save();
+      ctx.strokeStyle = color;
+      ctx.fillStyle = color;
+      ctx.lineWidth = 1.6;
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.stroke();
+      const angle = Math.atan2(y2 - y1, x2 - x1);
+      ctx.beginPath();
+      ctx.moveTo(x2, y2);
+      ctx.lineTo(x2 - head * Math.cos(angle - Math.PI / 6), y2 - head * Math.sin(angle - Math.PI / 6));
+      ctx.lineTo(x2 - head * Math.cos(angle + Math.PI / 6), y2 - head * Math.sin(angle + Math.PI / 6));
+      ctx.closePath();
+      ctx.fill();
+      ctx.font = "13px Microsoft YaHei, sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "bottom";
+      ctx.fillText(label, (x1 + x2) / 2, Math.min(y1, y2) - 7);
+      ctx.restore();
+    }
+
+    function drawVelocityArrow(x, y, velocity, label, color) {
+      const maxLen = 58;
+      const minLen = 14;
+      const len = Math.max(minLen, Math.min(maxLen, Math.abs(velocity) * 6));
+      const dir = velocity >= 0 ? -1 : 1;
+      const y2 = y + dir * len;
+      const head = 9;
+      const angle = velocity >= 0 ? -Math.PI / 2 : Math.PI / 2;
+
+      ctx.save();
+      ctx.strokeStyle = color;
+      ctx.fillStyle = color;
+      ctx.lineWidth = 3;
+      ctx.lineCap = "round";
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(x, y2);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(x, y2);
+      ctx.lineTo(x - head * Math.cos(angle - Math.PI / 6), y2 - head * Math.sin(angle - Math.PI / 6));
+      ctx.lineTo(x - head * Math.cos(angle + Math.PI / 6), y2 - head * Math.sin(angle + Math.PI / 6));
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.font = "700 13px Microsoft YaHei, sans-serif";
+      ctx.textAlign = "left";
+      ctx.textBaseline = "middle";
+      ctx.fillText(`${label} ${velocity.toFixed(2)} m/s`, x + 12, y + dir * len * 0.48);
+      ctx.restore();
+    }
+
+    function drawRuler(x, topY, bottomY, meters) {
+      ctx.save();
+      ctx.strokeStyle = "rgba(174, 213, 226, 0.58)";
+      ctx.fillStyle = colors.muted;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(x, topY);
+      ctx.lineTo(x, bottomY);
+      ctx.stroke();
+      ctx.font = "12px Microsoft YaHei, sans-serif";
+      ctx.textAlign = "left";
+      ctx.textBaseline = "middle";
+      for (let m = 0; m <= Math.floor(meters); m++) {
+        const y = bottomY - (bottomY - topY) * (m / meters);
+        ctx.beginPath();
+        ctx.moveTo(x - 6, y);
+        ctx.lineTo(x + 6, y);
+        ctx.stroke();
+        ctx.fillText(`${m}m`, x + 10, y);
+      }
+      ctx.restore();
+    }
+
+    function setupGraphCanvas() {
+      const rect = graphCanvas.getBoundingClientRect();
+      const dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+      graphCanvas.width = Math.round(rect.width * dpr);
+      graphCanvas.height = Math.round(rect.height * dpr);
+      graphCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      return { w: rect.width, h: rect.height };
+    }
+
+    function drawGraph(motion) {
+      const { w, h } = setupGraphCanvas();
+      const left = 34;
+      const right = 12;
+      const top = 16;
+      const bottom = 28;
+      const plotW = w - left - right;
+      const plotH = h - top - bottom;
+      const values = [params.v0, -params.v0];
+
+      for (const seg of motion.segments) {
+        const dt = seg.end - seg.start;
+        values.push(seg.vBall, seg.vBall - params.g * dt, seg.vShell, seg.vShell - params.g * dt);
+      }
+
+      const rawMin = Math.min(...values);
+      const rawMax = Math.max(...values);
+      const vMin = Math.floor((rawMin - 1) / 2) * 2;
+      const vMax = Math.ceil((rawMax + 1) / 2) * 2;
+      const xFor = (time) => left + (time / endTime) * plotW;
+      const yFor = (v) => top + ((vMax - v) / (vMax - vMin)) * plotH;
+
+      graphCtx.clearRect(0, 0, w, h);
+      graphCtx.fillStyle = "#081522";
+      graphCtx.fillRect(0, 0, w, h);
+      graphCtx.strokeStyle = "rgba(166, 205, 221, 0.25)";
+      graphCtx.lineWidth = 1;
+      graphCtx.font = "11px Microsoft YaHei, sans-serif";
+      graphCtx.fillStyle = colors.muted;
+      graphCtx.textAlign = "right";
+      graphCtx.textBaseline = "middle";
+
+      for (let v = vMin; v <= vMax; v += 4) {
+        const y = yFor(v);
+        graphCtx.beginPath();
+        graphCtx.moveTo(left, y);
+        graphCtx.lineTo(w - right, y);
+        graphCtx.stroke();
+        graphCtx.fillText(String(v), left - 5, y);
+      }
+
+      graphCtx.textAlign = "center";
+      graphCtx.textBaseline = "top";
+      for (let mark = 0; mark <= endTime + 0.001; mark += 0.3) {
+        const x = xFor(mark);
+        graphCtx.beginPath();
+        graphCtx.moveTo(x, top);
+        graphCtx.lineTo(x, top + plotH);
+        graphCtx.stroke();
+        graphCtx.fillText(mark.toFixed(1), x, top + plotH + 7);
+      }
+
+      graphCtx.strokeStyle = colors.ink;
+      graphCtx.lineWidth = 1.3;
+      graphCtx.beginPath();
+      graphCtx.moveTo(left, top);
+      graphCtx.lineTo(left, top + plotH);
+      graphCtx.lineTo(left + plotW, top + plotH);
+      graphCtx.stroke();
+
+      function drawVelocityLine(key, color) {
+        graphCtx.save();
+        graphCtx.strokeStyle = color;
+        graphCtx.lineWidth = 2.4;
+        graphCtx.beginPath();
+        for (const seg of motion.segments) {
+          const v0 = seg[key];
+          const v1 = seg[key] - params.g * (seg.end - seg.start);
+          const x0 = xFor(seg.start);
+          const y0 = yFor(v0);
+          const x1 = xFor(seg.end);
+          const y1 = yFor(v1);
+          graphCtx.moveTo(x0, y0);
+          graphCtx.lineTo(x1, y1);
+        }
+        graphCtx.stroke();
+        graphCtx.restore();
+      }
+
+      drawVelocityLine("vShell", colors.shell);
+      drawVelocityLine("vBall", colors.ball);
+
+      graphCtx.save();
+      graphCtx.fillStyle = colors.gold;
+      for (const event of motion.events) {
+        const x = xFor(event.time);
+        graphCtx.beginPath();
+        graphCtx.moveTo(x, top + 2);
+        graphCtx.lineTo(x - 4, top + 10);
+        graphCtx.lineTo(x + 4, top + 10);
+        graphCtx.closePath();
+        graphCtx.fill();
+      }
+      graphCtx.restore();
+
+      const currentX = xFor(t);
+      graphCtx.strokeStyle = colors.ink;
+      graphCtx.lineWidth = 1.2;
+      graphCtx.beginPath();
+      graphCtx.moveTo(currentX, top);
+      graphCtx.lineTo(currentX, top + plotH);
+      graphCtx.stroke();
+
+      graphCtx.fillStyle = colors.shell;
+      graphCtx.textAlign = "left";
+      graphCtx.textBaseline = "top";
+      graphCtx.font = "700 12px Microsoft YaHei, sans-serif";
+      graphCtx.fillText("壳", left + 8, top + 7);
+      graphCtx.fillStyle = colors.ball;
+      graphCtx.fillText("球", left + 38, top + 7);
+      graphCtx.fillStyle = colors.muted;
+      graphCtx.font = "11px Microsoft YaHei, sans-serif";
+      graphCtx.fillText("v/(m/s)", left + 70, top + 7);
+    }
+
+    function drawScene() {
+      const { w, h } = setupCanvas();
+      const ratio = currentMassRatio();
+      const motion = buildMotion(ratio);
+      const state = stateAt(t, motion);
+      ctx.clearRect(0, 0, w, h);
+
+      const pad = Math.max(26, Math.min(44, w * 0.04));
+      const ceilingY = 46;
+      const floorY = h - 54;
+      const worldHeight = params.h + params.D;
+      const shellPx = Math.max(76, Math.min(112, w * 0.13));
+      const ballPx = Math.max(15, shellPx * (ballDiameter / params.D));
+      const scale = (floorY - ceilingY - shellPx) / params.h;
+      const x = w * 0.47;
+
+      ctx.fillStyle = "#081522";
+      ctx.fillRect(0, 0, w, h);
+
+      for (let i = 0; i < 12; i++) {
+        const y = ceilingY + i * (floorY - ceilingY) / 11;
+        ctx.strokeStyle = i % 2 === 0 ? "rgba(140,210,230,0.12)" : "rgba(255,212,71,0.055)";
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(pad, y);
+        ctx.lineTo(w - pad, y);
+        ctx.stroke();
+      }
+
+      ctx.strokeStyle = colors.ceiling;
+      ctx.lineWidth = 8;
+      ctx.lineCap = "round";
+      ctx.beginPath();
+      ctx.moveTo(pad, ceilingY);
+      ctx.lineTo(w - pad, ceilingY);
+      ctx.stroke();
+      ctx.fillStyle = colors.ceiling;
+      ctx.font = "700 15px Microsoft YaHei, sans-serif";
+      ctx.textAlign = "left";
+      ctx.fillText("天花板", pad, ceilingY - 14);
+
+      ctx.strokeStyle = colors.floor;
+      ctx.lineWidth = 8;
+      ctx.beginPath();
+      ctx.moveTo(pad, floorY);
+      ctx.lineTo(w - pad, floorY);
+      ctx.stroke();
+      ctx.fillStyle = colors.floor;
+      ctx.fillText("水平地面", pad, floorY + 25);
+
+      drawRuler(w - pad - 62, ceilingY, floorY - shellPx, params.h);
+
+      const topDistance = shellTopDistance(t, motion);
+      const shellTopY = ceilingY + topDistance * scale;
+      const shellCenterScreenY = shellTopY + shellPx / 2;
+      const relativeFromTop = Math.max(ballRadius, Math.min(params.D - ballRadius, state.yShell + shellRadius - state.yBall));
+      const ballCenterScreenY = shellTopY + (relativeFromTop / params.D) * shellPx;
+
+      ctx.save();
+      ctx.strokeStyle = "rgba(255,212,71,0.52)";
+      ctx.setLineDash([7, 8]);
+      ctx.lineWidth = 1.4;
+      ctx.beginPath();
+      ctx.moveTo(x - shellPx * 0.7, shellTopY);
+      ctx.lineTo(x + shellPx * 0.7, shellTopY);
+      ctx.stroke();
+      ctx.restore();
+
+      if (t < tCeiling) {
+        drawArrow(x + shellPx * 0.85, shellTopY, x + shellPx * 0.85, ceilingY + 4, `${topDistance.toFixed(2)} m`, colors.gold);
+      } else {
+        drawArrow(x + shellPx * 0.88, ceilingY + 8, x + shellPx * 0.88, shellTopY, `${topDistance.toFixed(2)} m`, colors.gold);
+      }
+
+      const trailTimes = [0, 0.25, 0.5, 0.75, 1.0, 1.1];
+      ctx.save();
+      for (const tt of trailTimes) {
+        if (tt > t + 0.03) continue;
+        const td = shellTopDistance(tt, motion);
+        const yy = ceilingY + td * scale + shellPx / 2;
+        ctx.fillStyle = tt === 1.0 ? colors.gold : "rgba(255,212,71,0.22)";
+        ctx.beginPath();
+        ctx.arc(x - shellPx * 0.9, yy, tt === 1.0 ? 5 : 3.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+
+      ctx.save();
+      ctx.shadowColor = "rgba(255,212,71,0.28)";
+      ctx.shadowBlur = 18;
+      ctx.fillStyle = "rgba(255,212,71,0.12)";
+      ctx.beginPath();
+      ctx.arc(x, shellCenterScreenY, shellPx / 2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+      ctx.strokeStyle = colors.shell;
+      ctx.lineWidth = 6;
+      ctx.beginPath();
+      ctx.arc(x, shellCenterScreenY, shellPx / 2, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+
+      const velocityArrowX = x + shellPx * 0.72;
+      drawVelocityArrow(velocityArrowX, shellCenterScreenY - shellPx * 0.18, state.vShell, "壳", colors.shell);
+      drawVelocityArrow(velocityArrowX + 68, shellCenterScreenY + shellPx * 0.18, state.vBall, "球", colors.ball);
+
+      ctx.save();
+      const gradient = ctx.createRadialGradient(x - ballPx * 0.22, ballCenterScreenY - ballPx * 0.25, 2, x, ballCenterScreenY, ballPx * 0.58);
+      gradient.addColorStop(0, "#ffb29e");
+      gradient.addColorStop(0.42, colors.ball);
+      gradient.addColorStop(1, "#99351f");
+      ctx.fillStyle = gradient;
+      ctx.beginPath();
+      ctx.arc(x, ballCenterScreenY, ballPx / 2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+
+      const hitAlpha = t >= tCeiling - 0.015 ? Math.min(1, Math.max(0, (t - tCeiling + 0.015) / 0.04)) : 0;
+      if (hitAlpha > 0 && t < tCeiling + 0.05) {
+        ctx.save();
+        ctx.globalAlpha = hitAlpha;
+        ctx.strokeStyle = colors.gold;
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(x, ceilingY + 2, 18 + hitAlpha * 16, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.fillStyle = colors.gold;
+        ctx.font = "700 14px Microsoft YaHei, sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText("撞顶反弹", x, ceilingY + 30);
+        ctx.restore();
+      }
+
+      const innerEvent = nearestEvent(t, motion, 0.022);
+      if (innerEvent?.type === "inner") {
+        ctx.save();
+        ctx.fillStyle = colors.gold;
+        ctx.font = "700 14px Microsoft YaHei, sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText(innerEvent.label, x, innerEvent.side === "top" ? shellTopY - 12 : shellTopY + shellPx + 22);
+        ctx.restore();
+      }
+
+      const labelWidth = 178;
+      const labelX = Math.max(pad + 16, x - shellPx * 0.5 - labelWidth - 22);
+      const labelY = Math.max(84, Math.min(floorY - 96, shellCenterScreenY - 50));
+      ctx.save();
+      roundedRect(labelX, labelY, labelWidth, 76, 7);
+      ctx.fillStyle = "rgba(5,15,26,0.88)";
+      ctx.fill();
+      ctx.strokeStyle = "rgba(166,205,221,0.36)";
+      ctx.stroke();
+      ctx.fillStyle = colors.ink;
+      ctx.font = "700 14px Microsoft YaHei, sans-serif";
+      ctx.textAlign = "left";
+      ctx.fillText(`t = ${t.toFixed(3)} s`, labelX + 12, labelY + 23);
+      ctx.fillStyle = colors.muted;
+      ctx.font = "13px Microsoft YaHei, sans-serif";
+      ctx.fillText(`v壳 = ${state.vShell.toFixed(2)} m/s`, labelX + 12, labelY + 46);
+      ctx.fillText(`v球 = ${state.vBall.toFixed(2)} m/s`, labelX + 12, labelY + 65);
+      ctx.restore();
+
+      const miniW = Math.min(180, w * 0.23);
+      const miniX = w - pad - miniW;
+      const miniY = h - 196;
+      ctx.save();
+      roundedRect(miniX, miniY, miniW, 118, 7);
+      ctx.fillStyle = "rgba(5,15,26,0.82)";
+      ctx.fill();
+      ctx.strokeStyle = "rgba(166,205,221,0.36)";
+      ctx.stroke();
+      ctx.fillStyle = colors.ink;
+      ctx.font = "700 13px Microsoft YaHei, sans-serif";
+      ctx.fillText("真实高度概览", miniX + 12, miniY + 22);
+      const myTop = miniY + 36;
+      const myBottom = miniY + 98;
+      ctx.strokeStyle = colors.ceiling;
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(miniX + 22, myTop);
+      ctx.lineTo(miniX + miniW - 22, myTop);
+      ctx.stroke();
+      ctx.strokeStyle = colors.floor;
+      ctx.beginPath();
+      ctx.moveTo(miniX + 22, myBottom);
+      ctx.lineTo(miniX + miniW - 22, myBottom);
+      ctx.stroke();
+      const miniScale = (myBottom - myTop) / worldHeight;
+      const miniShellD = Math.max(4, params.D * miniScale);
+      const miniTop = myTop + topDistance * miniScale;
+      const miniBallY = miniTop + relativeFromTop * miniScale;
+      ctx.strokeStyle = colors.shell;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(miniX + miniW * 0.58, miniTop + miniShellD / 2, miniShellD / 2, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.fillStyle = colors.ball;
+      ctx.beginPath();
+      ctx.arc(miniX + miniW * 0.58, miniBallY, 2.2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = colors.muted;
+      ctx.font = "12px Microsoft YaHei, sans-serif";
+      ctx.fillText("0.25m 很小", miniX + 12, miniY + 112);
+      ctx.restore();
+
+      timeText.textContent = `t = ${t.toFixed(3)} s`;
+      speedText.textContent = `${Number(speed.value).toFixed(1)}×`;
+      massText.textContent = `m球:m壳 = ${ratio.toFixed(2)}:1`;
+      phaseText.textContent = phaseFor(t, motion);
+      scrub.value = t.toFixed(3);
+      playButton.textContent = playing ? "Ⅱ" : "▶";
+      drawGraph(motion);
+    }
+
+    function tick(now) {
+      const dt = (now - lastFrame) / 1000;
+      lastFrame = now;
+      if (playing) {
+        t += dt * Number(speed.value);
+        if (t > endTime) {
+          t = endTime;
+          playing = false;
+        }
+      }
+      drawScene();
+      requestAnimationFrame(tick);
+    }
+
+    playButton.addEventListener("click", () => {
+      if (t >= endTime - 0.0005) t = 0;
+      playing = !playing;
+      lastFrame = performance.now();
+      drawScene();
+    });
+
+    resetButton.addEventListener("click", () => {
+      t = 0;
+      playing = false;
+      drawScene();
+    });
+
+    scrub.addEventListener("input", () => {
+      t = Number(scrub.value);
+      playing = false;
+      drawScene();
+    });
+
+    speed.addEventListener("input", drawScene);
+    massRatio.addEventListener("input", drawScene);
+    window.addEventListener("resize", drawScene);
+
+    requestAnimationFrame((now) => {
+      lastFrame = now;
+      tick(now);
+    });
+  </script>
+
+  <script>
+  // 返回主页（滚动位置已在主页点击链接时保存）
+  function saveScrollAndReturn() {
+    window.location.href = '../index.html';
+  }
+  
+  // 禁用右键菜单
+  document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+  });
+  
+  // 禁用开发者工具快捷键
+  document.addEventListener('keydown', function(e) {
+    // ESC返回主页 - 保存滚动位置
+    if (e.keyCode === 27) {
+      saveScrollAndReturn();
+      return false;
+    }
+    // F12
+    if (e.keyCode === 123) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+U
+    if (e.ctrlKey && e.keyCode === 85) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+I
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 73) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+J
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 74) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+C
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 67) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+S
+    if (e.ctrlKey && e.keyCode === 83) {
+      e.preventDefault();
+      return false;
+    }
+  });
+  
+  // 禁用选择
+  document.addEventListener('selectstart', function(e) {
+    // 允许输入框选择
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+      return true;
+    }
+    e.preventDefault();
+    return false;
+  });
+  </script>
+</body>
+</html>
