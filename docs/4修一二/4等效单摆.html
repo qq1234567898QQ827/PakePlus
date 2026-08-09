@@ -1,0 +1,919 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <title>高中物理：单摆 · 重力分解 (等效重力场)</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(145deg, #1a2332 0%, #0f172a 100%);
+      font-family: 'Segoe UI', 'Roboto', 'Noto Sans', system-ui, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+    .container {
+      background: rgba(18, 28, 46, 0.75);
+      backdrop-filter: blur(14px);
+      border-radius: 2.5rem;
+      box-shadow: 0 30px 55px -15px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.08);
+      padding: 1.5rem 1.8rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      max-width: 950px;
+      width: 95%;
+    }
+    canvas {
+      display: block;
+      width: 100%;
+      height: auto;
+      border-radius: 2rem;
+      background: #d9e2f0;
+      box-shadow: inset 0 2px 8px rgba(0,0,0,0.1), 0 18px 30px -10px rgba(0, 20, 40, 0.6);
+      margin-bottom: 1rem;
+      max-width: 900px;
+    }
+    .info-panel {
+      width: 100%;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: center;
+      gap: 1rem;
+      margin-top: 0.3rem;
+      color: #e2e8f0;
+      font-weight: 500;
+    }
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      background: rgba(15, 25, 40, 0.65);
+      padding: 0.5rem 1.4rem;
+      border-radius: 3rem;
+      backdrop-filter: blur(8px);
+      font-size: 0.85rem;
+      border: 1px solid rgba(255,255,255,0.15);
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+    .color-box {
+      width: 16px;
+      height: 16px;
+      border-radius: 5px;
+    }
+    .angle-display {
+      background: #0f172a;
+      color: #f1f5f9;
+      padding: 0.45rem 1.2rem;
+      border-radius: 2rem;
+      font-weight: 600;
+      font-size: 0.9rem;
+      letter-spacing: 0.3px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+      border: 1px solid #334155;
+      white-space: nowrap;
+    }
+    button {
+      background: #1e293b;
+      border: none;
+      padding: 0.45rem 1.1rem;
+      border-radius: 2.5rem;
+      font-weight: 600;
+      font-size: 0.85rem;
+      color: #e2e8f0;
+      background: #1e2b3c;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+      border: 1px solid #475569;
+      letter-spacing: 0.3px;
+      white-space: nowrap;
+    }
+    button:hover {
+      background: #2d3c4f;
+      box-shadow: 0 8px 18px rgba(0,0,0,0.5);
+      border-color: #94a3b8;
+      color: white;
+    }
+    .controls {
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .angle-btns {
+      display: flex;
+      gap: 0.4rem;
+      margin-left: 0.1rem;
+    }
+    .angle-btn {
+      padding: 0.4rem 0.9rem;
+      font-size: 0.8rem;
+      background: #0f1a2b;
+      border-color: #3b4b62;
+    }
+    .gravity-btn {
+      background: #2d3b4f;
+      border-color: #60a5fa;
+    }
+    .gravity-btn.active {
+      background: #2563eb;
+      border-color: #93c5fd;
+      box-shadow: 0 0 12px #3b82f6;
+    }
+    .hide-components-btn {
+      background: #2d3b4f;
+      border-color: #f59e0b;
+      transition: all 0.25s ease;
+    }
+    .hide-components-btn.hidden-state {
+      background: #b45309;
+      border-color: #fbbf24;
+      box-shadow: 0 0 12px #f59e0b;
+    }
+    @media (max-width: 750px) {
+      .container {
+        padding: 0.8rem;
+      }
+      .info-panel {
+        flex-direction: column;
+        gap: 0.6rem;
+      }
+      .controls {
+        gap: 0.4rem;
+      }
+      .legend {
+        font-size: 0.75rem;
+        gap: 0.7rem;
+        padding: 0.4rem 1rem;
+      }
+      button {
+        padding: 0.4rem 0.8rem;
+        font-size: 0.78rem;
+      }
+    }
+  </style>
+
+  <style>
+  body {
+    background-color: #1a2332 !important;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+  }
+  
+  .qilai-back-btn {
+    position: fixed;
+    top: 10px;
+    left: 15px;
+    z-index: 100000;
+    padding: 8px 16px;
+    background: rgba(0, 150, 200, 0.2);
+    border: 1px solid rgba(100, 180, 255, 0.5);
+    color: #8ab4f8;
+    font-size: 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.3s;
+    backdrop-filter: blur(5px);
+    font-family: "Microsoft YaHei", sans-serif;
+  }
+  
+  .qilai-back-btn:hover {
+    background: rgba(0, 150, 200, 0.4);
+    box-shadow: 0 0 15px rgba(100, 180, 255, 0.3);
+    color: #fff;
+  }
+  
+  .qilai-watermark {
+    position: fixed;
+    bottom: 15px;
+    right: 15px;
+    z-index: 99998;
+    font-size: 12px;
+    color: rgba(138, 180, 248, 0.35);
+    text-align: right;
+    line-height: 1.8;
+    pointer-events: none;
+    user-select: none;
+    font-family: "Microsoft YaHei", sans-serif;
+  }
+  
+  .qilai-watermark .title {
+    font-size: 14px;
+    font-weight: bold;
+    color: rgba(138, 180, 248, 0.45);
+    margin-bottom: 4px;
+    letter-spacing: 1px;
+  }
+  </style>
+</head>
+<body>
+  <a href="javascript:void(0);" class="qilai-back-btn" onclick="saveScrollAndReturn();">← 返回主页</a>
+  
+  <div class="qilai-watermark">
+    <div class="title">齐老师动画</div>
+    QQ 3398528250<br>
+    抖音 35320300542
+  </div>
+
+<div class="container">
+  <canvas id="pendulumCanvas" width="800" height="550" aria-label="单摆受力动画，支持等效重力场、速度箭头、拉力和45度标记"></canvas>
+  
+  <div class="info-panel">
+    <div class="legend">
+      <div class="legend-item">
+        <div class="color-box" style="background: #c2410c; box-shadow: 0 0 6px #c2410c;"></div>
+        <span>重力 G</span>
+      </div>
+      <div class="legend-item" id="legendParallel">
+        <div class="color-box" style="background: #0f4c81; box-shadow: 0 0 6px #0f4c81;"></div>
+        <span>沿绳分力 G∥</span>
+      </div>
+      <div class="legend-item" id="legendPerp">
+        <div class="color-box" style="background: #b91c1c; box-shadow: 0 0 6px #b91c1c;"></div>
+        <span>垂直绳分力 G⊥</span>
+      </div>
+      <div class="legend-item">
+        <div class="color-box" style="background: #1e293b; box-shadow: 0 0 6px #0f172a;"></div>
+        <span>拉力 T</span>
+      </div>
+      <div class="legend-item">
+        <div class="color-box" style="background: #2563eb; box-shadow: 0 0 6px #3b82f6;"></div>
+        <span>速度 v</span>
+      </div>
+    </div>
+    
+    <div class="angle-display" id="angleValue">
+      摆角 θ = 0.0°
+    </div>
+    
+    <div class="controls">
+      <button id="pausePlayBtn">
+        <span id="playIcon">⏸️</span> <span id="playText">暂停</span>
+      </button>
+      <button id="resetBtn">
+        <span>↺</span> 重置
+      </button>
+      <div class="angle-btns">
+        <button class="angle-btn" data-angle="30">30°</button>
+        <button class="angle-btn" data-angle="60">60°</button>
+        <button class="angle-btn" data-angle="90">90°</button>
+      </div>
+      <button id="gravityToggleBtn" class="gravity-btn">
+        <span>🌍</span> 等效重力场
+      </button>
+      <button id="hideComponentsBtn" class="hide-components-btn">
+        <span>👁️</span> 隐藏分力
+      </button>
+    </div>
+  </div>
+  <div style="font-size:0.75rem; color:#94a3b8; margin-top:0.2rem;">
+    拖动摆球 | 等效重力斜向右下45° | 无阻力理想摆动 | 蓝色虚线竖直方向
+  </div>
+</div>
+
+<script>
+  (function() {
+    const canvas = document.getElementById('pendulumCanvas');
+    const ctx = canvas.getContext('2d');
+
+    const W = 800, H = 550;
+    canvas.width = W;
+    canvas.height = H;
+
+    const pivot = { x: W / 2, y: 140 };
+    const ropeLength = 260;
+    const ballRadius = 22;
+    const gravityMagnitude = 170;
+
+    let angle = 0.0;
+    let angularVelocity = 0;
+    let isPaused = false;
+    let isDragging = false;
+    let useEffectiveGravity = false;
+    let showComponents = true;
+
+    const gOverL = 9.8 / 2.6;
+    const damping = 1.0;
+
+    function clampAngle(rad) {
+      const maxAngle = Math.PI * 0.85;
+      if (rad > maxAngle) rad = maxAngle;
+      if (rad < -maxAngle) rad = -maxAngle;
+      return rad;
+    }
+
+    function getGravityDirectionAngle() {
+      if (useEffectiveGravity) {
+        return Math.PI / 4;
+      } else {
+        return 0;
+      }
+    }
+
+    function getGravityVector() {
+      const gravAngle = getGravityDirectionAngle();
+      const dirX = Math.sin(gravAngle);
+      const dirY = Math.cos(gravAngle);
+      return {
+        dirX: dirX,
+        dirY: dirY,
+        vecX: gravityMagnitude * dirX,
+        vecY: gravityMagnitude * dirY,
+        angle: gravAngle
+      };
+    }
+
+    function getBallPosition(angleFromGravity) {
+      const gravAngle = getGravityDirectionAngle();
+      const ropeAbsoluteAngle = gravAngle + angleFromGravity;
+      return {
+        x: pivot.x + ropeLength * Math.sin(ropeAbsoluteAngle),
+        y: pivot.y + ropeLength * Math.cos(ropeAbsoluteAngle)
+      };
+    }
+
+    function resetSimulation() {
+      angle = 0.0;
+      angularVelocity = 0;
+      isDragging = false;
+      updateAngleDisplay();
+    }
+
+    function setAngleDegrees(deg) {
+      let rad = deg * Math.PI / 180;
+      rad = clampAngle(rad);
+      angle = rad;
+      angularVelocity = 0;
+      isDragging = false;
+      updateAngleDisplay();
+    }
+
+    function updateAngleDisplay() {
+      const angleDeg = (angle * 180 / Math.PI).toFixed(1);
+      document.getElementById('angleValue').innerHTML = `摆角 θ = ${angleDeg}°`;
+    }
+
+    function updateLegendVisibility() {
+      const legendParallel = document.getElementById('legendParallel');
+      const legendPerp = document.getElementById('legendPerp');
+      if (showComponents) {
+        legendParallel.style.opacity = '1';
+        legendPerp.style.opacity = '1';
+      } else {
+        legendParallel.style.opacity = '0.35';
+        legendPerp.style.opacity = '0.35';
+      }
+    }
+
+    function updatePhysics() {
+      if (isPaused || isDragging) return;
+      
+      const acceleration = -gOverL * Math.sin(angle);
+      angularVelocity += acceleration * 0.016;
+      angularVelocity *= damping;
+      angle += angularVelocity * 0.016;
+      angle = clampAngle(angle);
+      
+      if (Math.abs(angularVelocity) < 0.0002 && Math.abs(angle) < 0.002) {
+        angularVelocity = 0;
+        angle = 0;
+      }
+      updateAngleDisplay();
+    }
+
+    function drawSwallowTailArrow(fromX, fromY, toX, toY, color, lineWidth = 3.2, alpha = 0.95, tailLength = 16, tailSpread = 0.55) {
+      const dx = toX - fromX;
+      const dy = toY - fromY;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist < 0.5) return;
+      
+      const angleDir = Math.atan2(dy, dx);
+      
+      ctx.save();
+      ctx.strokeStyle = color;
+      ctx.fillStyle = color;
+      ctx.lineWidth = lineWidth;
+      ctx.globalAlpha = alpha;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      
+      const mainEndX = toX - Math.cos(angleDir) * (tailLength * 0.55);
+      const mainEndY = toY - Math.sin(angleDir) * (tailLength * 0.55);
+      ctx.beginPath();
+      ctx.moveTo(fromX, fromY);
+      ctx.lineTo(mainEndX, mainEndY);
+      ctx.stroke();
+      
+      const tailBaseX = mainEndX;
+      const tailBaseY = mainEndY;
+      
+      const leftAngle = angleDir + Math.PI - tailSpread;
+      const leftX = tailBaseX + Math.cos(leftAngle) * tailLength;
+      const leftY = tailBaseY + Math.sin(leftAngle) * tailLength;
+      
+      const rightAngle = angleDir + Math.PI + tailSpread;
+      const rightX = tailBaseX + Math.cos(rightAngle) * tailLength;
+      const rightY = tailBaseY + Math.sin(rightAngle) * tailLength;
+      
+      const tipX = toX;
+      const tipY = toY;
+      
+      ctx.beginPath();
+      ctx.moveTo(tailBaseX, tailBaseY);
+      ctx.lineTo(leftX, leftY);
+      ctx.stroke();
+      
+      ctx.beginPath();
+      ctx.moveTo(tailBaseX, tailBaseY);
+      ctx.lineTo(rightX, rightY);
+      ctx.stroke();
+      
+      ctx.beginPath();
+      ctx.arc(tipX, tipY, lineWidth * 0.7, 0, 2 * Math.PI);
+      ctx.fill();
+      
+      ctx.restore();
+    }
+
+    function drawScene() {
+      ctx.clearRect(0, 0, W, H);
+      
+      ctx.save();
+      ctx.strokeStyle = "#ccd7e8";
+      ctx.lineWidth = 0.5;
+      for (let i = 0; i < W; i += 50) {
+        ctx.beginPath();
+        ctx.moveTo(i, 0);
+        ctx.lineTo(i, H);
+        ctx.stroke();
+      }
+      for (let j = 0; j < H; j += 50) {
+        ctx.beginPath();
+        ctx.moveTo(0, j);
+        ctx.lineTo(W, j);
+        ctx.stroke();
+      }
+      ctx.restore();
+      
+      const gravity = getGravityVector();
+      const ballPos = getBallPosition(angle);
+      const gravAngle = gravity.angle;
+      
+      // 绘制竖直蓝色虚线（仅在等效重力场时）
+      if (useEffectiveGravity) {
+        ctx.save();
+        const verticalLength = 110;
+        ctx.beginPath();
+        ctx.moveTo(pivot.x, pivot.y);
+        ctx.lineTo(pivot.x, pivot.y + verticalLength);
+        ctx.strokeStyle = "#3b82f6";
+        ctx.lineWidth = 2.2;
+        ctx.setLineDash([7, 6]);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        // 标记竖直方向文字
+        ctx.font = 'bold 13px "Segoe UI"';
+        ctx.fillStyle = '#3b82f6';
+        ctx.shadowColor = "#000";
+        ctx.shadowBlur = 4;
+        ctx.fillText('竖直方向', pivot.x + 8, pivot.y + verticalLength - 6);
+        ctx.restore();
+      }
+      
+      // 绘制重力方向参考线（橙色虚线）
+      ctx.save();
+      const gravRefLength = 110;
+      const gravRefX = pivot.x + Math.sin(gravAngle) * gravRefLength;
+      const gravRefY = pivot.y + Math.cos(gravAngle) * gravRefLength;
+      ctx.beginPath();
+      ctx.moveTo(pivot.x, pivot.y);
+      ctx.lineTo(gravRefX, gravRefY);
+      ctx.strokeStyle = "#f97316";
+      ctx.lineWidth = 2.2;
+      ctx.setLineDash([7, 6]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.font = 'bold 14px "Segoe UI"';
+      ctx.fillStyle = '#f97316';
+      ctx.shadowColor = "#000";
+      ctx.shadowBlur = 4;
+      ctx.fillText('重力方向', gravRefX + 8, gravRefY + 8);
+      ctx.restore();
+      
+      // 绘制45°角标记（等效重力场时）
+      if (useEffectiveGravity) {
+        ctx.save();
+        const arcRadius = 38;
+        const verticalAngle = Math.PI / 2;        // 竖直向下
+        const gravityAngle = Math.PI / 4;         // 重力方向
+        
+        ctx.beginPath();
+        ctx.arc(pivot.x, pivot.y, arcRadius, gravityAngle, verticalAngle, false);
+        ctx.strokeStyle = "#fbbf24";
+        ctx.lineWidth = 2.2;
+        ctx.setLineDash([]);
+        ctx.stroke();
+        
+        const midAngle = (verticalAngle + gravityAngle) / 2;
+        const textX = pivot.x + (arcRadius + 16) * Math.cos(midAngle);
+        const textY = pivot.y + (arcRadius + 16) * Math.sin(midAngle);
+        ctx.font = 'bold italic 14px "Times New Roman", sans-serif';
+        ctx.fillStyle = '#fbbf24';
+        ctx.shadowColor = '#0f172a';
+        ctx.shadowBlur = 5;
+        ctx.fillText('45°', textX, textY);
+        ctx.restore();
+      }
+      
+      // 悬挂点
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(pivot.x, pivot.y, 7, 0, 2 * Math.PI);
+      ctx.fillStyle = "#1e293b";
+      ctx.shadowColor = "rgba(0,0,0,0.3)";
+      ctx.shadowBlur = 6;
+      ctx.fill();
+      ctx.shadowColor = "transparent";
+      ctx.strokeStyle = "#0f172a";
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      
+      // 绳索
+      ctx.beginPath();
+      ctx.moveTo(pivot.x, pivot.y);
+      ctx.lineTo(ballPos.x, ballPos.y);
+      ctx.strokeStyle = "#475569";
+      ctx.lineWidth = 2.5;
+      ctx.stroke();
+      
+      // 摆球
+      const gradient = ctx.createRadialGradient(ballPos.x-6, ballPos.y-6, 3, ballPos.x, ballPos.y, ballRadius+3);
+      gradient.addColorStop(0, '#fbbf24');
+      gradient.addColorStop(0.7, '#d97706');
+      ctx.beginPath();
+      ctx.arc(ballPos.x, ballPos.y, ballRadius, 0, 2*Math.PI);
+      ctx.fillStyle = gradient;
+      ctx.shadowColor = "#92400e";
+      ctx.shadowBlur = 10;
+      ctx.fill();
+      ctx.shadowColor = "transparent";
+      ctx.strokeStyle = "#78350f";
+      ctx.lineWidth = 2.2;
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(ballPos.x, ballPos.y, 3, 0, 2*Math.PI);
+      ctx.fillStyle = "#1e293b";
+      ctx.fill();
+      ctx.restore();
+      
+      const startX = ballPos.x;
+      const startY = ballPos.y;
+      
+      const ropeDx = pivot.x - ballPos.x;
+      const ropeDy = pivot.y - ballPos.y;
+      const ropeDist = Math.sqrt(ropeDx*ropeDx + ropeDy*ropeDy);
+      const ropeUnitX = ropeDx / ropeDist;
+      const ropeUnitY = ropeDy / ropeDist;
+      
+      const perpUnitX = -ropeUnitY;
+      const perpUnitY = ropeUnitX;
+      
+      const gDotRope = gravity.vecX * ropeUnitX + gravity.vecY * ropeUnitY;
+      const alongX = gDotRope * ropeUnitX;
+      const alongY = gDotRope * ropeUnitY;
+      
+      const gDotPerp = gravity.vecX * perpUnitX + gravity.vecY * perpUnitY;
+      const perpX = gDotPerp * perpUnitX;
+      const perpY = gDotPerp * perpUnitY;
+      
+      // 拉力 T
+      const tensionMagnitude = Math.abs(gDotRope);
+      if (tensionMagnitude > 0.5) {
+        const tensionDirX = ropeUnitX;
+        const tensionDirY = ropeUnitY;
+        const tensionEndX = startX + tensionDirX * tensionMagnitude;
+        const tensionEndY = startY + tensionDirY * tensionMagnitude;
+        drawSwallowTailArrow(startX, startY, tensionEndX, tensionEndY, '#1e293b', 3.3, 0.92, 16, 0.5);
+      }
+      
+      // 重力 G
+      drawSwallowTailArrow(startX, startY, startX + gravity.vecX, startY + gravity.vecY, '#c2410c', 3.5, 0.95, 18, 0.55);
+      
+      // 分力（可隐藏）
+      if (showComponents) {
+        drawSwallowTailArrow(startX, startY, startX + alongX, startY + alongY, '#0f4c81', 3.2, 0.9, 15, 0.5);
+        drawSwallowTailArrow(startX, startY, startX + perpX, startY + perpY, '#b91c1c', 3.2, 0.9, 15, 0.5);
+        
+        ctx.save();
+        ctx.strokeStyle = '#6b7280';
+        ctx.lineWidth = 1.4;
+        ctx.setLineDash([6, 5]);
+        ctx.globalAlpha = 0.55;
+        const gravEndX = startX + gravity.vecX;
+        const gravEndY = startY + gravity.vecY;
+        const alongEndX = startX + alongX;
+        const alongEndY = startY + alongY;
+        const perpEndX = startX + perpX;
+        const perpEndY = startY + perpY;
+        
+        ctx.beginPath();
+        ctx.moveTo(gravEndX, gravEndY);
+        ctx.lineTo(alongEndX, alongEndY);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(gravEndX, gravEndY);
+        ctx.lineTo(perpEndX, perpEndY);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.restore();
+      }
+      
+      // 速度箭头
+      if (Math.abs(angularVelocity) > 0.0005) {
+        const speedScale = Math.min(Math.abs(angularVelocity) * ropeLength * 0.21, 420);
+        const velDirX = Math.sign(angularVelocity) * perpUnitX;
+        const velDirY = Math.sign(angularVelocity) * perpUnitY;
+        const velEndX = startX + velDirX * speedScale;
+        const velEndY = startY + velDirY * speedScale;
+        
+        drawSwallowTailArrow(startX, startY, velEndX, velEndY, '#2563eb', 3.3, 0.92, 15, 0.5);
+        
+        ctx.save();
+        const labelVX = startX + velDirX * speedScale * 0.65 + (velDirX > 0 ? 16 : -28);
+        const labelVY = startY + velDirY * speedScale * 0.65 + (velDirY > 0 ? 18 : -16);
+        ctx.font = 'bold italic 15px "Segoe UI", "Roboto", sans-serif';
+        ctx.fillStyle = '#2563eb';
+        ctx.shadowColor = 'white';
+        ctx.shadowBlur = 4;
+        ctx.fillText('v', labelVX, labelVY);
+        ctx.restore();
+      }
+      
+      // 力标签
+      ctx.save();
+      ctx.font = 'bold 15px "Segoe UI", "Roboto", sans-serif';
+      ctx.shadowColor = 'white';
+      ctx.shadowBlur = 4;
+      
+      if (tensionMagnitude > 0.5) {
+        ctx.fillStyle = '#1e293b';
+        ctx.fillText('T', startX + ropeUnitX * tensionMagnitude * 0.6 + (ropeUnitX > 0 ? 8 : -16), startY + ropeUnitY * tensionMagnitude * 0.6 + (ropeUnitY > 0 ? 6 : -6));
+      }
+      
+      ctx.fillStyle = '#c2410c';
+      ctx.fillText('G', startX + gravity.vecX*0.55 + 8, startY + gravity.vecY*0.55 - 8);
+      
+      if (showComponents) {
+        ctx.fillStyle = '#0f4c81';
+        ctx.fillText('G∥', startX + alongX*0.65 + (alongX>0?10:-22), startY + alongY*0.65 + (alongY>0?10:-12));
+        ctx.fillStyle = '#b91c1c';
+        ctx.fillText('G⊥', startX + perpX*0.7 + (perpX>0?10:-24), startY + perpY*0.7 + (perpY>0?10:-12));
+      }
+      ctx.restore();
+    }
+
+    function animationLoop() {
+      if (!isPaused && !isDragging) {
+        updatePhysics();
+      }
+      drawScene();
+      requestAnimationFrame(animationLoop);
+    }
+
+    function handleMouseDown(e) {
+      const pos = getCanvasCoords(e);
+      if (!pos) return;
+      const ballPos = getBallPosition(angle);
+      const dist = Math.hypot(pos.x - ballPos.x, pos.y - ballPos.y);
+      if (dist < ballRadius + 18) {
+        isDragging = true;
+        angularVelocity = 0;
+        e.preventDefault();
+      }
+    }
+
+    function handleMouseMove(e) {
+      if (!isDragging) return;
+      e.preventDefault();
+      const pos = getCanvasCoords(e);
+      if (!pos) return;
+      const dx = pos.x - pivot.x;
+      const dy = pos.y - pivot.y;
+      const dist = Math.sqrt(dx*dx + dy*dy);
+      if (dist < 18) return;
+      
+      const mouseAbsAngle = Math.atan2(dx, dy);
+      const gravAngle = getGravityDirectionAngle();
+      
+      let newAngle = mouseAbsAngle - gravAngle;
+      while (newAngle > Math.PI) newAngle -= 2 * Math.PI;
+      while (newAngle < -Math.PI) newAngle += 2 * Math.PI;
+      
+      newAngle = clampAngle(newAngle);
+      angle = newAngle;
+      angularVelocity = 0;
+      updateAngleDisplay();
+    }
+
+    function handleMouseUp(e) {
+      if (isDragging) {
+        isDragging = false;
+        angularVelocity = 0;
+        e.preventDefault();
+      }
+    }
+
+    function getCanvasCoords(e) {
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+      let clientX, clientY;
+      if (e.touches) {
+        if (e.touches.length === 0) return null;
+        clientX = e.touches[0].clientX;
+        clientY = e.touches[0].clientY;
+      } else {
+        clientX = e.clientX;
+        clientY = e.clientY;
+      }
+      return {
+        x: (clientX - rect.left) * scaleX,
+        y: (clientY - rect.top) * scaleY
+      };
+    }
+
+    function toggleGravityField() {
+      useEffectiveGravity = !useEffectiveGravity;
+      const btn = document.getElementById('gravityToggleBtn');
+      if (useEffectiveGravity) {
+        btn.classList.add('active');
+        btn.innerHTML = '<span>🌍</span> 等效重力场 (开)';
+      } else {
+        btn.classList.remove('active');
+        btn.innerHTML = '<span>🌍</span> 等效重力场';
+      }
+      resetSimulation();
+    }
+
+    function toggleComponents() {
+      showComponents = !showComponents;
+      const btn = document.getElementById('hideComponentsBtn');
+      if (showComponents) {
+        btn.classList.remove('hidden-state');
+        btn.innerHTML = '<span>👁️</span> 隐藏分力';
+      } else {
+        btn.classList.add('hidden-state');
+        btn.innerHTML = '<span>🚫</span> 显示分力';
+      }
+      updateLegendVisibility();
+    }
+
+    function bindEvents() {
+      canvas.addEventListener('mousedown', handleMouseDown);
+      window.addEventListener('mousemove', (e) => {
+        if (isDragging) handleMouseMove(e);
+      });
+      window.addEventListener('mouseup', handleMouseUp);
+      
+      canvas.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        handleMouseDown(e);
+      }, { passive: false });
+      canvas.addEventListener('touchmove', (e) => {
+        e.preventDefault();
+        handleMouseMove(e);
+      }, { passive: false });
+      canvas.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        handleMouseUp(e);
+      });
+      canvas.addEventListener('touchcancel', (e) => {
+        e.preventDefault();
+        handleMouseUp(e);
+      });
+      
+      document.getElementById('pausePlayBtn').addEventListener('click', () => {
+        isPaused = !isPaused;
+        const icon = document.getElementById('playIcon');
+        const text = document.getElementById('playText');
+        if (isPaused) {
+          icon.innerHTML = '▶️';
+          text.textContent = '播放';
+        } else {
+          icon.innerHTML = '⏸️';
+          text.textContent = '暂停';
+        }
+      });
+      
+      document.getElementById('resetBtn').addEventListener('click', () => {
+        resetSimulation();
+        if (isPaused) {
+          isPaused = false;
+          document.getElementById('playIcon').innerHTML = '⏸️';
+          document.getElementById('playText').textContent = '暂停';
+        }
+        angularVelocity = 0;
+        isDragging = false;
+      });
+      
+      document.querySelectorAll('.angle-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const deg = parseInt(btn.getAttribute('data-angle'), 10);
+          if (!isNaN(deg)) {
+            setAngleDegrees(deg);
+            if (!isPaused) angularVelocity = 0;
+            updateAngleDisplay();
+          }
+        });
+      });
+      
+      document.getElementById('gravityToggleBtn').addEventListener('click', toggleGravityField);
+      document.getElementById('hideComponentsBtn').addEventListener('click', toggleComponents);
+    }
+
+    resetSimulation();
+    updateLegendVisibility();
+    bindEvents();
+    animationLoop();
+    updateAngleDisplay();
+  })();
+</script>
+
+  <script>
+  // 返回主页（滚动位置已在主页点击链接时保存）
+  function saveScrollAndReturn() {
+    window.location.href = '../index.html';
+  }
+  
+  // 禁用右键菜单
+  document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+  });
+  
+  // 禁用开发者工具快捷键
+  document.addEventListener('keydown', function(e) {
+    // ESC返回主页 - 保存滚动位置
+    if (e.keyCode === 27) {
+      saveScrollAndReturn();
+      return false;
+    }
+    // F12
+    if (e.keyCode === 123) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+U
+    if (e.ctrlKey && e.keyCode === 85) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+I
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 73) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+J
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 74) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+C
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 67) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+S
+    if (e.ctrlKey && e.keyCode === 83) {
+      e.preventDefault();
+      return false;
+    }
+  });
+  
+  // 禁用选择
+  document.addEventListener('selectstart', function(e) {
+    // 允许输入框选择
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+      return true;
+    }
+    e.preventDefault();
+    return false;
+  });
+  </script>
+</body>
+</html>
