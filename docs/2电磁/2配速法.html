@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>配速法动画 | 星空科技感 · 下方控制栏</title>
+    <style>
+        :root {
+            --bg: #0a0e17;
+            --panel-bg: rgba(14, 18, 30, 0.85);
+            --text: #e0e6f0;
+            --text-secondary: #a0b4cc;
+            --border: rgba(80, 120, 180, 0.35);
+            --shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+            --accent: #5b9eff;
+            --red: #ff5e5e;
+            --blue: #4da6ff;
+            --green: #3dd6a8;
+            --glow: 0 0 18px rgba(90, 140, 255, 0.25);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: var(--bg);
+            font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            overflow: hidden;
+        }
+
+        .stars-bg {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            pointer-events: none;
+        }
+        .stars-bg canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        .container {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+            max-width: 1050px;
+            width: 100%;
+        }
+
+        .canvas-wrapper {
+            background: rgba(10, 16, 28, 0.7);
+            border-radius: 18px;
+            box-shadow: var(--shadow), var(--glow);
+            padding: 10px;
+            width: 100%;
+            border: 1px solid var(--border);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+        }
+
+        .canvas-wrapper canvas {
+            display: block;
+            width: 100%;
+            height: auto;
+            border-radius: 12px;
+            background: transparent;
+        }
+
+        /* 底部控制栏 - 单行排列 */
+        .control-bar {
+            background: var(--panel-bg);
+            border-radius: 16px;
+            box-shadow: var(--shadow), var(--glow);
+            padding: 14px 22px;
+            width: 100%;
+            border: 1px solid var(--border);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 16px;
+            justify-content: center;
+        }
+
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            white-space: nowrap;
+        }
+
+        .control-group label {
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: var(--text);
+            letter-spacing: 0.3px;
+            min-width: fit-content;
+        }
+
+        .control-group label span {
+            font-weight: 500;
+            color: var(--text-secondary);
+            font-family: 'JetBrains Mono', 'Consolas', monospace;
+            margin-left: 2px;
+            min-width: 36px;
+            display: inline-block;
+            text-align: right;
+        }
+
+        .control-group input[type="range"] {
+            width: 90px;
+            height: 5px;
+            border-radius: 3px;
+            background: rgba(255, 255, 255, 0.1);
+            outline: none;
+            -webkit-appearance: none;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+        .control-group input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--accent);
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            box-shadow: 0 0 14px rgba(90, 150, 255, 0.5);
+            cursor: pointer;
+            transition: box-shadow 0.2s;
+        }
+        .control-group input[type="range"]::-webkit-slider-thumb:hover {
+            box-shadow: 0 0 22px rgba(90, 150, 255, 0.7);
+        }
+
+        .btn {
+            padding: 7px 13px;
+            border: none;
+            border-radius: 7px;
+            font-weight: 600;
+            font-size: 0.78rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: rgba(255, 255, 255, 0.06);
+            color: var(--text);
+            border: 1px solid var(--border);
+            white-space: nowrap;
+            letter-spacing: 0.3px;
+            flex-shrink: 0;
+        }
+        .btn:hover {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: rgba(120, 160, 220, 0.6);
+            box-shadow: 0 0 10px rgba(100, 160, 255, 0.2);
+        }
+        .btn.primary {
+            background: rgba(70, 130, 255, 0.25);
+            color: #c8e0ff;
+            border-color: rgba(100, 160, 255, 0.5);
+        }
+        .btn.primary:hover {
+            background: rgba(70, 130, 255, 0.4);
+            box-shadow: 0 0 16px rgba(70, 140, 255, 0.35);
+        }
+        .btn.accent {
+            background: rgba(255, 90, 90, 0.2);
+            color: #ffc8c8;
+            border-color: rgba(255, 100, 100, 0.4);
+        }
+        .btn.accent:hover {
+            background: rgba(255, 90, 90, 0.35);
+            box-shadow: 0 0 14px rgba(255, 80, 80, 0.3);
+        }
+
+        .divider {
+            width: 1px;
+            height: 22px;
+            background: var(--border);
+            flex-shrink: 0;
+            margin: 0 2px;
+        }
+
+        .legend-inline {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            flex-shrink: 0;
+        }
+        .legend-inline .item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .legend-inline .dot {
+            width: 9px;
+            height: 9px;
+            border-radius: 2px;
+            box-shadow: 0 0 5px currentColor;
+        }
+
+        .info-inline {
+            font-size: 0.72rem;
+            color: var(--text-secondary);
+            flex-shrink: 0;
+            text-align: center;
+            line-height: 1.4;
+        }
+
+        @media (max-width: 900px) {
+            .control-bar {
+                gap: 10px;
+                padding: 10px 14px;
+            }
+            .control-group input[type="range"] {
+                width: 60px;
+            }
+            .control-group label {
+                font-size: 0.7rem;
+            }
+            .btn {
+                padding: 6px 10px;
+                font-size: 0.7rem;
+            }
+        }
+    </style>
+
+  <style>
+  body {
+    background-color: #1a2332 !important;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+  }
+  
+  .qilai-back-btn {
+    position: fixed;
+    top: 10px;
+    left: 15px;
+    z-index: 100000;
+    padding: 8px 16px;
+    background: rgba(0, 150, 200, 0.2);
+    border: 1px solid rgba(100, 180, 255, 0.5);
+    color: #8ab4f8;
+    font-size: 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.3s;
+    backdrop-filter: blur(5px);
+    font-family: "Microsoft YaHei", sans-serif;
+  }
+  
+  .qilai-back-btn:hover {
+    background: rgba(0, 150, 200, 0.4);
+    box-shadow: 0 0 15px rgba(100, 180, 255, 0.3);
+    color: #fff;
+  }
+  
+  .qilai-watermark {
+    position: fixed;
+    bottom: 15px;
+    right: 15px;
+    z-index: 99998;
+    font-size: 12px;
+    color: rgba(138, 180, 248, 0.35);
+    text-align: right;
+    line-height: 1.8;
+    pointer-events: none;
+    user-select: none;
+    font-family: "Microsoft YaHei", sans-serif;
+  }
+  
+  .qilai-watermark .title {
+    font-size: 14px;
+    font-weight: bold;
+    color: rgba(138, 180, 248, 0.45);
+    margin-bottom: 4px;
+    letter-spacing: 1px;
+  }
+  </style>
+</head>
+<body>
+  <a href="javascript:void(0);" class="qilai-back-btn" onclick="saveScrollAndReturn();">← 返回主页</a>
+  
+  <div class="qilai-watermark">
+    <div class="title">齐老师动画</div>
+    QQ 3398528250<br>
+    抖音 35320300542
+  </div>
+
+
+    <div class="stars-bg">
+        <canvas id="starsCanvas"></canvas>
+    </div>
+
+    <div class="container">
+        <!-- 画布 -->
+        <div class="canvas-wrapper">
+            <canvas id="mainCanvas" width="900" height="480"></canvas>
+        </div>
+
+        <!-- 底部控制栏 -->
+        <div class="control-bar">
+            <!-- 直线速度 v1 -->
+            <div class="control-group">
+                <label>v₁ <span id="v1Val">2.5</span> m/s</label>
+                <input type="range" id="v1Slider" min="0.0" max="5.0" step="0.1" value="2.5">
+            </div>
+            <!-- 方向角 -->
+            <div class="control-group">
+                <label>θ₁ <span id="angleVal">0°</span></label>
+                <input type="range" id="angleSlider" min="0" max="360" step="1" value="0">
+            </div>
+            <div class="divider"></div>
+            <!-- 圆周速度 v2 -->
+            <div class="control-group">
+                <label>v₂ <span id="v2Val">3.0</span> m/s</label>
+                <input type="range" id="v2Slider" min="0.5" max="8.0" step="0.1" value="3.0">
+            </div>
+            <!-- 半径 R -->
+            <div class="control-group">
+                <label>R <span id="rVal">1.5</span> m</label>
+                <input type="range" id="rSlider" min="0.5" max="3.0" step="0.1" value="1.5">
+            </div>
+            <div class="divider"></div>
+            <!-- 按钮 -->
+            <button class="btn primary" id="playBtn">▶ 播放</button>
+            <button class="btn accent" id="pauseBtn">⏸ 暂停</button>
+            <button class="btn" id="resetBtn">↺ 重置</button>
+            <div class="divider"></div>
+            <!-- 信息 -->
+            <div class="info-inline" id="infoDisplay">ω = 2.00 rad/s</div>
+            <!-- 图例 -->
+            <div class="legend-inline">
+                <span class="item"><span class="dot" style="background:#ff5e5e;color:#ff5e5e;"></span> v₁</span>
+                <span class="item"><span class="dot" style="background:#4da6ff;color:#4da6ff;"></span> v₂</span>
+                <span class="item"><span style="color:#3dd6a8;">○</span> 圆周</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            // ==================== 星空背景 ====================
+            const starsCanvas = document.getElementById('starsCanvas');
+            const starsCtx = starsCanvas.getContext('2d');
+            let stars = [];
+            const STAR_COUNT = 280;
+
+            function resizeStarsCanvas() {
+                starsCanvas.width = window.innerWidth;
+                starsCanvas.height = window.innerHeight;
+            }
+            resizeStarsCanvas();
+            window.addEventListener('resize', resizeStarsCanvas);
+
+            function initStars() {
+                stars = [];
+                for (let i = 0; i < STAR_COUNT; i++) {
+                    stars.push({
+                        x: Math.random() * starsCanvas.width,
+                        y: Math.random() * starsCanvas.height,
+                        r: Math.random() * 1.6 + 0.3,
+                        twinkleSpeed: Math.random() * 0.025 + 0.006,
+                        twinkleOffset: Math.random() * Math.PI * 2,
+                        baseAlpha: Math.random() * 0.5 + 0.4,
+                        hue: 200 + Math.random() * 60
+                    });
+                }
+            }
+            initStars();
+            window.addEventListener('resize', initStars);
+
+            function drawStarsBackground(time) {
+                starsCtx.clearRect(0, 0, starsCanvas.width, starsCanvas.height);
+                const grad = starsCtx.createRadialGradient(
+                    starsCanvas.width * 0.3, starsCanvas.height * 0.4, starsCanvas.width * 0.05,
+                    starsCanvas.width * 0.5, starsCanvas.height * 0.5, starsCanvas.width * 0.9
+                );
+                grad.addColorStop(0, '#111a2e');
+                grad.addColorStop(0.5, '#0b111f');
+                grad.addColorStop(1, '#050810');
+                starsCtx.fillStyle = grad;
+                starsCtx.fillRect(0, 0, starsCanvas.width, starsCanvas.height);
+
+                for (const s of stars) {
+                    const alpha = s.baseAlpha + 0.25 * Math.sin(time * s.twinkleSpeed + s.twinkleOffset);
+                    const clampedAlpha = Math.max(0.15, Math.min(1, alpha));
+                    starsCtx.fillStyle = `hsla(${s.hue}, 70%, 78%, ${clampedAlpha})`;
+                    starsCtx.beginPath();
+                    starsCtx.arc(s.x, s.y, s.r, 0, 2 * Math.PI);
+                    starsCtx.fill();
+                    if (s.r > 1.0) {
+                        starsCtx.fillStyle = `hsla(${s.hue}, 80%, 70%, ${clampedAlpha * 0.3})`;
+                        starsCtx.beginPath();
+                        starsCtx.arc(s.x, s.y, s.r * 3, 0, 2 * Math.PI);
+                        starsCtx.fill();
+                    }
+                }
+                starsCtx.globalAlpha = 0.04;
+                for (let i = 0; i < 3; i++) {
+                    const nx = starsCanvas.width * (0.2 + i * 0.3);
+                    const ny = starsCanvas.height * (0.3 + Math.sin(i) * 0.3);
+                    const ng = starsCtx.createRadialGradient(nx, ny, 0, nx, ny, starsCanvas.width * 0.25);
+                    ng.addColorStop(0, '#8899cc');
+                    ng.addColorStop(1, 'transparent');
+                    starsCtx.fillStyle = ng;
+                    starsCtx.fillRect(0, 0, starsCanvas.width, starsCanvas.height);
+                }
+                starsCtx.globalAlpha = 1;
+            }
+
+            // ==================== 主画布 ====================
+            const mainCanvas = document.getElementById('mainCanvas');
+            const mainCtx = mainCanvas.getContext('2d');
+            const SCALE = 60;
+            const ORIGIN_X = 100;
+            const ORIGIN_Y = mainCanvas.height / 2;
+
+            let v1 = 2.5;
+            let angleDeg = 0;
+            let v2 = 3.0;
+            let R = 1.5;
+            let t = 0.0;
+            let animationId = null;
+            let isRunning = true;
+            let trajectory = [];
+
+            const v1Slider = document.getElementById('v1Slider');
+            const angleSlider = document.getElementById('angleSlider');
+            const v2Slider = document.getElementById('v2Slider');
+            const rSlider = document.getElementById('rSlider');
+            const v1Val = document.getElementById('v1Val');
+            const angleVal = document.getElementById('angleVal');
+            const v2Val = document.getElementById('v2Val');
+            const rVal = document.getElementById('rVal');
+            const infoDisplay = document.getElementById('infoDisplay');
+
+            function updateSliders() {
+                v1 = parseFloat(v1Slider.value);
+                angleDeg = parseInt(angleSlider.value, 10);
+                v2 = parseFloat(v2Slider.value);
+                R = parseFloat(rSlider.value);
+                v1Val.textContent = v1.toFixed(1);
+                angleVal.textContent = angleDeg + '°';
+                v2Val.textContent = v2.toFixed(1);
+                rVal.textContent = R.toFixed(1);
+                const omega = v2 / R;
+                infoDisplay.innerHTML = `ω = ${omega.toFixed(2)} rad/s | T = ${(2*Math.PI/omega).toFixed(2)} s`;
+            }
+
+            v1Slider.addEventListener('input', () => { updateSliders();
+                resetSimulation(); });
+            angleSlider.addEventListener('input', () => { updateSliders();
+                resetSimulation(); });
+            v2Slider.addEventListener('input', () => { updateSliders();
+                resetSimulation(); });
+            rSlider.addEventListener('input', () => { updateSliders();
+                resetSimulation(); });
+
+            function toCanvas(wx, wy) {
+                return { x: ORIGIN_X + wx * SCALE, y: ORIGIN_Y - wy * SCALE };
+            }
+
+            function getPositions(t) {
+                const theta = angleDeg * Math.PI / 180;
+                const v1x = v1 * Math.cos(theta);
+                const v1y = v1 * Math.sin(theta);
+                const omega = v2 / R;
+                const linX = v1x * t;
+                const linY = v1y * t;
+                const circAngle = omega * t;
+                const relX = R * Math.cos(circAngle);
+                const relY = R * Math.sin(circAngle);
+                const actualX = linX + relX;
+                const actualY = linY + relY;
+                const vCircX = -v2 * Math.sin(circAngle);
+                const vCircY = v2 * Math.cos(circAngle);
+                return { linX, linY, relX, relY, actualX, actualY, v1x, v1y, vCircX, vCircY, omega };
+            }
+
+            function drawArrow(ctx, x, y, vx, vy, color, scaleFactor) {
+                const len = Math.sqrt(vx * vx + vy * vy) * scaleFactor;
+                if (len < 0.5) return;
+                const dir = Math.atan2(vy, vx);
+                const headLen = Math.min(8, len * 0.4);
+                ctx.strokeStyle = color;
+                ctx.fillStyle = color;
+                ctx.lineWidth = 2.4;
+                ctx.shadowColor = color;
+                ctx.shadowBlur = 6;
+                ctx.beginPath();
+                ctx.moveTo(x, y);
+                ctx.lineTo(x + len * Math.cos(dir), y - len * Math.sin(dir));
+                ctx.stroke();
+                const tipX = x + len * Math.cos(dir);
+                const tipY = y - len * Math.sin(dir);
+                ctx.beginPath();
+                ctx.moveTo(tipX, tipY);
+                ctx.lineTo(tipX - headLen * Math.cos(dir - 0.8), tipY + headLen * Math.sin(dir - 0.8));
+                ctx.lineTo(tipX - headLen * Math.cos(dir + 0.8), tipY + headLen * Math.sin(dir + 0.8));
+                ctx.closePath();
+                ctx.fill();
+                ctx.shadowBlur = 0;
+            }
+
+            function drawScene(time) {
+                const ctx = mainCtx;
+                ctx.clearRect(0, 0, mainCanvas.width, mainCanvas.height);
+                ctx.fillStyle = 'rgba(8, 14, 26, 0.55)';
+                ctx.fillRect(0, 0, mainCanvas.width, mainCanvas.height);
+
+                // 科技网格
+                ctx.strokeStyle = 'rgba(60, 110, 170, 0.13)';
+                ctx.lineWidth = 0.7;
+                for (let i = 0; i < mainCanvas.width; i += 40) {
+                    ctx.beginPath();
+                    ctx.moveTo(i, 0);
+                    ctx.lineTo(i, mainCanvas.height);
+                    ctx.stroke();
+                }
+                for (let j = 0; j < mainCanvas.height; j += 40) {
+                    ctx.beginPath();
+                    ctx.moveTo(0, j);
+                    ctx.lineTo(mainCanvas.width, j);
+                    ctx.stroke();
+                }
+
+                // 坐标轴
+                ctx.strokeStyle = 'rgba(150,180,220,0.25)';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(ORIGIN_X, 0);
+                ctx.lineTo(ORIGIN_X, mainCanvas.height);
+                ctx.moveTo(0, ORIGIN_Y);
+                ctx.lineTo(mainCanvas.width, ORIGIN_Y);
+                ctx.stroke();
+
+                const { linX, linY, actualX, actualY, v1x, v1y, vCircX, vCircY } = getPositions(time);
+                const linCanvas = toCanvas(linX, linY);
+                const actualCanvas = toCanvas(actualX, actualY);
+
+                // 轨迹
+                if (trajectory.length > 1) {
+                    ctx.beginPath();
+                    ctx.strokeStyle = 'rgba(200,210,230,0.7)';
+                    ctx.lineWidth = 2.5;
+                    ctx.shadowColor = 'rgba(180,200,240,0.5)';
+                    ctx.shadowBlur = 8;
+                    ctx.moveTo(trajectory[0].x, trajectory[0].y);
+                    for (let i = 1; i < trajectory.length; i++) {
+                        ctx.lineTo(trajectory[i].x, trajectory[i].y);
+                    }
+                    ctx.stroke();
+                    ctx.shadowBlur = 0;
+                }
+
+                // 参考圆
+                ctx.beginPath();
+                ctx.strokeStyle = '#3dd6a8';
+                ctx.lineWidth = 1.7;
+                ctx.setLineDash([7, 5]);
+                ctx.shadowColor = 'rgba(60,210,160,0.5)';
+                ctx.shadowBlur = 10;
+                ctx.arc(linCanvas.x, linCanvas.y, R * SCALE, 0, 2 * Math.PI);
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+                ctx.setLineDash([]);
+
+                // 连线
+                ctx.beginPath();
+                ctx.strokeStyle = 'rgba(180,200,220,0.5)';
+                ctx.lineWidth = 1.3;
+                ctx.setLineDash([5, 4]);
+                ctx.moveTo(linCanvas.x, linCanvas.y);
+                ctx.lineTo(actualCanvas.x, actualCanvas.y);
+                ctx.stroke();
+                ctx.setLineDash([]);
+
+                // 直线参考点
+                ctx.fillStyle = '#4da6ff';
+                ctx.shadowColor = 'rgba(70,160,255,0.7)';
+                ctx.shadowBlur = 10;
+                ctx.beginPath();
+                ctx.arc(linCanvas.x, linCanvas.y, 5.5, 0, 2 * Math.PI);
+                ctx.fill();
+                ctx.shadowBlur = 0;
+
+                // 合成点
+                ctx.fillStyle = '#ff5e5e';
+                ctx.shadowColor = 'rgba(255,90,90,0.8)';
+                ctx.shadowBlur = 14;
+                ctx.beginPath();
+                ctx.arc(actualCanvas.x, actualCanvas.y, 9, 0, 2 * Math.PI);
+                ctx.fill();
+                ctx.strokeStyle = 'rgba(255,200,200,0.6)';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+
+                // 箭头（长度减半）
+                const halfScale = SCALE * 0.5;
+                drawArrow(ctx, actualCanvas.x, actualCanvas.y, v1x, v1y, '#ff5e5e', halfScale);
+                drawArrow(ctx, actualCanvas.x, actualCanvas.y, vCircX, vCircY, '#4da6ff', halfScale);
+
+                // 标注
+                ctx.fillStyle = '#ffb0b0';
+                ctx.font = 'bold 12px sans-serif';
+                ctx.fillText('v₁', actualCanvas.x + v1x * halfScale * 0.65, actualCanvas.y - v1y * halfScale * 0.65);
+                ctx.fillStyle = '#b0d8ff';
+                ctx.fillText('v₂', actualCanvas.x + vCircX * halfScale * 0.65, actualCanvas.y - vCircY * halfScale * 0.65);
+
+                // 原点
+                ctx.fillStyle = 'rgba(255,255,255,0.6)';
+                ctx.beginPath();
+                ctx.arc(ORIGIN_X, ORIGIN_Y, 3, 0, 2 * Math.PI);
+                ctx.fill();
+            }
+
+            function animate(ts) {
+                if (!isRunning) {
+                    animationId = requestAnimationFrame(animate);
+                    return;
+                }
+                if (!animate.lastTs) animate.lastTs = ts;
+                const dt = Math.min(0.05, (ts - animate.lastTs) / 1000);
+                animate.lastTs = ts;
+                t += dt;
+
+                const { actualX, actualY } = getPositions(t);
+                trajectory.push(toCanvas(actualX, actualY));
+                if (trajectory.length > 1500) trajectory.shift();
+
+                drawScene(t);
+
+                const lastPt = trajectory[trajectory.length - 1];
+                if (lastPt && (lastPt.x > mainCanvas.width + 60 || lastPt.x < -60 ||
+                    lastPt.y > mainCanvas.height + 60 || lastPt.y < -60)) {
+                    resetSimulation();
+                }
+                animationId = requestAnimationFrame(animate);
+            }
+            animate.lastTs = null;
+
+            function startAnimation() { isRunning = true;
+                animate.lastTs = null; }
+
+            function pauseAnimation() { isRunning = false; }
+
+            function resetSimulation() {
+                t = 0;
+                trajectory = [];
+                updateSliders();
+                drawScene(0);
+                animate.lastTs = null;
+            }
+
+            document.getElementById('playBtn').addEventListener('click', startAnimation);
+            document.getElementById('pauseBtn').addEventListener('click', pauseAnimation);
+            document.getElementById('resetBtn').addEventListener('click', resetSimulation);
+
+            // 综合渲染循环
+            let bgTime = 0;
+            function renderAll(ts) {
+                bgTime = ts * 0.001;
+                drawStarsBackground(bgTime);
+                requestAnimationFrame(renderAll);
+            }
+
+            updateSliders();
+            drawScene(0);
+            animationId = requestAnimationFrame(animate);
+            requestAnimationFrame(renderAll);
+
+            console.log('🌌 配速法动画 - 控制栏已移至下方');
+        })();
+    </script>
+
+  <script>
+  // 返回主页（滚动位置已在主页点击链接时保存）
+  function saveScrollAndReturn() {
+    window.location.href = '../index.html';
+  }
+  
+  // 禁用右键菜单
+  document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+  });
+  
+  // 禁用开发者工具快捷键
+  document.addEventListener('keydown', function(e) {
+    // ESC返回主页 - 保存滚动位置
+    if (e.keyCode === 27) {
+      saveScrollAndReturn();
+      return false;
+    }
+    // F12
+    if (e.keyCode === 123) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+U
+    if (e.ctrlKey && e.keyCode === 85) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+I
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 73) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+J
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 74) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+C
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 67) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+S
+    if (e.ctrlKey && e.keyCode === 83) {
+      e.preventDefault();
+      return false;
+    }
+  });
+  
+  // 禁用选择
+  document.addEventListener('selectstart', function(e) {
+    // 允许输入框选择
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+      return true;
+    }
+    e.preventDefault();
+    return false;
+  });
+  </script>
+</body>
+</html>
