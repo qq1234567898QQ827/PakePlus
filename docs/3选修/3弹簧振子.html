@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>科技感弹簧振子 · 水平/竖直可切换</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+        }
+        body {
+            min-height: 100vh;
+            background: radial-gradient(circle at 20% 30%, #0a0f1e, #03060c);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Segoe UI', 'Poppins', 'Orbitron', 'Share Tech Mono', monospace;
+            padding: 1.5rem;
+        }
+        .sim-container {
+            background: rgba(12, 20, 35, 0.55);
+            backdrop-filter: blur(12px);
+            border-radius: 3rem;
+            padding: 1.6rem 2rem 2rem 2rem;
+            box-shadow: 0 25px 45px rgba(0, 0, 0, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(0, 255, 255, 0.25);
+            transition: all 0.2s;
+            max-width: 860px;
+            margin: 0 auto;
+        }
+        .title-area {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-bottom: 1.2rem;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        h2 {
+            font-weight: 500;
+            font-size: 1.7rem;
+            letter-spacing: 2px;
+            background: linear-gradient(135deg, #a0f0ff, #4e7aff);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-shadow: 0 0 12px rgba(78, 122, 255, 0.3);
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .badge {
+            background: #0e1a2bb3;
+            border-radius: 40px;
+            padding: 0.2rem 1rem;
+            font-size: 0.8rem;
+            font-family: monospace;
+            color: #7df9ff;
+            border: 1px solid #2f6f9f;
+            backdrop-filter: blur(4px);
+        }
+        canvas {
+            display: block;
+            margin: 0 auto;
+            border-radius: 1.8rem;
+            box-shadow: 0 0 0 2px rgba(0, 255, 255, 0.2), 0 20px 35px -12px black;
+            width: 100%;
+            height: auto;
+            background: #010514;
+            cursor: pointer;
+        }
+        .control-panel {
+            margin-top: 1.6rem;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            gap: 1.2rem;
+            background: rgba(0, 5, 15, 0.6);
+            border-radius: 2rem;
+            padding: 1rem 1.5rem;
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            align-items: center;
+        }
+        .slider-group {
+            flex: 1;
+            min-width: 140px;
+        }
+        .slider-group label {
+            display: flex;
+            justify-content: space-between;
+            color: #bbf0ff;
+            font-weight: 500;
+            font-size: 0.85rem;
+            letter-spacing: 1px;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            font-family: 'Orbitron', monospace;
+        }
+        .value-badge {
+            background: #000c1f;
+            padding: 2px 12px;
+            border-radius: 20px;
+            color: #3effe6;
+            font-weight: bold;
+            font-family: monospace;
+            font-size: 1rem;
+            border: 1px solid #2fd0ff;
+            box-shadow: inset 0 0 6px #00a6ff30;
+        }
+        input[type=range] {
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, #00ccff, #4f6eff);
+            border-radius: 10px;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            width: 18px;
+            height: 18px;
+            background: white;
+            border-radius: 50%;
+            box-shadow: 0 0 12px #00ffff, 0 0 6px #00a6ff;
+            border: 1px solid #0ef;
+            cursor: pointer;
+            transition: 0.1s;
+        }
+        input[type=range]::-webkit-slider-thumb:hover {
+            transform: scale(1.3);
+            background: #c0ffff;
+        }
+        .period-card {
+            background: #021023cc;
+            border-radius: 2rem;
+            padding: 0.2rem 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border: 1px solid #0ef8;
+            backdrop-filter: blur(8px);
+        }
+        .period-label {
+            font-size: 0.9rem;
+            font-weight: 400;
+            color: #9bd7ff;
+        }
+        .period-value {
+            font-family: 'Orbitron', monospace;
+            font-size: 2.2rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #e0f0ff, #62dcff);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-shadow: 0 0 8px #0ef;
+            letter-spacing: 2px;
+        }
+        .period-unit {
+            font-size: 1rem;
+            color: #8cf;
+        }
+        .button-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .neon-btn {
+            background: rgba(0, 30, 50, 0.7);
+            border: 1px solid #1effbc70;
+            padding: 0.5rem 1.2rem;
+            border-radius: 40px;
+            font-weight: bold;
+            font-family: monospace;
+            font-size: 0.9rem;
+            color: #c0fffa;
+            cursor: pointer;
+            transition: 0.2s;
+            backdrop-filter: blur(5px);
+            box-shadow: 0 0 6px #0ef3;
+            white-space: nowrap;
+        }
+        .neon-btn:hover {
+            background: #1e7c9c40;
+            border-color: #0ef;
+            box-shadow: 0 0 15px #0ef;
+            color: white;
+            transform: scale(1.02);
+        }
+        footer {
+            margin-top: 0.8rem;
+            font-size: 0.7rem;
+            text-align: center;
+            color: #6b9bc0;
+            font-family: monospace;
+        }
+        @media (max-width: 780px) {
+            .sim-container { padding: 1.2rem; }
+            .period-value { font-size: 1.5rem; }
+        }
+    </style>
+
+  <style>
+  body {
+    background-color: #1a2332 !important;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+  }
+  
+  .qilai-back-btn {
+    position: fixed;
+    top: 10px;
+    left: 15px;
+    z-index: 100000;
+    padding: 8px 16px;
+    background: rgba(0, 150, 200, 0.2);
+    border: 1px solid rgba(100, 180, 255, 0.5);
+    color: #8ab4f8;
+    font-size: 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.3s;
+    backdrop-filter: blur(5px);
+    font-family: "Microsoft YaHei", sans-serif;
+  }
+  
+  .qilai-back-btn:hover {
+    background: rgba(0, 150, 200, 0.4);
+    box-shadow: 0 0 15px rgba(100, 180, 255, 0.3);
+    color: #fff;
+  }
+  
+  .qilai-watermark {
+    position: fixed;
+    bottom: 15px;
+    right: 15px;
+    z-index: 99998;
+    font-size: 12px;
+    color: rgba(138, 180, 248, 0.35);
+    text-align: right;
+    line-height: 1.8;
+    pointer-events: none;
+    user-select: none;
+    font-family: "Microsoft YaHei", sans-serif;
+  }
+  
+  .qilai-watermark .title {
+    font-size: 14px;
+    font-weight: bold;
+    color: rgba(138, 180, 248, 0.45);
+    margin-bottom: 4px;
+    letter-spacing: 1px;
+  }
+  </style>
+</head>
+<body>
+  <a href="javascript:void(0);" class="qilai-back-btn" onclick="saveScrollAndReturn();">← 返回主页</a>
+  
+  <div class="qilai-watermark">
+    <div class="title">齐老师动画</div>
+    QQ 3398528250<br>
+    抖音 35320300542
+  </div>
+
+<div class="sim-container">
+    <div class="title-area">
+        <h2>⚡ 谐动核心 · 弹簧振子 <span class="badge" id="modeBadge">⟷ 水平</span></h2>
+        <div class="period-card">
+            <span class="period-label">振荡周期</span>
+            <span class="period-value" id="periodDisplayNum">--</span>
+            <span class="period-unit">s</span>
+        </div>
+    </div>
+
+    <canvas id="springCanvas" width="800" height="420" style="width:100%; height:auto; max-width:800px; aspect-ratio:800/420"></canvas>
+
+    <div class="control-panel">
+        <div class="slider-group">
+            <label><span>🧲 质量 <span style="font-size:0.8rem;">m (kg)</span></span> <span id="massValue" class="value-badge">2.00</span></label>
+            <input type="range" id="massSlider" min="0.5" max="5.0" value="2.0" step="0.01">
+        </div>
+        <div class="slider-group">
+            <label><span>⚡ 劲度系数 <span style="font-size:0.8rem;">k (N/m)</span></span> <span id="kValue" class="value-badge">35.0</span></label>
+            <input type="range" id="kSlider" min="5.0" max="65.0" value="35.0" step="0.2">
+        </div>
+        <div class="button-group">
+            <button class="neon-btn" id="resetBtn">⟳ 复位拉伸</button>
+            <button class="neon-btn" id="pauseBtn">⏸ 暂停</button>
+            <button class="neon-btn" id="switchModeBtn">↕ 竖直模式</button>
+        </div>
+    </div>
+    <footer>← 拖动滑块调节参数 · 无速度箭头，专注于振子运动 →</footer>
+</div>
+
+<script>
+    (function() {
+        // ---------- 物理参数 ----------
+        let m = 2.0;            // kg
+        let k = 35.0;           // N/m (默认35)
+        let x = 144.0;          // 位移 (像素)，正值：水平向右 / 竖直向下
+        let v = 0.0;            // 速度 (像素/秒)
+
+        // 模式: false=水平, true=竖直
+        let verticalMode = false;
+
+        // 几何参数 (画布 800x420)
+        const canvas = document.getElementById('springCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // 水平模式固定点 (左侧墙壁)
+        const WALL_X_H = 90;
+        const WALL_Y_H = 210;
+        const BALANCE_X_H = 460;
+        const BALANCE_Y_H = 210;
+        const MASS_W = 44;
+        const MASS_HALF = MASS_W / 2;
+
+        // 竖直模式固定点 (顶部中心)
+        const WALL_X_V = 400;
+        const WALL_Y_V = 50;
+        const BALANCE_X_V = 400;
+        const BALANCE_Y_V = 250;
+
+        // 动态获取当前固定点和平衡点
+        function getConfig() {
+            if (verticalMode) {
+                return {
+                    wallX: WALL_X_V,
+                    wallY: WALL_Y_V,
+                    balanceX: BALANCE_X_V,
+                    balanceY: BALANCE_Y_V,
+                };
+            } else {
+                return {
+                    wallX: WALL_X_H,
+                    wallY: WALL_Y_H,
+                    balanceX: BALANCE_X_H,
+                    balanceY: BALANCE_Y_H,
+                };
+            }
+        }
+
+        // 动画控制
+        let running = true;
+        let lastTimestamp = null;
+        let animId = null;
+
+        // DOM 元素
+        const massSlider = document.getElementById('massSlider');
+        const kSlider = document.getElementById('kSlider');
+        const massValSpan = document.getElementById('massValue');
+        const kValSpan = document.getElementById('kValue');
+        const periodDisplaySpan = document.getElementById('periodDisplayNum');
+        const resetBtn = document.getElementById('resetBtn');
+        const pauseBtn = document.getElementById('pauseBtn');
+        const switchModeBtn = document.getElementById('switchModeBtn');
+        const modeBadge = document.getElementById('modeBadge');
+
+        // 更新周期显示
+        function updatePeriodUI() {
+            const T = 2 * Math.PI * Math.sqrt(m / k);
+            periodDisplaySpan.innerText = T.toFixed(2);
+        }
+
+        // 滑块事件
+        massSlider.addEventListener('input', (e) => {
+            m = parseFloat(e.target.value);
+            massValSpan.innerText = m.toFixed(2);
+            updatePeriodUI();
+        });
+
+        kSlider.addEventListener('input', (e) => {
+            k = parseFloat(e.target.value);
+            kValSpan.innerText = k.toFixed(1);
+            updatePeriodUI();
+        });
+
+        // 复位: 水平振幅144，竖直振幅86.4 (0.6倍)
+        resetBtn.addEventListener('click', () => {
+            x = verticalMode ? 86.4 : 144.0;
+            v = 0.0;
+            drawCanvas();
+        });
+
+        // 暂停/启动
+        pauseBtn.addEventListener('click', () => {
+            running = !running;
+            pauseBtn.innerText = running ? "⏸ 暂停" : "▶ 启动";
+            if (!running) {
+                lastTimestamp = null;
+                drawCanvas();
+            } else {
+                lastTimestamp = null;
+            }
+        });
+
+        // 切换模式
+        switchModeBtn.addEventListener('click', () => {
+            verticalMode = !verticalMode;
+            switchModeBtn.innerText = verticalMode ? "⟷ 水平模式" : "↕ 竖直模式";
+            modeBadge.innerText = verticalMode ? "↕ 竖直" : "⟷ 水平";
+            x = verticalMode ? 86.4 : 144.0;
+            v = 0.0;
+            drawCanvas();
+        });
+
+        // ---------- 物理积分 ----------
+        function updatePhysics(dtSec) {
+            if (!running) return;
+            dtSec = Math.min(0.025, dtSec);
+            const a = - (k / m) * x;
+            v += a * dtSec;
+            x += v * dtSec;
+        }
+
+        // ---------- 绘图 ----------
+        function drawTechBackground() {
+            const grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+            grad.addColorStop(0, '#020617');
+            grad.addColorStop(1, '#030a1a');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            ctx.strokeStyle = '#0ef22030';
+            ctx.lineWidth = 0.8;
+            for (let i = 0; i < canvas.width; i += 40) {
+                ctx.beginPath();
+                ctx.moveTo(i, 0);
+                ctx.lineTo(i, canvas.height);
+                ctx.stroke();
+            }
+            for (let i = 0; i < canvas.height; i += 40) {
+                ctx.beginPath();
+                ctx.moveTo(0, i);
+                ctx.lineTo(canvas.width, i);
+                ctx.stroke();
+            }
+            ctx.fillStyle = '#ccf6ff30';
+            for (let i = 0; i < 70; i++) {
+                ctx.beginPath();
+                ctx.arc( (i*131)%canvas.width, (i*253)%canvas.height, 1.2, 0, Math.PI*2);
+                ctx.fill();
+            }
+            ctx.shadowBlur = 0;
+            const radGrd = ctx.createRadialGradient(400, 210, 15, 400, 210, 120);
+            radGrd.addColorStop(0, '#1177ff08');
+            radGrd.addColorStop(1, '#0133aa00');
+            ctx.fillStyle = radGrd;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+
+        // 绘制弹簧 (通用)
+        function drawSpring(fromX, fromY, toX, toY) {
+            const segments = 28;
+            const ampl = 8;
+            const dx = toX - fromX;
+            const dy = toY - fromY;
+            const length = Math.hypot(dx, dy);
+            if (length < 5) {
+                ctx.beginPath();
+                ctx.moveTo(fromX, fromY);
+                ctx.lineTo(toX, toY);
+                ctx.strokeStyle = "#3effe6";
+                ctx.lineWidth = 2.8;
+                ctx.stroke();
+                return;
+            }
+            const dirX = dx / length;
+            const dirY = dy / length;
+            const perpX = -dirY;
+            const perpY = dirX;
+
+            const points = [];
+            for (let i = 0; i <= segments; i++) {
+                const t = i / segments;
+                let xp = fromX + dx * t;
+                let yp = fromY + dy * t;
+                if (i > 0 && i < segments) {
+                    const envelope = 4 * t * (1 - t);
+                    const sign = (i % 2 === 0) ? 1 : -1;
+                    const offset = envelope * ampl * sign;
+                    xp += perpX * offset;
+                    yp += perpY * offset;
+                }
+                points.push({x: xp, y: yp});
+            }
+            ctx.beginPath();
+            ctx.moveTo(points[0].x, points[0].y);
+            for (let i = 1; i < points.length; i++) {
+                ctx.lineTo(points[i].x, points[i].y);
+            }
+            ctx.strokeStyle = '#0cfcff';
+            ctx.lineWidth = 2.6;
+            ctx.shadowBlur = 12;
+            ctx.shadowColor = '#00c8ff';
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+        }
+
+        // 绘制墙壁/物块 (根据模式)
+        function drawSciFiObjects(cfg) {
+            const { wallX, wallY, balanceX, balanceY } = cfg;
+            let massCenterX, massCenterY;
+            if (verticalMode) {
+                massCenterX = balanceX;
+                massCenterY = balanceY + x;   // 向下为正
+            } else {
+                massCenterX = balanceX + x;
+                massCenterY = balanceY;
+            }
+            const massLeft = massCenterX - MASS_HALF;
+            const massTop = massCenterY - MASS_HALF;
+
+            // 固定墙壁 (科技感)
+            ctx.shadowBlur = 8;
+            ctx.shadowColor = '#0efb';
+            ctx.fillStyle = '#1e2b44';
+            ctx.beginPath();
+            if (verticalMode) {
+                ctx.roundRect(wallX - 28, wallY - 8, 56, 24, 12);
+            } else {
+                ctx.roundRect(wallX - 18, wallY - 28, 32, 56, 12);
+            }
+            ctx.fill();
+            ctx.fillStyle = '#3d70b0';
+            ctx.beginPath();
+            if (verticalMode) {
+                ctx.roundRect(wallX - 22, wallY - 4, 44, 16, 8);
+            } else {
+                ctx.roundRect(wallX - 12, wallY - 22, 24, 44, 8);
+            }
+            ctx.fill();
+            // 铆钉
+            ctx.fillStyle = '#7efff0';
+            ctx.shadowBlur = 14;
+            for (let i = -1; i <= 1; i++) {
+                ctx.beginPath();
+                if (verticalMode) {
+                    ctx.arc(wallX + i*14, wallY + 2, 4, 0, 2*Math.PI);
+                } else {
+                    ctx.arc(wallX - 4, wallY + i*16, 4, 0, 2*Math.PI);
+                }
+                ctx.fill();
+            }
+
+            // 质量块 (未来金属)
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = '#00a6ff99';
+            const gradMass = ctx.createLinearGradient(massLeft, massTop, massLeft+12, massTop+MASS_W);
+            gradMass.addColorStop(0, '#65b8ff');
+            gradMass.addColorStop(1, '#205e9e');
+            ctx.fillStyle = gradMass;
+            ctx.beginPath();
+            ctx.roundRect(massLeft, massTop, MASS_W, MASS_W, 12);
+            ctx.fill();
+            // 科技纹路
+            ctx.fillStyle = '#c0f3ffcc';
+            ctx.beginPath();
+            ctx.roundRect(massLeft+6, massTop+8, MASS_W-12, 8, 4);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.roundRect(massLeft+10, massTop+22, 8, 12, 3);
+            ctx.fillStyle = '#feffc0';
+            ctx.fill();
+            // 核心指示灯
+            ctx.beginPath();
+            ctx.arc(massCenterX, massCenterY, 7, 0, 2*Math.PI);
+            ctx.fillStyle = '#ffda7e';
+            ctx.shadowBlur = 15;
+            ctx.fill();
+            ctx.fillStyle = '#ffb347';
+            ctx.beginPath();
+            ctx.arc(massCenterX, massCenterY, 3, 0, 2*Math.PI);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+
+            // 平衡位置虚线 (横向或纵向)
+            ctx.setLineDash([6, 8]);
+            ctx.strokeStyle = '#2ef7ff80';
+            ctx.lineWidth = 1.2;
+            if (verticalMode) {
+                ctx.beginPath();
+                ctx.moveTo(balanceX - 50, balanceY);
+                ctx.lineTo(balanceX + 50, balanceY);
+                ctx.stroke();
+            } else {
+                ctx.beginPath();
+                ctx.moveTo(balanceX, balanceY - 50);
+                ctx.lineTo(balanceX, balanceY + 50);
+                ctx.stroke();
+            }
+            ctx.setLineDash([]);
+        }
+
+        // 粒子特效 (保留)
+        function drawParticlesTrail(cfg) {
+            if (!running) return;
+            const { balanceX, balanceY } = cfg;
+            let cx, cy;
+            if (verticalMode) {
+                cx = balanceX;
+                cy = balanceY + x;
+            } else {
+                cx = balanceX + x;
+                cy = balanceY;
+            }
+            const speedVal = Math.abs(v);
+            const particleCount = Math.min(12, Math.floor(speedVal / 18) + 2);
+            for (let i = 0; i < particleCount; i++) {
+                const angle = Date.now() * 0.01 + i * 2.0;
+                const rad = 16 + Math.sin(angle) * 5;
+                const px = cx + Math.cos(angle + i) * rad;
+                const py = cy + Math.sin(angle * 1.5 + i) * rad * 0.6;
+                ctx.beginPath();
+                ctx.arc(px, py, 1.5, 0, Math.PI*2);
+                ctx.fillStyle = `rgba(0, 240, 255, ${0.3 + Math.sin(Date.now()*0.02 + i)*0.2})`;
+                ctx.fill();
+            }
+        }
+
+        // 主绘图
+        function drawCanvas() {
+            const cfg = getConfig();
+            drawTechBackground();
+
+            let massCenterX, massCenterY;
+            if (verticalMode) {
+                massCenterX = cfg.balanceX;
+                massCenterY = cfg.balanceY + x;
+            } else {
+                massCenterX = cfg.balanceX + x;
+                massCenterY = cfg.balanceY;
+            }
+            const massLeft = massCenterX - MASS_HALF;
+            const massTop = massCenterY - MASS_HALF;
+            const springEndX = massLeft;
+            const springEndY = massCenterY;
+            let toX, toY;
+            if (verticalMode) {
+                toX = massCenterX;
+                toY = massTop;
+            } else {
+                toX = springEndX;
+                toY = springEndY;
+            }
+            drawSpring(cfg.wallX, cfg.wallY, toX, toY);
+            drawSciFiObjects(cfg);
+            drawParticlesTrail(cfg);
+
+            // 右上角显示周期
+            ctx.font = "bold 14px 'Orbitron'";
+            ctx.fillStyle = "#bbf5ff";
+            ctx.shadowBlur = 0;
+            ctx.fillText(`T = ${(2 * Math.PI * Math.sqrt(m/k)).toFixed(2)} s`, canvas.width-130, 38);
+            ctx.strokeStyle = '#3effb030';
+            ctx.lineWidth = 1.5;
+            ctx.strokeRect(6, 6, canvas.width-12, canvas.height-12);
+        }
+
+        // 动画循环
+        function animationFrame(nowMs) {
+            if (!lastTimestamp && running) {
+                lastTimestamp = nowMs;
+                drawCanvas();
+                animId = requestAnimationFrame(animationFrame);
+                return;
+            }
+            if (running && lastTimestamp !== null) {
+                let dt = Math.min(0.033, (nowMs - lastTimestamp) / 1000);
+                if (dt > 0.001) {
+                    updatePhysics(dt);
+                }
+                lastTimestamp = nowMs;
+                drawCanvas();
+            } else if (!running) {
+                drawCanvas();
+            } else {
+                drawCanvas();
+            }
+            animId = requestAnimationFrame(animationFrame);
+        }
+
+        // 初始化
+        function init() {
+            massValSpan.innerText = m.toFixed(2);
+            kValSpan.innerText = k.toFixed(1);
+            kSlider.value = k;
+            massSlider.value = m;
+            x = 144.0;
+            v = 0.0;
+            updatePeriodUI();
+            drawCanvas();
+            animId = requestAnimationFrame(animationFrame);
+        }
+
+        window.addEventListener('load', init);
+        window.addEventListener('beforeunload', () => {
+            if (animId) cancelAnimationFrame(animId);
+        });
+
+        // 补充 roundRect
+        if (!CanvasRenderingContext2D.prototype.roundRect) {
+            CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, r) {
+                if (w < 2 * r) r = w / 2;
+                if (h < 2 * r) r = h / 2;
+                this.moveTo(x+r, y);
+                this.lineTo(x+w-r, y);
+                this.quadraticCurveTo(x+w, y, x+w, y+r);
+                this.lineTo(x+w, y+h-r);
+                this.quadraticCurveTo(x+w, y+h, x+w-r, y+h);
+                this.lineTo(x+r, y+h);
+                this.quadraticCurveTo(x, y+h, x, y+h-r);
+                this.lineTo(x, y+r);
+                this.quadraticCurveTo(x, y, x+r, y);
+                return this;
+            };
+        }
+    })();
+</script>
+
+  <script>
+  // 返回主页（滚动位置已在主页点击链接时保存）
+  function saveScrollAndReturn() {
+    window.location.href = '../index.html';
+  }
+  
+  // 禁用右键菜单
+  document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+  });
+  
+  // 禁用开发者工具快捷键
+  document.addEventListener('keydown', function(e) {
+    // ESC返回主页 - 保存滚动位置
+    if (e.keyCode === 27) {
+      saveScrollAndReturn();
+      return false;
+    }
+    // F12
+    if (e.keyCode === 123) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+U
+    if (e.ctrlKey && e.keyCode === 85) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+I
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 73) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+J
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 74) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+C
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 67) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+S
+    if (e.ctrlKey && e.keyCode === 83) {
+      e.preventDefault();
+      return false;
+    }
+  });
+  
+  // 禁用选择
+  document.addEventListener('selectstart', function(e) {
+    // 允许输入框选择
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+      return true;
+    }
+    e.preventDefault();
+    return false;
+  });
+  </script>
+</body>
+</html>
