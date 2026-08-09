@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>飞机投弹：平抛轨迹 + 落地留存 | 0.2秒连投</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+        }
+        body {
+            background: #eef2e9;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Segoe UI', 'Quicksand', system-ui, sans-serif;
+            padding: 24px;
+        }
+        .sim-container {
+            background: #fffaf2;
+            border-radius: 56px;
+            padding: 22px 26px 28px 26px;
+            box-shadow: 0 20px 35px rgba(0,0,0,0.08);
+            border: 1px solid #fff0e0;
+        }
+        canvas {
+            display: block;
+            margin: 0 auto;
+            border-radius: 32px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+            background-color: #e9f3fc;
+            cursor: crosshair;
+        }
+        .control-bar {
+            margin-top: 24px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 18px;
+            background: #fffcf5;
+            border-radius: 80px;
+            padding: 12px 28px;
+            align-items: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+            border: 1px solid #ffe5cd;
+        }
+        .ctrl-panel {
+            background: #ffffffcc;
+            padding: 6px 24px;
+            border-radius: 48px;
+            display: flex;
+            align-items: center;
+            gap: 18px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .ctrl-panel label {
+            font-weight: 700;
+            font-size: 0.95rem;
+            color: #4f6f7c;
+        }
+        input[type="range"] {
+            width: 190px;
+            height: 5px;
+            -webkit-appearance: none;
+            background: #dbcfb5;
+            border-radius: 5px;
+            outline: none;
+        }
+        input[type="range"]:focus { outline: none; }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #f0a35e;
+            border: 2px solid #ffffff;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+            cursor: pointer;
+        }
+        .value-indicator {
+            background: #f6ede2;
+            padding: 4px 16px;
+            border-radius: 32px;
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: bold;
+            font-size: 0.9rem;
+            color: #b85f2a;
+            min-width: 95px;
+            text-align: center;
+            border: 1px solid #ffdebc;
+        }
+        button {
+            background: #ffeade;
+            border: none;
+            color: #6b4a2c;
+            font-weight: bold;
+            padding: 8px 24px;
+            border-radius: 48px;
+            font-family: inherit;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: 0.08s linear;
+            border: 1px solid #ffd8b5;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        button:active {
+            transform: scale(0.96);
+            background: #f7dfc0;
+        }
+        .stats-badge {
+            display: flex;
+            gap: 20px;
+            background: #fef3e8;
+            padding: 5px 26px;
+            border-radius: 48px;
+            font-weight: 600;
+            color: #9b6a42;
+            font-size: 0.85rem;
+            border: 1px solid #ffdfbe;
+        }
+        hr {
+            height: 38px;
+            margin: 0 6px;
+            border: none;
+            border-left: 2px solid #ffe6cf;
+        }
+        footer {
+            text-align: center;
+            margin-top: 16px;
+            font-size: 12px;
+            color: #99afa8;
+            font-weight: 500;
+        }
+    </style>
+
+  <style>
+  body {
+    background-color: #1a2332 !important;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+  }
+  
+  .qilai-back-btn {
+    position: fixed;
+    top: 10px;
+    left: 15px;
+    z-index: 100000;
+    padding: 8px 16px;
+    background: rgba(0, 150, 200, 0.2);
+    border: 1px solid rgba(100, 180, 255, 0.5);
+    color: #8ab4f8;
+    font-size: 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.3s;
+    backdrop-filter: blur(5px);
+    font-family: "Microsoft YaHei", sans-serif;
+  }
+  
+  .qilai-back-btn:hover {
+    background: rgba(0, 150, 200, 0.4);
+    box-shadow: 0 0 15px rgba(100, 180, 255, 0.3);
+    color: #fff;
+  }
+  
+  .qilai-watermark {
+    position: fixed;
+    bottom: 15px;
+    right: 15px;
+    z-index: 99998;
+    font-size: 12px;
+    color: rgba(138, 180, 248, 0.35);
+    text-align: right;
+    line-height: 1.8;
+    pointer-events: none;
+    user-select: none;
+    font-family: "Microsoft YaHei", sans-serif;
+  }
+  
+  .qilai-watermark .title {
+    font-size: 14px;
+    font-weight: bold;
+    color: rgba(138, 180, 248, 0.45);
+    margin-bottom: 4px;
+    letter-spacing: 1px;
+  }
+  </style>
+</head>
+<body>
+  <a href="javascript:void(0);" class="qilai-back-btn" onclick="saveScrollAndReturn();">← 返回主页</a>
+  
+  <div class="qilai-watermark">
+    <div class="title">齐老师动画</div>
+    QQ 3398528250<br>
+    抖音 35320300542
+  </div>
+
+<div>
+    <div class="sim-container">
+        <canvas id="bombCanvas" width="1100" height="560" style="width:100%; height:auto; max-width:1100px; aspect-ratio:1100/560"></canvas>
+        
+        <div class="control-bar">
+            <div class="ctrl-panel">
+                <label>✈️ 飞行速度</label>
+                <input type="range" id="speedSlider" min="-400" max="480" step="5" value="210">
+                <span id="speedVal" class="value-indicator">210 px/s</span>
+            </div>
+            <div class="ctrl-panel">
+                <label>⚙️ 加速度</label>
+                <input type="range" id="accSlider" min="-420" max="420" step="6" value="80">
+                <span id="accVal" class="value-indicator">80 px/s²</span>
+            </div>
+            <hr>
+            <button id="manualDrop">💣 手动投弹</button>
+            <button id="clearBombs">🧹 清除炸弹</button>
+            <button id="resetSim">🔄 重置场景</button>
+            <div class="stats-badge">
+                <span>💥 炸弹数: <span id="bombCount">0</span></span>
+                <span>⏱️ 自动投弹: 0.2s/次</span>
+            </div>
+        </div>
+        <footer>🎯 平抛轨迹 (淡蓝线) · 落地炸弹不消失 · 重力 g = 760 px/s² · 大尺寸模型</footer>
+    </div>
+</div>
+
+<script>
+    (function(){
+        // ---------- canvas ----------
+        const canvas = document.getElementById('bombCanvas');
+        const ctx = canvas.getContext('2d');
+        const W = 1100, H = 560;
+        canvas.width = W; canvas.height = H;
+
+        // ---------- 物理参数 ----------
+        const GRAVITY = 760;
+        const PLANE_Y = 92;
+        const GROUND_Y = H - 52;
+
+        // ---------- 飞机状态 ----------
+        let planeX = 220;
+        let planeVx = 210;
+        let planeAcc = 80;
+
+        // ---------- 炸弹系统 ----------
+        let bombs = [];
+        const MAX_BOMBS = 250;            // 增加容量，因为落地炸弹不消失
+
+        // ---------- 自动投弹 (0.2秒) ----------
+        const AUTO_DROP_INTERVAL = 0.2;
+        let timeSinceLastDrop = 0;
+
+        // ---------- DOM 元素 ----------
+        const speedSlider = document.getElementById('speedSlider');
+        const accSlider = document.getElementById('accSlider');
+        const speedSpan = document.getElementById('speedVal');
+        const accSpan = document.getElementById('accVal');
+        const bombCounterSpan = document.getElementById('bombCount');
+        const manualBtn = document.getElementById('manualDrop');
+        const clearBtn = document.getElementById('clearBombs');
+        const resetBtn = document.getElementById('resetSim');
+
+        // ---------- 辅助函数 ----------
+        function updateUI() {
+            speedSpan.innerText = Math.floor(planeVx) + " px/s";
+            accSpan.innerText = Math.floor(planeAcc) + " px/s²";
+            bombCounterSpan.innerText = bombs.length;
+        }
+
+        // 投掷一枚炸弹 (大尺寸，带轨迹数组)
+        function dropBomb() {
+            if (bombs.length > MAX_BOMBS + 30) return;
+            bombs.push({
+                x: planeX,
+                y: PLANE_Y + 16,
+                vx: planeVx,
+                vy: 0,
+                radius: 14,
+                landed: false,          // 是否已落地
+                trail: []               // 存储轨迹点 {x, y}
+            });
+            updateUI();
+        }
+
+        // 清除所有炸弹
+        function clearAllBombs() {
+            bombs = [];
+            updateUI();
+        }
+
+        // 重置场景
+        function resetScenario() {
+            planeX = 220;
+            planeVx = parseFloat(speedSlider.value);
+            planeAcc = parseFloat(accSlider.value);
+            planeX = Math.min(Math.max(planeX, 30), W - 100);
+            bombs = [];
+            timeSinceLastDrop = 0;
+            updateUI();
+        }
+
+        // ---------- 边界限制 ----------
+        function applyBoundary() {
+            const leftLimit = 24;
+            const rightLimit = W - 90;
+            if (planeX < leftLimit) { planeX = leftLimit; if (planeVx < 0) planeVx = 0; }
+            if (planeX > rightLimit) { planeX = rightLimit; if (planeVx > 0) planeVx = 0; }
+            if (planeVx > 620) planeVx = 620;
+            if (planeVx < -460) planeVx = -460;
+        }
+
+        // ---------- 物理更新 ----------
+        let lastTimestamp = null;
+        let animFrameId = null;
+
+        function updatePlane(dt) {
+            const safeDt = Math.min(dt, 0.033);
+            planeVx += planeAcc * safeDt;
+            if (planeVx > 660) planeVx = 660;
+            if (planeVx < -480) planeVx = -480;
+            planeX += planeVx * safeDt;
+            applyBoundary();
+        }
+
+        function updateBombs(dt) {
+            const safeDt = Math.min(dt, 0.033);
+            // 记录轨迹的帧计数器（每2帧记录一个点，减少点数量）
+            if (typeof window._frameCount === 'undefined') window._frameCount = 0;
+            window._frameCount++;
+            const recordTrail = (window._frameCount % 2 === 0);  // 隔帧记录
+
+            for (let i = 0; i < bombs.length; i++) {
+                const b = bombs[i];
+                if (b.landed) continue;   // 已落地的不再更新
+
+                // 记录轨迹点
+                if (recordTrail) {
+                    b.trail.push({ x: b.x, y: b.y });
+                    // 限制轨迹点数量 (最多30个)
+                    if (b.trail.length > 30) b.trail.shift();
+                }
+
+                // 物理更新
+                b.vy += GRAVITY * safeDt;
+                b.x += b.vx * safeDt;
+                b.y += b.vy * safeDt;
+
+                // 检测是否落地
+                if (b.y + b.radius >= GROUND_Y) {
+                    b.landed = true;
+                    b.y = GROUND_Y - b.radius;    // 固定在地面上
+                    b.vx = 0;
+                    b.vy = 0;
+                    // 落地后不再更新位置
+                }
+
+                // 如果飞出左右边界太远，也视为失效（但保留，可清理）
+                if (b.x + b.radius < -200 || b.x - b.radius > W + 250) {
+                    // 对于出界的炸弹，可以标记为失效并移除，但为了演示，我们保留但不再显示轨迹？
+                    // 我们选择将其移除（因为看不到）
+                    b.landed = true; 
+                    // 但为了保持数组干净，我们后面过滤掉太远的
+                }
+            }
+
+            // 清理：移除飞出太远的炸弹（保留落地的）
+            bombs = bombs.filter(b => {
+                if (b.x + b.radius < -250 || b.x - b.radius > W + 300) return false;
+                return true;
+            });
+            if (bombs.length > MAX_BOMBS + 30) bombs = bombs.slice(-MAX_BOMBS);
+        }
+
+        function updateAutoDrop(dt) {
+            timeSinceLastDrop += dt;
+            if (timeSinceLastDrop >= AUTO_DROP_INTERVAL) {
+                dropBomb();
+                timeSinceLastDrop = 0;
+            }
+        }
+
+        // ---------- 绘图模块 ----------
+        function drawBackground() {
+            const gradSky = ctx.createLinearGradient(0,0,0,GROUND_Y);
+            gradSky.addColorStop(0, "#cde6fa");
+            gradSky.addColorStop(0.7, "#eaf4fc");
+            ctx.fillStyle = gradSky;
+            ctx.fillRect(0,0,W,GROUND_Y);
+            ctx.fillStyle = "#cfe3bc";
+            ctx.fillRect(0, GROUND_Y-10, W, H-GROUND_Y+18);
+            ctx.fillStyle = "#bbda9a";
+            ctx.fillRect(0, GROUND_Y-3, W, 6);
+            // 云朵
+            ctx.fillStyle = "#ffffffcc";
+            ctx.beginPath();
+            ctx.ellipse(140,65,58,42,0,0,Math.PI*2);
+            ctx.ellipse(210,52,68,48,0,0,Math.PI*2);
+            ctx.ellipse(290,70,52,38,0,0,Math.PI*2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.ellipse(860,100,62,46,0,0,Math.PI*2);
+            ctx.ellipse(940,88,54,42,0,0,Math.PI*2);
+            ctx.fill();
+            // 地面纹理
+            ctx.fillStyle = "#bddc9a70";
+            for (let i=0;i<16;i++) {
+                ctx.beginPath();
+                ctx.ellipse(i*80+15, GROUND_Y-4, 45,12,0,0,Math.PI*2);
+                ctx.fill();
+            }
+        }
+
+        // 飞机
+        function drawLargePlane() {
+            const px = planeX, py = PLANE_Y;
+            ctx.save();
+            ctx.shadowBlur = 8;
+            ctx.shadowColor = "rgba(0,0,0,0.08)";
+            ctx.beginPath();
+            ctx.moveTo(px-38, py-9);
+            ctx.lineTo(px+60, py);
+            ctx.lineTo(px-38, py+11);
+            ctx.fillStyle = "#528a9c";
+            ctx.fill();
+            ctx.beginPath();
+            ctx.ellipse(px-8, py, 52, 16, 0,0,Math.PI*2);
+            ctx.fillStyle = "#6fa7b8";
+            ctx.fill();
+            ctx.fillStyle = "#427585";
+            ctx.beginPath();
+            ctx.moveTo(px-22, py-12);
+            ctx.lineTo(px-76, py-36);
+            ctx.lineTo(px-56, py-5);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.moveTo(px-22, py+12);
+            ctx.lineTo(px-76, py+36);
+            ctx.lineTo(px-56, py+5);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.moveTo(px+42, py-12);
+            ctx.lineTo(px+66, py);
+            ctx.lineTo(px+42, py+12);
+            ctx.fillStyle = "#5d98aa";
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(px+28, py, 10, 0, Math.PI*2);
+            ctx.fillStyle = "#fff7cf";
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(px+30, py-1, 4, 0, Math.PI*2);
+            ctx.fillStyle = "#2c6875";
+            ctx.fill();
+            // 螺旋桨
+            ctx.save();
+            ctx.translate(px-48, py);
+            const angle = Date.now() / 55;
+            ctx.rotate(angle);
+            ctx.fillStyle = "#c88444";
+            ctx.fillRect(-10, -5, 20, 10);
+            ctx.fillRect(-5, -10, 10, 20);
+            ctx.restore();
+            // 尾迹
+            if (Math.abs(planeVx) > 22) {
+                const trailLen = Math.min(34, Math.abs(planeVx)/12);
+                ctx.beginPath();
+                ctx.moveTo(px-54, py);
+                ctx.lineTo(px-80-trailLen, py-5);
+                ctx.lineTo(px-80-trailLen, py+5);
+                ctx.fillStyle = "#c9e2edaa";
+                ctx.fill();
+            }
+            ctx.restore();
+        }
+
+        // 炸弹 + 轨迹
+        function drawBigBombs() {
+            for (const b of bombs) {
+                // ---- 绘制轨迹 (淡蓝色半透明点线) ----
+                if (b.trail && b.trail.length > 1) {
+                    ctx.save();
+                    ctx.globalAlpha = 0.6;
+                    ctx.beginPath();
+                    ctx.moveTo(b.trail[0].x, b.trail[0].y);
+                    for (let i = 1; i < b.trail.length; i++) {
+                        ctx.lineTo(b.trail[i].x, b.trail[i].y);
+                    }
+                    ctx.strokeStyle = "#3aa8d1";
+                    ctx.lineWidth = 2.5;
+                    ctx.shadowBlur = 4;
+                    ctx.shadowColor = "rgba(0,180,255,0.4)";
+                    ctx.stroke();
+                    ctx.restore();
+                    // 绘制小圆点
+                    for (const pt of b.trail) {
+                        ctx.beginPath();
+                        ctx.arc(pt.x, pt.y, 2.2, 0, Math.PI*2);
+                        ctx.fillStyle = "#66ccffaa";
+                        ctx.shadowBlur = 4;
+                        ctx.shadowColor = "rgba(0,180,255,0.3)";
+                        ctx.fill();
+                    }
+                }
+
+                // ---- 绘制炸弹本体 ----
+                ctx.save();
+                ctx.shadowBlur = 7;
+                ctx.shadowColor = "rgba(0,0,0,0.2)";
+                // 如果已落地，改变颜色（略暗）
+                const bodyColor = b.landed ? "#5a4030" : "#694128";
+                const highlightColor = b.landed ? "#7a5a40" : "#9b613a";
+                ctx.beginPath();
+                ctx.arc(b.x, b.y, b.radius-3, 0, Math.PI*2);
+                ctx.fillStyle = bodyColor;
+                ctx.fill();
+                ctx.beginPath();
+                ctx.arc(b.x, b.y, b.radius-4, 0, Math.PI*2);
+                ctx.fillStyle = highlightColor;
+                ctx.fill();
+                // 引信（落地后变暗）
+                ctx.beginPath();
+                ctx.arc(b.x-2.2, b.y-2.5, 3.5, 0, Math.PI*2);
+                ctx.fillStyle = b.landed ? "#b08050" : "#e29856";
+                ctx.fill();
+                ctx.beginPath();
+                ctx.arc(b.x-2.8, b.y-3.2, 1.8, 0, Math.PI*2);
+                ctx.fillStyle = b.landed ? "#906040" : "#ffcf8a";
+                ctx.fill();
+                // 如果未落地，添加拖尾特效
+                if (!b.landed) {
+                    for (let t=0; t<2; t++) {
+                        ctx.beginPath();
+                        ctx.arc(b.x - (b.vx*0.05) - t*6, b.y - (b.vy*0.04), 3.2, 0, Math.PI*2);
+                        ctx.fillStyle = `rgba(220,115,35,0.6)`;
+                        ctx.fill();
+                    }
+                    if (Math.abs(b.vx) > 70) {
+                        ctx.beginPath();
+                        ctx.moveTo(b.x-12, b.y);
+                        ctx.lineTo(b.x-28, b.y-5);
+                        ctx.lineTo(b.x-28, b.y+5);
+                        ctx.fillStyle = "#ffbc73aa";
+                        ctx.fill();
+                    }
+                } else {
+                    // 落地后画一个小“尘土”圈
+                    ctx.beginPath();
+                    ctx.arc(b.x, b.y+2, b.radius+2, 0, Math.PI*2);
+                    ctx.strokeStyle = "#a0908060";
+                    ctx.lineWidth = 1.5;
+                    ctx.stroke();
+                }
+                ctx.restore();
+            }
+        }
+
+        // HUD
+        function drawOverlay() {
+            ctx.font = "bold 20px 'Segoe UI', 'Quicksand'";
+            ctx.fillStyle = "#2b6e7c";
+            ctx.shadowBlur = 0;
+            ctx.fillText(`✈️ 空速: ${Math.abs(planeVx).toFixed(1)} px/s`, 24, 52);
+            ctx.fillText(`⚙️ 加速度: ${planeAcc.toFixed(1)} px/s²`, 24, 94);
+            ctx.fillText(`💣 炸弹载荷: ${bombs.length}`, 24, 136);
+            ctx.font = "14px monospace";
+            ctx.fillStyle = "#7f9a78";
+            ctx.fillText("平抛运动 | g = 760 px/s²", W-250, H-22);
+            // 投弹计时环
+            const remain = Math.max(0, AUTO_DROP_INTERVAL - timeSinceLastDrop);
+            ctx.beginPath();
+            ctx.arc(W-78, 60, 22, 0, Math.PI*2);
+            ctx.strokeStyle = "#cbbf95";
+            ctx.lineWidth = 2.5;
+            ctx.stroke();
+            ctx.beginPath();
+            let angle = (remain / AUTO_DROP_INTERVAL) * Math.PI * 2;
+            ctx.arc(W-78, 60, 18, -Math.PI/2, -Math.PI/2 + angle);
+            ctx.strokeStyle = "#f0a557";
+            ctx.lineWidth = 3.5;
+            ctx.stroke();
+            ctx.fillStyle = "#b37a3e";
+            ctx.font = "bold 14px monospace";
+            ctx.fillText("⚡", W-88, 67);
+            // 瞄准线
+            ctx.beginPath();
+            ctx.setLineDash([8,12]);
+            ctx.moveTo(planeX, PLANE_Y+22);
+            ctx.lineTo(planeX, GROUND_Y-8);
+            ctx.strokeStyle = "#f5b16b";
+            ctx.lineWidth = 2.4;
+            ctx.stroke();
+            ctx.setLineDash([]);
+            // 投弹闪光
+            if (timeSinceLastDrop < 0.08) {
+                ctx.beginPath();
+                ctx.arc(planeX, PLANE_Y+18, 18, 0, Math.PI*2);
+                ctx.fillStyle = "#ffe0a0aa";
+                ctx.fill();
+            }
+        }
+
+        // ---------- 动画循环 ----------
+        function animate(nowMs) {
+            if (!lastTimestamp) { lastTimestamp = nowMs; requestAnimationFrame(animate); return; }
+            let dt = Math.min(0.033, (nowMs - lastTimestamp) / 1000);
+            if (dt <= 0.001) { lastTimestamp = nowMs; requestAnimationFrame(animate); return; }
+
+            updatePlane(dt);
+            updateBombs(dt);
+            updateAutoDrop(dt);
+
+            speedSpan.innerText = Math.floor(planeVx) + " px/s";
+            accSpan.innerText = Math.floor(planeAcc) + " px/s²";
+            bombCounterSpan.innerText = bombs.length;
+
+            drawBackground();
+            drawBigBombs();
+            drawLargePlane();
+            drawOverlay();
+
+            lastTimestamp = nowMs;
+            animFrameId = requestAnimationFrame(animate);
+        }
+
+        // ---------- 事件绑定 ----------
+        function bindEvents() {
+            speedSlider.addEventListener('input', (e) => {
+                let newSpeed = parseFloat(e.target.value);
+                if (!isNaN(newSpeed)) planeVx = newSpeed;
+                speedSpan.innerText = Math.floor(planeVx) + " px/s";
+            });
+            accSlider.addEventListener('input', (e) => {
+                let newAcc = parseFloat(e.target.value);
+                if (!isNaN(newAcc)) planeAcc = newAcc;
+                accSpan.innerText = Math.floor(planeAcc) + " px/s²";
+            });
+            manualBtn.addEventListener('click', () => dropBomb());
+            clearBtn.addEventListener('click', () => clearAllBombs());
+            resetBtn.addEventListener('click', () => {
+                resetScenario();
+                speedSlider.value = planeVx;
+                accSlider.value = planeAcc;
+                updateUI();
+                timeSinceLastDrop = 0;
+            });
+        }
+
+        function handleVisibility() {
+            if (document.hidden) lastTimestamp = null;
+            else lastTimestamp = performance.now();
+        }
+
+        function init() {
+            bindEvents();
+            planeVx = parseFloat(speedSlider.value);
+            planeAcc = parseFloat(accSlider.value);
+            planeX = 220;
+            bombs = [];
+            timeSinceLastDrop = 0;
+            updateUI();
+            document.addEventListener('visibilitychange', handleVisibility);
+            animFrameId = requestAnimationFrame(animate);
+        }
+
+        init();
+    })();
+</script>
+
+  <script>
+  // 返回主页（滚动位置已在主页点击链接时保存）
+  function saveScrollAndReturn() {
+    window.location.href = '../index.html';
+  }
+  
+  // 禁用右键菜单
+  document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+  });
+  
+  // 禁用开发者工具快捷键
+  document.addEventListener('keydown', function(e) {
+    // ESC返回主页 - 保存滚动位置
+    if (e.keyCode === 27) {
+      saveScrollAndReturn();
+      return false;
+    }
+    // F12
+    if (e.keyCode === 123) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+U
+    if (e.ctrlKey && e.keyCode === 85) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+I
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 73) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+J
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 74) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+C
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 67) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+S
+    if (e.ctrlKey && e.keyCode === 83) {
+      e.preventDefault();
+      return false;
+    }
+  });
+  
+  // 禁用选择
+  document.addEventListener('selectstart', function(e) {
+    // 允许输入框选择
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+      return true;
+    }
+    e.preventDefault();
+    return false;
+  });
+  </script>
+</body>
+</html>
