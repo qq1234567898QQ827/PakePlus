@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>关联速度 - 轻杆滑墙</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #0a1628;
+    color: #e0f0ff;
+    font-family: "Microsoft YaHei", sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100vh;
+    padding: 12px;
+    user-select: none;
+  }
+  .title {
+    font-size: 22px;
+    color: #66ccff;
+    margin-bottom: 10px;
+    letter-spacing: 2px;
+    font-weight: 500;
+  }
+  .container {
+    position: relative;
+    background: #0d1f38;
+    border: 1px solid #1e3a5f;
+    border-radius: 8px;
+    padding: 10px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+  }
+  canvas {
+    display: block;
+    background: #0a1628;
+    border-radius: 4px;
+  }
+  .controls {
+    margin-top: 12px;
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  button {
+    background: #1e3a5f;
+    color: #b3d9ff;
+    border: 1px solid #336699;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s;
+  }
+  button:hover { background: #2a4d7a; color: #fff; }
+  button.active { background: #3377cc; color: #fff; }
+  
+  .slider-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #0d1f38;
+    border: 1px solid #1e3a5f;
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 13px;
+    color: #88bbee;
+  }
+  .slider-group span {
+    color: #ffcc66;
+    font-family: Consolas, monospace;
+    min-width: 40px;
+    display: inline-block;
+    text-align: right;
+  }
+  input[type="range"] {
+    width: 100px;
+    accent-color: #3377cc;
+    cursor: pointer;
+  }
+  
+  .info {
+    margin-top: 10px;
+    font-size: 14px;
+    color: #88bbee;
+    text-align: center;
+    line-height: 1.6;
+  }
+  .info span { color: #ffcc66; font-family: Consolas, monospace; }
+  .watermark {
+    position: absolute;
+    bottom: 14px;
+    right: 18px;
+    font-size: 11px;
+    color: rgba(102, 204, 255, 0.4);
+    pointer-events: none;
+  }
+</style>
+
+  <style>
+  body {
+    background-color: #1a2332 !important;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+  }
+  
+  .qilai-back-btn {
+    position: fixed;
+    top: 10px;
+    left: 15px;
+    z-index: 100000;
+    padding: 8px 16px;
+    background: rgba(0, 150, 200, 0.2);
+    border: 1px solid rgba(100, 180, 255, 0.5);
+    color: #8ab4f8;
+    font-size: 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.3s;
+    backdrop-filter: blur(5px);
+    font-family: "Microsoft YaHei", sans-serif;
+  }
+  
+  .qilai-back-btn:hover {
+    background: rgba(0, 150, 200, 0.4);
+    box-shadow: 0 0 15px rgba(100, 180, 255, 0.3);
+    color: #fff;
+  }
+  
+  .qilai-watermark {
+    position: fixed;
+    bottom: 15px;
+    right: 15px;
+    z-index: 99998;
+    font-size: 12px;
+    color: rgba(138, 180, 248, 0.35);
+    text-align: right;
+    line-height: 1.8;
+    pointer-events: none;
+    user-select: none;
+    font-family: "Microsoft YaHei", sans-serif;
+  }
+  
+  .qilai-watermark .title {
+    font-size: 14px;
+    font-weight: bold;
+    color: rgba(138, 180, 248, 0.45);
+    margin-bottom: 4px;
+    letter-spacing: 1px;
+  }
+  </style>
+</head>
+<body>
+  <a href="javascript:void(0);" class="qilai-back-btn" onclick="saveScrollAndReturn();">← 返回主页</a>
+  
+  <div class="qilai-watermark">
+    <div class="title">齐老师动画</div>
+    QQ 3398528250<br>
+    抖音 35320300542
+  </div>
+
+
+<div class="title">齐老师动画 · 关联速度（轻杆滑墙）</div>
+
+<div class="container">
+  <canvas id="canvas" width="800" height="460"></canvas>
+  
+  <div class="watermark">QQ: ******** | 抖音: 齐老师物理</div>
+</div>
+
+<div class="controls">
+  <button id="btnStart">开始</button>
+  <button id="btnPause">暂停</button>
+  <button id="btnReset">重置</button>
+  <button id="btnVector" class="active">显示速度</button>
+  <button id="btnTrace" class="active">显示轨迹</button>
+  
+  <div class="slider-group">
+    <label>倍速</label>
+    <span id="speedVal">1.00</span>x
+    <input type="range" id="speedSlider" min="0.1" max="1" step="0.01" value="1">
+  </div>
+  
+  <div class="slider-group">
+    <label>P点位置</label>
+    <span id="pPosVal">0.50</span>
+    <input type="range" id="pPosSlider" min="0" max="1" step="0.01" value="0.5">
+  </div>
+</div>
+
+<div class="info">
+  杆与竖直墙夹角 θ = <span id="angle">0.00</span>° &nbsp;&nbsp;
+  杆长 L = <span>2.00 m</span><br>
+  v<sub>蓝</sub> = <span id="vA">0.00</span> m/s &nbsp;&nbsp;
+  v<sub>黑</sub> = <span id="vB">0.00</span> m/s &nbsp;&nbsp;
+  v<sub>P</sub> = <span id="vP">0.00</span> m/s
+</div>
+
+<script>
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const W = canvas.width, H = canvas.height;
+
+// ========== 物理参数 ==========
+const L = 2.0;
+const g = 9.8;
+const initTheta = 0.08;
+let theta = initTheta;
+let omega = 0;
+let running = false;
+let showVector = true;
+let showTrace = true;
+let speedScale = 1;
+let k = 0.5;
+
+let tracePoints = [];
+
+// ========== 坐标系 ==========
+const originX = 140;
+const originY = H - 60;
+const scale = 160;
+
+function toCanvas(x, y) {
+  return {
+    x: originX + x * scale,
+    y: originY - y * scale
+  };
+}
+
+// ========== 物理更新 ==========
+function updatePhysics(dt) {
+  if (theta >= Math.PI / 2 - 0.002) {
+    theta = Math.PI / 2 - 0.002;
+    running = false;
+    return;
+  }
+  
+  omega = Math.sqrt(2 * g * (1 - Math.cos(theta)) / L);
+  theta += omega * dt * speedScale;
+  
+  if (showTrace) {
+    const px = k * L * Math.sin(theta);
+    const py = (1 - k) * L * Math.cos(theta);
+    tracePoints.push(toCanvas(px, py));
+  }
+}
+
+// ========== 速度计算 ==========
+function getVelocities() {
+  const vA = L * omega * Math.sin(theta);
+  const vB = L * omega * Math.cos(theta);
+  const vPar = L * omega;
+  
+  const vPx = k * vB;
+  const vPy = (1 - k) * vA;
+  const vP = Math.sqrt(vPx * vPx + vPy * vPy);
+  
+  return { vA, vB, vPar, vPx, vPy, vP };
+}
+
+// ========== 绘制 ==========
+function draw() {
+  ctx.clearRect(0, 0, W, H);
+  
+  // 墙和地面
+  ctx.strokeStyle = '#5577aa';
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(originX, 10);
+  ctx.lineTo(originX, originY);
+  ctx.lineTo(W - 20, originY);
+  ctx.stroke();
+  
+  // 墙面纹理
+  ctx.strokeStyle = 'rgba(85, 119, 170, 0.3)';
+  ctx.lineWidth = 1;
+  for (let i = 0; i < 8; i++) {
+    const y = originY - i * 45;
+    if (y > 10) {
+      ctx.beginPath();
+      ctx.moveTo(originX - 8, y);
+      ctx.lineTo(originX, y);
+      ctx.stroke();
+    }
+  }
+  for (let i = 0; i < 11; i++) {
+    const x = originX + i * 45;
+    if (x < W - 20) {
+      ctx.beginPath();
+      ctx.moveTo(x, originY);
+      ctx.lineTo(x, originY + 8);
+      ctx.stroke();
+    }
+  }
+  
+  // P点轨迹
+  if (showTrace && tracePoints.length > 1) {
+    ctx.strokeStyle = '#3399ff';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([6, 4]);
+    ctx.beginPath();
+    ctx.moveTo(tracePoints[0].x, tracePoints[0].y);
+    for (let i = 1; i < tracePoints.length; i++) {
+      ctx.lineTo(tracePoints[i].x, tracePoints[i].y);
+    }
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+  
+  const posA = toCanvas(0, L * Math.cos(theta));
+  const posB = toCanvas(L * Math.sin(theta), 0);
+  const posP = toCanvas(k * L * Math.sin(theta), (1 - k) * L * Math.cos(theta));
+  
+  // 杆
+  ctx.strokeStyle = '#ff4433';
+  ctx.lineWidth = 5;
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(posA.x, posA.y);
+  ctx.lineTo(posB.x, posB.y);
+  ctx.stroke();
+  
+  // P点
+  ctx.fillStyle = '#3399ff';
+  ctx.beginPath();
+  ctx.arc(posP.x, posP.y, 6, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 12px sans-serif';
+  ctx.fillText('P', posP.x + 8, posP.y - 5);
+  
+  // 小球
+  const ballR = 12;
+  
+  ctx.fillStyle = '#3399ff';
+  ctx.beginPath();
+  ctx.arc(posA.x, posA.y, ballR, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = '#66bbff';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  
+  ctx.fillStyle = '#222';
+  ctx.beginPath();
+  ctx.arc(posB.x, posB.y, ballR, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = '#555';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  
+  // 速度矢量
+  if (showVector) {
+    const vel = getVelocities();
+    const vecScale = 15;
+    
+    drawVector(posA.x, posA.y, posA.x, posA.y + vel.vA * vecScale, '#ff6644', 'v₁');
+    drawVector(posB.x, posB.y, posB.x + vel.vB * vecScale, posB.y, '#ff6644', 'v₂');
+    drawVector(posP.x, posP.y, posP.x + vel.vPx * vecScale, posP.y + vel.vPy * vecScale, '#ffdd00', 'vₚ');
+    
+    const dx = posB.x - posA.x;
+    const dy = posB.y - posA.y;
+    const len = Math.sqrt(dx*dx + dy*dy);
+    const ux = dx / len, uy = dy / len;
+    const vParLen = vel.vPar * vecScale;
+    
+    ctx.strokeStyle = '#66ff99';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([4, 3]);
+    
+    ctx.beginPath();
+    ctx.moveTo(posA.x, posA.y);
+    ctx.lineTo(posA.x + ux * vParLen, posA.y + uy * vParLen);
+    ctx.stroke();
+    
+    ctx.beginPath();
+    ctx.moveTo(posB.x, posB.y);
+    ctx.lineTo(posB.x - ux * vParLen, posB.y - uy * vParLen);
+    ctx.stroke();
+    
+    ctx.setLineDash([]);
+  }
+  
+  // 角度标注
+  if (theta > 0.05) {
+    ctx.strokeStyle = '#ffcc66';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.arc(originX, posA.y, 30, -Math.PI/2, -Math.PI/2 + theta, false);
+    ctx.stroke();
+    ctx.fillStyle = '#ffcc66';
+    ctx.font = '12px sans-serif';
+    ctx.fillText('θ', originX + 35, posA.y + 5);
+  }
+  
+  const vel = getVelocities();
+  document.getElementById('angle').textContent = (theta * 180 / Math.PI).toFixed(2);
+  document.getElementById('vA').textContent = vel.vA.toFixed(2);
+  document.getElementById('vB').textContent = vel.vB.toFixed(2);
+  document.getElementById('vP').textContent = vel.vP.toFixed(2);
+}
+
+// ========== 画箭头 ==========
+function drawVector(x1, y1, x2, y2, color, label) {
+  ctx.strokeStyle = color;
+  ctx.fillStyle = color;
+  ctx.lineWidth = 2.5;
+  
+  ctx.beginPath();
+  ctx.moveTo(x1, y1);
+  ctx.lineTo(x2, y2);
+  ctx.stroke();
+  
+  const ang = Math.atan2(y2 - y1, x2 - x1);
+  const head = 8;
+  ctx.beginPath();
+  ctx.moveTo(x2, y2);
+  ctx.lineTo(x2 - head * Math.cos(ang - 0.4), y2 - head * Math.sin(ang - 0.4));
+  ctx.lineTo(x2 - head * Math.cos(ang + 0.4), y2 - head * Math.sin(ang + 0.4));
+  ctx.closePath();
+  ctx.fill();
+  
+  ctx.font = 'bold 14px Consolas';
+  const lx = x2 + (x2 >= x1 ? 6 : -28);
+  const ly = y2 + (y2 >= y1 ? 6 : -6);
+  ctx.fillText(label, lx, ly);
+}
+
+// ========== 动画循环 ==========
+let lastTime = 0;
+function loop(t) {
+  if (!lastTime) lastTime = t;
+  const dt = Math.min((t - lastTime) / 1000, 0.033);
+  lastTime = t;
+  
+  if (running) updatePhysics(dt);
+  draw();
+  requestAnimationFrame(loop);
+}
+
+// ========== 控制按钮 ==========
+document.getElementById('btnStart').onclick = function() {
+  resetAnim();
+  running = true;
+};
+
+document.getElementById('btnPause').onclick = function() {
+  running = false;
+};
+
+document.getElementById('btnReset').onclick = function() {
+  resetAnim();
+  running = false;
+};
+
+function resetAnim() {
+  theta = initTheta;
+  omega = 0;
+  tracePoints = [];
+  
+  const px = k * L * Math.sin(theta);
+  const py = (1 - k) * L * Math.cos(theta);
+  tracePoints.push(toCanvas(px, py));
+}
+
+document.getElementById('btnVector').onclick = function() {
+  showVector = !showVector;
+  this.classList.toggle('active', showVector);
+  this.textContent = showVector ? '显示速度' : '隐藏速度';
+};
+
+document.getElementById('btnTrace').onclick = function() {
+  showTrace = !showTrace;
+  this.classList.toggle('active', showTrace);
+  this.textContent = showTrace ? '显示轨迹' : '隐藏轨迹';
+};
+
+document.getElementById('speedSlider').addEventListener('input', function() {
+  speedScale = parseFloat(this.value);
+  document.getElementById('speedVal').textContent = speedScale.toFixed(2);
+});
+
+document.getElementById('pPosSlider').addEventListener('input', function() {
+  k = parseFloat(this.value);
+  document.getElementById('pPosVal').textContent = k.toFixed(2);
+  tracePoints = [];
+  const px = k * L * Math.sin(theta);
+  const py = (1 - k) * L * Math.cos(theta);
+  tracePoints.push(toCanvas(px, py));
+});
+
+// ========== 初始化 ==========
+resetAnim();
+requestAnimationFrame(loop);
+
+canvas.addEventListener('contextmenu', e => e.preventDefault());
+</script>
+
+
+  <script>
+  // 返回主页（滚动位置已在主页点击链接时保存）
+  function saveScrollAndReturn() {
+    window.location.href = '../index.html';
+  }
+  
+  // 禁用右键菜单
+  document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+  });
+  
+  // 禁用开发者工具快捷键
+  document.addEventListener('keydown', function(e) {
+    // ESC返回主页 - 保存滚动位置
+    if (e.keyCode === 27) {
+      saveScrollAndReturn();
+      return false;
+    }
+    // F12
+    if (e.keyCode === 123) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+U
+    if (e.ctrlKey && e.keyCode === 85) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+I
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 73) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+J
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 74) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+C
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 67) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+S
+    if (e.ctrlKey && e.keyCode === 83) {
+      e.preventDefault();
+      return false;
+    }
+  });
+  
+  // 禁用选择
+  document.addEventListener('selectstart', function(e) {
+    // 允许输入框选择
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+      return true;
+    }
+    e.preventDefault();
+    return false;
+  });
+  </script>
+</body>
+</html>
