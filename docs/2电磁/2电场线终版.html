@@ -1,0 +1,866 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>两个点电荷 - 3D电场线 (不等量异种优化)</title>
+    <style>
+        :root {
+            --bg: #0d1117;
+            --panel-bg: rgba(22, 27, 34, 0.94);
+            --text: #e6edf3;
+            --text-secondary: #8b949e;
+            --positive: #ff3b3b;
+            --positive-glow: #ff6b6b;
+            --negative: #4d7cff;
+            --negative-glow: #7b9fff;
+            --border: #30363d;
+            --accent: #58a6ff;
+            --shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: var(--bg);
+            font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+            user-select: none;
+            touch-action: pan-x pan-y pinch-zoom;
+        }
+
+        #canvas-container { position: fixed; inset: 0; z-index: 1; cursor: grab; }
+        #canvas-container:active { cursor: grabbing; }
+
+        #top-bar {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 25;
+            display: flex;
+            gap: 10px;
+            background: var(--panel-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 8px 16px;
+            box-shadow: var(--shadow);
+            backdrop-filter: blur(16px);
+        }
+
+        .plane-btn {
+            padding: 8px 16px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: rgba(255,255,255,0.04);
+            color: var(--text);
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+        .plane-btn:hover { background: rgba(255,255,255,0.1); border-color: #5a5f6a; }
+        .plane-btn.active {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: #fff;
+            font-weight: 700;
+        }
+
+        #hint {
+            position: fixed;
+            bottom: 28px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10;
+            color: rgba(255, 255, 255, 0.55);
+            font-size: 13px;
+            pointer-events: none;
+        }
+
+        #panel {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            z-index: 20;
+            background: var(--panel-bg);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 20px 22px 16px;
+            box-shadow: var(--shadow);
+            backdrop-filter: blur(16px);
+            min-width: 200px;
+            max-width: 220px;
+            transition: transform 0.25s ease, opacity 0.25s ease;
+        }
+        #panel.collapsed { transform: translateX(calc(100% + 30px)); opacity: 0; pointer-events: none; }
+
+        #panel-toggle {
+            position: fixed;
+            top: 84px;
+            right: 24px;
+            z-index: 21;
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            background: var(--panel-bg);
+            border: 1px solid var(--border);
+            color: var(--text);
+            cursor: pointer;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: var(--shadow);
+            backdrop-filter: blur(16px);
+            transition: all 0.25s ease;
+            opacity: 0;
+            pointer-events: none;
+        }
+        #panel-toggle.visible { opacity: 1; pointer-events: auto; }
+
+        .mode-btn {
+            width: 100%;
+            padding: 12px 16px;
+            margin-bottom: 8px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            background: rgba(255,255,255,0.04);
+            color: var(--text);
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.2s;
+            text-align: left;
+        }
+        .mode-btn:hover { background: rgba(255,255,255,0.1); border-color: #5a5f6a; }
+        .mode-btn.active {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: #fff;
+            font-weight: 700;
+        }
+        .info-text {
+            margin-top: 8px;
+            font-size: 11px;
+            color: var(--text-secondary);
+            text-align: center;
+        }
+    </style>
+
+  <style>
+  body {
+    background-color: #1a2332 !important;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+  }
+  
+  .qilai-back-btn {
+    position: fixed;
+    top: 10px;
+    left: 15px;
+    z-index: 100000;
+    padding: 8px 16px;
+    background: rgba(0, 150, 200, 0.2);
+    border: 1px solid rgba(100, 180, 255, 0.5);
+    color: #8ab4f8;
+    font-size: 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.3s;
+    backdrop-filter: blur(5px);
+    font-family: "Microsoft YaHei", sans-serif;
+  }
+  
+  .qilai-back-btn:hover {
+    background: rgba(0, 150, 200, 0.4);
+    box-shadow: 0 0 15px rgba(100, 180, 255, 0.3);
+    color: #fff;
+  }
+  
+  .qilai-watermark {
+    position: fixed;
+    bottom: 15px;
+    right: 15px;
+    z-index: 99998;
+    font-size: 12px;
+    color: rgba(138, 180, 248, 0.35);
+    text-align: right;
+    line-height: 1.8;
+    pointer-events: none;
+    user-select: none;
+    font-family: "Microsoft YaHei", sans-serif;
+  }
+  
+  .qilai-watermark .title {
+    font-size: 14px;
+    font-weight: bold;
+    color: rgba(138, 180, 248, 0.45);
+    margin-bottom: 4px;
+    letter-spacing: 1px;
+  }
+  </style>
+</head>
+<body>
+  <a href="javascript:void(0);" class="qilai-back-btn" onclick="saveScrollAndReturn();">← 返回主页</a>
+  
+  <div class="qilai-watermark">
+    <div class="title">齐老师动画</div>
+    QQ 3398528250<br>
+    抖音 35320300542
+  </div>
+
+    <div id="canvas-container"></div>
+
+    <div id="top-bar">
+        <button class="plane-btn active" data-planes="1">📐 一个平面</button>
+        <button class="plane-btn" data-planes="4">📚 四个平面</button>
+    </div>
+
+    <div id="panel">
+        <h3 style="color:var(--text);margin-bottom:14px;font-size:15px;">⚡ 电荷模式</h3>
+        <button class="mode-btn active" data-q1="3" data-q2="-3">等量异种 (±3)</button>
+        <button class="mode-btn" data-q1="3" data-q2="3">等量同种 (+3, +3)</button>
+        <button class="mode-btn" data-q1="4" data-q2="2">不等量同种 (+4, +2)</button>
+        <button class="mode-btn" data-q1="4" data-q2="-2">不等量异种 (+4, −2)</button>
+        <div class="info-text" id="infoDisplay">当前：等量异种点电荷</div>
+    </div>
+    <button id="panel-toggle" title="显示/隐藏面板">⚙</button>
+    <div id="hint">🖱 拖拽旋转 | 滚轮缩放 | 右键平移 | 右侧面板切换模式 | 顶部切换平面数</div>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+        const container = document.getElementById('canvas-container');
+        const panel = document.getElementById('panel');
+        const panelToggle = document.getElementById('panel-toggle');
+        const hintEl = document.getElementById('hint');
+        const infoDisplay = document.getElementById('infoDisplay');
+        const modeBtns = document.querySelectorAll('.mode-btn');
+        const planeBtns = document.querySelectorAll('.plane-btn');
+
+        let currentPlanes = 1;
+        let currentQ1 = 3;
+        let currentQ2 = -3;
+
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color('#0d1117');
+        scene.fog = new THREE.Fog('#0d1117', 20, 50);
+
+        const camera = new THREE.PerspectiveCamera(50, container.clientWidth / container.clientHeight, 0.5, 60);
+        camera.position.set(7, 4.5, 9);
+        camera.lookAt(0, 0, 0);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(container.clientWidth, container.clientHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.shadowMap.enabled = true;
+        container.appendChild(renderer.domElement);
+
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.target.set(0, 0, 0);
+        controls.enableDamping = true;
+        controls.minDistance = 2.5;
+        controls.maxDistance = 25;
+        controls.maxPolarAngle = Math.PI * 0.85;
+        controls.autoRotate = true;
+        controls.autoRotateSpeed = 0.25;
+        controls.update();
+
+        controls.addEventListener('start', () => { hintEl.style.opacity = '0'; });
+        controls.addEventListener('end', () => { setTimeout(() => { hintEl.style.opacity = '1'; }, 2000); });
+
+        scene.add(new THREE.AmbientLight('#bcc8e0', 1.6));
+        const sunLight = new THREE.DirectionalLight('#ffffff', 3.5);
+        sunLight.position.set(10, 14, 8);
+        sunLight.castShadow = true;
+        scene.add(sunLight);
+        scene.add(new THREE.GridHelper(16, 28, '#2a3040', '#1a2030'));
+
+        // 符号几何体和材质
+        const barLength = 0.4;
+        const barWidth = 0.06;
+        const signBarGeo = new THREE.BoxGeometry(barWidth, barLength, barWidth);
+        const signBarMat = new THREE.MeshBasicMaterial({ color: 0xffffff, depthTest: false, transparent: true, opacity: 0.9 });
+
+        // 电荷模型
+        const chargeGroup1 = new THREE.Group();
+        const chargeGroup2 = new THREE.Group();
+        scene.add(chargeGroup1);
+        scene.add(chargeGroup2);
+
+        const sphereMat1 = new THREE.MeshStandardMaterial({ color: '#ff2020', emissive: '#ff0000', emissiveIntensity: 0.7, roughness: 0.22 });
+        const sphere1 = new THREE.Mesh(new THREE.SphereGeometry(0.32, 48, 48), sphereMat1);
+        sphere1.castShadow = true; sphere1.receiveShadow = true;
+        chargeGroup1.add(sphere1);
+        const glowMat1 = new THREE.MeshBasicMaterial({ color: '#ff4444', transparent: true, opacity: 0.25, depthWrite: false });
+        const glow1 = new THREE.Mesh(new THREE.SphereGeometry(0.46, 32, 32), glowMat1);
+        chargeGroup1.add(glow1);
+
+        const plusH1 = new THREE.Mesh(signBarGeo, signBarMat);
+        const plusV1 = new THREE.Mesh(signBarGeo, signBarMat);
+        plusV1.rotation.z = Math.PI / 2;
+        plusH1.userData = { isSign: true };
+        plusV1.userData = { isSign: true };
+        plusH1.renderOrder = 1;
+        plusV1.renderOrder = 1;
+        chargeGroup1.add(plusH1);
+        chargeGroup1.add(plusV1);
+
+        const sphereMat2 = new THREE.MeshStandardMaterial({ color: '#2040ff', emissive: '#0020ff', emissiveIntensity: 0.7, roughness: 0.22 });
+        const sphere2 = new THREE.Mesh(new THREE.SphereGeometry(0.32, 48, 48), sphereMat2);
+        sphere2.castShadow = true; sphere2.receiveShadow = true;
+        chargeGroup2.add(sphere2);
+        const glowMat2 = new THREE.MeshBasicMaterial({ color: '#4466ff', transparent: true, opacity: 0.25, depthWrite: false });
+        const glow2 = new THREE.Mesh(new THREE.SphereGeometry(0.46, 32, 32), glowMat2);
+        chargeGroup2.add(glow2);
+
+        const minusBar2 = new THREE.Mesh(signBarGeo, signBarMat);
+        minusBar2.rotation.z = -Math.PI / 2;
+        minusBar2.userData = { isSign: true };
+        minusBar2.renderOrder = 1;
+        chargeGroup2.add(minusBar2);
+
+        const chargePos1 = new THREE.Vector3(-2.5, 0, 0);
+        const chargePos2 = new THREE.Vector3(2.5, 0, 0);
+        chargeGroup1.position.copy(chargePos1);
+        chargeGroup2.position.copy(chargePos2);
+
+        const fieldLinesGroup = new THREE.Group();
+        const arrowsGroup = new THREE.Group();
+        scene.add(fieldLinesGroup);
+        scene.add(arrowsGroup);
+
+        const K = 1.0;
+        const CHARGE_RADIUS = 0.35;
+        const TERMINATION_RADIUS = 0.42;
+        const STEP_SIZE = 0.06;
+        const MAX_STEPS = 420;
+        const MAX_DIST = 13;
+
+        function electricField(pos, q1, q2) {
+            const r1 = new THREE.Vector3().subVectors(pos, chargePos1);
+            const r2 = new THREE.Vector3().subVectors(pos, chargePos2);
+            const d1 = Math.max(r1.length(), 0.15);
+            const d2 = Math.max(r2.length(), 0.15);
+            const E = new THREE.Vector3();
+            if (Math.abs(q1) > 1e-5) E.addScaledVector(r1, K * q1 / (d1 * d1 * d1));
+            if (Math.abs(q2) > 1e-5) E.addScaledVector(r2, K * q2 / (d2 * d2 * d2));
+            return E;
+        }
+
+        function traceFieldLine(startPos, q1, q2, forward, ignoreCharge = null) {
+            const points = [startPos.clone()];
+            let pos = startPos.clone();
+            let steps = 0;
+            while (steps < MAX_STEPS) {
+                const E = electricField(pos, q1, q2);
+                const len = E.length();
+                if (len < 1e-7) break;
+                const dir = E.normalize();
+                if (!forward) dir.negate();
+                pos.addScaledVector(dir, STEP_SIZE);
+                points.push(pos.clone());
+                steps++;
+                const d1 = pos.distanceTo(chargePos1);
+                const d2 = pos.distanceTo(chargePos2);
+                if (ignoreCharge !== 1 && Math.abs(q1) > 0.05 && d1 < TERMINATION_RADIUS) break;
+                if (ignoreCharge !== 2 && Math.abs(q2) > 0.05 && d2 < TERMINATION_RADIUS) break;
+                if (pos.length() > MAX_DIST) break;
+            }
+            if (points.length > 1) {
+                const last = points[points.length-1];
+                const prev = points[points.length-2];
+                let target = null;
+                if (ignoreCharge !== 1 && Math.abs(q1) > 0.05 && last.distanceTo(chargePos1) < TERMINATION_RADIUS) target = chargePos1;
+                if (ignoreCharge !== 2 && Math.abs(q2) > 0.05 && last.distanceTo(chargePos2) < TERMINATION_RADIUS) target = chargePos2;
+                if (target) {
+                    const dirTo = new THREE.Vector3().subVectors(target, prev).normalize();
+                    points[points.length-1] = target.clone().addScaledVector(dirTo, -0.33);
+                }
+            }
+            return points;
+        }
+
+        function generateFieldLines(q1, q2) {
+            const lines = [];
+            const hasPos = q1 > 0.05 || q2 > 0.05;
+            const hasNeg = q1 < -0.05 || q2 < -0.05;
+            const isMixed = (q1 > 0.05 && q2 < -0.05) || (q1 < -0.05 && q2 > 0.05);
+            const equalOpposite = isMixed && Math.abs(Math.abs(q1) - Math.abs(q2)) < 0.1;
+            const samePositive = q1 > 0.05 && q2 > 0.05;
+            const sameNegative = q1 < -0.05 && q2 < -0.05;
+            const bothEqualPositive = samePositive && Math.abs(q1 - q2) < 0.1;
+            const bothEqualNegative = sameNegative && Math.abs(q1 - q2) < 0.1;
+
+            // 等量异种点电荷：根据 currentPlanes 决定平面数
+            if (equalOpposite) {
+                const color = new THREE.Color('#ffd700');
+                const numAngles = 18;
+                const numPlanes = currentPlanes;
+                const planeAngleStep = Math.PI / numPlanes;
+
+                const posCharge = q1 > 0.05 ? { pos: chargePos1, chargeId: 1 } : { pos: chargePos2, chargeId: 2 };
+
+                for (let planeIndex = 0; planeIndex < numPlanes; planeIndex++) {
+                    const planeAngle = planeIndex * planeAngleStep;
+                    const cosA = Math.cos(planeAngle);
+                    const sinA = Math.sin(planeAngle);
+
+                    const originalLines = [];
+                    for (let i = 0; i < numAngles; i++) {
+                        const angle = (i / numAngles) * 2 * Math.PI;
+                        const localDir = new THREE.Vector3(Math.cos(angle), Math.sin(angle), 0).normalize();
+                        const rotatedDir = new THREE.Vector3(
+                            localDir.x,
+                            localDir.y * cosA - localDir.z * sinA,
+                            localDir.y * sinA + localDir.z * cosA
+                        ).normalize();
+                        const start = posCharge.pos.clone().addScaledVector(rotatedDir, CHARGE_RADIUS);
+                        const pts = traceFieldLine(start, q1, q2, true, posCharge.chargeId);
+                        if (pts.length > 2) {
+                            originalLines.push({ points: pts });
+                        }
+                    }
+
+                    for (const line of originalLines) {
+                        lines.push({ points: line.points, color: color.clone() });
+                    }
+
+                    for (const line of originalLines) {
+                        const mirroredPts = line.points.map(p => new THREE.Vector3(-p.x, p.y, p.z));
+                        const mirrorMid = mirroredPts[Math.floor(mirroredPts.length / 2)];
+                        let isOverlapping = false;
+                        for (const origLine of originalLines) {
+                            const origMid = origLine.points[Math.floor(origLine.points.length / 2)];
+                            const dist = mirrorMid.distanceTo(origMid);
+                            if (dist < 0.1) {
+                                isOverlapping = true;
+                                break;
+                            }
+                        }
+                        if (!isOverlapping) {
+                            lines.push({ points: mirroredPts, color: color.clone() });
+                        }
+                    }
+                }
+                return lines;
+            }
+
+            // 等量同种电荷：根据 currentPlanes 决定平面数
+            if (bothEqualPositive || bothEqualNegative) {
+                const color = bothEqualPositive ? new THREE.Color('#ff5555') : new THREE.Color('#5588ff');
+                const numAngles = 20;
+                const chargeId = 1;
+                const numPlanes = currentPlanes;
+                const planeAngleStep = Math.PI / numPlanes;
+
+                for (let planeIndex = 0; planeIndex < numPlanes; planeIndex++) {
+                    const planeAngle = planeIndex * planeAngleStep;
+                    const cosA = Math.cos(planeAngle);
+                    const sinA = Math.sin(planeAngle);
+                    const allCandidates = [];
+
+                    for (let i = 0; i < numAngles; i++) {
+                        const angle = (i / numAngles) * 2 * Math.PI;
+                        const localDir = new THREE.Vector3(Math.cos(angle), Math.sin(angle), 0).normalize();
+                        const rotatedDir = new THREE.Vector3(
+                            localDir.x,
+                            localDir.y * cosA - localDir.z * sinA,
+                            localDir.y * sinA + localDir.z * cosA
+                        ).normalize();
+                        const start = chargePos1.clone().addScaledVector(rotatedDir, CHARGE_RADIUS);
+                        const pts = traceFieldLine(start, q1, q2, true, chargeId);
+                        if (pts.length > 2) {
+                            const clippedPts = [];
+                            for (const p of pts) {
+                                if (p.x <= 0.02) { clippedPts.push(p.clone()); } else { break; }
+                            }
+                            if (clippedPts.length > 2) {
+                                const lastPt = clippedPts[clippedPts.length - 1];
+                                const distToMidplane = Math.abs(lastPt.x);
+                                const yInPlane = Math.sqrt(lastPt.y * lastPt.y + lastPt.z * lastPt.z) * (lastPt.y >= 0 ? 1 : -1);
+                                const isDirectLine = distToMidplane < 0.3 && Math.abs(yInPlane) < 0.5;
+                                allCandidates.push({ points: clippedPts, dist: distToMidplane, yInPlane: yInPlane, isDirectLine: isDirectLine });
+                            }
+                        }
+                    }
+
+                    const filteredCandidates = allCandidates.filter(c => !c.isDirectLine);
+                    const upperCandidates = filteredCandidates.filter(c => c.yInPlane > 0);
+                    const lowerCandidates = filteredCandidates.filter(c => c.yInPlane < 0);
+                    upperCandidates.sort((a, b) => a.dist - b.dist);
+                    lowerCandidates.sort((a, b) => a.dist - b.dist);
+
+                    const skipSet = new Set();
+                    if (upperCandidates.length >= 1) skipSet.add(filteredCandidates.indexOf(upperCandidates[0]));
+                    if (lowerCandidates.length >= 1) skipSet.add(filteredCandidates.indexOf(lowerCandidates[0]));
+
+                    for (let i = 0; i < filteredCandidates.length; i++) {
+                        if (skipSet.has(i)) continue;
+                        const candidate = filteredCandidates[i];
+                        lines.push({ points: candidate.points, color: color.clone() });
+                        const mirrored = candidate.points.map(p => new THREE.Vector3(-p.x, p.y, p.z));
+                        lines.push({ points: mirrored, color: color.clone() });
+                    }
+                }
+                return lines;
+            }
+
+            // 不等量同种：根据 currentPlanes 决定平面数
+            if (samePositive || sameNegative) {
+                const color = samePositive ? new THREE.Color('#ff5555') : new THREE.Color('#5588ff');
+                const leftCount = 20;
+                const rightCount = 10;
+                const numPlanes = currentPlanes;
+                const planeAngleStep = Math.PI / numPlanes;
+
+                for (let planeIndex = 0; planeIndex < numPlanes; planeIndex++) {
+                    const planeAngle = planeIndex * planeAngleStep;
+                    const cosA = Math.cos(planeAngle);
+                    const sinA = Math.sin(planeAngle);
+
+                    for (let i = 0; i < leftCount; i++) {
+                        const angle = (i / leftCount) * 2 * Math.PI;
+                        const localDir = new THREE.Vector3(Math.cos(angle), Math.sin(angle), 0).normalize();
+                        const rotatedDir = new THREE.Vector3(
+                            localDir.x,
+                            localDir.y * cosA - localDir.z * sinA,
+                            localDir.y * sinA + localDir.z * cosA
+                        ).normalize();
+                        const start = chargePos1.clone().addScaledVector(rotatedDir, CHARGE_RADIUS);
+                        const pts = traceFieldLine(start, q1, q2, true, 1);
+                        if (pts.length > 2) {
+                            const clippedPts = pts.map(p => new THREE.Vector3(p.x, p.y, p.z));
+                            const firstDir = new THREE.Vector3().subVectors(clippedPts[1], clippedPts[0]).normalize();
+                            const isHorizontal = Math.abs(firstDir.x) > 0.7 && Math.abs(firstDir.y) < 0.5;
+                            if (isHorizontal && clippedPts.length > 3) {
+                                const midPt = clippedPts[Math.floor(clippedPts.length / 2)];
+                                const isBetweenCharges = midPt.x > -2.5 && midPt.x < 2.5 && Math.abs(midPt.y) < 0.8;
+                                if (isBetweenCharges) continue;
+                            }
+                            lines.push({ points: clippedPts, color: color.clone() });
+                        }
+                    }
+
+                    for (let i = 0; i < rightCount; i++) {
+                        const angle = (i / rightCount) * 2 * Math.PI;
+                        const localDir = new THREE.Vector3(Math.cos(angle), Math.sin(angle), 0).normalize();
+                        const rotatedDir = new THREE.Vector3(
+                            localDir.x,
+                            localDir.y * cosA - localDir.z * sinA,
+                            localDir.y * sinA + localDir.z * cosA
+                        ).normalize();
+                        const start = chargePos2.clone().addScaledVector(rotatedDir, CHARGE_RADIUS);
+                        const pts = traceFieldLine(start, q1, q2, true, 2);
+                        if (pts.length > 2) {
+                            const clippedPts = pts.map(p => new THREE.Vector3(p.x, p.y, p.z));
+                            const firstDir = new THREE.Vector3().subVectors(clippedPts[1], clippedPts[0]).normalize();
+                            const isHorizontalLeft = firstDir.x < -0.7 && Math.abs(firstDir.y) < 0.5;
+                            if (isHorizontalLeft) continue;
+                            lines.push({ points: clippedPts, color: color.clone() });
+                        }
+                    }
+                }
+                return lines;
+            }
+
+            // 不等量异种电荷：40条从正电荷出发，自然弯曲覆盖蓝球外侧
+            if (isMixed && !equalOpposite) {
+                const color = new THREE.Color('#ffd700');
+                const numAngles = 40;
+                const numPlanes = currentPlanes;
+                const planeAngleStep = Math.PI / numPlanes;
+
+                const posCharge = q1 > 0.05 ? { pos: chargePos1, chargeId: 1 } : { pos: chargePos2, chargeId: 2 };
+
+                for (let planeIndex = 0; planeIndex < numPlanes; planeIndex++) {
+                    const planeAngle = planeIndex * planeAngleStep;
+                    const cosA = Math.cos(planeAngle);
+                    const sinA = Math.sin(planeAngle);
+
+                    for (let i = 0; i < numAngles; i++) {
+                        const angle = (i / numAngles) * 2 * Math.PI;
+                        const localDir = new THREE.Vector3(Math.cos(angle), Math.sin(angle), 0).normalize();
+                        const rotatedDir = new THREE.Vector3(
+                            localDir.x,
+                            localDir.y * cosA - localDir.z * sinA,
+                            localDir.y * sinA + localDir.z * cosA
+                        ).normalize();
+                        const start = posCharge.pos.clone().addScaledVector(rotatedDir, CHARGE_RADIUS);
+                        const pts = traceFieldLine(start, q1, q2, true, posCharge.chargeId);
+                        if (pts.length > 2) {
+                            lines.push({ points: pts, color: color.clone() });
+                        }
+                    }
+                }
+                return lines;
+            }
+
+            return lines;
+        }
+
+        function clearFieldLines() {
+            while (fieldLinesGroup.children.length > 0) {
+                const child = fieldLinesGroup.children[0];
+                child.geometry?.dispose();
+                child.material?.dispose();
+                fieldLinesGroup.remove(child);
+            }
+            while (arrowsGroup.children.length > 0) {
+                const child = arrowsGroup.children[0];
+                child.geometry?.dispose();
+                child.material?.dispose();
+                arrowsGroup.remove(child);
+            }
+        }
+
+        function createArrowMesh(color) {
+            const geo = new THREE.ConeGeometry(0.08, 0.25, 6, 8);
+            const mat = new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 0.5 });
+            return new THREE.Mesh(geo, mat);
+        }
+
+        function renderFieldLines(q1, q2) {
+            clearFieldLines();
+            if (Math.abs(q1) < 0.05 && Math.abs(q2) < 0.05) return;
+
+            const allLines = generateFieldLines(q1, q2);
+            const groups = {};
+            for (const line of allLines) {
+                const hex = line.color.getHexString();
+                if (!groups[hex]) groups[hex] = { color: line.color, lines: [] };
+                groups[hex].lines.push(line.points);
+            }
+
+            for (const key in groups) {
+                const group = groups[key];
+                const vertices = [];
+                const indices = [];
+                let vCount = 0;
+
+                for (const pts of group.lines) {
+                    if (pts.length < 2) continue;
+                    const startIdx = vCount;
+                    for (const p of pts) {
+                        vertices.push(p.x, p.y, p.z);
+                        vCount++;
+                    }
+                    for (let i = 0; i < pts.length - 1; i++) {
+                        indices.push(startIdx + i, startIdx + i + 1);
+                    }
+
+                    if (pts.length >= 3) {
+                        const idx = Math.floor(pts.length / 3);
+                        const p1 = pts[idx];
+                        const p2 = pts[Math.min(idx + 1, pts.length - 1)];
+                        const mid = new THREE.Vector3().addVectors(p1, p2).multiplyScalar(0.5);
+                        const dir = new THREE.Vector3().subVectors(p2, p1).normalize();
+                        if (dir.length() > 0.001) {
+                            const arrow = createArrowMesh(group.color);
+                            arrow.position.copy(mid);
+                            const quat = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
+                            arrow.setRotationFromQuaternion(quat);
+                            arrowsGroup.add(arrow);
+                        }
+                    }
+                }
+
+                if (vertices.length < 6) continue;
+                const geom = new THREE.BufferGeometry();
+                geom.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+                geom.setIndex(indices);
+                const mat = new THREE.LineBasicMaterial({ color: group.color, linewidth: 1, transparent: true, opacity: 0.85, depthTest: true });
+                fieldLinesGroup.add(new THREE.LineSegments(geom, mat));
+            }
+        }
+
+        function updateChargeVisuals(q1, q2) {
+            const update = (group, sphereMat, glowMat, q) => {
+                const abs = Math.abs(q);
+                if (abs < 0.05) {
+                    group.visible = false;
+                } else {
+                    group.visible = true;
+                    group.scale.setScalar(0.7 + 0.18 * Math.min(abs, 5));
+                    if (q > 0) {
+                        sphereMat.color.set('#ff2020'); sphereMat.emissive.set('#ff0000');
+                        glowMat.color.set('#ff4444');
+                    } else {
+                        sphereMat.color.set('#2040ff'); sphereMat.emissive.set('#0020ff');
+                        glowMat.color.set('#4466ff');
+                    }
+                    
+                    const toRemove = [];
+                    group.children.forEach(child => {
+                        if (child.userData && child.userData.isSign) {
+                            toRemove.push(child);
+                        }
+                    });
+                    toRemove.forEach(child => group.remove(child));
+                    
+                    if (q > 0) {
+                        const plusH = new THREE.Mesh(signBarGeo, signBarMat);
+                        const plusV = new THREE.Mesh(signBarGeo, signBarMat);
+                        plusV.rotation.z = Math.PI / 2;
+                        plusH.userData = { isSign: true };
+                        plusV.userData = { isSign: true };
+                        plusH.renderOrder = 1;
+                        plusV.renderOrder = 1;
+                        group.add(plusH);
+                        group.add(plusV);
+                    } else {
+                        const minusBar = new THREE.Mesh(signBarGeo, signBarMat);
+                        minusBar.rotation.z = -Math.PI / 2;
+                        minusBar.userData = { isSign: true };
+                        minusBar.renderOrder = 1;
+                        group.add(minusBar);
+                    }
+                }
+            };
+            update(chargeGroup1, sphereMat1, glowMat1, q1);
+            update(chargeGroup2, sphereMat2, glowMat2, q2);
+        }
+
+        function updateDisplayInfo(q1, q2) {
+            const isMixed = (q1 > 0 && q2 < 0) || (q1 < 0 && q2 > 0);
+            const isEqual = Math.abs(Math.abs(q1) - Math.abs(q2)) < 0.1;
+            let mode = '';
+            if (isMixed && isEqual) mode = '等量异种点电荷';
+            else if (!isMixed && isEqual) mode = '等量同种点电荷';
+            else if (!isMixed && !isEqual) mode = '不等量同种点电荷';
+            else mode = '不等量异种点电荷';
+            infoDisplay.textContent = `当前：${mode} (q₁=${q1}, q₂=${q2})`;
+        }
+
+        function applyCharge(q1, q2) {
+            currentQ1 = q1;
+            currentQ2 = q2;
+            updateChargeVisuals(q1, q2);
+            updateDisplayInfo(q1, q2);
+            renderFieldLines(q1, q2);
+        }
+
+        modeBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                modeBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                const q1 = parseFloat(btn.dataset.q1);
+                const q2 = parseFloat(btn.dataset.q2);
+                applyCharge(q1, q2);
+            });
+        });
+
+        planeBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                planeBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentPlanes = parseInt(btn.dataset.planes);
+                applyCharge(currentQ1, currentQ2);
+            });
+        });
+
+        let panelVisible = true;
+        panelToggle.addEventListener('click', () => {
+            panelVisible = !panelVisible;
+            panel.classList.toggle('collapsed', !panelVisible);
+            panelToggle.classList.toggle('visible', !panelVisible);
+        });
+
+        window.addEventListener('resize', () => {
+            camera.aspect = container.clientWidth / container.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(container.clientWidth, container.clientHeight);
+        });
+
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            const t = performance.now() * 0.001;
+            glow1.scale.setScalar(1 + 0.06 * Math.sin(t * 2.5));
+            glow2.scale.setScalar(1 + 0.06 * Math.sin(t * 2.5 + Math.PI));
+            renderer.render(scene, camera);
+        }
+
+        applyCharge(3, -3);
+        animate();
+    </script>
+
+  <script>
+  // 返回主页（滚动位置已在主页点击链接时保存）
+  function saveScrollAndReturn() {
+    window.location.href = '../index.html';
+  }
+  
+  // 禁用右键菜单
+  document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+  });
+  
+  // 禁用开发者工具快捷键
+  document.addEventListener('keydown', function(e) {
+    // ESC返回主页 - 保存滚动位置
+    if (e.keyCode === 27) {
+      saveScrollAndReturn();
+      return false;
+    }
+    // F12
+    if (e.keyCode === 123) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+U
+    if (e.ctrlKey && e.keyCode === 85) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+I
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 73) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+J
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 74) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+C
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 67) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+S
+    if (e.ctrlKey && e.keyCode === 83) {
+      e.preventDefault();
+      return false;
+    }
+  });
+  
+  // 禁用选择
+  document.addEventListener('selectstart', function(e) {
+    // 允许输入框选择
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+      return true;
+    }
+    e.preventDefault();
+    return false;
+  });
+  </script>
+</body>
+</html>
