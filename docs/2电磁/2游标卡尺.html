@@ -1,0 +1,631 @@
+<!doctype html>
+<html lang="zh-CN">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>高拟真游标卡尺交互仿真</title>
+  <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #0a0e27 0%, #1a1a4a 30%, #0d1b3e 60%, #0f2050 100%);
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
+        }
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                radial-gradient(2px 2px at 20px 30px, #fff, transparent),
+                radial-gradient(2px 2px at 40px 70px, rgba(255,255,255,0.8), transparent),
+                radial-gradient(1px 1px at 90px 40px, #fff, transparent),
+                radial-gradient(2px 2px at 160px 120px, rgba(255,255,255,0.9), transparent),
+                radial-gradient(1px 1px at 230px 80px, #fff, transparent),
+                radial-gradient(2px 2px at 300px 150px, rgba(255,255,255,0.7), transparent),
+                radial-gradient(1px 1px at 370px 50px, #fff, transparent),
+                radial-gradient(2px 2px at 450px 180px, rgba(255,255,255,0.8), transparent),
+                radial-gradient(1px 1px at 520px 100px, #fff, transparent),
+                radial-gradient(2px 2px at 600px 200px, rgba(255,255,255,0.9), transparent),
+                radial-gradient(1px 1px at 680px 60px, #fff, transparent),
+                radial-gradient(2px 2px at 750px 140px, rgba(255,255,255,0.7), transparent),
+                radial-gradient(1px 1px at 820px 90px, #fff, transparent),
+                radial-gradient(2px 2px at 900px 170px, rgba(255,255,255,0.8), transparent),
+                radial-gradient(1px 1px at 980px 40px, #fff, transparent),
+                radial-gradient(2px 2px at 1050px 130px, rgba(255,255,255,0.9), transparent),
+                radial-gradient(3px 3px at 120px 200px, #64b5f6, transparent),
+                radial-gradient(2px 2px at 280px 280px, #42a5f5, transparent),
+                radial-gradient(3px 3px at 500px 320px, #90caf9, transparent),
+                radial-gradient(2px 2px at 700px 260px, #64b5f6, transparent),
+                radial-gradient(3px 3px at 850px 350px, #42a5f5, transparent);
+            background-size: 1000px 400px;
+            animation: twinkle 8s ease-in-out infinite;
+            pointer-events: none;
+            z-index: 0;
+        }
+        @keyframes twinkle {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 20px;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(15px);
+            padding: 15px;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 0 0 20px rgba(100, 181, 246, 0.1);
+            width: 100%;
+            max-width: 900px;
+            box-sizing: border-box;
+            border: 1px solid rgba(100, 181, 246, 0.3);
+            position: relative;
+            z-index: 1;
+        }
+        .control-group { display: flex; align-items: center; gap: 8px; font-size: 15px; }
+        select, input[type="text"], input[type="number"], button {
+            font-size: 15px; padding: 8px 12px; border: 1px solid rgba(100, 181, 246, 0.4); border-radius: 6px; outline: none;
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            transition: all 0.3s;
+        }
+        select:hover, input:hover {
+            border-color: rgba(100, 181, 246, 0.7);
+            box-shadow: 0 0 10px rgba(100, 181, 246, 0.2);
+        }
+        select option {
+            background: #1a1a4a;
+            color: #fff;
+        }
+        button {
+            background: linear-gradient(135deg, #1976d2, #0d47a1);
+            color: white; border: none; cursor: pointer; transition: 0.3s;
+            box-shadow: 0 4px 15px rgba(25, 118, 210, 0.4);
+        }
+        button:hover { 
+            background: linear-gradient(135deg, #2196f3, #1565c0);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px rgba(33, 150, 243, 0.5);
+        }
+        .canvas-container {
+            width: 100%;
+            max-width: 900px;
+            height: 320px;
+            position: relative;
+            box-shadow: 0 8px 40px rgba(0, 0, 0, 0.5), 0 0 30px rgba(100, 181, 246, 0.15);
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid rgba(100, 181, 246, 0.3);
+            background: linear-gradient(180deg, #e8f5e9 0%, #c8e6c9 100%);
+            cursor: grab;
+            z-index: 1;
+        }
+        
+        .canvas-container:active { cursor: grabbing; }
+        canvas {
+            display: block; width: 100%; height: 100%; touch-action: none;
+        }
+        .interaction-area {
+            margin-top: 25px; width: 100%; max-width: 900px; min-height: 80px;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            position: relative;
+            z-index: 1;
+        }
+        .reading-display {
+            font-size: 36px; font-weight: bold; color: #fff; font-family: 'Courier New', Courier, monospace;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(15px);
+            padding: 15px 40px; border-radius: 12px; border: 2px solid rgba(100, 181, 246, 0.4);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 0 0 20px rgba(100, 181, 246, 0.2);
+            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+        }
+        .calc-hint {
+            display: none;
+            margin-top: 15px;
+            font-size: 16px;
+            color: #fff;
+            background: rgba(255, 193, 7, 0.15);
+            backdrop-filter: blur(10px);
+            padding: 15px 25px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 193, 7, 0.4);
+            text-align: center;
+            line-height: 1.8;
+        }
+        .calc-hint b { color: #ffd54f; font-size: 18px;}
+        .test-panel { display: none; flex-direction: column; align-items: center; gap: 12px; }
+        .test-input-group { display: flex; align-items: center; gap: 10px; }
+        .test-input-group input { width: 120px; text-align: center; font-size: 18px; font-weight: bold;}
+        .feedback { font-size: 18px; font-weight: bold; min-height: 25px; }
+        .correct { color: #69f0ae; }
+        .wrong { color: #ff5252; }
+        @media (max-width: 600px) {
+            .canvas-container { height: 260px; }
+            .reading-display { font-size: 28px; }
+            .calc-hint { font-size: 14px; }
+        }
+    </style>
+ 
+  <style>
+  body {
+    background-color: #1a2332 !important;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+  }
+  
+  .qilai-back-btn {
+    position: fixed;
+    top: 10px;
+    left: 15px;
+    z-index: 100000;
+    padding: 8px 16px;
+    background: rgba(0, 150, 200, 0.2);
+    border: 1px solid rgba(100, 180, 255, 0.5);
+    color: #8ab4f8;
+    font-size: 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.3s;
+    backdrop-filter: blur(5px);
+    font-family: "Microsoft YaHei", sans-serif;
+  }
+  
+  .qilai-back-btn:hover {
+    background: rgba(0, 150, 200, 0.4);
+    box-shadow: 0 0 15px rgba(100, 180, 255, 0.3);
+    color: #fff;
+  }
+  
+  .qilai-watermark {
+    position: fixed;
+    bottom: 15px;
+    right: 15px;
+    z-index: 99998;
+    font-size: 12px;
+    color: rgba(138, 180, 248, 0.35);
+    text-align: right;
+    line-height: 1.8;
+    pointer-events: none;
+    user-select: none;
+    font-family: "Microsoft YaHei", sans-serif;
+  }
+  
+  .qilai-watermark .title {
+    font-size: 14px;
+    font-weight: bold;
+    color: rgba(138, 180, 248, 0.45);
+    margin-bottom: 4px;
+    letter-spacing: 1px;
+  }
+  </style>
+</head>
+ <body>
+  <a href="javascript:void(0);" class="qilai-back-btn" onclick="saveScrollAndReturn();">← 返回主页</a>
+  
+  <div class="qilai-watermark">
+    <div class="title">齐老师动画</div>
+    QQ 3398528250<br>
+    抖音 35320300542
+  </div>
+
+  <div id="_copyright_anchor" style="display:none;">
+   作者：赵辟 阳高县第一中学校 邮箱：zhaobi112358@hotmail.com
+  </div>
+  <div class="controls">
+   <div class="control-group">
+    <label>型号:</label> <select id="division-select"> <option value="50">50分度 (0.02mm)</option> <option value="20" selected>20分度 (0.05mm)</option> <option value="10">10分度 (0.1mm)</option> </select>
+   </div>
+   <div class="control-group">
+    <label>模式:</label> <label><input type="radio" name="mode" value="learn" checked> 学习</label> <label><input type="radio" name="mode" value="test"> 考察</label>
+   </div>
+   <div class="control-group" id="hint-toggle-group">
+    <label style="color: #ffd54f; font-weight: bold; cursor: pointer;"> <input type="checkbox" id="show-hint-cb"> 🔍 开启读数解析 </label>
+   </div>
+   <div class="control-group" id="random-btn-group" style="display: none;">
+    <button id="random-btn">随机生成</button>
+   </div>
+  </div>
+  <div class="canvas-container">
+   <canvas id="caliper-canvas"></canvas>
+  </div>
+  <div class="interaction-area">
+   <div class="reading-display" id="learn-reading">
+    3.60 mm
+   </div>
+   <div class="calc-hint" id="calc-hint"></div>
+   <div class="test-panel" id="test-panel">
+    <div class="test-input-group">
+     <input type="number" id="test-input" step="0.01" placeholder="输入读数"> <span>mm</span> <button id="submit-btn">验证</button>
+    </div>
+    <div class="feedback" id="feedback-msg"></div>
+   </div>
+  </div>
+  <script>
+    document.addEventListener('contextmenu', e => e.preventDefault());
+    document.addEventListener('selectstart', e => e.preventDefault());
+    document.addEventListener('copy', e => e.preventDefault());
+    document.addEventListener('cut', e => e.preventDefault());
+    document.addEventListener('keydown', function(e) {
+        if (e.keyCode === 123 || 
+            (e.ctrlKey && e.shiftKey && e.keyCode === 73) || 
+            (e.ctrlKey && e.shiftKey && e.keyCode === 74) || 
+            (e.ctrlKey && e.keyCode === 85) || 
+            (e.ctrlKey && e.keyCode === 83) || 
+            (e.ctrlKey && e.keyCode === 67)
+        ) {
+            e.preventDefault();
+            return false;
+        }
+    });
+    const canvas = document.getElementById('caliper-canvas');
+    const ctx = canvas.getContext('2d');
+    const divisionSelect = document.getElementById('division-select');
+    const modeRadios = document.getElementsByName('mode');
+    const showHintCb = document.getElementById('show-hint-cb');
+    const hintToggleGroup = document.getElementById('hint-toggle-group');
+    const learnReading = document.getElementById('learn-reading');
+    const calcHint = document.getElementById('calc-hint');
+    const testPanel = document.getElementById('test-panel');
+    const testInput = document.getElementById('test-input');
+    const submitBtn = document.getElementById('submit-btn');
+    const feedbackMsg = document.getElementById('feedback-msg');
+    const randomBtn = document.getElementById('random-btn');
+    const randomBtnGroup = document.getElementById('random-btn-group');
+    let division = 20; 
+    let accuracy = 0.05; 
+    let currentValue = 3.60; 
+    let pxPerMm = 20; 
+    let mode = 'learn'; 
+    let dragTarget = null; 
+    let lastClientX = 0;
+    let globalOffsetX = 100; 
+    function resizeCanvas() {
+        const rect = canvas.parentElement.getBoundingClientRect();
+        if(rect.width === 0) return; 
+        const dpr = window.devicePixelRatio || 1;
+        canvas.width = rect.width * dpr;
+        canvas.height = rect.height * dpr;
+        ctx.scale(dpr, dpr);
+        pxPerMm = rect.width < 500 ? 14 : 18; 
+        globalOffsetX = rect.width * 0.25; 
+        drawCaliper();
+    }
+    window.addEventListener('resize', resizeCanvas);
+    function getDecimals() { return division === 10 ? 1 : 2; }
+    function getMetalGradient(x, y, w, h, isVertical = true) {
+        let grad = isVertical ? ctx.createLinearGradient(x, y, x, y + h) : ctx.createLinearGradient(x, y, x + w, y);
+        grad.addColorStop(0, '#f5f5f5');
+        grad.addColorStop(0.2, '#e0e0e0');
+        grad.addColorStop(0.4, '#bdbdbd');
+        grad.addColorStop(0.5, '#9e9e9e');
+        grad.addColorStop(0.6, '#bdbdbd');
+        grad.addColorStop(0.8, '#e0e0e0');
+        grad.addColorStop(1, '#f5f5f5');
+        return grad;
+    }
+    function drawScrew(x, y) {
+        ctx.beginPath();
+        ctx.arc(x, y, 3, 0, Math.PI * 2);
+        ctx.fillStyle = "#444";
+        ctx.fill();
+        ctx.strokeStyle = "#666";
+        ctx.lineWidth = 0.5;
+        ctx.stroke();
+    }
+    function drawCaliper() {
+        const w = canvas.width / (window.devicePixelRatio || 1);
+        const h = canvas.height / (window.devicePixelRatio || 1);
+        
+        ctx.clearRect(0, 0, w, h);
+        const centerY = h / 2 - 10; 
+        const rulerHeight = 36; 
+        const mainScaleX = globalOffsetX; 
+        const vernierZeroX = mainScaleX + currentValue * pxPerMm; 
+        ctx.save();
+        const mainScaleLength = 170 * pxPerMm;
+        ctx.fillStyle = getMetalGradient(0, centerY - rulerHeight, 0, rulerHeight);
+        ctx.fillRect(mainScaleX - 60, centerY - rulerHeight, mainScaleLength + 100, rulerHeight);
+        
+        ctx.beginPath();
+        ctx.moveTo(mainScaleX - 60, centerY - rulerHeight); ctx.lineTo(mainScaleX + mainScaleLength + 40, centerY - rulerHeight);
+        ctx.moveTo(mainScaleX - 60, centerY); ctx.lineTo(mainScaleX + mainScaleLength + 40, centerY);
+        ctx.strokeStyle = "#666"; ctx.lineWidth = 1; ctx.stroke();
+        ctx.fillStyle = getMetalGradient(mainScaleX - 45, 0, 45, 0, false);
+        ctx.beginPath();
+        ctx.moveTo(mainScaleX, centerY);
+        ctx.lineTo(mainScaleX, centerY + 85); 
+        ctx.lineTo(mainScaleX - 5, centerY + 85); 
+        ctx.lineTo(mainScaleX - 18, centerY + 65); 
+        ctx.lineTo(mainScaleX - 25, centerY + 40); 
+        ctx.lineTo(mainScaleX - 25, centerY + 15); 
+        ctx.lineTo(mainScaleX - 45, centerY + 15);
+        ctx.lineTo(mainScaleX - 45, centerY);
+        ctx.lineTo(mainScaleX - 40, centerY - rulerHeight);
+        ctx.lineTo(mainScaleX - 25, centerY - rulerHeight - 25);
+        ctx.lineTo(mainScaleX - 15, centerY - rulerHeight - 25);
+        ctx.lineTo(mainScaleX, centerY - rulerHeight - 10);
+        ctx.lineTo(mainScaleX, centerY - rulerHeight);
+        ctx.fill(); ctx.stroke();
+        ctx.fillStyle = "#333";
+        ctx.font = "10px Arial";
+        ctx.textAlign = "right";
+        ctx.fillText(accuracy + "mm", mainScaleX - 10, centerY - 3);
+        ctx.fillStyle = "#000";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "top";
+        ctx.font = "12px sans-serif";
+        ctx.beginPath();
+        for (let i = 0; i <= 160; i++) {
+            const x = mainScaleX + i * pxPerMm;
+            if (x < -20 || x > w + 20) continue; 
+            ctx.moveTo(x, centerY);
+            if (i % 10 === 0) { ctx.lineTo(x, centerY - 18); ctx.fillText(i / 10, x, centerY - 32); } 
+            else if (i % 5 === 0) { ctx.lineTo(x, centerY - 12); } 
+            else { ctx.lineTo(x, centerY - 7); }
+        }
+        ctx.strokeStyle = "#222"; ctx.lineWidth = 1; ctx.stroke();
+        ctx.restore();
+        ctx.save();
+        ctx.shadowColor = "rgba(0, 0, 0, 0.4)";
+        ctx.shadowBlur = 8;
+        ctx.shadowOffsetY = 3;
+        
+        let vernierLengthX = division === 50 ? 53 * pxPerMm : (division === 20 ? 23 * pxPerMm : 13 * pxPerMm);
+        let vernierBoxH = 18;
+        ctx.fillStyle = getMetalGradient(vernierZeroX + vernierLengthX - 15, 0, 25, 0, false);
+        ctx.fillRect(vernierZeroX + vernierLengthX - 15, centerY - rulerHeight, 25, rulerHeight);
+        ctx.strokeRect(vernierZeroX + vernierLengthX - 15, centerY - rulerHeight, 25, rulerHeight);
+        ctx.fillStyle = getMetalGradient(vernierZeroX, 0, 45, 0, false);
+        ctx.beginPath();
+        ctx.moveTo(vernierZeroX, centerY - rulerHeight);
+        ctx.lineTo(vernierZeroX, centerY - rulerHeight - 10);
+        ctx.lineTo(vernierZeroX + 15, centerY - rulerHeight - 25);
+        ctx.lineTo(vernierZeroX + 25, centerY - rulerHeight - 25);
+        ctx.lineTo(vernierZeroX + 45, centerY - rulerHeight);
+        ctx.fill(); ctx.stroke();
+        
+        ctx.fillRect(vernierZeroX, centerY - rulerHeight - 6, vernierLengthX + 10, 6);
+        ctx.strokeRect(vernierZeroX, centerY - rulerHeight - 6, vernierLengthX + 10, 6);
+        ctx.beginPath();
+        ctx.moveTo(vernierZeroX, centerY);
+        ctx.lineTo(vernierZeroX, centerY + 85); 
+        ctx.lineTo(vernierZeroX + 5, centerY + 85); 
+        ctx.lineTo(vernierZeroX + 18, centerY + 65); 
+        ctx.lineTo(vernierZeroX + 25, centerY + 40);
+        ctx.lineTo(vernierZeroX + 25, centerY + vernierBoxH); 
+        ctx.lineTo(vernierZeroX + 45, centerY + vernierBoxH);
+        ctx.lineTo(vernierZeroX + 45, centerY);
+        ctx.fill(); ctx.stroke();
+        ctx.fillRect(vernierZeroX, centerY, vernierLengthX + 10, vernierBoxH);
+        ctx.strokeRect(vernierZeroX, centerY, vernierLengthX + 10, vernierBoxH);
+        let screwX = vernierZeroX + vernierLengthX - 10;
+        let screwY = centerY - rulerHeight - 6;
+        ctx.fillStyle = "#bbb";
+        ctx.fillRect(screwX - 6, screwY - 8, 12, 8);
+        ctx.strokeRect(screwX - 6, screwY - 8, 12, 8);
+        ctx.beginPath(); 
+        for(let j=-4; j<=4; j+=2) { ctx.moveTo(screwX+j, screwY-8); ctx.lineTo(screwX+j, screwY); }
+        ctx.stroke();
+        drawScrew(vernierZeroX + 5, centerY - rulerHeight - 3);
+        drawScrew(vernierZeroX + vernierLengthX, centerY - rulerHeight - 3);
+        drawScrew(vernierZeroX + 5, centerY + vernierBoxH - 4);
+        drawScrew(vernierZeroX + vernierLengthX, centerY + vernierBoxH - 4);
+        ctx.beginPath();
+        ctx.arc(vernierZeroX + vernierLengthX - 5, centerY + vernierBoxH, 8, 0, Math.PI);
+        ctx.fillStyle = "#aaa"; ctx.fill(); ctx.stroke();
+        ctx.beginPath(); 
+        for(let j=-6; j<=6; j+=3) { ctx.moveTo(vernierZeroX + vernierLengthX - 5 + j, centerY + vernierBoxH); ctx.lineTo(vernierZeroX + vernierLengthX - 5 + j, centerY + vernierBoxH + 7); }
+        ctx.stroke();
+        ctx.restore(); 
+        ctx.fillStyle = "#000"; 
+        ctx.textAlign = "center";
+        ctx.textBaseline = "top";
+        ctx.font = "11px sans-serif"; 
+        ctx.beginPath();
+        const vernierSpacing = ((division - 1) / division) * pxPerMm; 
+        for (let i = 0; i <= division; i++) {
+            const x = vernierZeroX + i * vernierSpacing;
+            ctx.moveTo(x, centerY);
+            let markLen = 6; let label = "";
+            if (division === 50) {
+                if (i % 5 === 0) { markLen = 12; label = (i / 5) % 10; } else { markLen = 5; }
+            } else if (division === 20) {
+                if (i % 2 === 0) { markLen = 10; label = i / 2; }
+            } else if (division === 10) {
+                markLen = 10; label = i; 
+            }
+            ctx.lineTo(x, centerY + markLen);
+            if (label !== "") { ctx.fillText(label, x, centerY + markLen + 2); }
+        }
+        ctx.strokeStyle = "#000"; ctx.lineWidth = 1; ctx.stroke();
+        let isHintOn = showHintCb.checked && mode === 'learn';
+        if (isHintOn) {
+            let remainder = parseFloat((currentValue % 1).toFixed(3));
+            let matchIndex = Math.round(remainder / accuracy);
+            let matchX = vernierZeroX + matchIndex * vernierSpacing;
+            ctx.beginPath();
+            ctx.strokeStyle = "rgba(255, 0, 0, 0.8)";
+            ctx.lineWidth = 2;
+            ctx.moveTo(matchX, centerY - rulerHeight + 5);
+            ctx.lineTo(matchX, centerY + 20); 
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.arc(matchX, centerY - rulerHeight + 5, 4, 0, Math.PI*2);
+            ctx.fillStyle = "red";
+            ctx.fill();
+        }
+    }
+    function updateUI() {
+        drawCaliper();
+        if (mode === 'learn') {
+            learnReading.textContent = currentValue.toFixed(getDecimals()) + " mm";
+            if (showHintCb.checked) {
+                let mainV = Math.floor(currentValue);
+                let remainder = parseFloat((currentValue % 1).toFixed(3));
+                let matchIndex = Math.round(remainder / accuracy);
+                calcHint.style.display = 'block';
+                calcHint.innerHTML = `
+                    主尺基准线超过了: <b>${mainV}</b> mm<br>
+                    游标对齐了第 <b>${matchIndex}</b> 根短线 ➔ <b>${matchIndex}</b> × ${accuracy}mm = <b>${remainder.toFixed(getDecimals())}</b> mm<br>
+                    相加得出最终结果 = <b>${currentValue.toFixed(getDecimals())}</b> mm
+                `;
+            } else { calcHint.style.display = 'none'; }
+        } else {
+            if(dragTarget === 'vernier') feedbackMsg.innerHTML = "";
+            calcHint.style.display = 'none';
+        }
+    }
+    showHintCb.addEventListener('change', updateUI);
+    function handleDown(clientX) {
+        const rect = canvas.getBoundingClientRect();
+        const x = clientX - rect.left; 
+        let vernierX = globalOffsetX + currentValue * pxPerMm;
+        let vernierLengthX = division === 50 ? 53 * pxPerMm : (division === 20 ? 23 * pxPerMm : 13 * pxPerMm);
+        if (x >= vernierX - 10 && x <= vernierX + vernierLengthX + 30) { dragTarget = 'vernier'; } 
+        else { dragTarget = 'main'; }
+        lastClientX = x;
+    }
+    function handleMove(clientX) {
+        if (!dragTarget) return;
+        const rect = canvas.getBoundingClientRect();
+        const x = clientX - rect.left;
+        const deltaX = x - lastClientX;
+        lastClientX = x;
+        if (dragTarget === 'vernier') {
+            let deltaMm = deltaX / pxPerMm;
+            currentValue += deltaMm;
+            if (currentValue < 0) currentValue = 0;
+            if (currentValue > 150) currentValue = 150;
+            currentValue = Math.round(currentValue / accuracy) * accuracy;
+        } else if (dragTarget === 'main') {
+            globalOffsetX += deltaX;
+            const w = canvas.width / window.devicePixelRatio;
+            if(globalOffsetX > w * 0.8) globalOffsetX = w * 0.8;
+            if(globalOffsetX < -150 * pxPerMm + w * 0.2) globalOffsetX = -150 * pxPerMm + w * 0.2;
+        }
+        updateUI();
+    }
+    canvas.addEventListener('mousedown', (e) => handleDown(e.clientX));
+    window.addEventListener('mousemove', (e) => handleMove(e.clientX));
+    window.addEventListener('mouseup', () => { dragTarget = null; });
+    canvas.addEventListener('mouseleave', () => { dragTarget = null; });
+    canvas.addEventListener('touchstart', (e) => { handleDown(e.touches[0].clientX); e.preventDefault(); }, { passive: false });
+    window.addEventListener('touchmove', (e) => { handleMove(e.touches[0].clientX); e.preventDefault(); }, { passive: false });
+    window.addEventListener('touchend', () => { dragTarget = null; });
+    divisionSelect.addEventListener('change', (e) => {
+        division = parseInt(e.target.value);
+        accuracy = 1 / division;
+        currentValue = Math.round(currentValue / accuracy) * accuracy;
+        testInput.value = ""; feedbackMsg.innerHTML = ""; updateUI();
+    });
+    modeRadios.forEach(radio => {
+        radio.addEventListener('change', (e) => {
+            mode = e.target.value;
+            if (mode === 'learn') {
+                learnReading.style.display = 'block'; testPanel.style.display = 'none';
+                randomBtnGroup.style.display = 'none'; hintToggleGroup.style.display = 'flex';
+            } else {
+                learnReading.style.display = 'none'; testPanel.style.display = 'flex';
+                randomBtnGroup.style.display = 'block'; hintToggleGroup.style.display = 'none';
+                testInput.value = ""; feedbackMsg.innerHTML = "";
+            }
+            updateUI();
+        });
+    });
+    submitBtn.addEventListener('click', () => {
+        const userValue = parseFloat(testInput.value);
+        if (isNaN(userValue)) { feedbackMsg.innerHTML = `<span style="color:#ffd54f;">⚠️ 请输入数字</span>`; return; }
+        const correctStr = currentValue.toFixed(getDecimals());
+        const userStr = userValue.toFixed(getDecimals());
+        if (userStr === correctStr) { feedbackMsg.innerHTML = `<span class="correct">✅ 回答正确！ (${correctStr} mm)</span>`; } 
+        else { feedbackMsg.innerHTML = `<span class="wrong">❌ 错误！正确读数: ${correctStr} mm</span>`; }
+    });
+    randomBtn.addEventListener('click', () => {
+        const randomSteps = Math.floor(Math.random() * (120 / accuracy)); 
+        currentValue = randomSteps * accuracy;
+        testInput.value = ""; feedbackMsg.innerHTML = ""; updateUI();
+    });
+    setTimeout(() => { resizeCanvas(); updateUI(); }, 50);
+</script>
+ 
+  <script>
+  // 返回主页（滚动位置已在主页点击链接时保存）
+  function saveScrollAndReturn() {
+    window.location.href = '../index.html';
+  }
+  
+  // 禁用右键菜单
+  document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+  });
+  
+  // 禁用开发者工具快捷键
+  document.addEventListener('keydown', function(e) {
+    // ESC返回主页 - 保存滚动位置
+    if (e.keyCode === 27) {
+      saveScrollAndReturn();
+      return false;
+    }
+    // F12
+    if (e.keyCode === 123) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+U
+    if (e.ctrlKey && e.keyCode === 85) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+I
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 73) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+J
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 74) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+C
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 67) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+S
+    if (e.ctrlKey && e.keyCode === 83) {
+      e.preventDefault();
+      return false;
+    }
+  });
+  
+  // 禁用选择
+  document.addEventListener('selectstart', function(e) {
+    // 允许输入框选择
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+      return true;
+    }
+    e.preventDefault();
+    return false;
+  });
+  </script>
+</body>
+</html>
