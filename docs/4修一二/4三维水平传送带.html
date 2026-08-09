@@ -1,0 +1,1049 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>高中物理 · 传送带模型3D | 木质物块 · 平抛运动</title>
+    <style>
+        :root {
+            --bg: rgba(18, 22, 28, 0.8);
+            --accent: #4da6ff;
+            --text: #e0e8f5;
+            --panel-bg: rgba(14, 20, 30, 0.85);
+            --border: #3a4a5e;
+        }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            overflow: hidden;
+            background: #000;
+            height: 100vh;
+            width: 100vw;
+            user-select: none;
+        }
+        #canvas3d {
+            display: block;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+        .controls {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            z-index: 10;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px 14px;
+            padding: 16px 22px;
+            background: var(--panel-bg);
+            backdrop-filter: blur(16px);
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+            align-items: flex-end;
+            justify-content: flex-start;
+            max-width: 95vw;
+        }
+        .btn-row {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            flex-basis: 100%;
+            align-items: center;
+        }
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            min-width: 90px;
+            flex: 1;
+            max-width: 160px;
+        }
+        .control-group label {
+            font-size: 0.65rem;
+            font-weight: 600;
+            color: #8a9bb8;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+        .value-display {
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: #c8ddf8;
+            background: #151f2c;
+            padding: 3px 8px;
+            border-radius: 5px;
+            text-align: center;
+            border: 1px solid #2d3d55;
+        }
+        input[type="range"] {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 6px;
+            border-radius: 8px;
+            background: #1e2c3d;
+            outline: none;
+            cursor: pointer;
+            border: 1px solid #2f4058;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: #e8f0fa;
+            cursor: pointer;
+            border: 2px solid #5a90cc;
+            box-shadow: 0 0 14px rgba(70, 130, 220, 0.6);
+            transition: 0.2s;
+        }
+        button {
+            padding: 8px 14px;
+            border-radius: 7px;
+            border: 1px solid #3a5070;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.7rem;
+            letter-spacing: 0.03em;
+            transition: all 0.2s;
+            white-space: nowrap;
+            background: #172435;
+            color: #b0cde8;
+            font-family: inherit;
+        }
+        button:hover {
+            background: #253f5c;
+            border-color: #5a80b0;
+            box-shadow: 0 0 14px rgba(50, 100, 180, 0.5);
+        }
+        button.active {
+            background: #1e3b5a;
+            border-color: #5a90c8;
+            color: #d0e4f8;
+            box-shadow: 0 0 12px rgba(60, 120, 200, 0.55);
+        }
+        button.pause-btn {
+            background: #2a1f3a;
+            border-color: #8866cc;
+            color: #d8c8ff;
+        }
+        button.pause-btn:hover {
+            background: #3a2a55;
+            box-shadow: 0 0 14px rgba(130, 90, 200, 0.6);
+        }
+        /* ===== v-t图：放大1.3倍（340×210 → 442×273）===== */
+        .vt-panel {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            z-index: 10;
+            border-radius: 14px;
+            overflow: hidden;
+            box-shadow: 0 8px 28px rgba(0, 0, 0, 0.65);
+            border: 1px solid #2a3a50;
+            background: #0a101c;
+        }
+        .vt-panel canvas {
+            display: block;
+            width: 442px;
+            height: 273px;
+        }
+        @media (max-width: 768px) {
+            .controls {
+                padding: 10px 12px;
+                gap: 8px;
+                bottom: 10px;
+                left: 10px;
+                right: 10px;
+            }
+            .control-group {
+                min-width: 60px;
+                flex: 1 1 40%;
+                max-width: 130px;
+            }
+            .vt-panel {
+                bottom: 180px;
+                right: 10px;
+            }
+            .vt-panel canvas {
+                width: 260px;
+                height: 160px;
+            }
+        }
+        .back-btn {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            padding: 10px 20px;
+            background: rgba(0, 150, 200, 0.3);
+            border: 1px solid #00ffff;
+            color: white;
+            font-size: 14px;
+            border-radius: 8px;
+            cursor: pointer;
+            z-index: 9999;
+            transition: 0.3s;
+            backdrop-filter: blur(5px);
+        }
+        .back-btn:hover {
+            background: rgba(0, 150, 200, 0.6);
+            box-shadow: 0 0 15px #00ffff;
+        }
+        .watermark {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            font-size: 14px;
+            color: rgba(0, 255, 255, 0.3);
+            z-index: 9998;
+            pointer-events: none;
+            user-select: none;
+        }
+    </style>
+
+  <style>
+  body {
+    background-color: #1a2332 !important;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+  }
+  
+  .qilai-back-btn {
+    position: fixed;
+    top: 10px;
+    left: 15px;
+    z-index: 100000;
+    padding: 8px 16px;
+    background: rgba(0, 150, 200, 0.2);
+    border: 1px solid rgba(100, 180, 255, 0.5);
+    color: #8ab4f8;
+    font-size: 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.3s;
+    backdrop-filter: blur(5px);
+    font-family: "Microsoft YaHei", sans-serif;
+  }
+  
+  .qilai-back-btn:hover {
+    background: rgba(0, 150, 200, 0.4);
+    box-shadow: 0 0 15px rgba(100, 180, 255, 0.3);
+    color: #fff;
+  }
+  
+  .qilai-watermark {
+    position: fixed;
+    bottom: 15px;
+    right: 15px;
+    z-index: 99998;
+    font-size: 12px;
+    color: rgba(138, 180, 248, 0.35);
+    text-align: right;
+    line-height: 1.8;
+    pointer-events: none;
+    user-select: none;
+    font-family: "Microsoft YaHei", sans-serif;
+  }
+  
+  .qilai-watermark .title {
+    font-size: 14px;
+    font-weight: bold;
+    color: rgba(138, 180, 248, 0.45);
+    margin-bottom: 4px;
+    letter-spacing: 1px;
+  }
+  </style>
+</head>
+<body>
+  <a href="javascript:void(0);" class="qilai-back-btn" onclick="saveScrollAndReturn();">← 返回主页</a>
+  
+  <div class="qilai-watermark">
+    <div class="title">齐老师动画</div>
+    QQ 3398528250<br>
+    抖音 35320300542
+  </div>
+
+    <canvas id="canvas3d"></canvas>
+
+    <div class="controls">
+        <div class="btn-row">
+            <button id="btnPause" class="pause-btn">⏸ 暂停</button>
+            <button id="btnReset">🔄 重置</button>
+            <button class="preset-btn active" data-preset="0">减速反向</button>
+            <button class="preset-btn" data-preset="1">加速追赶</button>
+            <button class="preset-btn" data-preset="2">减速共速</button>
+        </div>
+        <div class="control-group">
+            <label>⚙️ 传送带 v<sub>带</sub> (m/s)</label>
+            <span class="value-display" id="beltSpeedVal">+2.0</span>
+            <input type="range" id="beltSpeed" min="-10" max="10" step="0.1" value="2">
+        </div>
+        <div class="control-group">
+            <label>🚀 物块初速 v<sub>0</sub> (m/s)</label>
+            <span class="value-display" id="blockInitSpeedVal">-5.0</span>
+            <input type="range" id="blockInitSpeed" min="-12" max="12" step="0.1" value="-5">
+        </div>
+        <div class="control-group">
+            <label>📐 动摩擦因数 μ</label>
+            <span class="value-display" id="muVal">0.40</span>
+            <input type="range" id="mu" min="0.05" max="1.0" step="0.01" value="0.4">
+        </div>
+    </div>
+
+    <div class="vt-panel">
+        <canvas id="vtCanvas" width="442" height="273"></canvas>
+    </div>
+
+    <script type="importmap">
+        { "imports": { "three": "https://unpkg.com/three@0.157.0/build/three.module.js", "three/addons/": "https://unpkg.com/three@0.157.0/examples/jsm/" } }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+        const canvas3d = document.getElementById('canvas3d');
+        const renderer = new THREE.WebGLRenderer({
+            canvas: canvas3d,
+            antialias: false,
+            alpha: true,
+            powerPreference: 'high-performance'
+        });
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.25));
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = false;
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.15;
+
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x1a2b3c);
+        scene.fog = new THREE.Fog(0x1a2b3c, 18, 40);
+
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.5, 60);
+        camera.position.set(7, 5.5, 9);
+        camera.lookAt(0, 0.7, 0);
+
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.target.set(0, 0.7, 0);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.08;
+        controls.maxPolarAngle = Math.PI / 2.15;
+        controls.minDistance = 3.5;
+        controls.maxDistance = 22;
+        controls.update();
+
+        const ambientLight = new THREE.AmbientLight(0x8899bb, 2.4);
+        scene.add(ambientLight);
+        const sunLight = new THREE.DirectionalLight(0xfff5e8, 3.6);
+        sunLight.position.set(12, 16, 6);
+        sunLight.castShadow = false;
+        scene.add(sunLight);
+
+        const groundY = -0.35;
+        const groundGeo = new THREE.PlaneGeometry(30, 30);
+        const groundMat = new THREE.MeshStandardMaterial({ color: 0x2a3b4c, roughness: 0.9, metalness: 0.02 });
+        const ground = new THREE.Mesh(groundGeo, groundMat);
+        ground.rotation.x = -Math.PI / 2;
+        ground.position.y = groundY;
+        ground.receiveShadow = false;
+        scene.add(ground);
+
+        const WHEEL_RADIUS = 0.4;
+        const BELT_THICKNESS = 0.06;
+        const BELT_WIDTH = 1.0;
+        const PATH_RADIUS = WHEEL_RADIUS + BELT_THICKNESS / 2;
+        const LEFT_X = -4.0;
+        const RIGHT_X = 4.0;
+        const STRAIGHT_LEN = RIGHT_X - LEFT_X;
+        const ARC_LEN = Math.PI * PATH_RADIUS;
+        const TOTAL_LEN = 2 * STRAIGHT_LEN + 2 * ARC_LEN;
+
+        const BLOCK_LENGTH = 0.16;
+        const NUM_BLOCKS = Math.floor(TOTAL_LEN / BLOCK_LENGTH) + 2;
+        const BLOCK_SPACING = TOTAL_LEN / NUM_BLOCKS;
+
+        let animDistance = 0;
+        const drumCenterY = 0.4;
+        const beltTopY = drumCenterY + PATH_RADIUS;
+
+        const _tempMatrix = new THREE.Matrix4();
+        const _tempPos = new THREE.Vector3();
+        const _tempQuat = new THREE.Quaternion();
+        const _tempScale = new THREE.Vector3(1, 1, 1);
+        const _zeroScale = new THREE.Vector3(0, 0, 0);
+        const _zAxis = new THREE.Vector3(0, 0, 1);
+
+        function createWheel(x, radius) {
+            const group = new THREE.Group();
+            group.position.set(x, drumCenterY, 0);
+            const wheelGeo = new THREE.CylinderGeometry(radius, radius, BELT_WIDTH * 1.2, 20);
+            const wheelMat = new THREE.MeshStandardMaterial({ color: '#d8dce8', roughness: 0.4, metalness: 0.8 });
+            const wheel = new THREE.Mesh(wheelGeo, wheelMat);
+            wheel.rotation.x = Math.PI / 2;
+            wheel.castShadow = false;
+            wheel.receiveShadow = false;
+            group.add(wheel);
+            const hubGeo = new THREE.CylinderGeometry(radius * 0.65, radius * 0.65, BELT_WIDTH * 1.25, 12);
+            const hubMat = new THREE.MeshStandardMaterial({ color: '#c0c5d0', roughness: 0.35, metalness: 0.85 });
+            const hub = new THREE.Mesh(hubGeo, hubMat);
+            hub.rotation.x = Math.PI / 2;
+            hub.castShadow = false;
+            hub.receiveShadow = false;
+            group.add(hub);
+            const axleGeo = new THREE.CylinderGeometry(0.07, 0.07, BELT_WIDTH * 1.4, 12);
+            const axleMat = new THREE.MeshStandardMaterial({ color: '#f0f2f8', roughness: 0.25, metalness: 0.9 });
+            const axle = new THREE.Mesh(axleGeo, axleMat);
+            axle.rotation.x = Math.PI / 2;
+            axle.castShadow = false;
+            axle.receiveShadow = false;
+            group.add(axle);
+            return group;
+        }
+        const leftWheel = createWheel(LEFT_X, WHEEL_RADIUS);
+        const rightWheel = createWheel(RIGHT_X, WHEEL_RADIUS);
+        scene.add(leftWheel);
+        scene.add(rightWheel);
+
+        function getPathPoint(distance) {
+            let d = ((distance % TOTAL_LEN) + TOTAL_LEN) % TOTAL_LEN;
+            if (d < STRAIGHT_LEN) {
+                return { x: LEFT_X + d, y: PATH_RADIUS + drumCenterY, tangentAngle: 0 };
+            }
+            d -= STRAIGHT_LEN;
+            if (d < ARC_LEN) {
+                const angle = Math.PI / 2 - (d / ARC_LEN) * Math.PI;
+                return {
+                    x: RIGHT_X + PATH_RADIUS * Math.cos(angle),
+                    y: PATH_RADIUS * Math.sin(angle) + drumCenterY,
+                    tangentAngle: angle - Math.PI / 2,
+                };
+            }
+            d -= ARC_LEN;
+            if (d < STRAIGHT_LEN) {
+                return { x: RIGHT_X - d, y: -PATH_RADIUS + drumCenterY, tangentAngle: Math.PI };
+            }
+            d -= STRAIGHT_LEN;
+            const angle = -Math.PI / 2 - (d / ARC_LEN) * Math.PI;
+            return {
+                x: LEFT_X + PATH_RADIUS * Math.cos(angle),
+                y: PATH_RADIUS * Math.sin(angle) + drumCenterY,
+                tangentAngle: angle - Math.PI / 2,
+            };
+        }
+
+        // 皮带块 InstancedMesh
+        const beltBlockGeo = new THREE.BoxGeometry(BLOCK_LENGTH, BELT_THICKNESS, BELT_WIDTH);
+        const beltMatA = new THREE.MeshStandardMaterial({ color: '#e0e4ee', roughness: 0.42, metalness: 0.85 });
+        const beltMatB = new THREE.MeshStandardMaterial({ color: '#d2d6e2', roughness: 0.46, metalness: 0.82 });
+        const numBlocksA = Math.ceil(NUM_BLOCKS / 2);
+        const numBlocksB = Math.floor(NUM_BLOCKS / 2);
+        const beltInstancedA = new THREE.InstancedMesh(beltBlockGeo, beltMatA, numBlocksA);
+        const beltInstancedB = new THREE.InstancedMesh(beltBlockGeo, beltMatB, numBlocksB);
+        beltInstancedA.castShadow = false;
+        beltInstancedA.receiveShadow = false;
+        beltInstancedB.castShadow = false;
+        beltInstancedB.receiveShadow = false;
+        scene.add(beltInstancedA);
+        scene.add(beltInstancedB);
+
+        const beltOffsetsA = [];
+        const beltOffsetsB = [];
+        for (let i = 0; i < NUM_BLOCKS; i++) {
+            if (i % 2 === 0) beltOffsetsA.push(i * BLOCK_SPACING);
+            else beltOffsetsB.push(i * BLOCK_SPACING);
+        }
+
+        function updateBeltInstanced() {
+            for (let i = 0; i < beltOffsetsA.length; i++) {
+                const pt = getPathPoint(animDistance + beltOffsetsA[i]);
+                _tempPos.set(pt.x, pt.y, 0);
+                _tempQuat.setFromAxisAngle(_zAxis, pt.tangentAngle);
+                _tempMatrix.compose(_tempPos, _tempQuat, _tempScale);
+                beltInstancedA.setMatrixAt(i, _tempMatrix);
+            }
+            beltInstancedA.instanceMatrix.needsUpdate = true;
+            for (let i = 0; i < beltOffsetsB.length; i++) {
+                const pt = getPathPoint(animDistance + beltOffsetsB[i]);
+                _tempPos.set(pt.x, pt.y, 0);
+                _tempQuat.setFromAxisAngle(_zAxis, pt.tangentAngle);
+                _tempMatrix.compose(_tempPos, _tempQuat, _tempScale);
+                beltInstancedB.setMatrixAt(i, _tempMatrix);
+            }
+            beltInstancedB.instanceMatrix.needsUpdate = true;
+        }
+
+        // 标记线 InstancedMesh
+        const MARKER_COUNT = 20;
+        const markerGeo = new THREE.BoxGeometry(0.025, BELT_THICKNESS * 1.5, BELT_WIDTH * 0.85);
+        const markerMat = new THREE.MeshStandardMaterial({ color: '#8a8f9e', roughness: 0.55, metalness: 0.65 });
+        const markerInstanced = new THREE.InstancedMesh(markerGeo, markerMat, MARKER_COUNT);
+        markerInstanced.castShadow = false;
+        markerInstanced.receiveShadow = false;
+        scene.add(markerInstanced);
+        const markerOffsets = [];
+        for (let i = 0; i < MARKER_COUNT; i++) {
+            markerOffsets.push(i * (TOTAL_LEN / MARKER_COUNT));
+        }
+        function updateMarkerInstanced() {
+            for (let i = 0; i < MARKER_COUNT; i++) {
+                const pt = getPathPoint(animDistance + markerOffsets[i]);
+                _tempPos.set(pt.x, pt.y, 0);
+                _tempQuat.setFromAxisAngle(_zAxis, pt.tangentAngle);
+                _tempMatrix.compose(_tempPos, _tempQuat, _tempScale);
+                markerInstanced.setMatrixAt(i, _tempMatrix);
+            }
+            markerInstanced.instanceMatrix.needsUpdate = true;
+        }
+
+        // 划痕 InstancedMesh（上限 1100 条，永久留存）
+        const MAX_SCRATCH_NUM = 1100;
+        const scratchGeo = new THREE.BoxGeometry(0.06, 0.012, BELT_WIDTH * 0.95);
+        const scratchMat = new THREE.MeshBasicMaterial({
+            color: 0xdd2222, transparent: true, opacity: 1.0,
+            depthWrite: false, depthTest: false,
+            polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2
+        });
+        const scratchInstanced = new THREE.InstancedMesh(scratchGeo, scratchMat, MAX_SCRATCH_NUM);
+        scratchInstanced.renderOrder = 999;
+        scratchInstanced.castShadow = false;
+        scratchInstanced.receiveShadow = false;
+        scene.add(scratchInstanced);
+
+        const scratchData = [];
+        for (let i = 0; i < MAX_SCRATCH_NUM; i++) {
+            scratchData.push({ distance: 0, active: false });
+        }
+        let scratchActiveCount = 0;
+        let slideDistanceAccum = 0;
+        const SCRATCH_INTERVAL = 0.022;
+
+        for (let i = 0; i < MAX_SCRATCH_NUM; i++) {
+            _tempMatrix.compose(_tempPos, _tempQuat, _zeroScale);
+            scratchInstanced.setMatrixAt(i, _tempMatrix);
+        }
+        scratchInstanced.instanceMatrix.needsUpdate = true;
+
+        function addScratch(distance) {
+            if (scratchActiveCount >= MAX_SCRATCH_NUM) return;
+            for (let i = 0; i < MAX_SCRATCH_NUM; i++) {
+                if (!scratchData[i].active) {
+                    scratchData[i].distance = distance;
+                    scratchData[i].active = true;
+                    scratchActiveCount++;
+                    return;
+                }
+            }
+        }
+
+        function updateScratches(dt) {
+            for (let i = 0; i < MAX_SCRATCH_NUM; i++) {
+                const s = scratchData[i];
+                if (!s.active) continue;
+                s.distance += beltSpeed * dt;
+                const pt = getPathPoint(s.distance);
+                _tempPos.set(pt.x, pt.y + 0.015, 0);
+                _tempQuat.setFromAxisAngle(_zAxis, pt.tangentAngle);
+                _tempMatrix.compose(_tempPos, _tempQuat, _tempScale);
+                scratchInstanced.setMatrixAt(i, _tempMatrix);
+            }
+            scratchInstanced.instanceMatrix.needsUpdate = true;
+        }
+
+        function clearAllScratches() {
+            for (let i = 0; i < MAX_SCRATCH_NUM; i++) {
+                scratchData[i].active = false;
+                _tempMatrix.compose(_tempPos, _tempQuat, _zeroScale);
+                scratchInstanced.setMatrixAt(i, _tempMatrix);
+            }
+            scratchActiveCount = 0;
+            scratchInstanced.instanceMatrix.needsUpdate = true;
+        }
+
+        // 支架
+        function createSupport(x) {
+            const group = new THREE.Group();
+            const pillarGeo = new THREE.BoxGeometry(0.22, drumCenterY + 0.35, 0.7);
+            const pillarMat = new THREE.MeshStandardMaterial({ color: 0x3d4858, roughness: 0.5, metalness: 0.65 });
+            const pillar = new THREE.Mesh(pillarGeo, pillarMat);
+            pillar.position.y = (drumCenterY - 0.35) / 2;
+            pillar.castShadow = false;
+            pillar.receiveShadow = false;
+            group.add(pillar);
+            const baseGeo = new THREE.BoxGeometry(0.6, 0.08, 1.1);
+            const baseMat = new THREE.MeshStandardMaterial({ color: 0x2a3340, roughness: 0.45, metalness: 0.7 });
+            const base = new THREE.Mesh(baseGeo, baseMat);
+            base.position.y = -0.35 + 0.04;
+            base.castShadow = false;
+            base.receiveShadow = false;
+            group.add(base);
+            group.position.set(x, -0.35, 0);
+            scene.add(group);
+            return group;
+        }
+        createSupport(LEFT_X);
+        createSupport(RIGHT_X);
+
+        const beamGeo = new THREE.BoxGeometry(STRAIGHT_LEN - 0.5, 0.1, 0.25);
+        const beamMat = new THREE.MeshStandardMaterial({ color: 0x353f50, roughness: 0.45, metalness: 0.65 });
+        const beam = new THREE.Mesh(beamGeo, beamMat);
+        beam.position.set(0, drumCenterY - WHEEL_RADIUS - 0.12, 0);
+        beam.castShadow = false;
+        beam.receiveShadow = false;
+        scene.add(beam);
+
+        // 木质物块
+        const blockSize = 0.5;
+        function createWoodTexture() {
+            const cvs = document.createElement('canvas');
+            cvs.width = 256;
+            cvs.height = 256;
+            const ctx = cvs.getContext('2d');
+            ctx.fillStyle = '#a07848';
+            ctx.fillRect(0, 0, 256, 256);
+            for (let i = 0; i < 18; i++) {
+                const y = i * 15 + Math.random() * 6;
+                const shade = Math.random() * 25 - 12;
+                ctx.fillStyle = `rgba(${140 + shade}, ${100 + shade}, ${60 + shade}, 0.6)`;
+                ctx.fillRect(0, y, 256, 2 + Math.random() * 2);
+            }
+            for (let i = 0; i < 35; i++) {
+                const y = Math.random() * 256;
+                ctx.fillStyle = `rgba(90, 60, 30, ${0.3 + Math.random() * 0.35})`;
+                ctx.fillRect(0, y, 256, 0.5 + Math.random() * 1.2);
+            }
+            const imgData = ctx.getImageData(0, 0, 256, 256);
+            const data = imgData.data;
+            for (let i = 0; i < data.length; i += 4) {
+                const noise = Math.random() * 20 - 10;
+                data[i] = Math.max(0, Math.min(255, data[i] + noise));
+                data[i + 1] = Math.max(0, Math.min(255, data[i + 1] + noise));
+                data[i + 2] = Math.max(0, Math.min(255, data[i + 2] + noise));
+            }
+            ctx.putImageData(imgData, 0, 0);
+            for (let i = 0; i < 70; i++) {
+                const x = Math.random() * 256;
+                ctx.strokeStyle = `rgba(120, 85, 50, ${0.08 + Math.random() * 0.1})`;
+                ctx.lineWidth = 0.5 + Math.random() * 0.5;
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.bezierCurveTo(x + 3, 80, x - 3, 180, x, 256);
+                ctx.stroke();
+            }
+            const tex = new THREE.CanvasTexture(cvs);
+            tex.wrapS = THREE.RepeatWrapping;
+            tex.wrapT = THREE.RepeatWrapping;
+            tex.needsUpdate = true;
+            return tex;
+        }
+        const woodTex = createWoodTexture();
+        const blockGeo = new THREE.BoxGeometry(blockSize, blockSize, blockSize);
+        const blockMat = new THREE.MeshStandardMaterial({ map: woodTex, roughness: 0.75, metalness: 0.05 });
+        const block = new THREE.Mesh(blockGeo, blockMat);
+        block.castShadow = false;
+        block.receiveShadow = false;
+        block.position.y = beltTopY + blockSize / 2;
+        scene.add(block);
+
+        const labelCanvas = document.createElement('canvas');
+        labelCanvas.width = 128;
+        labelCanvas.height = 128;
+        const lctx = labelCanvas.getContext('2d');
+        lctx.fillStyle = 'white';
+        lctx.font = 'bold 58px "PingFang SC","Microsoft YaHei",sans-serif';
+        lctx.textAlign = 'center';
+        lctx.textBaseline = 'middle';
+        lctx.fillText('m', 64, 64);
+        const labelTex = new THREE.CanvasTexture(labelCanvas);
+        const labelGeo = new THREE.PlaneGeometry(0.38, 0.38);
+        const labelMat = new THREE.MeshBasicMaterial({ map: labelTex, transparent: true, side: THREE.DoubleSide, depthWrite: false });
+        const labelMesh = new THREE.Mesh(labelGeo, labelMat);
+        labelMesh.position.y = blockSize / 2 + 0.002;
+        labelMesh.rotation.x = -Math.PI / 2;
+        block.add(labelMesh);
+
+        // 物理变量
+        const g = 9.8;
+        let beltSpeed = 2.0;
+        let blockInitSpeed = -5.0;
+        let mu = 0.4;
+        let blockV = blockInitSpeed;
+        let blockVy = 0;
+        let blockX = RIGHT_X - 0.8;
+        let isStuck = false;
+        let isFlying = false;
+        let isLanded = false;
+        let simTime = 0;
+        let vtData = [{ t: 0, v: blockInitSpeed }];
+
+        function isOnBelt(x) {
+            const halfBlock = blockSize / 2;
+            return x > LEFT_X + halfBlock && x < RIGHT_X - halfBlock;
+        }
+
+        function getBeltSurfaceYAtX(x) {
+            if (x <= LEFT_X) {
+                const dx = LEFT_X - x;
+                if (dx < PATH_RADIUS) return drumCenterY + Math.sqrt(PATH_RADIUS * PATH_RADIUS - dx * dx);
+                return drumCenterY;
+            }
+            if (x >= RIGHT_X) {
+                const dx = x - RIGHT_X;
+                if (dx < PATH_RADIUS) return drumCenterY + Math.sqrt(PATH_RADIUS * PATH_RADIUS - dx * dx);
+                return drumCenterY;
+            }
+            return beltTopY;
+        }
+
+        function resetExperiment() {
+            blockV = blockInitSpeed;
+            blockVy = 0;
+            blockX = RIGHT_X - 0.8;
+            isStuck = false;
+            isFlying = false;
+            isLanded = false;
+            simTime = 0;
+            vtData = [{ t: 0, v: blockInitSpeed }];
+            animDistance = 0;
+            slideDistanceAccum = 0;
+            block.position.x = blockX;
+            block.position.y = beltTopY + blockSize / 2;
+            block.rotation.set(0, 0, 0);
+            clearAllScratches();
+            vtDrawCounter = 0;
+            drawVTGraph();
+        }
+
+        function togglePause() {
+            window._paused = !window._paused;
+            const btn = document.getElementById('btnPause');
+            btn.textContent = window._paused ? '▶️ 继续' : '⏸ 暂停';
+        }
+
+        // UI
+        function readUI() {
+            beltSpeed = parseFloat(document.getElementById('beltSpeed').value);
+            blockInitSpeed = parseFloat(document.getElementById('blockInitSpeed').value);
+            mu = parseFloat(document.getElementById('mu').value);
+            document.getElementById('beltSpeedVal').textContent = beltSpeed.toFixed(1);
+            document.getElementById('blockInitSpeedVal').textContent = blockInitSpeed.toFixed(1);
+            document.getElementById('muVal').textContent = mu.toFixed(2);
+        }
+        document.getElementById('beltSpeed').addEventListener('input', readUI);
+        document.getElementById('blockInitSpeed').addEventListener('input', readUI);
+        document.getElementById('mu').addEventListener('input', readUI);
+        document.getElementById('btnPause').addEventListener('click', togglePause);
+        document.getElementById('btnReset').addEventListener('click', () => { readUI(); resetExperiment(); });
+        document.querySelectorAll('.preset-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                const p = parseInt(btn.dataset.preset);
+                if (p === 0) {
+                    document.getElementById('beltSpeed').value = 2;
+                    document.getElementById('blockInitSpeed').value = -5;
+                    document.getElementById('mu').value = 0.4;
+                }
+                if (p === 1) {
+                    document.getElementById('beltSpeed').value = 5;
+                    document.getElementById('blockInitSpeed').value = 1.5;
+                    document.getElementById('mu').value = 0.35;
+                }
+                if (p === 2) {
+                    document.getElementById('beltSpeed').value = 3;
+                    document.getElementById('blockInitSpeed').value = 7;
+                    document.getElementById('mu').value = 0.3;
+                }
+                readUI();
+                resetExperiment();
+            });
+        });
+        window.addEventListener('keydown', (e) => {
+            if (e.key === ' ') { e.preventDefault(); togglePause(); }
+            if (e.key === 'r' || e.key === 'R') { readUI(); resetExperiment(); }
+        });
+
+        // ===== V-t 图（放大1.3倍，落地后完全冻结）=====
+        const vtCanvas = document.getElementById('vtCanvas');
+        const vtCtx = vtCanvas.getContext('2d');
+        let vtDrawCounter = 0;
+        function drawVTGraph() {
+            if (isLanded) return;
+
+            vtDrawCounter++;
+            if (vtDrawCounter < 3) return;
+            vtDrawCounter = 0;
+
+            const w = vtCanvas.width, h = vtCanvas.height;
+            vtCtx.clearRect(0, 0, w, h);
+            vtCtx.fillStyle = '#0a101c';
+            vtCtx.fillRect(0, 0, w, h);
+
+            // 内边距同步放大
+            const pl = 52, pr = w - 22, pt = 22, pb = h - 36;
+            const vMin = -12, vMax = 12, tMax = Math.max(6, simTime + 1.5);
+            const toX = t => pl + (t / tMax) * (pr - pl);
+            const toY = v => pb - ((v - vMin) / (vMax - vMin)) * (pb - pt);
+
+            // 网格
+            vtCtx.strokeStyle = 'rgba(40,60,90,0.5)';
+            vtCtx.lineWidth = 0.7;
+            for (let v = -12; v <= 12; v += 3) {
+                const y = toY(v);
+                vtCtx.beginPath(); vtCtx.moveTo(pl, y); vtCtx.lineTo(pr, y); vtCtx.stroke();
+            }
+            for (let t = 0; t <= tMax; t += 1) {
+                const x = toX(t);
+                vtCtx.beginPath(); vtCtx.moveTo(x, pt); vtCtx.lineTo(x, pb); vtCtx.stroke();
+            }
+
+            // 坐标轴
+            vtCtx.strokeStyle = '#8899b8';
+            vtCtx.lineWidth = 2;
+            vtCtx.beginPath(); vtCtx.moveTo(pl, pt); vtCtx.lineTo(pl, pb); vtCtx.lineTo(pr, pb); vtCtx.stroke();
+
+            // 传送带速度参考线
+            const beltY = toY(beltSpeed);
+            if (beltY > pt && beltY < pb) {
+                vtCtx.strokeStyle = '#ff9944';
+                vtCtx.setLineDash([6, 4]);
+                vtCtx.lineWidth = 1.8;
+                vtCtx.beginPath(); vtCtx.moveTo(pl, beltY); vtCtx.lineTo(pr, beltY); vtCtx.stroke();
+                vtCtx.setLineDash([]);
+                vtCtx.fillStyle = '#ff9944';
+                vtCtx.font = '13px "PingFang SC","Microsoft YaHei",sans-serif';
+                vtCtx.fillText('v带', pl + 6, beltY - 5);
+            }
+
+            // 速度曲线
+            if (vtData.length > 1) {
+                vtCtx.strokeStyle = '#00e676';
+                vtCtx.lineWidth = 3;
+                vtCtx.beginPath();
+                let started = false;
+                for (const p of vtData) {
+                    const sx = toX(p.t), sy = toY(p.v);
+                    if (sx <= pr) {
+                        if (!started) { vtCtx.moveTo(sx, sy); started = true; }
+                        else vtCtx.lineTo(sx, sy);
+                    }
+                }
+                vtCtx.stroke();
+
+                const last = vtData[vtData.length - 1];
+                const lx = toX(last.t), ly = toY(last.v);
+                vtCtx.fillStyle = '#00e676';
+                vtCtx.beginPath(); vtCtx.arc(lx, ly, 5.5, 0, 2 * Math.PI); vtCtx.fill();
+                vtCtx.fillStyle = 'white';
+                vtCtx.font = 'bold 13px "PingFang SC","Microsoft YaHei",sans-serif';
+                vtCtx.fillText(last.v.toFixed(1), lx + 8, ly - 7);
+            }
+
+            // 刻度文字
+            vtCtx.fillStyle = '#8899b8';
+            vtCtx.font = '13px sans-serif';
+            vtCtx.textAlign = 'right';
+            for (let v = -12; v <= 12; v += 3) vtCtx.fillText(v, pl - 6, toY(v) + 5);
+            vtCtx.textAlign = 'center';
+            vtCtx.fillText('t (s)', pl + (pr - pl) / 2, pb + 22);
+            vtCtx.save();
+            vtCtx.translate(12, pt + (pb - pt) / 2);
+            vtCtx.rotate(-Math.PI / 2);
+            vtCtx.fillText('v (m/s)', 0, 0);
+            vtCtx.restore();
+        }
+
+        // 主动画循环
+        const clock = new THREE.Clock();
+        window._paused = false;
+
+        function animate() {
+            requestAnimationFrame(animate);
+            if (window._paused) {
+                controls.update();
+                renderer.render(scene, camera);
+                return;
+            }
+            const dt = Math.min(clock.getDelta(), 0.05);
+            if (dt > 0) {
+                simTime += dt;
+                let sliding = false;
+                let vRel = 0;
+
+                if (isLanded) {
+                    blockV = 0;
+                    blockVy = 0;
+                } else if (isOnBelt(blockX)) {
+                    isFlying = false;
+                    blockVy = 0;
+                    const surfaceY = getBeltSurfaceYAtX(blockX);
+                    block.position.y = surfaceY + blockSize / 2;
+
+                    vRel = blockV - beltSpeed;
+                    if (!isStuck && Math.abs(vRel) < 0.015) {
+                        blockV = beltSpeed;
+                        isStuck = true;
+                    } else if (isStuck && Math.abs(vRel) >= 0.015) {
+                        isStuck = false;
+                    }
+                    if (!isStuck) {
+                        sliding = true;
+                        const a = (vRel > 0 ? -1 : 1) * mu * g;
+                        const prevV = blockV;
+                        blockV += a * dt;
+                        if ((prevV - beltSpeed) * (blockV - beltSpeed) < 0) {
+                            blockV = beltSpeed;
+                            isStuck = true;
+                            sliding = false;
+                        }
+                    }
+                } else {
+                    if (!isFlying) {
+                        isFlying = true;
+                        blockVy = 0;
+                        const edgeX = blockX < LEFT_X ? LEFT_X : RIGHT_X;
+                        const surfaceY = getBeltSurfaceYAtX(edgeX);
+                        block.position.y = surfaceY + blockSize / 2;
+                    }
+                    isStuck = false;
+                    blockVy -= g * dt;
+                    block.position.y += blockVy * dt;
+                    const blockBottomY = block.position.y - blockSize / 2;
+                    if (blockBottomY <= groundY) {
+                        isLanded = true;
+                        block.position.y = groundY + blockSize / 2;
+                        blockV = 0;
+                        blockVy = 0;
+                    }
+                }
+
+                blockX += blockV * dt;
+                block.position.x = blockX;
+
+                if (sliding && !isFlying) {
+                    const relSpeed = Math.abs(vRel);
+                    slideDistanceAccum += relSpeed * dt;
+                    const beltDistAtBlock = blockX - LEFT_X;
+                    while (slideDistanceAccum >= SCRATCH_INTERVAL) {
+                        slideDistanceAccum -= SCRATCH_INTERVAL;
+                        const offset = vRel > 0 ? -0.025 : 0.025;
+                        addScratch(beltDistAtBlock + offset);
+                    }
+                }
+
+                if (!isLanded) {
+                    if (vtData.length === 0 || simTime - vtData[vtData.length - 1].t > 0.06) {
+                        vtData.push({ t: simTime, v: blockV });
+                        if (vtData.length > 400) vtData.shift();
+                    }
+                }
+
+                const moveDelta = beltSpeed * dt;
+                animDistance += moveDelta;
+
+                const wheelRotateAngle = animDistance / WHEEL_RADIUS;
+                leftWheel.rotation.z = wheelRotateAngle;
+                rightWheel.rotation.z = wheelRotateAngle;
+
+                updateBeltInstanced();
+                updateMarkerInstanced();
+                updateScratches(dt);
+            }
+            drawVTGraph();
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        readUI();
+        resetExperiment();
+        block.position.x = blockX;
+        animate();
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+        console.log('✅ v-t图放大1.3倍版');
+    </script>
+
+    <button class="back-btn" onclick="goBack()">⬅️ 返回</button>
+    <div class="watermark">齐老师动画</div>
+
+    <script>
+        function goBack() { history.back(); }
+        document.addEventListener('keydown', e => { if (e.key === 'Escape') goBack(); });
+        document.addEventListener('contextmenu', e => e.preventDefault());
+    </script>
+
+  <script>
+  // 返回主页（滚动位置已在主页点击链接时保存）
+  function saveScrollAndReturn() {
+    window.location.href = '../index.html';
+  }
+  
+  // 禁用右键菜单
+  document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+  });
+  
+  // 禁用开发者工具快捷键
+  document.addEventListener('keydown', function(e) {
+    // ESC返回主页 - 保存滚动位置
+    if (e.keyCode === 27) {
+      saveScrollAndReturn();
+      return false;
+    }
+    // F12
+    if (e.keyCode === 123) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+U
+    if (e.ctrlKey && e.keyCode === 85) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+I
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 73) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+J
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 74) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+C
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 67) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+S
+    if (e.ctrlKey && e.keyCode === 83) {
+      e.preventDefault();
+      return false;
+    }
+  });
+  
+  // 禁用选择
+  document.addEventListener('selectstart', function(e) {
+    // 允许输入框选择
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+      return true;
+    }
+    e.preventDefault();
+    return false;
+  });
+  </script>
+</body>
+</html>
