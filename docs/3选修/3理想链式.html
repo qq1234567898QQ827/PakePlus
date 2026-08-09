@@ -1,0 +1,941 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>核裂变链式反应 - 动量守恒 · 暂停/重置</title>
+    <style>
+        :root {
+            --bg: #141828;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #0d1117;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            overflow: hidden;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        .container {
+            position: relative;
+            width: 95vw;
+            max-width: 1200px;
+            aspect-ratio: 16/10;
+            max-height: 90vh;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            border-radius: 16px;
+            box-shadow:
+                0 0 60px rgba(30, 60, 120, 0.35),
+                0 0 120px rgba(20, 40, 80, 0.25),
+                inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+            cursor: default;
+        }
+
+        /* 顶部标准裂变方程 */
+        .equation-display {
+            position: absolute;
+            top: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(10, 14, 24, 0.85);
+            border: 1px solid rgba(180, 200, 230, 0.25);
+            border-radius: 24px;
+            padding: 8px 24px;
+            white-space: nowrap;
+            pointer-events: none;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            z-index: 10;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+            text-align: center;
+        }
+
+        .equation-text {
+            font-size: 15px;
+            font-weight: 500;
+            color: #d4e0f0;
+            letter-spacing: 0.5px;
+            font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', 'Cambria Math', serif;
+        }
+
+        .equation-text sup {
+            font-size: 0.8em;
+            color: #a0c8ff;
+            margin-right: 1px;
+        }
+        .equation-text sub {
+            font-size: 0.75em;
+            color: #c8d0dc;
+            margin-right: 2px;
+        }
+        .equation-text .arrow {
+            margin: 0 8px;
+            color: #ffaa40;
+            font-weight: bold;
+            font-size: 1.2em;
+        }
+        .equation-text .element {
+            font-weight: 600;
+            color: #f0e8d8;
+        }
+
+        .cycle-indicator {
+            position: absolute;
+            top: 68px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 14px;
+            font-weight: 600;
+            color: #ffcc80;
+            letter-spacing: 0.06em;
+            pointer-events: none;
+            text-shadow: 0 0 20px rgba(255, 160, 40, 0.6);
+            transition: opacity 0.5s;
+            background: rgba(10, 14, 24, 0.7);
+            padding: 6px 16px;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 160, 40, 0.25);
+            z-index: 9;
+            white-space: nowrap;
+        }
+
+        .legend {
+            position: absolute;
+            bottom: 16px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 15px;
+            background: rgba(10, 14, 24, 0.85);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 24px;
+            padding: 10px 20px;
+            pointer-events: none;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            z-index: 10;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            color: #c8d0dc;
+            white-space: nowrap;
+        }
+
+        .legend-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .legend-dot.neutron {
+            background: #ff3b3b;
+            box-shadow: 0 0 8px #ff3b3b88;
+        }
+        .legend-dot.proton {
+            background: #4d94ff;
+            box-shadow: 0 0 8px #4d94ff88;
+        }
+        .legend-dot.shockwave {
+            background: #ffaa30;
+            box-shadow: 0 0 8px #ffaa3088;
+            border-radius: 2px;
+            width: 14px;
+            height: 3px;
+        }
+        .legend-dot.ba {
+            background: #d4a373;
+            box-shadow: 0 0 6px #d4a373;
+        }
+        .legend-dot.kr {
+            background: #a3c9a8;
+            box-shadow: 0 0 6px #a3c9a8;
+        }
+
+        .restart-hint {
+            position: absolute;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 13px;
+            color: rgba(200, 210, 220, 0.7);
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.6s;
+            letter-spacing: 0.04em;
+            z-index: 5;
+        }
+        .restart-hint.visible {
+            opacity: 1;
+        }
+
+        /* 控制按钮样式 */
+        .controls {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            display: flex;
+            gap: 10px;
+            z-index: 20;
+        }
+
+        .control-btn {
+            background: rgba(10, 14, 24, 0.8);
+            border: 1px solid rgba(200, 210, 230, 0.35);
+            color: #d4e0f0;
+            padding: 8px 18px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            cursor: pointer;
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+            transition: all 0.25s;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        .control-btn:hover {
+            background: rgba(30, 40, 60, 0.9);
+            border-color: rgba(255, 200, 100, 0.6);
+            color: #ffe8c0;
+            box-shadow: 0 0 15px rgba(255, 160, 40, 0.3);
+        }
+
+        .control-btn:active {
+            transform: scale(0.95);
+        }
+
+        .control-btn.pause-btn {
+            min-width: 80px;
+            text-align: center;
+        }
+
+        @media (max-width: 768px) {
+            .equation-display {
+                padding: 6px 12px;
+                top: 8px;
+            }
+            .equation-text {
+                font-size: 11px;
+            }
+            .cycle-indicator {
+                top: 48px;
+                font-size: 12px;
+                padding: 4px 10px;
+            }
+            .controls {
+                top: 8px;
+                right: 8px;
+                gap: 6px;
+            }
+            .control-btn {
+                padding: 6px 12px;
+                font-size: 12px;
+                border-radius: 16px;
+            }
+            .legend {
+                gap: 8px;
+                padding: 6px 12px;
+                bottom: 8px;
+            }
+            .legend-item {
+                font-size: 10px;
+                gap: 4px;
+            }
+        }
+    </style>
+
+  <style>
+  body {
+    background-color: #1a2332 !important;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+  }
+  
+  .qilai-back-btn {
+    position: fixed;
+    top: 10px;
+    left: 15px;
+    z-index: 100000;
+    padding: 8px 16px;
+    background: rgba(0, 150, 200, 0.2);
+    border: 1px solid rgba(100, 180, 255, 0.5);
+    color: #8ab4f8;
+    font-size: 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.3s;
+    backdrop-filter: blur(5px);
+    font-family: "Microsoft YaHei", sans-serif;
+  }
+  
+  .qilai-back-btn:hover {
+    background: rgba(0, 150, 200, 0.4);
+    box-shadow: 0 0 15px rgba(100, 180, 255, 0.3);
+    color: #fff;
+  }
+  
+  .qilai-watermark {
+    position: fixed;
+    bottom: 15px;
+    right: 15px;
+    z-index: 99998;
+    font-size: 12px;
+    color: rgba(138, 180, 248, 0.35);
+    text-align: right;
+    line-height: 1.8;
+    pointer-events: none;
+    user-select: none;
+    font-family: "Microsoft YaHei", sans-serif;
+  }
+  
+  .qilai-watermark .title {
+    font-size: 14px;
+    font-weight: bold;
+    color: rgba(138, 180, 248, 0.45);
+    margin-bottom: 4px;
+    letter-spacing: 1px;
+  }
+  </style>
+</head>
+<body>
+  <a href="javascript:void(0);" class="qilai-back-btn" onclick="saveScrollAndReturn();">← 返回主页</a>
+  
+  <div class="qilai-watermark">
+    <div class="title">齐老师动画</div>
+    QQ 3398528250<br>
+    抖音 35320300542
+  </div>
+
+    <div class="container">
+        <canvas id="mainCanvas"></canvas>
+
+        <!-- 顶部标准裂变方程 -->
+        <div class="equation-display">
+            <span class="equation-text">
+                <sup>235</sup><sub>92</sub><span class="element">U</span> 
+                + <sup>1</sup><sub>0</sub><span class="element">n</span> 
+                <span class="arrow">⟶</span> 
+                <sup>141</sup><sub>56</sub><span class="element">Ba</span> 
+                + <sup>92</sup><sub>36</sub><span class="element">Kr</span> 
+                + 3<sup>1</sup><sub>0</sub><span class="element">n</span>
+            </span>
+        </div>
+
+        <!-- 控制按钮 -->
+        <div class="controls">
+            <button id="pauseBtn" class="control-btn pause-btn">⏸️ 暂停</button>
+            <button id="resetBtn" class="control-btn">🔄 重置</button>
+        </div>
+
+        <div class="cycle-indicator" id="cycleIndicator">⏳ 准备开始链式反应...</div>
+        <div class="restart-hint" id="restartHint">💡 动画已完成，点击重置或画面重播</div>
+        <div class="legend">
+            <div class="legend-item"><span class="legend-dot neutron"></span> 中子</div>
+            <div class="legend-item"><span class="legend-dot proton"></span> 质子</div>
+            <div class="legend-item"><span class="legend-dot shockwave"></span> 冲击波</div>
+            <div class="legend-item"><span class="legend-dot ba"></span> Ba-141</div>
+            <div class="legend-item"><span class="legend-dot kr"></span> Kr-92</div>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            const canvas = document.getElementById('mainCanvas');
+            const ctx = canvas.getContext('2d');
+            const cycleIndicator = document.getElementById('cycleIndicator');
+            const restartHint = document.getElementById('restartHint');
+            const pauseBtn = document.getElementById('pauseBtn');
+            const resetBtn = document.getElementById('resetBtn');
+
+            const W = 1200;
+            const H = 750;
+            canvas.width = W;
+            canvas.height = H;
+
+            // 颜色定义
+            const NEUTRON_FLYING_COLOR = '#ff3838';
+            const NEUTRON_FLYING_GLOW = '#ff5c5c';
+            const NEUTRON_NUCLEUS_COLOR = '#d94040';
+            const PROTON_NUCLEUS_COLOR = '#4d94ff';
+            const PROTON_NUCLEUS_GLOW = '#6db0ff';
+            const NUCLEUS_OUTLINE = 'rgba(180,190,210,0.55)';
+
+            const BA_COLOR = '#d4a373';
+            const BA_GLOW = '#f0c8a0';
+            const KR_COLOR = '#a3c9a8';
+            const KR_GLOW = '#c8e6c9';
+
+            // 工具函数
+            function dist(x1, y1, x2, y2) { return Math.hypot(x2 - x1, y2 - y1); }
+            function lerp(a, b, t) { return a + (b - a) * t; }
+            function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
+
+            // 碎片粒子
+            class DebrisParticle {
+                constructor(x, y, vx, vy, radius, color, life) {
+                    this.x = x; this.y = y; this.vx = vx; this.vy = vy; this.radius = radius; this.color = color;
+                    this.life = life; this.maxLife = life; this.alive = true;
+                }
+                update(dt) {
+                    this.x += this.vx * dt; this.y += this.vy * dt;
+                    this.vx *= 0.995; this.vy *= 0.995;
+                    this.life -= dt; if (this.life <= 0) this.alive = false;
+                }
+                draw(ctx) {
+                    const alpha = clamp(this.life / this.maxLife, 0, 1);
+                    const r = this.radius * (0.6 + 0.4 * alpha);
+                    ctx.save(); ctx.globalAlpha = alpha;
+                    ctx.fillStyle = this.color; ctx.shadowColor = this.color; ctx.shadowBlur = r * 2.5;
+                    ctx.beginPath(); ctx.arc(this.x, this.y, r, 0, Math.PI * 2); ctx.fill();
+                    ctx.restore();
+                }
+            }
+
+            // 冲击波
+            class ShockWave {
+                constructor(x, y, startTime) {
+                    this.x = x; this.y = y; this.startTime = startTime; this.duration = 1.2;
+                    this.rings = [
+                        { radius: 0, alpha: 1, speed: 200 },
+                        { radius: 0, alpha: 0.75, speed: 155, delay: 0.06 },
+                        { radius: 0, alpha: 0.45, speed: 120, delay: 0.14 }
+                    ];
+                    this.alive = true; this.flashAlpha = 1;
+                }
+                update(dt, elapsed) {
+                    const localT = elapsed - this.startTime;
+                    if (localT < 0) return;
+                    if (localT > this.duration) { this.alive = false; return; }
+                    this.flashAlpha = Math.max(0, 1 - localT / 0.3);
+                    for (let ring of this.rings) {
+                        const effectiveT = Math.max(0, localT - ring.delay);
+                        ring.radius = effectiveT * ring.speed;
+                        ring.alpha = ring.alpha * (1 - effectiveT / (this.duration - ring.delay));
+                        ring.alpha = clamp(ring.alpha, 0, 1);
+                    }
+                }
+                draw(ctx, elapsed) {
+                    const localT = elapsed - this.startTime;
+                    if (localT < 0 || localT > this.duration + 0.3) return;
+                    if (this.flashAlpha > 0.01) {
+                        const flashR = 55 * (1 - clamp(localT / 0.3, 0, 1)) + 8;
+                        const grad = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, flashR);
+                        grad.addColorStop(0, `rgba(255,255,240,${this.flashAlpha})`);
+                        grad.addColorStop(0.3, `rgba(255,220,150,${this.flashAlpha * 0.7})`);
+                        grad.addColorStop(1, `rgba(255,150,40,0)`);
+                        ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = grad;
+                        ctx.beginPath(); ctx.arc(this.x, this.y, flashR, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+                    }
+                    for (let ring of this.rings) {
+                        if (ring.radius < 0.5 || ring.alpha < 0.02) continue;
+                        ctx.save(); ctx.globalCompositeOperation = 'lighter';
+                        ctx.strokeStyle = `rgba(255,180,50,${ring.alpha})`;
+                        ctx.lineWidth = 4 + ring.alpha * 6;
+                        ctx.shadowColor = `rgba(255,140,30,${ring.alpha})`;
+                        ctx.shadowBlur = 18 + ring.alpha * 22;
+                        ctx.beginPath(); ctx.arc(this.x, this.y, ring.radius, 0, Math.PI * 2); ctx.stroke();
+                        if (ring.alpha > 0.3) {
+                            ctx.strokeStyle = `rgba(255,220,140,${ring.alpha * 0.5})`;
+                            ctx.lineWidth = 8 + ring.alpha * 10;
+                            ctx.shadowBlur = 30;
+                            ctx.beginPath(); ctx.arc(this.x, this.y, ring.radius, 0, Math.PI * 2); ctx.stroke();
+                        }
+                        ctx.restore();
+                    }
+                }
+            }
+
+            // U-235 原子核
+            class U235Nucleus {
+                constructor(x, y, id) {
+                    this.x = x; this.y = y; this.id = id; this.radius = 36;
+                    this.intact = true; this.exploding = false; this.exploded = false; this.explosionTime = -1;
+                    this.shakeOffset = { x: 0, y: 0 };
+                    this.nucleons = [];
+                    const numProtons = 9, numNeutrons = 15, innerRadius = this.radius - 6;
+                    for (let i = 0; i < numProtons; i++) {
+                        const angle = Math.random() * Math.PI * 2, r = Math.sqrt(Math.random()) * innerRadius;
+                        this.nucleons.push({ type: 'proton', relX: Math.cos(angle) * r, relY: Math.sin(angle) * r, radius: 3.2 + Math.random() * 1.6, color: PROTON_NUCLEUS_COLOR, glow: PROTON_NUCLEUS_GLOW });
+                    }
+                    for (let i = 0; i < numNeutrons; i++) {
+                        const angle = Math.random() * Math.PI * 2, r = Math.sqrt(Math.random()) * innerRadius;
+                        this.nucleons.push({ type: 'neutron', relX: Math.cos(angle) * r, relY: Math.sin(angle) * r, radius: 3.0 + Math.random() * 1.5, color: NEUTRON_NUCLEUS_COLOR, glow: '#ff6666' });
+                    }
+                    this.nucleonAbsPositions = [];
+                    this.updateNucleonPositions();
+                }
+                updateNucleonPositions() {
+                    this.nucleonAbsPositions = this.nucleons.map(n => ({
+                        x: this.x + n.relX + this.shakeOffset.x,
+                        y: this.y + n.relY + this.shakeOffset.y,
+                        radius: n.radius, color: n.color, glow: n.glow
+                    }));
+                }
+                triggerExplosion(time) { if (this.intact) { this.intact = false; this.exploding = true; this.explosionTime = time; } }
+                update(dt, elapsed) {
+                    if (this.exploding && !this.exploded) {
+                        const localT = elapsed - this.explosionTime;
+                        if (localT > 1.5) { this.exploded = true; this.exploding = false; }
+                        if (localT < 0.4) {
+                            const intensity = (1 - localT / 0.4) * 10;
+                            this.shakeOffset.x = (Math.random() - 0.5) * intensity;
+                            this.shakeOffset.y = (Math.random() - 0.5) * intensity;
+                        } else { this.shakeOffset.x = 0; this.shakeOffset.y = 0; }
+                    }
+                    if (this.intact) { this.shakeOffset.x *= 0.85; this.shakeOffset.y *= 0.85; }
+                    this.updateNucleonPositions();
+                }
+                draw(ctx, elapsed) {
+                    if (this.exploded) return;
+                    const alpha = this.exploding ? clamp(1 - (elapsed - this.explosionTime) / 0.7, 0, 1) : 1;
+                    if (alpha < 0.02) return;
+                    ctx.save(); ctx.globalAlpha = alpha;
+                    const cx = this.x + this.shakeOffset.x, cy = this.y + this.shakeOffset.y, r = this.radius;
+                    const outerGlow = ctx.createRadialGradient(cx, cy, r * 0.7, cx, cy, r + 8);
+                    outerGlow.addColorStop(0, 'rgba(60,70,100,0.1)'); outerGlow.addColorStop(0.8, 'rgba(100,120,160,0.25)'); outerGlow.addColorStop(1, 'rgba(130,150,190,0)');
+                    ctx.fillStyle = outerGlow; ctx.beginPath(); ctx.arc(cx, cy, r + 8, 0, Math.PI * 2); ctx.fill();
+                    const bodyGrad = ctx.createRadialGradient(cx - r * 0.2, cy - r * 0.25, r * 0.1, cx, cy, r);
+                    bodyGrad.addColorStop(0, 'rgba(70,78,100,0.85)'); bodyGrad.addColorStop(0.7, 'rgba(35,40,55,0.9)'); bodyGrad.addColorStop(1, 'rgba(25,28,38,0.85)');
+                    ctx.fillStyle = bodyGrad; ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill();
+                    ctx.strokeStyle = NUCLEUS_OUTLINE; ctx.lineWidth = 1.8; ctx.stroke();
+                    for (let n of this.nucleonAbsPositions) {
+                        ctx.fillStyle = n.glow; ctx.shadowColor = n.glow; ctx.shadowBlur = n.radius * 2;
+                        ctx.beginPath(); ctx.arc(n.x, n.y, n.radius, 0, Math.PI * 2); ctx.fill();
+                        ctx.fillStyle = n.color; ctx.shadowBlur = n.radius * 1.2;
+                        ctx.beginPath(); ctx.arc(n.x, n.y, n.radius * 0.75, 0, Math.PI * 2); ctx.fill();
+                    }
+                    ctx.shadowBlur = 0;
+                    if (this.intact && alpha > 0.7) {
+                        ctx.fillStyle = 'rgba(200,210,225,0.8)'; ctx.font = 'bold 11px "Segoe UI","PingFang SC","Microsoft YaHei",sans-serif';
+                        ctx.textAlign = 'center'; ctx.fillText('U-235', cx, cy - r - 12);
+                    }
+                    ctx.restore();
+                }
+                getPosition() { return { x: this.x + this.shakeOffset.x, y: this.y + this.shakeOffset.y }; }
+            }
+
+            // 飞行中子
+            class FlyingNeutron {
+                constructor(startX, startY, targetX, targetY, startTime, speed) {
+                    this.startX = startX; this.startY = startY; this.targetX = targetX; this.targetY = targetY;
+                    this.startTime = startTime; this.speed = speed || 340; this.x = startX; this.y = startY;
+                    this.arrived = false; this.radius = 7;
+                    const totalDist = dist(startX, startY, targetX, targetY);
+                    this.travelTime = totalDist / this.speed; this.arrivalTime = startTime + this.travelTime;
+                }
+                update(dt, elapsed) {
+                    if (this.arrived) return;
+                    if (elapsed >= this.arrivalTime) { this.x = this.targetX; this.y = this.targetY; this.arrived = true; return; }
+                    if (elapsed < this.startTime) return;
+                    const progress = (elapsed - this.startTime) / this.travelTime;
+                    const t = clamp(progress, 0, 1);
+                    const eased = t < 0.7 ? t / 0.7 * 0.85 : 0.85 + (t - 0.7) / 0.3 * 0.15;
+                    this.x = lerp(this.startX, this.targetX, clamp(eased, 0, 1));
+                    this.y = lerp(this.startY, this.targetY, clamp(eased, 0, 1));
+                }
+                draw(ctx, elapsed) {
+                    if (this.arrived && elapsed > this.arrivalTime + 0.05) return;
+                    if (elapsed < this.startTime - 0.1) return;
+                    const alpha = this.arrived ? clamp(1 - (elapsed - this.arrivalTime) / 0.08, 0, 1) : 1;
+                    if (alpha < 0.01) return;
+                    ctx.save(); ctx.globalAlpha = alpha;
+                    if (!this.arrived && elapsed > this.startTime) {
+                        const dx = this.targetX - this.startX, dy = this.targetY - this.startY;
+                        const dist_total = Math.hypot(dx, dy);
+                        const ux = dist_total > 0 ? dx / dist_total : 0, uy = dist_total > 0 ? dy / dist_total : 0;
+                        for (let i = 1; i <= 4; i++) {
+                            const tx = this.x - ux * i * 7, ty = this.y - uy * i * 7;
+                            const ta = alpha * (1 - i / 5) * 0.5;
+                            ctx.fillStyle = `rgba(255,100,60,${ta})`; ctx.shadowColor = `rgba(255,80,40,${ta})`; ctx.shadowBlur = 5;
+                            ctx.beginPath(); ctx.arc(tx, ty, this.radius * (1 - i * 0.15), 0, Math.PI * 2); ctx.fill();
+                        }
+                    }
+                    const glowGrad = ctx.createRadialGradient(this.x, this.y, this.radius * 0.3, this.x, this.y, this.radius * 2.5);
+                    glowGrad.addColorStop(0, 'rgba(255,200,150,0.9)'); glowGrad.addColorStop(0.4, 'rgba(255,80,40,0.5)'); glowGrad.addColorStop(1, 'rgba(255,30,20,0)');
+                    ctx.fillStyle = glowGrad; ctx.beginPath(); ctx.arc(this.x, this.y, this.radius * 2.5, 0, Math.PI * 2); ctx.fill();
+                    const bodyGrad = ctx.createRadialGradient(this.x - this.radius * 0.25, this.y - this.radius * 0.3, this.radius * 0.15, this.x, this.y, this.radius);
+                    bodyGrad.addColorStop(0, '#ffffff'); bodyGrad.addColorStop(0.25, '#ffddbb'); bodyGrad.addColorStop(0.6, NEUTRON_FLYING_COLOR); bodyGrad.addColorStop(1, '#c02020');
+                    ctx.fillStyle = bodyGrad; ctx.shadowColor = NEUTRON_FLYING_GLOW; ctx.shadowBlur = 14;
+                    ctx.beginPath(); ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2); ctx.fill();
+                    ctx.restore();
+                }
+                getArrivalTime() { return this.arrivalTime; }
+            }
+
+            // 裂变产物（Ba-141 与 Kr-92）
+            class FissionProduct {
+                constructor(x, y, type, angle, speed) {
+                    this.x = x; this.y = y; this.type = type; this.angle = angle; this.speed = speed;
+                    this.vx = Math.cos(angle) * speed; this.vy = Math.sin(angle) * speed;
+                    this.radius = type === 'Ba141' ? 18 : 15;
+                    this.color = type === 'Ba141' ? BA_COLOR : KR_COLOR;
+                    this.glow = type === 'Ba141' ? BA_GLOW : KR_GLOW;
+                    this.label = type === 'Ba141' ? 'Ba-141' : 'Kr-92';
+                    this.nucleons = [];
+                    const numProtons = type === 'Ba141' ? 4 : 3;
+                    const numNeutrons = type === 'Ba141' ? 6 : 4;
+                    const innerRadius = this.radius - 4;
+                    for (let i = 0; i < numProtons; i++) {
+                        const a = Math.random() * Math.PI * 2, r = Math.sqrt(Math.random()) * innerRadius;
+                        this.nucleons.push({ type: 'proton', relX: Math.cos(a) * r, relY: Math.sin(a) * r, radius: 2.2 + Math.random() * 1.2, color: PROTON_NUCLEUS_COLOR, glow: PROTON_NUCLEUS_GLOW });
+                    }
+                    for (let i = 0; i < numNeutrons; i++) {
+                        const a = Math.random() * Math.PI * 2, r = Math.sqrt(Math.random()) * innerRadius;
+                        this.nucleons.push({ type: 'neutron', relX: Math.cos(a) * r, relY: Math.sin(a) * r, radius: 2.0 + Math.random() * 1.0, color: NEUTRON_NUCLEUS_COLOR, glow: '#ff6666' });
+                    }
+                }
+                update(dt) {
+                    this.x += this.vx * dt; this.y += this.vy * dt;
+                    if (this.x - this.radius < 0) { this.x = this.radius; this.vx = -this.vx * 0.85; }
+                    else if (this.x + this.radius > W) { this.x = W - this.radius; this.vx = -this.vx * 0.85; }
+                    if (this.y - this.radius < 0) { this.y = this.radius; this.vy = -this.vy * 0.85; }
+                    else if (this.y + this.radius > H) { this.y = H - this.radius; this.vy = -this.vy * 0.85; }
+                    this.vx *= 0.998; this.vy *= 0.998;
+                }
+                draw(ctx) {
+                    ctx.save();
+                    const r = this.radius;
+                    const glow = ctx.createRadialGradient(this.x, this.y, r * 0.6, this.x, this.y, r + 4);
+                    glow.addColorStop(0, this.glow); glow.addColorStop(1, 'rgba(0,0,0,0)');
+                    ctx.fillStyle = glow; ctx.beginPath(); ctx.arc(this.x, this.y, r + 4, 0, Math.PI * 2); ctx.fill();
+                    const bodyGrad = ctx.createRadialGradient(this.x - r * 0.2, this.y - r * 0.2, r * 0.1, this.x, this.y, r);
+                    bodyGrad.addColorStop(0, this.glow); bodyGrad.addColorStop(0.7, this.color); bodyGrad.addColorStop(1, '#2a2a35');
+                    ctx.fillStyle = bodyGrad; ctx.beginPath(); ctx.arc(this.x, this.y, r, 0, Math.PI * 2); ctx.fill();
+                    ctx.strokeStyle = 'rgba(255,255,255,0.4)'; ctx.lineWidth = 1.2; ctx.stroke();
+                    for (let n of this.nucleons) {
+                        const nx = this.x + n.relX, ny = this.y + n.relY;
+                        ctx.fillStyle = n.glow; ctx.shadowColor = n.glow; ctx.shadowBlur = n.radius * 1.8;
+                        ctx.beginPath(); ctx.arc(nx, ny, n.radius, 0, Math.PI * 2); ctx.fill();
+                        ctx.fillStyle = n.color; ctx.shadowBlur = n.radius;
+                        ctx.beginPath(); ctx.arc(nx, ny, n.radius * 0.7, 0, Math.PI * 2); ctx.fill();
+                    }
+                    ctx.shadowBlur = 0;
+                    ctx.fillStyle = 'rgba(240,240,245,0.9)'; ctx.font = 'bold 10px "Segoe UI","PingFang SC","Microsoft YaHei",sans-serif';
+                    ctx.textAlign = 'center'; ctx.fillText(this.label, this.x, this.y - r - 12);
+                    ctx.restore();
+                }
+            }
+
+            // 全局状态
+            let nuclei = [], fissionProducts = [], flyingNeutrons = [], shockWaves = [], debrisParticles = [];
+            let animationTime = 0, animationPaused = false;
+            let cycle1Done = false, cycle2Done = false, cycle3Done = false, allDone = false;
+            let cycle1Triggered = false, cycle2Triggered = false, cycle3Triggered = false;
+
+            function initScene() {
+                nuclei = []; fissionProducts = []; flyingNeutrons = []; shockWaves = []; debrisParticles = [];
+                animationTime = 0; animationPaused = false;
+                cycle1Done = cycle2Done = cycle3Done = allDone = false;
+                cycle1Triggered = cycle2Triggered = cycle3Triggered = false;
+                cycleIndicator.textContent = '⏳ 准备开始链式反应...';
+                cycleIndicator.style.color = '#ffcc80';
+                restartHint.classList.remove('visible');
+                pauseBtn.textContent = '⏸️ 暂停';
+
+                nuclei.push(new U235Nucleus(W / 2, H / 2, 'c1'));
+                const c2pos = [
+                    { x: W / 2 - 210, y: H / 2 - 130, id: 'c2a' },
+                    { x: W / 2 + 210, y: H / 2 - 130, id: 'c2b' },
+                    { x: W / 2, y: H / 2 + 195, id: 'c2c' }
+                ];
+                for (let p of c2pos) nuclei.push(new U235Nucleus(p.x, p.y, p.id));
+                const c3groups = [
+                    [{ x: W / 2 - 350, y: H / 2 - 240, id: 'c3a1' }, { x: W / 2 - 280, y: H / 2 - 280, id: 'c3a2' }, { x: W / 2 - 160, y: H / 2 - 260, id: 'c3a3' }],
+                    [{ x: W / 2 + 160, y: H / 2 - 260, id: 'c3b1' }, { x: W / 2 + 280, y: H / 2 - 280, id: 'c3b2' }, { x: W / 2 + 350, y: H / 2 - 240, id: 'c3b3' }],
+                    [{ x: W / 2 - 150, y: H / 2 + 320, id: 'c3c1' }, { x: W / 2 + 150, y: H / 2 + 320, id: 'c3c2' }, { x: W / 2, y: H / 2 + 370, id: 'c3c3' }]
+                ];
+                for (let g of c3groups) for (let p of g) nuclei.push(new U235Nucleus(p.x, p.y, p.id));
+                flyingNeutrons.push(new FlyingNeutron(40, H / 2 + 15, W / 2, H / 2, 0.6, 330));
+            }
+
+            function createFissionProducts(x, y) {
+                const baseAngle = Math.random() * Math.PI * 2;
+                const p = 1400; const vBa = p / 141; const vKr = p / 92;
+                fissionProducts.push(new FissionProduct(x, y, 'Ba141', baseAngle, vBa));
+                fissionProducts.push(new FissionProduct(x, y, 'Kr92', baseAngle + Math.PI, vKr));
+            }
+
+            function createDebris(x, y, count) {
+                for (let i = 0; i < count; i++) {
+                    const angle = Math.random() * Math.PI * 2, speed = 60 + Math.random() * 250;
+                    const vx = Math.cos(angle) * speed, vy = Math.sin(angle) * speed;
+                    const radius = 1.5 + Math.random() * 3.5;
+                    const isNeutron = Math.random() < 0.55;
+                    const color = isNeutron ? (Math.random() < 0.5 ? NEUTRON_NUCLEUS_COLOR : '#e85050') : (Math.random() < 0.5 ? PROTON_NUCLEUS_COLOR : '#5da0ff');
+                    debrisParticles.push(new DebrisParticle(x, y, vx, vy, radius, color, 0.4 + Math.random() * 1.2));
+                }
+            }
+
+            function triggerCycle1(time) {
+                if (cycle1Triggered) return;
+                cycle1Triggered = true;
+                const nuc = nuclei.find(n => n.id === 'c1');
+                if (!nuc || !nuc.intact) return;
+                nuc.triggerExplosion(time);
+                const pos = nuc.getPosition();
+                shockWaves.push(new ShockWave(pos.x, pos.y, time));
+                createDebris(pos.x, pos.y, 40);
+                createFissionProducts(pos.x, pos.y);
+                const c2targets = nuclei.filter(n => n.id.startsWith('c2') && n.intact);
+                for (let i = 0; i < c2targets.length; i++) {
+                    const t = c2targets[i], angle = Math.atan2(t.y - pos.y, t.x - pos.x);
+                    flyingNeutrons.push(new FlyingNeutron(pos.x + Math.cos(angle) * 18, pos.y + Math.sin(angle) * 18, t.x, t.y, time + 0.35, 310 + Math.random() * 40));
+                }
+                cycleIndicator.textContent = '💥 第1次裂变！Ba-141 与 Kr-92 生成';
+                cycleIndicator.style.color = '#ffaa40';
+            }
+
+            function triggerCycle2(nucleusId, time) {
+                const nuc = nuclei.find(n => n.id === nucleusId);
+                if (!nuc || !nuc.intact) return;
+                nuc.triggerExplosion(time);
+                const pos = nuc.getPosition();
+                shockWaves.push(new ShockWave(pos.x, pos.y, time));
+                createDebris(pos.x, pos.y, 30);
+                createFissionProducts(pos.x, pos.y);
+                let c3ids = [];
+                if (nucleusId === 'c2a') c3ids = ['c3a1', 'c3a2', 'c3a3'];
+                if (nucleusId === 'c2b') c3ids = ['c3b1', 'c3b2', 'c3b3'];
+                if (nucleusId === 'c2c') c3ids = ['c3c1', 'c3c2', 'c3c3'];
+                const c3targets = nuclei.filter(n => c3ids.includes(n.id) && n.intact);
+                for (let i = 0; i < c3targets.length; i++) {
+                    const t = c3targets[i], angle = Math.atan2(t.y - pos.y, t.x - pos.x);
+                    flyingNeutrons.push(new FlyingNeutron(pos.x + Math.cos(angle) * 16, pos.y + Math.sin(angle) * 16, t.x, t.y, time + 0.3, 300 + Math.random() * 35));
+                }
+                if (!cycle2Triggered && nuclei.filter(n => n.id.startsWith('c2')).every(n => n.exploding || n.exploded)) {
+                    cycle2Triggered = true;
+                    cycleIndicator.textContent = '💥💥💥 第2次裂变！更多产物生成';
+                    cycleIndicator.style.color = '#ff8830';
+                }
+            }
+
+            function triggerCycle3(nucleusId, time) {
+                const nuc = nuclei.find(n => n.id === nucleusId);
+                if (!nuc || !nuc.intact) return;
+                nuc.triggerExplosion(time);
+                const pos = nuc.getPosition();
+                shockWaves.push(new ShockWave(pos.x, pos.y, time));
+                createDebris(pos.x, pos.y, 22);
+                createFissionProducts(pos.x, pos.y);
+                if (!cycle3Triggered && nuclei.filter(n => n.id.startsWith('c3')).every(n => n.exploding || n.exploded)) {
+                    cycle3Triggered = true; cycle3Done = true;
+                    cycleIndicator.textContent = '🔥🔥🔥 第3次裂变！链式反应扩大';
+                    cycleIndicator.style.color = '#ff6020';
+                    const c3nucs = nuclei.filter(n => n.id.startsWith('c3') && (n.exploding || n.exploded));
+                    for (let n of c3nucs) {
+                        const p = n.getPosition();
+                        for (let i = 0; i < 3; i++) {
+                            const a = Math.random() * Math.PI * 2, d = 160 + Math.random() * 300;
+                            const tx = clamp(p.x + Math.cos(a) * d, 20, W - 20), ty = clamp(p.y + Math.sin(a) * d, 20, H - 20);
+                            flyingNeutrons.push(new FlyingNeutron(p.x + Math.cos(a) * 14, p.y + Math.sin(a) * 14, tx, ty, time + 0.25 + Math.random() * 0.4, 280 + Math.random() * 60));
+                        }
+                    }
+                }
+            }
+
+            function drawBackground(ctx) {
+                const bgGrad = ctx.createRadialGradient(W / 2, H / 3, 100, W / 2, H / 2, W * 0.8);
+                bgGrad.addColorStop(0, '#1e2640'); bgGrad.addColorStop(0.5, '#182036'); bgGrad.addColorStop(1, '#0f1525');
+                ctx.fillStyle = bgGrad; ctx.fillRect(0, 0, W, H);
+                ctx.strokeStyle = 'rgba(255,255,255,0.015)'; ctx.lineWidth = 0.5;
+                for (let x = 50; x < W; x += 50) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); }
+                for (let y = 50; y < H; y += 50) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); }
+                const vignette = ctx.createRadialGradient(W / 2, H / 2, W * 0.35, W / 2, H / 2, W * 0.75);
+                vignette.addColorStop(0, 'rgba(0,0,0,0)'); vignette.addColorStop(1, 'rgba(0,0,0,0.35)');
+                ctx.fillStyle = vignette; ctx.fillRect(0, 0, W, H);
+            }
+
+            function getCycle3CompletionTime() {
+                let max = 0;
+                for (let n of nuclei) if (n.id.startsWith('c3') && n.explosionTime > max) max = n.explosionTime;
+                return max > 0 ? max + 0.8 : 99;
+            }
+
+            let lastTime = null;
+            function animate(timestamp) {
+                if (!lastTime) lastTime = timestamp;
+                let dt = (timestamp - lastTime) / 1000;
+                lastTime = timestamp;
+                if (dt > 0.2) dt = 0.2;
+                if (dt <= 0) dt = 0.016;
+
+                if (!animationPaused) {
+                    animationTime += dt;
+                }
+
+                const elapsed = animationTime;
+                for (let fn of flyingNeutrons) {
+                    if (fn.arrived && !fn._processed) {
+                        fn._processed = true;
+                        let targetNuc = null, minD = 30;
+                        for (let nuc of nuclei) {
+                            if (!nuc.intact) continue;
+                            const d = dist(fn.targetX, fn.targetY, nuc.x, nuc.y);
+                            if (d < minD + nuc.radius && (!targetNuc || d < dist(fn.targetX, fn.targetY, targetNuc.x, targetNuc.y))) {
+                                targetNuc = nuc; minD = d;
+                            }
+                        }
+                        if (targetNuc) {
+                            if (targetNuc.id === 'c1') triggerCycle1(fn.arrivalTime);
+                            else if (targetNuc.id.startsWith('c2')) triggerCycle2(targetNuc.id, fn.arrivalTime);
+                            else if (targetNuc.id.startsWith('c3')) triggerCycle3(targetNuc.id, fn.arrivalTime);
+                        }
+                    }
+                }
+
+                for (let n of nuclei) n.update(dt, elapsed);
+                for (let fn of flyingNeutrons) fn.update(dt, elapsed);
+                for (let sw of shockWaves) sw.update(dt, elapsed);
+                for (let dp of debrisParticles) dp.update(dt);
+                for (let fp of fissionProducts) fp.update(dt);
+
+                shockWaves = shockWaves.filter(s => s.alive);
+                debrisParticles = debrisParticles.filter(d => d.alive);
+                flyingNeutrons = flyingNeutrons.filter(fn => {
+                    if (fn.arrived && fn._processed && animationTime > fn.arrivalTime + 0.5) return false;
+                    if ((fn.x < -80 || fn.x > W + 80 || fn.y < -80 || fn.y > H + 80) && (fn.arrived || animationTime > fn.arrivalTime + 2)) return false;
+                    return true;
+                });
+
+                if (cycle1Triggered && !cycle1Done && nuclei.find(n => n.id === 'c1')?.exploded) cycle1Done = true;
+                if (cycle2Triggered && !cycle2Done && nuclei.filter(n => n.id.startsWith('c2')).every(n => n.exploded)) cycle2Done = true;
+                if (cycle3Done && !allDone && nuclei.filter(n => n.id.startsWith('c3')).every(n => n.exploded) && animationTime > getCycle3CompletionTime() + 1.5) {
+                    allDone = true;
+                    cycleIndicator.textContent = '⚛️ 链式反应完成 · 裂变产物持续运动';
+                    cycleIndicator.style.color = '#ffcc80';
+                    restartHint.classList.add('visible');
+                }
+
+                ctx.clearRect(0, 0, W, H);
+                drawBackground(ctx);
+                for (let sw of shockWaves) sw.draw(ctx, elapsed);
+                for (let n of nuclei) n.draw(ctx, elapsed);
+                for (let fn of flyingNeutrons) fn.draw(ctx, elapsed);
+                for (let dp of debrisParticles) dp.draw(ctx);
+                for (let fp of fissionProducts) fp.draw(ctx);
+                if (cycle3Done && elapsed > getCycle3CompletionTime()) {
+                    const alpha = clamp((elapsed - getCycle3CompletionTime()) / 1.5, 0, 0.25);
+                    const g = ctx.createRadialGradient(W / 2, H / 2, W * 0.2, W / 2, H / 2, W * 0.7);
+                    g.addColorStop(0, `rgba(255,180,60,${alpha})`); g.addColorStop(0.5, `rgba(255,100,30,${alpha * 0.5})`); g.addColorStop(1, 'rgba(255,40,10,0)');
+                    ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+                }
+                requestAnimationFrame(animate);
+            }
+
+            // 暂停/播放按钮
+            pauseBtn.addEventListener('click', () => {
+                animationPaused = !animationPaused;
+                pauseBtn.textContent = animationPaused ? '▶️ 播放' : '⏸️ 暂停';
+            });
+
+            // 重置按钮
+            resetBtn.addEventListener('click', () => {
+                initScene();
+                lastTime = null;
+                restartHint.classList.remove('visible');
+            });
+
+            // 保留点击画面重置（仅当动画完成或长时间后）
+            canvas.addEventListener('click', () => {
+                if (allDone || animationTime > 10) {
+                    initScene();
+                    lastTime = null;
+                    restartHint.classList.remove('visible');
+                }
+            });
+
+            initScene();
+            lastTime = null;
+            requestAnimationFrame(animate);
+        })();
+    </script>
+
+  <script>
+  // 返回主页（滚动位置已在主页点击链接时保存）
+  function saveScrollAndReturn() {
+    window.location.href = '../index.html';
+  }
+  
+  // 禁用右键菜单
+  document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+  });
+  
+  // 禁用开发者工具快捷键
+  document.addEventListener('keydown', function(e) {
+    // ESC返回主页 - 保存滚动位置
+    if (e.keyCode === 27) {
+      saveScrollAndReturn();
+      return false;
+    }
+    // F12
+    if (e.keyCode === 123) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+U
+    if (e.ctrlKey && e.keyCode === 85) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+I
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 73) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+J
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 74) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+C
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 67) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+S
+    if (e.ctrlKey && e.keyCode === 83) {
+      e.preventDefault();
+      return false;
+    }
+  });
+  
+  // 禁用选择
+  document.addEventListener('selectstart', function(e) {
+    // 允许输入框选择
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+      return true;
+    }
+    e.preventDefault();
+    return false;
+  });
+  </script>
+</body>
+</html>
