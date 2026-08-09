@@ -1,0 +1,1067 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta charset="UTF-8">
+    <meta charset="UTF-8">
+    <meta charset="UTF-8">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>地月系统拉格朗日点 | 三维可调视角</title>
+    <style>
+        :root {
+            --bg: #050510;
+        }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background: var(--bg);
+            overflow: hidden;
+            font-family: 'PingFang SC', 'Microsoft YaHei', 'Noto Sans SC', sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+            height: 100vh;
+            width: 100vw;
+        }
+        #canvas-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+        .ui-panel {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            justify-content: center;
+            z-index: 10;
+            background: rgba(10, 15, 30, 0.75);
+            backdrop-filter: blur(12px);
+            padding: 12px 22px;
+            border-radius: 40px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6);
+        }
+        .ui-btn {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #ddd;
+            padding: 10px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-family: inherit;
+            letter-spacing: 0.03em;
+            transition: all 0.3s;
+            white-space: nowrap;
+            backdrop-filter: blur(8px);
+            -webkit-tap-highlight-color: transparent;
+        }
+        .ui-btn:hover {
+            background: rgba(255, 255, 255, 0.18);
+            border-color: rgba(255, 255, 255, 0.5);
+            color: #fff;
+            box-shadow: 0 0 20px rgba(100, 150, 240, 0.3);
+        }
+        .ui-btn.accent {
+            background: rgba(100, 160, 220, 0.25);
+            border-color: rgba(130, 180, 240, 0.6);
+            color: #e0f0ff;
+            font-weight: 600;
+        }
+        .ui-btn.active {
+            background: rgba(255, 255, 255, 0.25);
+            border-color: rgba(255, 255, 255, 0.6);
+        }
+        .speed-display {
+            color: #aac;
+            padding: 10px 8px;
+            font-size: 0.9rem;
+            min-width: 85px;
+            text-align: center;
+            letter-spacing: 0.04em;
+        }
+        .legend-panel {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            z-index: 10;
+            background: rgba(10, 15, 30, 0.65);
+            backdrop-filter: blur(10px);
+            padding: 12px 18px;
+            border-radius: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.78rem;
+            color: #ccd;
+        }
+        .legend-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            box-shadow: 0 0 8px currentColor;
+        }
+        .title {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 10;
+            color: #fff;
+            font-size: 1.4rem;
+            font-weight: 700;
+            text-shadow: 0 0 20px rgba(100, 150, 255, 0.6);
+            letter-spacing: 0.04em;
+            background: rgba(10, 15, 30, 0.5);
+            backdrop-filter: blur(6px);
+            padding: 8px 20px;
+            border-radius: 30px;
+        }
+        @media (max-width: 700px) {
+            .ui-panel {
+                gap: 6px;
+                padding: 10px 14px;
+            }
+            .ui-btn {
+                padding: 8px 14px;
+                font-size: 0.75rem;
+            }
+            .legend-panel {
+                top: 70px;
+                right: 10px;
+                padding: 8px 12px;
+            }
+            .title {
+                font-size: 1rem;
+                top: 10px;
+            }
+        }
+    </style>
+
+  <style>
+  body {
+    background-color: #1a2332 !important;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+  }
+  
+  .qilai-back-btn {
+    position: fixed;
+    top: 10px;
+    left: 15px;
+    z-index: 100000;
+    padding: 8px 16px;
+    background: rgba(0, 150, 200, 0.2);
+    border: 1px solid rgba(100, 180, 255, 0.5);
+    color: #8ab4f8;
+    font-size: 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.3s;
+    backdrop-filter: blur(5px);
+    font-family: "Microsoft YaHei", sans-serif;
+  }
+  
+  .qilai-back-btn:hover {
+    background: rgba(0, 150, 200, 0.4);
+    box-shadow: 0 0 15px rgba(100, 180, 255, 0.3);
+    color: #fff;
+  }
+  
+  .qilai-watermark {
+    position: fixed;
+    bottom: 15px;
+    right: 15px;
+    z-index: 99998;
+    font-size: 12px;
+    color: rgba(138, 180, 248, 0.35);
+    text-align: right;
+    line-height: 1.8;
+    pointer-events: none;
+    user-select: none;
+    font-family: "Microsoft YaHei", sans-serif;
+  }
+  
+  .qilai-watermark .title {
+    font-size: 14px;
+    font-weight: bold;
+    color: rgba(138, 180, 248, 0.45);
+    margin-bottom: 4px;
+    letter-spacing: 1px;
+  }
+  </style>
+</head>
+<body>
+  <a href="javascript:void(0);" class="qilai-back-btn" onclick="saveScrollAndReturn();">← 返回主页</a>
+  
+  <div class="qilai-watermark">
+    <div class="title">齐老师动画</div>
+    QQ 3398528250<br>
+    抖音 35320300542
+  </div>
+
+    <div id="canvas-container"></div>
+    <div class="title">🌍 地月系统 · 拉格朗日点 L₁–L₅</div>
+
+    <div class="legend-panel">
+        <span class="legend-item"><span class="legend-dot" style="background:#4d94ff;"></span> 地球</span>
+        <span class="legend-item"><span class="legend-dot" style="background:#d0d0d0;"></span> 月球</span>
+        <span class="legend-item"><span class="legend-dot" style="background:#ff5e5b;"></span> L₁</span>
+        <span class="legend-item"><span class="legend-dot" style="background:#ff9f43;"></span> L₂</span>
+        <span class="legend-item"><span class="legend-dot" style="background:#ffc048;"></span> L₃</span>
+        <span class="legend-item"><span class="legend-dot" style="background:#4ecb71;"></span> L₄</span>
+        <span class="legend-item"><span class="legend-dot" style="background:#b07cf2;"></span> L₅</span>
+    </div>
+
+    <div class="ui-panel">
+        <button class="ui-btn accent" id="btnPause">⏯️ 暂停</button>
+        <button class="ui-btn" id="btnSlower">🐢 减速</button>
+        <span class="speed-display" id="speedLabel">速度: 1×</span>
+        <button class="ui-btn" id="btnFaster">🐇 加速</button>
+        <button class="ui-btn" id="btnReset">🔄 重置视角</button>
+    </div>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+        // ---- 状态 ----
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x050510);
+        scene.fog = new THREE.Fog(0x050510, 15, 40);
+
+        const container = document.getElementById('canvas-container');
+        const camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.5, 50);
+        camera.position.set(8, 5.5, 8);
+        camera.lookAt(0, 0, 0);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+        renderer.setSize(container.clientWidth, container.clientHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        container.appendChild(renderer.domElement);
+
+        // 视角控制
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.target.set(0, 0, 0);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.08;
+        controls.minDistance = 3.5;
+        controls.maxDistance = 18;
+        controls.maxPolarAngle = Math.PI * 0.85;
+        controls.update();
+
+        // ---- 光照 ----
+        const ambientLight = new THREE.AmbientLight(0x303050, 1.8);
+        scene.add(ambientLight);
+
+        const sunLight = new THREE.DirectionalLight(0xfff5e6, 3.5);
+        sunLight.position.set(10, 8, -5);
+        sunLight.castShadow = true;
+        sunLight.receiveShadow = true;
+        sunLight.shadow.mapSize.width = 1024;
+        sunLight.shadow.mapSize.height = 1024;
+        sunLight.shadow.camera.near = 0.5;
+        sunLight.shadow.camera.far = 40;
+        sunLight.shadow.camera.left = -8;
+        sunLight.shadow.camera.right = 8;
+        sunLight.shadow.camera.top = 8;
+        sunLight.shadow.camera.bottom = -8;
+        scene.add(sunLight);
+
+        const fillLight = new THREE.DirectionalLight(0x8899cc, 0.8);
+        fillLight.position.set(-4, 2, 3);
+        scene.add(fillLight);
+
+        // ---- 星空 ----
+        function createStarfield() {
+            const starsGeo = new THREE.BufferGeometry();
+            const starsCount = 1200;
+            const starsPositions = new Float32Array(starsCount * 3);
+            for (let i = 0; i < starsCount * 3; i += 3) {
+                const radius = 15 + Math.random() * 18;
+                const theta = Math.random() * Math.PI * 2;
+                const phi = Math.acos(2 * Math.random() - 1);
+                starsPositions[i] = Math.cos(theta) * Math.sin(phi) * radius;
+                starsPositions[i + 1] = Math.sin(phi) * radius;
+                starsPositions[i + 2] = Math.cos(phi) * Math.cos(theta) * radius;
+            }
+            starsGeo.setAttribute('position', new THREE.BufferAttribute(starsPositions, 3));
+            const starsMat = new THREE.PointsMaterial({
+                color: 0xffffff,
+                size: 0.08,
+                blending: THREE.AdditiveBlending,
+                depthWrite: false,
+                transparent: true,
+                opacity: 0.8,
+            });
+            const stars = new THREE.Points(starsGeo, starsMat);
+            scene.add(stars);
+        }
+        createStarfield();
+
+        // ---- 纹理生成 ----
+        function createEarthTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 512;
+            canvas.height = 256;
+            const ctx = canvas.getContext('2d');
+            // 海洋
+            const oceanGrad = ctx.createLinearGradient(0, 0, 0, 256);
+            oceanGrad.addColorStop(0, '#1a4d8c');
+            oceanGrad.addColorStop(0.5, '#2060a0');
+            oceanGrad.addColorStop(1, '#163d6e');
+            ctx.fillStyle = oceanGrad;
+            ctx.fillRect(0, 0, 512, 256);
+
+            // 简化大陆
+            ctx.fillStyle = '#4a8b3a';
+            ctx.beginPath();
+            ctx.moveTo(230, 70);
+            ctx.bezierCurveTo(210, 110, 250, 160, 240, 200);
+            ctx.bezierCurveTo(215, 225, 175, 200, 170, 160);
+            ctx.bezierCurveTo(155, 125, 185, 90, 230, 70);
+            ctx.fill();
+
+            ctx.fillStyle = '#5c9e3b';
+            ctx.beginPath();
+            ctx.moveTo(280, 55);
+            ctx.bezierCurveTo(330, 70, 390, 80, 410, 120);
+            ctx.bezierCurveTo(420, 155, 370, 185, 330, 170);
+            ctx.bezierCurveTo(290, 160, 265, 115, 280, 75);
+            ctx.fill();
+
+            ctx.fillStyle = '#639b3c';
+            ctx.beginPath();
+            ctx.moveTo(90, 45);
+            ctx.bezierCurveTo(125, 55, 175, 65, 165, 105);
+            ctx.bezierCurveTo(155, 135, 115, 130, 85, 95);
+            ctx.bezierCurveTo(65, 65, 70, 50, 90, 45);
+            ctx.fill();
+
+            ctx.fillStyle = '#4a8b3a';
+            ctx.beginPath();
+            ctx.moveTo(115, 145);
+            ctx.bezierCurveTo(135, 160, 145, 195, 125, 215);
+            ctx.bezierCurveTo(105, 225, 85, 195, 95, 165);
+            ctx.fill();
+
+            ctx.fillStyle = '#a0844c';
+            ctx.beginPath();
+            ctx.arc(350, 170, 24, 0, Math.PI * 2);
+            ctx.fill();
+
+            // 云层
+            ctx.fillStyle = 'rgba(255,255,255,0.28)';
+            for (let i = 0; i < 180; i++) {
+                const x = Math.random() * 512;
+                const y = Math.random() * 256;
+                const r = Math.random() * 18 + 2;
+                ctx.beginPath();
+                ctx.arc(x, y, r, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            // 极地
+            const gradTop = ctx.createLinearGradient(0, 0, 0, 45);
+            gradTop.addColorStop(0, 'rgba(255,255,255,0.7)');
+            gradTop.addColorStop(1, 'rgba(255,255,255,0)');
+            ctx.fillStyle = gradTop;
+            ctx.fillRect(0, 0, 512, 45);
+
+            const gradBot = ctx.createLinearGradient(0, 211, 0, 256);
+            gradBot.addColorStop(0, 'rgba(255,255,255,0)');
+            gradBot.addColorStop(1, 'rgba(255,255,255,0.7)');
+            ctx.fillStyle = gradBot;
+            ctx.fillRect(0, 211, 512, 45);
+
+            return new THREE.CanvasTexture(canvas);
+        }
+
+        function createMoonTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 256;
+            canvas.height = 128;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#b8b8b8';
+            ctx.fillRect(0, 0, 256, 128);
+
+            for (let i = 0; i < 100; i++) {
+                const x = Math.random() * 256;
+                const y = Math.random() * 128;
+                const r = Math.random() * 7 + 1.5;
+                ctx.fillStyle = `rgba(70,70,70,${Math.random() * 0.5 + 0.2})`;
+                ctx.beginPath();
+                ctx.arc(x, y, r, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = 'rgba(210,210,210,0.45)';
+                ctx.lineWidth = 0.8;
+                ctx.stroke();
+            }
+
+            ctx.fillStyle = 'rgba(55,55,55,0.7)';
+            ctx.beginPath();
+            ctx.ellipse(70, 65, 35, 27, 0.1, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.ellipse(175, 58, 45, 30, -0.2, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.strokeStyle = 'rgba(255,255,255,0.45)';
+            ctx.lineWidth = 0.7;
+            for (let i = 0; i < 40; i++) {
+                const cx = 120,
+                    cy = 55;
+                const angle = Math.random() * Math.PI * 2;
+                const len = Math.random() * 25 + 8;
+                ctx.beginPath();
+                ctx.moveTo(cx, cy);
+                ctx.lineTo(cx + Math.cos(angle) * len, cy + Math.sin(angle) * len);
+                ctx.stroke();
+            }
+            return new THREE.CanvasTexture(canvas);
+        }
+
+        // ---- 场景对象 ----
+        const R_MOON = 5.0;
+        const R_EARTH = 0.78;
+        const R_MOON_BODY = 0.22;
+        const R_SAT = 0.13;
+        const R_L1 = R_MOON * 0.85;
+        const R_L2 = R_MOON * 1.17;
+        const R_L3 = R_MOON;
+        const R_L4 = R_MOON;
+        const R_L5 = R_MOON;
+
+        // 地球
+        const earthGeo = new THREE.SphereGeometry(R_EARTH, 64, 64);
+        const earthTex = createEarthTexture();
+        const earthMat = new THREE.MeshStandardMaterial({ map: earthTex, roughness: 0.65, metalness: 0.05 });
+        const earth = new THREE.Mesh(earthGeo, earthMat);
+        earth.castShadow = true;
+        earth.receiveShadow = true;
+        scene.add(earth);
+
+        // 大气光晕
+        const atmosphereGeo = new THREE.SphereGeometry(R_EARTH * 1.08, 64, 64);
+        const atmosphereMat = new THREE.MeshBasicMaterial({
+            color: 0x4488cc,
+            transparent: true,
+            opacity: 0.12,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false,
+        });
+        const atmosphere = new THREE.Mesh(atmosphereGeo, atmosphereMat);
+        scene.add(atmosphere);
+
+        // 月球
+        const moonGeo = new THREE.SphereGeometry(R_MOON_BODY, 48, 48);
+        const moonTex = createMoonTexture();
+        const moonMat = new THREE.MeshStandardMaterial({ map: moonTex, roughness: 0.8, metalness: 0.02 });
+        const moon = new THREE.Mesh(moonGeo, moonMat);
+        moon.castShadow = true;
+        moon.receiveShadow = true;
+        scene.add(moon);
+
+        // 卫星
+        const satColors = {
+            L1: 0xff5e5b,
+            L2: 0xff9f43,
+            L3: 0xffc048,
+            L4: 0x4ecb71,
+            L5: 0xb07cf2,
+        };
+        const satellites = {};
+        Object.entries(satColors).forEach(([key, color]) => {
+            const geo = new THREE.SphereGeometry(R_SAT, 32, 32);
+            const mat = new THREE.MeshStandardMaterial({ color, roughness: 0.3, emissive: color, emissiveIntensity: 0.4 });
+            const sat = new THREE.Mesh(geo, mat);
+            sat.castShadow = true;
+            sat.receiveShadow = true;
+            scene.add(sat);
+            satellites[key] = sat;
+
+            // 光晕sprite
+            const spriteCanvas = document.createElement('canvas');
+            spriteCanvas.width = 64;
+            spriteCanvas.height = 64;
+            const sctx = spriteCanvas.getContext('2d');
+            const grad = sctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+            grad.addColorStop(0, 'rgba(255,255,255,0.9)');
+            grad.addColorStop(0.2, `rgba(${(color>>16)&255},${(color>>8)&255},${color&255},0.7)`);
+            grad.addColorStop(0.6, 'rgba(0,0,0,0)');
+            sctx.fillStyle = grad;
+            sctx.fillRect(0, 0, 64, 64);
+            const spriteTex = new THREE.CanvasTexture(spriteCanvas);
+            const spriteMat = new THREE.SpriteMaterial({ map: spriteTex, blending: THREE.AdditiveBlending, depthWrite: false,
+                depthTest: true });
+            const sprite = new THREE.Sprite(spriteMat);
+            sprite.scale.set(0.7, 0.7, 1);
+            sat.add(sprite);
+        });
+
+        // ---- 轨道线 ----
+        function createOrbitRing(radius, color, opacity = 0.25, dash = false) {
+            const segments = 128;
+            const points = [];
+            for (let i = 0; i <= segments; i++) {
+                const angle = (i / segments) * Math.PI * 2;
+                points.push(new THREE.Vector3(radius * Math.cos(angle), 0, radius * Math.sin(angle)));
+            }
+            const geo = new THREE.BufferGeometry().setFromPoints(points);
+            let mat;
+            if (dash) {
+                mat = new THREE.LineDashedMaterial({ color, dashSize: 0.4, gapSize: 0.25, linewidth: 1, transparent: true,
+                    opacity });
+            } else {
+                mat = new THREE.LineBasicMaterial({ color, transparent: true, opacity, linewidth: 1 });
+            }
+            const line = new THREE.Line(geo, mat);
+            if (dash) line.computeLineDistances();
+            scene.add(line);
+            return line;
+        }
+        const moonOrbit = createOrbitRing(R_MOON, 0x8899aa, 0.3, true);
+
+        // ---- 连线（动态更新） ----
+        function createDynamicLine(color, opacity = 0.5, dash = false) {
+            const geo = new THREE.BufferGeometry();
+            const positions = new Float32Array([0, 0, 0, 0, 0, 0]);
+            geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            let mat;
+            if (dash) {
+                mat = new THREE.LineDashedMaterial({ color, dashSize: 0.5, gapSize: 0.3, transparent: true, opacity,
+                linewidth: 1 });
+            } else {
+                mat = new THREE.LineBasicMaterial({ color, transparent: true, opacity, linewidth: 1.5 });
+            }
+            const line = new THREE.Line(geo, mat);
+            scene.add(line);
+            return line;
+        }
+
+        function updateLine(line, start, end) {
+            const pos = line.geometry.attributes.position.array;
+            pos[0] = start.x;
+            pos[1] = start.y;
+            pos[2] = start.z;
+            pos[3] = end.x;
+            pos[4] = end.y;
+            pos[5] = end.z;
+            line.geometry.attributes.position.needsUpdate = true;
+            if (line.material.isLineDashedMaterial) {
+                line.computeLineDistances();
+            }
+        }
+
+        const lineEarthMoon = createDynamicLine(0xffdd88, 0.45, true);
+        const lineEarthL4 = createDynamicLine(0x4ecb71, 0.5, true);
+        const lineMoonL4 = createDynamicLine(0x4ecb71, 0.5, true);
+        const lineEarthL5 = createDynamicLine(0xb07cf2, 0.5, true);
+        const lineMoonL5 = createDynamicLine(0xb07cf2, 0.5, true);
+        const lineAxis = createDynamicLine(0xffffff, 0.15, true); // 地月延长线穿过L1L2L3
+
+        // ---- 标签精灵 ----
+        function createLabelSprite(text, color = '#ffffff') {
+            const canvas = document.createElement('canvas');
+            canvas.width = 128;
+            canvas.height = 64;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = color;
+            ctx.font = 'bold 32px "PingFang SC","Microsoft YaHei",sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(text, 64, 32);
+            const tex = new THREE.CanvasTexture(canvas);
+            tex.minFilter = THREE.LinearFilter;
+            const mat = new THREE.SpriteMaterial({ map: tex, depthTest: false, depthWrite: false, transparent: true });
+            const sprite = new THREE.Sprite(mat);
+            sprite.scale.set(0.9, 0.45, 1);
+            return sprite;
+        }
+
+        // 给卫星添加标签
+        const labelOffsets = {
+            L1: new THREE.Vector3(0, 0.5, 0),
+            L2: new THREE.Vector3(0, 0.5, 0),
+            L3: new THREE.Vector3(0, 0.5, 0),
+            L4: new THREE.Vector3(0, 0.55, 0),
+            L5: new THREE.Vector3(0, 0.55, 0),
+        };
+        Object.entries(satellites).forEach(([key, sat]) => {
+            const sprite = createLabelSprite(key.replace('L', 'L'), '#' + satColors[key].toString(16).padStart(6,
+                '0'));
+            sprite.position.copy(labelOffsets[key]);
+            sat.add(sprite);
+        });
+
+        // 月球标签
+        const moonLabel = createLabelSprite('月球', '#dddddd');
+        moonLabel.position.set(0, 0.45, 0);
+        moon.add(moonLabel);
+
+        // 地球标签
+        const earthLabel = createLabelSprite('地球', '#bbddff');
+        earthLabel.position.set(0, 1.0, 0);
+        earth.add(earthLabel);
+
+        // ---- 60°弧线指示 ----
+        function createArc(radius, startAngle, endAngle, color, opacity = 0.6) {
+            const segments = 40;
+            const points = [];
+            const step = (endAngle - startAngle) / segments;
+            for (let i = 0; i <= segments; i++) {
+                const a = startAngle + i * step;
+                points.push(new THREE.Vector3(radius * Math.cos(a), 0, radius * Math.sin(a)));
+            }
+            const geo = new THREE.BufferGeometry().setFromPoints(points);
+            const mat = new THREE.LineBasicMaterial({ color, transparent: true, opacity, linewidth: 1.5 });
+            const line = new THREE.Line(geo, mat);
+            scene.add(line);
+            return line;
+        }
+        let arcL4, arcL5;
+        const arcRadius = R_MOON * 0.25;
+
+        function updateArcs(moonAngle) {
+            if (arcL4) scene.remove(arcL4);
+            if (arcL5) scene.remove(arcL5);
+            arcL4 = createArc(arcRadius, moonAngle, moonAngle + Math.PI / 3, 0x4ecb71, 0.65);
+            arcL5 = createArc(arcRadius, moonAngle - Math.PI / 3, moonAngle, 0xb07cf2, 0.65);
+        }
+
+        // ---- 动画状态 ----
+        let angle = 0; // 月球角度
+        let isPaused = false;
+        let speedFactor = 1.0;
+        const baseAngularSpeed = 0.75; // rad/s
+        let lastTime = performance.now();
+
+        function updatePositions() {
+            const moonAngle = angle;
+            const moonPos = new THREE.Vector3(R_MOON * Math.cos(moonAngle), 0, R_MOON * Math.sin(moonAngle));
+            const l1Pos = new THREE.Vector3(R_L1 * Math.cos(moonAngle), 0, R_L1 * Math.sin(moonAngle));
+            const l2Pos = new THREE.Vector3(R_L2 * Math.cos(moonAngle), 0, R_L2 * Math.sin(moonAngle));
+            const l3Pos = new THREE.Vector3(R_L3 * Math.cos(moonAngle + Math.PI), 0, R_L3 * Math.sin(moonAngle + Math.PI));
+            const l4Pos = new THREE.Vector3(R_L4 * Math.cos(moonAngle + Math.PI / 3), 0, R_L4 * Math.sin(moonAngle + Math
+                .PI / 3));
+            const l5Pos = new THREE.Vector3(R_L5 * Math.cos(moonAngle - Math.PI / 3), 0, R_L5 * Math.sin(moonAngle - Math
+                .PI / 3));
+
+            moon.position.copy(moonPos);
+            satellites.L1.position.copy(l1Pos);
+            satellites.L2.position.copy(l2Pos);
+            satellites.L3.position.copy(l3Pos);
+            satellites.L4.position.copy(l4Pos);
+            satellites.L5.position.copy(l5Pos);
+
+            updateLine(lineEarthMoon, new THREE.Vector3(0, 0, 0), moonPos);
+            updateLine(lineEarthL4, new THREE.Vector3(0, 0, 0), l4Pos);
+            updateLine(lineMoonL4, moonPos, l4Pos);
+            updateLine(lineEarthL5, new THREE.Vector3(0, 0, 0), l5Pos);
+            updateLine(lineMoonL5, moonPos, l5Pos);
+
+            // 地月延长线（穿过L3-地球-L1-月球-L2）
+            const farDir = new THREE.Vector3(Math.cos(moonAngle), 0, Math.sin(moonAngle));
+            const farEnd = farDir.clone().multiplyScalar(R_MOON * 1.45);
+            const farNeg = farDir.clone().multiplyScalar(-R_MOON * 1.45);
+            updateLine(lineAxis, farNeg, farEnd);
+
+            updateArcs(moonAngle);
+        }
+
+        // ---- 动画循环 ----
+        function animate(timestamp) {
+            requestAnimationFrame(animate);
+
+            const dt = Math.min((timestamp - lastTime) / 1000, 0.15);
+            lastTime = timestamp;
+
+            if (!isPaused) {
+                angle += baseAngularSpeed * speedFactor * dt;
+                angle %= Math.PI * 2;
+            }
+
+            updatePositions();
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        // ---- 事件与UI ----
+        document.getElementById('btnPause').addEventListener('click', () => {
+            isPaused = !isPaused;
+            const btn = document.getElementById('btnPause');
+            btn.textContent = isPaused ? '▶️ 播放' : '⏯️ 暂停';
+            btn.classList.toggle('active', isPaused);
+        });
+
+        document.getElementById('btnSlower').addEventListener('click', () => {
+            const speeds = [0.25, 0.5, 0.75, 1.0, 1.5, 2.0, 3.0];
+            const idx = speeds.indexOf(speedFactor);
+            speedFactor = speeds[idx > 0 ? idx - 1 : 0];
+            document.getElementById('speedLabel').textContent = '速度: ' + speedFactor + '×';
+        });
+
+        document.getElementById('btnFaster').addEventListener('click', () => {
+            const speeds = [0.25, 0.5, 0.75, 1.0, 1.5, 2.0, 3.0];
+            const idx = speeds.indexOf(speedFactor);
+            speedFactor = speeds[idx < speeds.length - 1 ? idx + 1 : speeds.length - 1];
+            document.getElementById('speedLabel').textContent = '速度: ' + speedFactor + '×';
+        });
+
+        document.getElementById('btnReset').addEventListener('click', () => {
+            camera.position.set(8, 5.5, 8);
+            controls.target.set(0, 0, 0);
+            controls.update();
+        });
+
+        window.addEventListener('keydown', (e) => {
+            switch (e.key.toLowerCase()) {
+                case ' ':
+                    e.preventDefault();
+                    document.getElementById('btnPause').click();
+                    break;
+                case 'arrowleft':
+                    e.preventDefault();
+                    document.getElementById('btnSlower').click();
+                    break;
+                case 'arrowright':
+                    e.preventDefault();
+                    document.getElementById('btnFaster').click();
+                    break;
+                case 'r':
+                    e.preventDefault();
+                    document.getElementById('btnReset').click();
+                    break;
+            }
+        });
+
+        window.addEventListener('resize', () => {
+            camera.aspect = container.clientWidth / container.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(container.clientWidth, container.clientHeight);
+        });
+
+        // 启动
+        updateArcs(angle);
+        updatePositions();
+        requestAnimationFrame(animate);
+    </script>
+
+<style>
+.back-btn {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    padding: 10px 20px;
+    background: rgba(0, 150, 200, 0.3);
+    border: 1px solid #00ffff;
+    color: white;
+    font-size: 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    z-index: 9999;
+    transition: 0.3s;
+    backdrop-filter: blur(5px);
+}
+.back-btn:hover {
+    background: rgba(0, 150, 200, 0.6);
+    box-shadow: 0 0 15px #00ffff;
+}
+</style>
+<button class="back-btn" onclick="goBack()">⬅️ 返回</button>
+<script>
+function goBack() {
+    history.back();
+}
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        goBack();
+    }
+});
+</script>
+
+
+<div class="watermark">齐老师动画</div>
+<style>
+.watermark {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    font-size: 14px;
+    color: rgba(0, 255, 255, 0.3);
+    z-index: 9998;
+    pointer-events: none;
+    user-select: none;
+}
+</style>
+
+
+<script>
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+});
+</script>
+
+
+<style>
+.back-btn {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    padding: 10px 20px;
+    background: rgba(0, 150, 200, 0.3);
+    border: 1px solid #00ffff;
+    color: white;
+    font-size: 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    z-index: 9999;
+    transition: 0.3s;
+    backdrop-filter: blur(5px);
+}
+.back-btn:hover {
+    background: rgba(0, 150, 200, 0.6);
+    box-shadow: 0 0 15px #00ffff;
+}
+</style>
+<button class="back-btn" onclick="goBack()">⬅️ 返回</button>
+<script>
+function goBack() {
+    history.back();
+}
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        goBack();
+    }
+});
+</script>
+
+
+<div class="watermark">齐老师动画</div>
+<style>
+.watermark {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    font-size: 14px;
+    color: rgba(0, 255, 255, 0.3);
+    z-index: 9998;
+    pointer-events: none;
+    user-select: none;
+}
+</style>
+
+
+<script>
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+});
+</script>
+
+
+<style>
+.back-btn {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    padding: 10px 20px;
+    background: rgba(0, 150, 200, 0.3);
+    border: 1px solid #00ffff;
+    color: white;
+    font-size: 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    z-index: 9999;
+    transition: 0.3s;
+    backdrop-filter: blur(5px);
+}
+.back-btn:hover {
+    background: rgba(0, 150, 200, 0.6);
+    box-shadow: 0 0 15px #00ffff;
+}
+</style>
+<button class="back-btn" onclick="goBack()">⬅️ 返回</button>
+<script>
+function goBack() {
+    history.back();
+}
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        goBack();
+    }
+});
+</script>
+
+
+<div class="watermark">齐老师动画</div>
+<style>
+.watermark {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    font-size: 14px;
+    color: rgba(0, 255, 255, 0.3);
+    z-index: 9998;
+    pointer-events: none;
+    user-select: none;
+}
+</style>
+
+
+<script>
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+});
+</script>
+
+
+<style>
+.back-btn {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    padding: 10px 20px;
+    background: rgba(0, 150, 200, 0.3);
+    border: 1px solid #00ffff;
+    color: white;
+    font-size: 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    z-index: 9999;
+    transition: 0.3s;
+    backdrop-filter: blur(5px);
+}
+.back-btn:hover {
+    background: rgba(0, 150, 200, 0.6);
+    box-shadow: 0 0 15px #00ffff;
+}
+</style>
+<button class="back-btn" onclick="goBack()">⬅️ 返回</button>
+<script>
+function goBack() {
+    history.back();
+}
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        goBack();
+    }
+});
+</script>
+
+
+<div class="watermark">齐老师动画</div>
+<style>
+.watermark {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    font-size: 14px;
+    color: rgba(0, 255, 255, 0.3);
+    z-index: 9998;
+    pointer-events: none;
+    user-select: none;
+}
+</style>
+
+
+<script>
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+});
+</script>
+
+
+  <script>
+  // 返回主页（滚动位置已在主页点击链接时保存）
+  function saveScrollAndReturn() {
+    window.location.href = '../index.html';
+  }
+  
+  // 禁用右键菜单
+  document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+  });
+  
+  // 禁用开发者工具快捷键
+  document.addEventListener('keydown', function(e) {
+    // ESC返回主页 - 保存滚动位置
+    if (e.keyCode === 27) {
+      saveScrollAndReturn();
+      return false;
+    }
+    // F12
+    if (e.keyCode === 123) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+U
+    if (e.ctrlKey && e.keyCode === 85) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+I
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 73) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+J
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 74) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+C
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 67) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+S
+    if (e.ctrlKey && e.keyCode === 83) {
+      e.preventDefault();
+      return false;
+    }
+  });
+  
+  // 禁用选择
+  document.addEventListener('selectstart', function(e) {
+    // 允许输入框选择
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+      return true;
+    }
+    e.preventDefault();
+    return false;
+  });
+  </script>
+</body>
+</html>
