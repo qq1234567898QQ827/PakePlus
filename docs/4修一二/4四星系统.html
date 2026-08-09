@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>高中物理 - 天体四星系统动画</title>
+    <style>
+        :root {
+            --bg: #000010;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: var(--bg);
+            font-family: 'PingFang SC', 'Microsoft YaHei', 'Helvetica Neue', sans-serif;
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            cursor: grab;
+        }
+        body:active {
+            cursor: grabbing;
+        }
+        body.dragging {
+            cursor: grabbing;
+        }
+
+        #canvas-container {
+            position: fixed;
+            inset: 0;
+            z-index: 1;
+        }
+
+        canvas {
+            display: block;
+        }
+
+        /* 顶部标题栏保留 */
+        #title-bar {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10;
+            pointer-events: none;
+            text-align: center;
+        }
+        #title-bar h1 {
+            font-size: clamp(1.2rem, 2.2vw, 1.8rem);
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            color: #ffffff;
+            text-shadow: 0 0 30px rgba(180, 200, 255, 0.7), 0 0 80px rgba(140, 160, 255, 0.4);
+            margin: 0;
+            line-height: 1.3;
+        }
+        #title-bar .subtitle {
+            font-size: clamp(0.7rem, 1.2vw, 0.9rem);
+            font-weight: 400;
+            color: rgba(200, 210, 240, 0.8);
+            letter-spacing: 0.04em;
+            margin-top: 2px;
+        }
+    </style>
+
+  <style>
+  body {
+    background-color: #1a2332 !important;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+  }
+  
+  .qilai-back-btn {
+    position: fixed;
+    top: 10px;
+    left: 15px;
+    z-index: 100000;
+    padding: 8px 16px;
+    background: rgba(0, 150, 200, 0.2);
+    border: 1px solid rgba(100, 180, 255, 0.5);
+    color: #8ab4f8;
+    font-size: 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.3s;
+    backdrop-filter: blur(5px);
+    font-family: "Microsoft YaHei", sans-serif;
+  }
+  
+  .qilai-back-btn:hover {
+    background: rgba(0, 150, 200, 0.4);
+    box-shadow: 0 0 15px rgba(100, 180, 255, 0.3);
+    color: #fff;
+  }
+  
+  .qilai-watermark {
+    position: fixed;
+    bottom: 15px;
+    right: 15px;
+    z-index: 99998;
+    font-size: 12px;
+    color: rgba(138, 180, 248, 0.35);
+    text-align: right;
+    line-height: 1.8;
+    pointer-events: none;
+    user-select: none;
+    font-family: "Microsoft YaHei", sans-serif;
+  }
+  
+  .qilai-watermark .title {
+    font-size: 14px;
+    font-weight: bold;
+    color: rgba(138, 180, 248, 0.45);
+    margin-bottom: 4px;
+    letter-spacing: 1px;
+  }
+  </style>
+</head>
+<body>
+  <a href="javascript:void(0);" class="qilai-back-btn" onclick="saveScrollAndReturn();">← 返回主页</a>
+  
+  <div class="qilai-watermark">
+    <div class="title">齐老师动画</div>
+    QQ 3398528250<br>
+    抖音 35320300542
+  </div>
+
+
+    <div id="canvas-container"></div>
+
+    <div id="title-bar">
+        <h1>🌌 天体四星系统</h1>
+        <div class="subtitle">正方形构型 &nbsp;·&nbsp; 等边三角形+重心构型</div>
+    </div>
+
+    <!-- 底部所有文字元素已移除：提示和图例不再显示 -->
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+        // ==================== DOM元素 ====================
+        const container = document.getElementById('canvas-container');
+
+        // ==================== 场景初始化 ====================
+        const scene = new THREE.Scene();
+
+        // 渲染器
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.2;
+        renderer.outputColorSpace = THREE.SRGBColorSpace;
+        container.appendChild(renderer.domElement);
+
+        // 相机
+        const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.5, 80);
+        camera.position.set(2, 7, 13);
+        camera.lookAt(0, 0, 0);
+
+        // OrbitControls
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.target.set(0, 0, 0);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.08;
+        controls.autoRotate = true;
+        controls.autoRotateSpeed = 0.35;
+        controls.minDistance = 4;
+        controls.maxDistance = 30;
+        controls.maxPolarAngle = Math.PI * 0.78;
+        controls.minPolarAngle = 0.15;
+        controls.update();
+
+        // 拖拽时改变鼠标样式
+        controls.addEventListener('start', () => {
+            document.body.classList.add('dragging');
+        });
+        controls.addEventListener('end', () => {
+            document.body.classList.remove('dragging');
+        });
+
+        // ==================== 光照 ====================
+        const ambientLight = new THREE.AmbientLight(0x1a1a3a, 1.8);
+        scene.add(ambientLight);
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 1.2);
+        directionalLight.position.set(10, 15, 8);
+        scene.add(directionalLight);
+        const pointLight1 = new THREE.PointLight(0x8899cc, 40, 20, 1.5);
+        pointLight1.position.set(0, 5, 0);
+        scene.add(pointLight1);
+
+        // ==================== 星空背景 ====================
+        function createStarfield(count = 900, spread = 35) {
+            const positions = new Float32Array(count * 3);
+            const colors = new Float32Array(count * 3);
+            const sizes = new Float32Array(count);
+            for (let i = 0; i < count; i++) {
+                const theta = Math.random() * Math.PI * 2;
+                const phi = Math.acos(2 * Math.random() - 1);
+                const r = spread * (0.6 + Math.random() * 0.4);
+                positions[i * 3] = r * Math.sin(phi) * Math.cos(theta);
+                positions[i * 3 + 1] = r * Math.sin(phi) * Math.sin(theta);
+                positions[i * 3 + 2] = r * Math.cos(phi);
+                const colorChoice = Math.random();
+                if (colorChoice < 0.15) {
+                    colors[i * 3] = 0.7;
+                    colors[i * 3 + 1] = 0.75;
+                    colors[i * 3 + 2] = 1.0;
+                } else if (colorChoice < 0.3) {
+                    colors[i * 3] = 1.0;
+                    colors[i * 3 + 1] = 0.85;
+                    colors[i * 3 + 2] = 0.6;
+                } else if (colorChoice < 0.4) {
+                    colors[i * 3] = 0.6;
+                    colors[i * 3 + 1] = 0.7;
+                    colors[i * 3 + 2] = 1.0;
+                } else {
+                    const b = 0.75 + Math.random() * 0.25;
+                    colors[i * 3] = b;
+                    colors[i * 3 + 1] = b;
+                    colors[i * 3 + 2] = b;
+                }
+                sizes[i] = 0.3 + Math.random() * 1.6;
+            }
+            const geo = new THREE.BufferGeometry();
+            geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+            geo.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+            const mat = new THREE.PointsMaterial({
+                size: 0.06,
+                vertexColors: true,
+                blending: THREE.AdditiveBlending,
+                depthWrite: false,
+                transparent: true,
+                opacity: 0.85,
+                sizeAttenuation: true,
+            });
+            const stars = new THREE.Points(geo, mat);
+            stars.name = 'starfield';
+            scene.add(stars);
+            return stars;
+        }
+        const starfield = createStarfield(1000, 32);
+
+        // ==================== 辅助函数 ====================
+        function createGlowTexture(innerColor, size = 256) {
+            const canvas = document.createElement('canvas');
+            canvas.width = size;
+            canvas.height = size;
+            const ctx = canvas.getContext('2d');
+            const half = size / 2;
+            const gradient = ctx.createRadialGradient(half, half, half * 0.02, half, half, half);
+            gradient.addColorStop(0, 'rgba(255,255,255,1)');
+            gradient.addColorStop(0.06, innerColor);
+            gradient.addColorStop(0.25, innerColor.replace('1)', '0.7)').replace('rgb', 'rgba'));
+            gradient.addColorStop(0.5, innerColor.replace('1)', '0.25)').replace('rgb', 'rgba'));
+            gradient.addColorStop(0.75, 'rgba(255,255,255,0.04)');
+            gradient.addColorStop(1, 'rgba(255,255,255,0)');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, size, size);
+            const tex = new THREE.CanvasTexture(canvas);
+            tex.needsUpdate = true;
+            tex.minFilter = THREE.LinearFilter;
+            tex.magFilter = THREE.LinearFilter;
+            return tex;
+        }
+
+        const glowTexRed = createGlowTexture('rgb(255,60,30)');
+        const glowTexYellow = createGlowTexture('rgb(255,200,40)');
+        const glowTexBlue = createGlowTexture('rgb(50,140,255)');
+        const glowTexWhite = createGlowTexture('rgb(240,240,255)');
+
+        const glowTexMap = {
+            red: glowTexRed,
+            yellow: glowTexYellow,
+            blue: glowTexBlue,
+            white: glowTexWhite,
+        };
+
+        function createStar(colorName, radius = 0.22, glowScale = 1.6) {
+            const group = new THREE.Group();
+            let coreColor, emissiveColor;
+            switch (colorName) {
+                case 'red':
+                    coreColor = 0xff3322;
+                    emissiveColor = 0xff2200;
+                    break;
+                case 'yellow':
+                    coreColor = 0xffbb00;
+                    emissiveColor = 0xff8800;
+                    break;
+                case 'blue':
+                    coreColor = 0x3388ee;
+                    emissiveColor = 0x1155cc;
+                    break;
+                case 'white':
+                    coreColor = 0xf8f8ff;
+                    emissiveColor = 0xddddff;
+                    break;
+                default:
+                    coreColor = 0xffffff;
+                    emissiveColor = 0xcccccc;
+            }
+            const coreGeo = new THREE.SphereGeometry(radius, 48, 48);
+            const coreMat = new THREE.MeshStandardMaterial({
+                color: coreColor,
+                emissive: emissiveColor,
+                emissiveIntensity: 1.8,
+                roughness: 0.25,
+                metalness: 0.05,
+            });
+            const core = new THREE.Mesh(coreGeo, coreMat);
+            core.name = `core-${colorName}`;
+            group.add(core);
+
+            const innerGlowGeo = new THREE.SphereGeometry(radius * 1.6, 32, 32);
+            const innerGlowMat = new THREE.MeshBasicMaterial({
+                color: emissiveColor,
+                transparent: true,
+                opacity: 0.35,
+                depthWrite: false,
+            });
+            const innerGlow = new THREE.Mesh(innerGlowGeo, innerGlowMat);
+            innerGlow.name = 'inner-glow';
+            group.add(innerGlow);
+
+            const glowTex = glowTexMap[colorName] || glowTexWhite;
+            const spriteMat = new THREE.SpriteMaterial({
+                map: glowTex,
+                blending: THREE.AdditiveBlending,
+                depthWrite: false,
+                depthTest: true,
+                transparent: true,
+                opacity: 0.75,
+                color: emissiveColor,
+            });
+            const sprite = new THREE.Sprite(spriteMat);
+            sprite.scale.set(glowScale, glowScale, 1);
+            sprite.name = 'glow-sprite';
+            group.add(sprite);
+
+            const ptLight = new THREE.PointLight(emissiveColor, 8, glowScale * 2.5, 1.5);
+            ptLight.name = 'point-light';
+            group.add(ptLight);
+
+            group.userData = { colorName, radius, glowScale };
+            return group;
+        }
+
+        function createOrbitRing(radius, color = 0x334466, opacity = 0.5) {
+            const segments = 128;
+            const points = [];
+            for (let i = 0; i <= segments; i++) {
+                const angle = (i / segments) * Math.PI * 2;
+                points.push(new THREE.Vector3(Math.cos(angle) * radius, 0, Math.sin(angle) * radius));
+            }
+            const geo = new THREE.BufferGeometry().setFromPoints(points);
+            const mat = new THREE.LineBasicMaterial({
+                color,
+                transparent: true,
+                opacity,
+                depthWrite: false,
+                linewidth: 1,
+            });
+            const line = new THREE.Line(geo, mat);
+            line.name = 'orbit-ring';
+            return line;
+        }
+
+        function createConnectionLine(startPos, endPos, color = 0x8899aa, opacity = 0.55) {
+            const points = [startPos.clone(), endPos.clone()];
+            const geo = new THREE.BufferGeometry().setFromPoints(points);
+            const mat = new THREE.LineBasicMaterial({
+                color,
+                transparent: true,
+                opacity,
+                depthWrite: false,
+                linewidth: 1,
+            });
+            const line = new THREE.Line(geo, mat);
+            line.name = 'connection-line';
+            return line;
+        }
+
+        // ==================== 正方形四星系统 ====================
+        const squareCenter = new THREE.Vector3(-3.6, 0, 0);
+        const squareHalfDiagonal = 2.0;
+
+        const squareSystemGroup = new THREE.Group();
+        squareSystemGroup.position.copy(squareCenter);
+        squareSystemGroup.name = 'square-system';
+        scene.add(squareSystemGroup);
+
+        const squareRotator = new THREE.Group();
+        squareRotator.name = 'square-rotator';
+        squareSystemGroup.add(squareRotator);
+
+        const squareStarConfigs = [
+            { color: 'red', phase: 0 },
+            { color: 'yellow', phase: Math.PI / 2 },
+            { color: 'blue', phase: Math.PI },
+            { color: 'white', phase: Math.PI * 1.5 },
+        ];
+
+        const squareStars = [];
+        squareStarConfigs.forEach((config) => {
+            const star = createStar(config.color, 0.24, 1.7);
+            const x = Math.cos(config.phase) * squareHalfDiagonal;
+            const z = Math.sin(config.phase) * squareHalfDiagonal;
+            star.position.set(x, 0, z);
+            star.userData.phase = config.phase;
+            star.userData.orbitRadius = squareHalfDiagonal;
+            squareRotator.add(star);
+            squareStars.push(star);
+        });
+
+        // 正方形四条边
+        for (let i = 0; i < 4; i++) {
+            const j = (i + 1) % 4;
+            const p1 = new THREE.Vector3(
+                Math.cos(squareStarConfigs[i].phase) * squareHalfDiagonal,
+                0,
+                Math.sin(squareStarConfigs[i].phase) * squareHalfDiagonal
+            );
+            const p2 = new THREE.Vector3(
+                Math.cos(squareStarConfigs[j].phase) * squareHalfDiagonal,
+                0,
+                Math.sin(squareStarConfigs[j].phase) * squareHalfDiagonal
+            );
+            const line = createConnectionLine(p1, p2, 0x667788, 0.5);
+            squareRotator.add(line);
+        }
+
+        const squareOrbitRing = createOrbitRing(squareHalfDiagonal, 0x445566, 0.45);
+        squareOrbitRing.position.copy(squareCenter);
+        scene.add(squareOrbitRing);
+
+        // 正方形系统标签已移除
+
+        // ==================== 等边三角形四星系统 ====================
+        const triangleCenter = new THREE.Vector3(3.6, 0, 0);
+        const triangleRadius = 1.732;
+
+        const triangleSystemGroup = new THREE.Group();
+        triangleSystemGroup.position.copy(triangleCenter);
+        triangleSystemGroup.name = 'triangle-system';
+        scene.add(triangleSystemGroup);
+
+        const triangleRotator = new THREE.Group();
+        triangleRotator.name = 'triangle-rotator';
+        triangleSystemGroup.add(triangleRotator);
+
+        const triangleStarConfigs = [
+            { color: 'red', phase: Math.PI / 2 },
+            { color: 'yellow', phase: Math.PI * 7 / 6 },
+            { color: 'blue', phase: Math.PI * 11 / 6 },
+        ];
+
+        const triangleVertexStars = [];
+        triangleStarConfigs.forEach((config) => {
+            const star = createStar(config.color, 0.22, 1.5);
+            const x = Math.cos(config.phase) * triangleRadius;
+            const z = Math.sin(config.phase) * triangleRadius;
+            star.position.set(x, 0, z);
+            star.userData.phase = config.phase;
+            star.userData.orbitRadius = triangleRadius;
+            triangleRotator.add(star);
+            triangleVertexStars.push(star);
+        });
+
+        const centerStar = createStar('white', 0.28, 2.0);
+        centerStar.position.set(0, 0, 0);
+        centerStar.name = 'center-star-triangle';
+        triangleSystemGroup.add(centerStar);
+
+        // 三角形三条边
+        for (let i = 0; i < 3; i++) {
+            const j = (i + 1) % 3;
+            const p1 = new THREE.Vector3(
+                Math.cos(triangleStarConfigs[i].phase) * triangleRadius,
+                0,
+                Math.sin(triangleStarConfigs[i].phase) * triangleRadius
+            );
+            const p2 = new THREE.Vector3(
+                Math.cos(triangleStarConfigs[j].phase) * triangleRadius,
+                0,
+                Math.sin(triangleStarConfigs[j].phase) * triangleRadius
+            );
+            const line = createConnectionLine(p1, p2, 0x667788, 0.5);
+            triangleRotator.add(line);
+        }
+
+        // 顶点到重心的连线
+        triangleStarConfigs.forEach((config) => {
+            const pVert = new THREE.Vector3(
+                Math.cos(config.phase) * triangleRadius,
+                0,
+                Math.sin(config.phase) * triangleRadius
+            );
+            const pCenter = new THREE.Vector3(0, 0, 0);
+            const line = createConnectionLine(pVert, pCenter, 0x556677, 0.4);
+            triangleRotator.add(line);
+        });
+
+        const triangleOrbitRing = createOrbitRing(triangleRadius, 0x445566, 0.45);
+        triangleOrbitRing.position.copy(triangleCenter);
+        scene.add(triangleOrbitRing);
+
+        // 三角形系统标签已移除
+
+        // ==================== 轨道粒子装饰 ====================
+        function createOrbitParticles(centerPos, radius, count = 60, color = 0x556688, opacity = 0.5) {
+            const positions = new Float32Array(count * 3);
+            for (let i = 0; i < count; i++) {
+                const angle = (i / count) * Math.PI * 2 + (Math.random() - 0.5) * 0.15;
+                const r = radius * (0.92 + Math.random() * 0.16);
+                positions[i * 3] = centerPos.x + Math.cos(angle) * r;
+                positions[i * 3 + 1] = centerPos.y + (Math.random() - 0.5) * 0.2;
+                positions[i * 3 + 2] = centerPos.z + Math.sin(angle) * r;
+            }
+            const geo = new THREE.BufferGeometry();
+            geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            const mat = new THREE.PointsMaterial({
+                size: 0.04,
+                color,
+                blending: THREE.AdditiveBlending,
+                depthWrite: false,
+                transparent: true,
+                opacity,
+                sizeAttenuation: true,
+            });
+            const points = new THREE.Points(geo, mat);
+            points.name = 'orbit-particles';
+            scene.add(points);
+            return points;
+        }
+        const squareOrbitParticles = createOrbitParticles(squareCenter, squareHalfDiagonal, 70, 0x556688, 0.5);
+        const triangleOrbitParticles = createOrbitParticles(triangleCenter, triangleRadius, 50, 0x556688, 0.5);
+
+        // ==================== 地面参考网格 ====================
+        function createReferenceGrid(centerPos, size, color = 0x222233, opacity = 0.25) {
+            const half = size / 2;
+            const pointsArr = [];
+            const step = size / 10;
+            for (let i = -half; i <= half; i += step) {
+                pointsArr.push(new THREE.Vector3(centerPos.x + i, centerPos.y - 0.01, centerPos.z - half));
+                pointsArr.push(new THREE.Vector3(centerPos.x + i, centerPos.y - 0.01, centerPos.z + half));
+                pointsArr.push(new THREE.Vector3(centerPos.x - half, centerPos.y - 0.01, centerPos.z + i));
+                pointsArr.push(new THREE.Vector3(centerPos.x + half, centerPos.y - 0.01, centerPos.z + i));
+            }
+            const geo = new THREE.BufferGeometry().setFromPoints(pointsArr);
+            const mat = new THREE.LineBasicMaterial({
+                color,
+                transparent: true,
+                opacity,
+                depthWrite: false,
+                linewidth: 1,
+            });
+            const grid = new THREE.LineSegments(geo, mat);
+            grid.name = 'reference-grid';
+            scene.add(grid);
+            return grid;
+        }
+        createReferenceGrid(squareCenter, 5.5, 0x1a1a30, 0.22);
+        createReferenceGrid(triangleCenter, 5, 0x1a1a30, 0.22);
+
+        // ==================== 系统间连接虚线 ====================
+        const midY = -0.05;
+        const connectorPoints = [
+            new THREE.Vector3(squareCenter.x, midY, squareCenter.z),
+            new THREE.Vector3(triangleCenter.x, midY, triangleCenter.z),
+        ];
+        const connectorGeo = new THREE.BufferGeometry().setFromPoints(connectorPoints);
+        const connectorMat = new THREE.LineDashedMaterial({
+            color: 0x333355,
+            transparent: true,
+            opacity: 0.3,
+            depthWrite: false,
+            dashSize: 0.6,
+            gapSize: 0.5,
+            linewidth: 1,
+        });
+        const connectorLine = new THREE.Line(connectorGeo, connectorMat);
+        connectorLine.computeLineDistances();
+        scene.add(connectorLine);
+
+        // ==================== 动画循环 ====================
+        const clock = new THREE.Clock();
+
+        function animate(timestamp) {
+            requestAnimationFrame(animate);
+
+            const dt = Math.min(clock.getDelta(), 0.1);
+            const elapsed = timestamp * 0.001;
+
+            // 正方形系统旋转
+            squareRotator.rotation.y += 0.45 * dt;
+
+            // 三角形系统旋转
+            triangleRotator.rotation.y += 0.6 * dt;
+
+            // 光晕脉动效果
+            const pulseSquare = 1 + Math.sin(elapsed * 2.2) * 0.06;
+            const pulseTriangle = 1 + Math.sin(elapsed * 2.5 + 1) * 0.06;
+
+            squareStars.forEach((star) => {
+                const sprite = star.children.find(c => c.name === 'glow-sprite');
+                if (sprite) {
+                    const baseScale = star.userData.glowScale || 1.6;
+                    sprite.scale.set(baseScale * pulseSquare, baseScale * pulseSquare, 1);
+                    sprite.material.opacity = 0.7 + Math.sin(elapsed * 3 + star.userData.phase) * 0.08;
+                }
+                const ptLight = star.children.find(c => c.name === 'point-light');
+                if (ptLight) {
+                    ptLight.intensity = 7 + Math.sin(elapsed * 2.2 + star.userData.phase) * 1.2;
+                }
+            });
+
+            triangleVertexStars.forEach((star) => {
+                const sprite = star.children.find(c => c.name === 'glow-sprite');
+                if (sprite) {
+                    const baseScale = star.userData.glowScale || 1.5;
+                    sprite.scale.set(baseScale * pulseTriangle, baseScale * pulseTriangle, 1);
+                    sprite.material.opacity = 0.7 + Math.sin(elapsed * 3.2 + star.userData.phase) * 0.08;
+                }
+                const ptLight = star.children.find(c => c.name === 'point-light');
+                if (ptLight) {
+                    ptLight.intensity = 6.5 + Math.sin(elapsed * 2.5 + star.userData.phase) * 1.0;
+                }
+            });
+
+            // 中心星脉动
+            {
+                const sprite = centerStar.children.find(c => c.name === 'glow-sprite');
+                if (sprite) {
+                    const cs = 2.0 * (1 + Math.sin(elapsed * 2.0) * 0.07);
+                    sprite.scale.set(cs, cs, 1);
+                }
+                const ptLight = centerStar.children.find(c => c.name === 'point-light');
+                if (ptLight) {
+                    ptLight.intensity = 9 + Math.sin(elapsed * 2.0) * 1.5;
+                }
+            }
+
+            // 星空缓慢旋转
+            starfield.rotation.y += dt * 0.03;
+            starfield.rotation.x += dt * 0.008;
+
+            // 轨道粒子漂移
+            squareOrbitParticles.rotation.y += dt * 0.08;
+            triangleOrbitParticles.rotation.y += dt * 0.1;
+
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        // ==================== 响应式处理 ====================
+        function onResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+        window.addEventListener('resize', onResize);
+
+        // ==================== 键盘快捷键 ====================
+        function onKeyDown(event) {
+            switch (event.key.toLowerCase()) {
+                case 'r':
+                    camera.position.set(2, 7, 13);
+                    controls.target.set(0, 0, 0);
+                    controls.update();
+                    break;
+                case 't':
+                    camera.position.set(0, 13, 0.5);
+                    controls.target.set(0, 0, 0);
+                    controls.update();
+                    break;
+                case 's':
+                    camera.position.set(14, 0.5, 0);
+                    controls.target.set(0, 0, 0);
+                    controls.update();
+                    break;
+                case 'a':
+                    controls.autoRotate = !controls.autoRotate;
+                    break;
+                case 'f':
+                    camera.position.set(0, 2, 14);
+                    controls.target.set(0, 0, 0);
+                    controls.update();
+                    break;
+                default:
+                    break;
+            }
+        }
+        window.addEventListener('keydown', onKeyDown);
+
+        // ==================== 启动 ====================
+        renderer.render(scene, camera);
+        requestAnimationFrame(animate);
+
+        console.log('🌌 天体四星系统动画已就绪（纯视觉版）');
+    </script>
+
+  <script>
+  // 返回主页（滚动位置已在主页点击链接时保存）
+  function saveScrollAndReturn() {
+    window.location.href = '../index.html';
+  }
+  
+  // 禁用右键菜单
+  document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+  });
+  
+  // 禁用开发者工具快捷键
+  document.addEventListener('keydown', function(e) {
+    // ESC返回主页 - 保存滚动位置
+    if (e.keyCode === 27) {
+      saveScrollAndReturn();
+      return false;
+    }
+    // F12
+    if (e.keyCode === 123) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+U
+    if (e.ctrlKey && e.keyCode === 85) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+I
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 73) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+J
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 74) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+C
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 67) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+S
+    if (e.ctrlKey && e.keyCode === 83) {
+      e.preventDefault();
+      return false;
+    }
+  });
+  
+  // 禁用选择
+  document.addEventListener('selectstart', function(e) {
+    // 允许输入框选择
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+      return true;
+    }
+    e.preventDefault();
+    return false;
+  });
+  </script>
+</body>
+</html>
