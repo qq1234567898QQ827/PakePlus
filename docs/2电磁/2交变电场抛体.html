@@ -1,0 +1,921 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>交变电场 · 质子抛体运动 | 高中物理动画</title>
+    <style>
+        :root {
+            --bg: #1a1a2e;
+            --surface: #16213e;
+            --text: #e0e0e0;
+            --accent: #4da6ff;
+            --gold: #f0c060;
+        }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background: var(--bg);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', 'Helvetica Neue', sans-serif;
+            padding: 20px;
+            flex-direction: column;
+            gap: 18px;
+        }
+        .main-container {
+            background: var(--surface);
+            border-radius: 22px;
+            padding: 20px 24px;
+            box-shadow: 0 15px 45px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.06);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 14px;
+        }
+        .title {
+            color: #fff;
+            font-size: 1.4rem;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .badge {
+            background: #e94560;
+            color: #fff;
+            font-size: 0.7rem;
+            padding: 4px 12px;
+            border-radius: 20px;
+            letter-spacing: 0.05em;
+            font-weight: 600;
+        }
+        .badge.live {
+            background: #0f9;
+            color: #111;
+            animation: pulse-badge 1.2s ease-in-out infinite;
+        }
+        @keyframes pulse-badge {
+            0%,
+            100% {
+                box-shadow: 0 0 8px #0f9;
+            }
+            50% {
+                box-shadow: 0 0 24px #0f9, 0 0 50px #0f9;
+            }
+        }
+        canvas {
+            display: block;
+            border-radius: 14px;
+            background: #0b0f17;
+            box-shadow: inset 0 0 70px rgba(0, 0, 0, 0.5);
+            max-width: 100%;
+            height: auto;
+        }
+        .control-panel {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 18px;
+            justify-content: center;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.03);
+            padding: 14px 22px;
+            border-radius: 50px;
+            backdrop-filter: blur(8px);
+        }
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #ccc;
+            font-size: 0.85rem;
+            font-weight: 500;
+            letter-spacing: 0.03em;
+            flex-wrap: wrap;
+        }
+        button {
+            background: rgba(255, 255, 255, 0.07);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #ddd;
+            padding: 8px 16px;
+            border-radius: 30px;
+            font-size: 0.82rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            letter-spacing: 0.04em;
+            backdrop-filter: blur(4px);
+            white-space: nowrap;
+            user-select: none;
+        }
+        button:hover {
+            background: rgba(255, 255, 255, 0.14);
+            border-color: var(--accent);
+            color: #fff;
+            box-shadow: 0 0 14px rgba(77, 166, 255, 0.4);
+        }
+        button.active {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: #000;
+            font-weight: 700;
+            box-shadow: 0 0 20px var(--accent);
+        }
+        .voltage-btn.active {
+            background: #ff9060;
+            border-color: #ff9060;
+            box-shadow: 0 0 22px #ff9060;
+            color: #000;
+        }
+        .legend-row {
+            display: flex;
+            gap: 22px;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+            color: #bbb;
+            font-size: 0.8rem;
+            letter-spacing: 0.03em;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+        }
+        .legend-dot {
+            width: 11px;
+            height: 11px;
+            border-radius: 50%;
+            display: inline-block;
+            flex-shrink: 0;
+        }
+        .legend-dot.proton {
+            background: #ff5e5b;
+            box-shadow: 0 0 8px #ff5e5b;
+        }
+        .legend-dot.field {
+            background: #4da6ff;
+            box-shadow: 0 0 6px #4da6ff;
+        }
+        .legend-dot.trail {
+            background: #ff3333;
+            width: 14px;
+            height: 3px;
+            border-radius: 2px;
+            box-shadow: 0 0 6px #ff0000;
+        }
+    </style>
+
+  <style>
+  body {
+    background-color: #1a2332 !important;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+  }
+  
+  .qilai-back-btn {
+    position: fixed;
+    top: 10px;
+    left: 15px;
+    z-index: 100000;
+    padding: 8px 16px;
+    background: rgba(0, 150, 200, 0.2);
+    border: 1px solid rgba(100, 180, 255, 0.5);
+    color: #8ab4f8;
+    font-size: 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.3s;
+    backdrop-filter: blur(5px);
+    font-family: "Microsoft YaHei", sans-serif;
+  }
+  
+  .qilai-back-btn:hover {
+    background: rgba(0, 150, 200, 0.4);
+    box-shadow: 0 0 15px rgba(100, 180, 255, 0.3);
+    color: #fff;
+  }
+  
+  .qilai-watermark {
+    position: fixed;
+    bottom: 15px;
+    right: 15px;
+    z-index: 99998;
+    font-size: 12px;
+    color: rgba(138, 180, 248, 0.35);
+    text-align: right;
+    line-height: 1.8;
+    pointer-events: none;
+    user-select: none;
+    font-family: "Microsoft YaHei", sans-serif;
+  }
+  
+  .qilai-watermark .title {
+    font-size: 14px;
+    font-weight: bold;
+    color: rgba(138, 180, 248, 0.45);
+    margin-bottom: 4px;
+    letter-spacing: 1px;
+  }
+  </style>
+</head>
+<body>
+  <a href="javascript:void(0);" class="qilai-back-btn" onclick="saveScrollAndReturn();">← 返回主页</a>
+  
+  <div class="qilai-watermark">
+    <div class="title">齐老师动画</div>
+    QQ 3398528250<br>
+    抖音 35320300542
+  </div>
+
+    <div class="main-container">
+        <div class="title">
+            ⚡ 交变电场中质子的抛体运动
+            <span class="badge live">● 实时</span>
+            <span class="badge">周期 T=2s</span>
+        </div>
+        <canvas id="mainCanvas"></canvas>
+        <div class="control-panel">
+            <div class="control-group">
+                <span>🔹 第二半周期电压</span>
+                <button id="btnNormal" class="voltage-btn active">−U₀</button>
+                <button id="btnBoost" class="voltage-btn">−2U₀</button>
+            </div>
+            <div class="control-group">
+                <span>🕒 入射时刻</span>
+                <button id="btnOffset0" class="active">0 (t=0)</button>
+                <button id="btnOffsetT8">T/8</button>
+                <button id="btnOffsetT4">T/4</button>
+                <button id="btnOffset3T8">3T/8</button>
+                <button id="btnOffsetT2">T/2</button>
+            </div>
+        </div>
+        <div class="legend-row">
+            <span class="legend-item"><span class="legend-dot proton"></span> 质子 (H⁺)</span>
+            <span class="legend-item"><span class="legend-dot field"></span> 电场线 (蓝色)</span>
+            <span class="legend-item"><span class="legend-dot trail"></span> 运动轨迹 (红色虚线)</span>
+            <span class="legend-item">📐 上板A / 下板B</span>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            const canvas = document.getElementById('mainCanvas');
+            const ctx = canvas.getContext('2d');
+
+            // ---------- 画布尺寸 ----------
+            const W = 960;
+            const H = 620;
+            canvas.width = W;
+            canvas.height = H;
+
+            function resizeCanvas() {
+                const maxWidth = Math.min(window.innerWidth - 36, 960);
+                const scale = maxWidth / W;
+                canvas.style.width = maxWidth + 'px';
+                canvas.style.height = (H * scale) + 'px';
+            }
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+
+            // ---------- 电容器几何参数 ----------
+            const plateLeftX = 100;
+            const plateRightX = 700;
+            const plateTopY = 45;
+            const plateBottomY = 590;
+            const plateThickness = 14;
+            const plateTopSurfY = plateTopY;
+            const plateBotSurfY = plateBottomY;
+            const midY = (plateTopY + plateBottomY) / 2;
+
+            const protonStartX = plateLeftX;
+            const protonStartY = midY;
+
+            // ---------- 物理参数 ----------
+            const v0x = 300;
+            const a_mag = 220;
+            const period = 2;
+            const halfPeriod = 1;
+            const timeScale = 0.5;
+
+            let voltageBoost = false;
+            let offset = 0;
+
+            let proton = { x: protonStartX, y: protonStartY, vy: 0, time: 0 };
+            let trailPoints = [];
+            let vyHistory = [];
+            const MAX_TRAIL = 8000;
+            const MAX_VY_HISTORY = 5000;
+
+            let animStartRealTime = null;
+            let lastRealTime = null;
+            let animationId = null;
+
+            const btnOffset0 = document.getElementById('btnOffset0');
+            const btnOffsetT8 = document.getElementById('btnOffsetT8');
+            const btnOffsetT4 = document.getElementById('btnOffsetT4');
+            const btnOffset3T8 = document.getElementById('btnOffset3T8');
+            const btnOffsetT2 = document.getElementById('btnOffsetT2');
+            const btnNormal = document.getElementById('btnNormal');
+            const btnBoost = document.getElementById('btnBoost');
+
+            function getElectricPhase(protonTime) {
+                return (protonTime + offset) % period;
+            }
+
+            function getAcceleration(phase) {
+                if (phase < halfPeriod) return a_mag;
+                return -a_mag * (voltageBoost ? 2 : 1);
+            }
+
+            function updateOffsetButtonsActive() {
+                btnOffset0.classList.toggle('active', offset === 0);
+                btnOffsetT8.classList.toggle('active', offset === period / 8);
+                btnOffsetT4.classList.toggle('active', offset === period / 4);
+                btnOffset3T8.classList.toggle('active', offset === 3 * period / 8);
+                btnOffsetT2.classList.toggle('active', offset === period / 2);
+            }
+
+            function resetSimulation() {
+                if (animationId) {
+                    cancelAnimationFrame(animationId);
+                    animationId = null;
+                }
+                animStartRealTime = null;
+                lastRealTime = null;
+                proton = { x: protonStartX, y: protonStartY, vy: 0, time: 0 };
+                trailPoints = [{ x: proton.x, y: proton.y }];
+                vyHistory = [{ time: 0, vy: 0 }];
+                animationId = requestAnimationFrame(animate);
+            }
+
+            function setVoltageMode(boost) {
+                if (voltageBoost !== boost) {
+                    voltageBoost = boost;
+                    btnNormal.classList.toggle('active', !boost);
+                    btnBoost.classList.toggle('active', boost);
+
+                    // 在-2U₀模式下隐藏 T/2 和 3T/8 按钮
+                    if (boost) {
+                        btnOffsetT2.style.display = 'none';
+                        btnOffset3T8.style.display = 'none';
+                        // 如果当前offset正好是T/2或3T/8，重置为0
+                        if (Math.abs(offset - period / 2) < 0.001 || Math.abs(offset - 3 * period / 8) < 0.001) {
+                            offset = 0;
+                            updateOffsetButtonsActive();
+                        }
+                    } else {
+                        btnOffsetT2.style.display = '';
+                        btnOffset3T8.style.display = '';
+                    }
+
+                    resetSimulation();
+                }
+            }
+
+            function setOffset(newOffset) {
+                if (Math.abs(offset - newOffset) > 0.001) {
+                    offset = newOffset;
+                    updateOffsetButtonsActive();
+                    resetSimulation();
+                }
+            }
+
+            btnNormal.addEventListener('click', () => setVoltageMode(false));
+            btnBoost.addEventListener('click', () => setVoltageMode(true));
+            btnOffset0.addEventListener('click', () => setOffset(0));
+            btnOffsetT8.addEventListener('click', () => setOffset(period / 8));
+            btnOffsetT4.addEventListener('click', () => setOffset(period / 4));
+            btnOffset3T8.addEventListener('click', () => setOffset(3 * period / 8));
+            btnOffsetT2.addEventListener('click', () => setOffset(period / 2));
+
+            btnNormal.classList.add('active');
+            btnOffset0.classList.add('active');
+            btnOffsetT2.style.display = '';
+            btnOffset3T8.style.display = '';
+
+            // ---------- 绘制函数 ----------
+            function drawPlate(x1, y1, x2, y2, thickness, label) {
+                const grad = ctx.createLinearGradient(0, y1, 0, y1 + thickness);
+                grad.addColorStop(0, '#c9a96e');
+                grad.addColorStop(0.5, '#e8d5a3');
+                grad.addColorStop(1, '#8b6914');
+                ctx.fillStyle = grad;
+                ctx.strokeStyle = '#5c3d0e';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.roundRect(x1, y1, x2 - x1, thickness, 6);
+                ctx.fill();
+                ctx.stroke();
+                ctx.strokeStyle = 'rgba(255,255,255,0.35)';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(x1 + 8, y1 + 2);
+                ctx.lineTo(x2 - 8, y1 + 2);
+                ctx.stroke();
+                ctx.fillStyle = '#fff';
+                ctx.font = 'bold 16px "PingFang SC","Microsoft YaHei",sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                const labelX = x1 - 28;
+                const labelY = y1 + thickness / 2;
+                ctx.beginPath();
+                ctx.arc(labelX, labelY, 15, 0, Math.PI * 2);
+                ctx.fillStyle = '#1a1a2e';
+                ctx.fill();
+                ctx.strokeStyle = '#f0c060';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                ctx.fillStyle = '#f0c060';
+                ctx.fillText(label, labelX, labelY);
+            }
+
+            function drawChargeSymbols(x1, x2, y, phase, isTopPlate) {
+                const firstHalf = phase < halfPeriod;
+                let sign = isTopPlate ? (firstHalf ? '+' : '−') : (firstHalf ? '−' : '+');
+                const count = 10;
+                const spacing = (x2 - x1) / (count + 1);
+                ctx.fillStyle = sign === '+' ? '#ff4444' : '#4488ff';
+                ctx.font = 'bold 18px "Segoe UI","PingFang SC",sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                for (let i = 1; i <= count; i++) {
+                    ctx.fillText(sign, x1 + i * spacing, y);
+                }
+            }
+
+            function drawFieldArrows(phase) {
+                const firstHalf = phase < halfPeriod;
+                const arrowCount = 11;
+                const totalSpan = plateRightX - plateLeftX;
+                const spacing = totalSpan / (arrowCount - 1);
+                const arrowColor = '#4da6ff';
+                for (let i = 0; i < arrowCount; i++) {
+                    const ax = plateLeftX + i * spacing;
+                    let startY, endY;
+                    if (firstHalf) {
+                        startY = plateTopSurfY + 12;
+                        endY = plateBotSurfY - 12;
+                    } else {
+                        startY = plateBotSurfY - 12;
+                        endY = plateTopSurfY + 12;
+                    }
+                    ctx.save();
+                    ctx.globalAlpha = 0.25;
+                    ctx.strokeStyle = 'rgba(77,166,255,0.5)';
+                    ctx.lineWidth = 4;
+                    ctx.setLineDash([8, 6]);
+                    ctx.beginPath();
+                    ctx.moveTo(ax, startY);
+                    ctx.lineTo(ax, endY);
+                    ctx.stroke();
+                    ctx.restore();
+                    ctx.strokeStyle = arrowColor;
+                    ctx.lineWidth = 1.8;
+                    ctx.setLineDash([7, 4]);
+                    ctx.beginPath();
+                    ctx.moveTo(ax, startY);
+                    ctx.lineTo(ax, endY);
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+                    const dir = firstHalf ? 1 : -1;
+                    const tipX = ax;
+                    const tipY = endY;
+                    const arrowLen = 10;
+                    const arrowWidth = 5;
+                    const baseY = tipY - dir * arrowLen;
+                    ctx.fillStyle = arrowColor;
+                    ctx.beginPath();
+                    ctx.moveTo(tipX, tipY);
+                    ctx.lineTo(tipX - arrowWidth, baseY);
+                    ctx.lineTo(tipX + arrowWidth, baseY);
+                    ctx.closePath();
+                    ctx.fill();
+                }
+            }
+
+            function drawProton(x, y) {
+                const glowGrad = ctx.createRadialGradient(x, y, 2, x, y, 17);
+                glowGrad.addColorStop(0, 'rgba(255,120,100,0.9)');
+                glowGrad.addColorStop(0.4, 'rgba(255,80,60,0.5)');
+                glowGrad.addColorStop(1, 'rgba(255,50,30,0)');
+                ctx.fillStyle = glowGrad;
+                ctx.beginPath();
+                ctx.arc(x, y, 17, 0, Math.PI * 2);
+                ctx.fill();
+                const bodyGrad = ctx.createRadialGradient(x - 1.5, y - 1.5, 1, x, y, 7);
+                bodyGrad.addColorStop(0, '#fff');
+                bodyGrad.addColorStop(0.35, '#ffccaa');
+                bodyGrad.addColorStop(0.7, '#ff5e5b');
+                bodyGrad.addColorStop(1, '#c0392b');
+                ctx.fillStyle = bodyGrad;
+                ctx.beginPath();
+                ctx.arc(x, y, 7, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = 'rgba(255,255,255,0.6)';
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+                ctx.fillStyle = '#fff';
+                ctx.font = 'bold 9px "Segoe UI","PingFang SC",sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('H⁺', x, y);
+            }
+
+            function drawTrail() {
+                if (trailPoints.length < 2) return;
+                ctx.save();
+                ctx.strokeStyle = '#ff3333';
+                ctx.lineWidth = 2.2;
+                ctx.setLineDash([7, 5]);
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+                ctx.shadowColor = 'rgba(255,50,50,0.45)';
+                ctx.shadowBlur = 6;
+                ctx.beginPath();
+                ctx.moveTo(trailPoints[0].x, trailPoints[0].y);
+                for (let i = 1; i < trailPoints.length; i++) {
+                    ctx.lineTo(trailPoints[i].x, trailPoints[i].y);
+                }
+                ctx.stroke();
+                ctx.setLineDash([]);
+                ctx.shadowBlur = 0;
+                ctx.restore();
+            }
+
+            function drawVyGraphHorizontal() {
+                const graphW = 240;
+                const graphH = 176;
+                const graphX = W - graphW - 15;
+                const graphY = 15;
+                const graphRight = graphX + graphW;
+                const graphBottom = graphY + graphH;
+
+                ctx.fillStyle = 'rgba(13,17,23,0.9)';
+                ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.roundRect(graphX - 10, graphY - 10, graphW + 25, graphH + 30, 8);
+                ctx.fill();
+                ctx.stroke();
+
+                ctx.fillStyle = '#ccc';
+                ctx.font = 'bold 11px "PingFang SC","Microsoft YaHei",sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('vᵧ - t 图像 (↓ 正)', graphX + graphW / 2, graphY + 4);
+
+                const axisY = graphY + graphH / 2;
+                const axisX = graphX;
+
+                ctx.strokeStyle = 'rgba(255,255,255,0.6)';
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.moveTo(graphX, axisY);
+                ctx.lineTo(graphRight, axisY);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(axisX, graphY);
+                ctx.lineTo(axisX, graphBottom);
+                ctx.stroke();
+
+                const vyMax = a_mag * halfPeriod * (voltageBoost ? 2 : 1);
+                const tScale = graphW / period;
+                const vScale = graphH / (vyMax * 2);
+
+                ctx.fillStyle = '#aaa';
+                ctx.font = '9px "PingFang SC","Microsoft YaHei",sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'top';
+                const maxT = Math.max(period, proton.time + 0.5);
+                for (let tTick = 0; tTick <= maxT; tTick += 0.5) {
+                    const tx = graphX + tTick * tScale;
+                    if (tx <= graphRight + 2) {
+                        ctx.fillText(tTick.toFixed(1) + 's', tx, axisY + 4);
+                        ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+                        ctx.lineWidth = 0.5;
+                        ctx.beginPath();
+                        ctx.moveTo(tx, graphY);
+                        ctx.lineTo(tx, graphBottom);
+                        ctx.stroke();
+                    }
+                }
+
+                ctx.textAlign = 'right';
+                ctx.textBaseline = 'middle';
+                for (let vTick = -vyMax; vTick <= vyMax; vTick += vyMax / 2) {
+                    const vy = graphY + (vTick + vyMax) * vScale;
+                    if (vy >= graphY && vy <= graphBottom) {
+                        ctx.fillText(Math.round(vTick) + '', axisX - 5, vy);
+                    }
+                }
+
+                ctx.fillStyle = '#ccc';
+                ctx.textAlign = 'center';
+                ctx.fillText('t / s', graphRight - 30, axisY + 18);
+                ctx.fillText('vᵧ (↓ 正)', axisX + 28, graphY - 4);
+
+                if (vyHistory.length > 0) {
+                    if (vyHistory.length >= 2) {
+                        ctx.strokeStyle = '#ff9060';
+                        ctx.lineWidth = 2.5;
+                        ctx.shadowColor = 'rgba(255,140,90,0.6)';
+                        ctx.shadowBlur = 8;
+                        ctx.beginPath();
+                        let firstPoint = true;
+                        for (let i = 0; i < vyHistory.length; i++) {
+                            const p = vyHistory[i];
+                            const px = graphX + p.time * tScale;
+                            const py = graphY + (p.vy + vyMax) * vScale;
+                            if (px > graphRight + 5) break;
+                            if (firstPoint) {
+                                ctx.moveTo(px, py);
+                                firstPoint = false;
+                            } else {
+                                ctx.lineTo(px, py);
+                            }
+                        }
+                        ctx.stroke();
+                        ctx.shadowBlur = 0;
+                    }
+
+                    const last = vyHistory[vyHistory.length - 1];
+                    const dotX = graphX + last.time * tScale;
+                    const dotY = graphY + (last.vy + vyMax) * vScale;
+                    if (dotX >= graphX - 5 && dotX <= graphRight + 5 && dotY >= graphY - 5 && dotY <= graphBottom + 5) {
+                        const pulseR = 6 + 2 * Math.sin(proton.time * 10);
+                        ctx.strokeStyle = 'rgba(255,200,150,0.9)';
+                        ctx.lineWidth = 2;
+                        ctx.beginPath();
+                        ctx.arc(dotX, dotY, pulseR, 0, Math.PI * 2);
+                        ctx.stroke();
+
+                        const dotGrad = ctx.createRadialGradient(dotX, dotY, 1, dotX, dotY, 6);
+                        dotGrad.addColorStop(0, '#fff');
+                        dotGrad.addColorStop(0.5, '#ffcc80');
+                        dotGrad.addColorStop(1, '#e94560');
+                        ctx.fillStyle = dotGrad;
+                        ctx.beginPath();
+                        ctx.arc(dotX, dotY, 6, 0, Math.PI * 2);
+                        ctx.fill();
+                        ctx.strokeStyle = '#fff';
+                        ctx.lineWidth = 1.5;
+                        ctx.stroke();
+                    }
+                }
+            }
+
+            function drawBottomRightAnnotation() {
+                const text = '前半个周期内，UAB = U₀';
+                const margin = 20;
+                const x = W - margin;
+                const y = H - margin;
+                ctx.font = 'bold 14px "PingFang SC","Microsoft YaHei",sans-serif';
+                const metrics = ctx.measureText(text);
+                const boxWidth = metrics.width + 24;
+                const boxHeight = 32;
+                const boxX = x - boxWidth;
+                const boxY = y - boxHeight;
+
+                ctx.fillStyle = 'rgba(20, 20, 40, 0.8)';
+                ctx.strokeStyle = 'rgba(255, 200, 100, 0.6)';
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.roundRect(boxX, boxY, boxWidth, boxHeight, 8);
+                ctx.fill();
+                ctx.stroke();
+
+                ctx.fillStyle = '#f0c060';
+                ctx.textAlign = 'right';
+                ctx.textBaseline = 'bottom';
+                ctx.fillText(text, x - 12, y - 10);
+            }
+
+            function drawFrame(phase) {
+                ctx.clearRect(0, 0, W, H);
+
+                ctx.strokeStyle = 'rgba(255,255,255,0.03)';
+                ctx.lineWidth = 0.5;
+                for (let gx = 0; gx < W; gx += 30) {
+                    ctx.beginPath();
+                    ctx.moveTo(gx, 0);
+                    ctx.lineTo(gx, H);
+                    ctx.stroke();
+                }
+                for (let gy = 0; gy < H; gy += 30) {
+                    ctx.beginPath();
+                    ctx.moveTo(0, gy);
+                    ctx.lineTo(W, gy);
+                    ctx.stroke();
+                }
+
+                drawBottomRightAnnotation();
+
+                drawPlate(plateLeftX, plateTopSurfY - plateThickness, plateRightX, plateTopSurfY - plateThickness,
+                    plateThickness, 'A');
+                drawPlate(plateLeftX, plateBotSurfY, plateRightX, plateBotSurfY, plateThickness, 'B');
+                drawChargeSymbols(plateLeftX, plateRightX, plateTopSurfY - plateThickness / 2, phase, true);
+                drawChargeSymbols(plateLeftX, plateRightX, plateBotSurfY + plateThickness / 2, phase, false);
+
+                ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+                ctx.lineWidth = 1;
+                ctx.setLineDash([4, 10]);
+                ctx.beginPath();
+                ctx.moveTo(plateLeftX - 30, midY);
+                ctx.lineTo(plateRightX + 30, midY);
+                ctx.stroke();
+                ctx.setLineDash([]);
+
+                drawFieldArrows(phase);
+
+                const indX = 725;
+                const indY = midY;
+                ctx.fillStyle = 'rgba(13,17,23,0.85)';
+                ctx.strokeStyle = '#4da6ff';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.roundRect(indX - 28, indY - 24, 56, 48, 8);
+                ctx.fill();
+                ctx.stroke();
+                const firstHalf = phase < halfPeriod;
+                const arrowStartY = firstHalf ? indY - 12 : indY + 12;
+                const arrowEndY = firstHalf ? indY + 12 : indY - 12;
+                ctx.strokeStyle = '#4da6ff';
+                ctx.lineWidth = 2.5;
+                ctx.beginPath();
+                ctx.moveTo(indX, arrowStartY);
+                ctx.lineTo(indX, arrowEndY);
+                ctx.stroke();
+                const dir = firstHalf ? 1 : -1;
+                ctx.fillStyle = '#4da6ff';
+                ctx.beginPath();
+                ctx.moveTo(indX, arrowEndY);
+                ctx.lineTo(indX - 6, arrowEndY - dir * 10);
+                ctx.lineTo(indX + 6, arrowEndY - dir * 10);
+                ctx.closePath();
+                ctx.fill();
+                ctx.fillStyle = '#fff';
+                ctx.font = 'bold 12px "PingFang SC","Microsoft YaHei",sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('E', indX, indY);
+
+                drawTrail();
+
+                if (proton.x <= W + 20 && proton.y >= 0 && proton.y <= H) {
+                    drawProton(proton.x, proton.y);
+                }
+
+                const arrowIndX = protonStartX - 40;
+                const arrowIndY = midY;
+                ctx.strokeStyle = '#ff9060';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(arrowIndX + 10, arrowIndY);
+                ctx.lineTo(arrowIndX + 32, arrowIndY);
+                ctx.stroke();
+                ctx.fillStyle = '#ff9060';
+                ctx.beginPath();
+                ctx.moveTo(arrowIndX + 32, arrowIndY);
+                ctx.lineTo(arrowIndX + 22, arrowIndY - 5);
+                ctx.lineTo(arrowIndX + 22, arrowIndY + 5);
+                ctx.closePath();
+                ctx.fill();
+                ctx.fillStyle = '#ffccaa';
+                ctx.font = 'bold 11px "PingFang SC","Microsoft YaHei",sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('v₀ₓ = 300 px/s', arrowIndX - 2, arrowIndY - 16);
+
+                drawVyGraphHorizontal();
+            }
+
+            // ---------- 动画循环 ----------
+            function animate(timestamp) {
+                if (animStartRealTime === null) {
+                    animStartRealTime = timestamp;
+                    lastRealTime = timestamp;
+                    proton = { x: protonStartX, y: protonStartY, vy: 0, time: 0 };
+                    trailPoints = [{ x: proton.x, y: proton.y }];
+                    vyHistory = [{ time: 0, vy: 0 }];
+                    animationId = requestAnimationFrame(animate);
+                    return;
+                }
+
+                const realDt = (timestamp - lastRealTime) / 1000;
+                const simDt = Math.min(realDt * timeScale, 0.04);
+                if (simDt <= 0) {
+                    animationId = requestAnimationFrame(animate);
+                    return;
+                }
+
+                let a_y;
+                if (proton.x >= plateRightX) {
+                    a_y = 0;
+                } else {
+                    const phase = getElectricPhase(proton.time);
+                    a_y = getAcceleration(phase);
+                }
+
+                proton.vy += a_y * simDt;
+                proton.y += proton.vy * simDt + 0.5 * a_y * simDt * simDt;
+                proton.x += v0x * simDt;
+                proton.time += simDt;
+
+                if (proton.x <= plateRightX) {
+                    if (proton.y > plateBotSurfY) { proton.y = plateBotSurfY;
+                        proton.vy = 0; } else if (proton.y < plateTopSurfY) { proton.y = plateTopSurfY;
+                        proton.vy = 0; }
+                }
+
+                if (proton.x >= plateLeftX - 5 && proton.x <= W + 20 &&
+                    proton.y >= 0 && proton.y <= H) {
+                    trailPoints.push({ x: proton.x, y: proton.y });
+                    if (trailPoints.length > MAX_TRAIL) trailPoints.shift();
+                }
+
+                vyHistory.push({ time: proton.time, vy: proton.vy });
+                if (vyHistory.length > MAX_VY_HISTORY) vyHistory.shift();
+
+                const displayPhase = getElectricPhase(proton.time);
+                drawFrame(displayPhase);
+
+                lastRealTime = timestamp;
+                animationId = requestAnimationFrame(animate);
+            }
+
+            resetSimulation();
+        })();
+    </script>
+
+  <script>
+  // 返回主页（滚动位置已在主页点击链接时保存）
+  function saveScrollAndReturn() {
+    window.location.href = '../index.html';
+  }
+  
+  // 禁用右键菜单
+  document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+  });
+  
+  // 禁用开发者工具快捷键
+  document.addEventListener('keydown', function(e) {
+    // ESC返回主页 - 保存滚动位置
+    if (e.keyCode === 27) {
+      saveScrollAndReturn();
+      return false;
+    }
+    // F12
+    if (e.keyCode === 123) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+U
+    if (e.ctrlKey && e.keyCode === 85) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+I
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 73) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+J
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 74) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+C
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 67) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+S
+    if (e.ctrlKey && e.keyCode === 83) {
+      e.preventDefault();
+      return false;
+    }
+  });
+  
+  // 禁用选择
+  document.addEventListener('selectstart', function(e) {
+    // 允许输入框选择
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+      return true;
+    }
+    e.preventDefault();
+    return false;
+  });
+  </script>
+</body>
+</html>
