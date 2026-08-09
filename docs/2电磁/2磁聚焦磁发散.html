@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>磁发散与磁聚焦动画</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #0f1624;
+            font-family: "Microsoft Yahei", sans-serif;
+        }
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+        canvas {
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+        }
+        .button-group {
+            display: flex;
+            gap: 24px;
+        }
+        button {
+            padding: 10px 28px;
+            font-size: 15px;
+            border: none;
+            border-radius: 6px;
+            background-color: #2a3f5f;
+            color: #e0e8f5;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+        button:hover {
+            background-color: #3a5075;
+        }
+    </style>
+
+  <style>
+  body {
+    background-color: #1a2332 !important;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+  }
+  
+  .qilai-back-btn {
+    position: fixed;
+    top: 10px;
+    left: 15px;
+    z-index: 100000;
+    padding: 8px 16px;
+    background: rgba(0, 150, 200, 0.2);
+    border: 1px solid rgba(100, 180, 255, 0.5);
+    color: #8ab4f8;
+    font-size: 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.3s;
+    backdrop-filter: blur(5px);
+    font-family: "Microsoft YaHei", sans-serif;
+  }
+  
+  .qilai-back-btn:hover {
+    background: rgba(0, 150, 200, 0.4);
+    box-shadow: 0 0 15px rgba(100, 180, 255, 0.3);
+    color: #fff;
+  }
+  
+  .qilai-watermark {
+    position: fixed;
+    bottom: 15px;
+    right: 15px;
+    z-index: 99998;
+    font-size: 12px;
+    color: rgba(138, 180, 248, 0.35);
+    text-align: right;
+    line-height: 1.8;
+    pointer-events: none;
+    user-select: none;
+    font-family: "Microsoft YaHei", sans-serif;
+  }
+  
+  .qilai-watermark .title {
+    font-size: 14px;
+    font-weight: bold;
+    color: rgba(138, 180, 248, 0.45);
+    margin-bottom: 4px;
+    letter-spacing: 1px;
+  }
+  </style>
+</head>
+<body>
+  <a href="javascript:void(0);" class="qilai-back-btn" onclick="saveScrollAndReturn();">← 返回主页</a>
+  
+  <div class="qilai-watermark">
+    <div class="title">齐老师动画</div>
+    QQ 3398528250<br>
+    抖音 35320300542
+  </div>
+
+    <div class="container">
+        <canvas id="animationCanvas" width="800" height="600"></canvas>
+        <div class="button-group">
+            <button id="pauseBtn">暂停</button>
+            <button id="resetBtn">重置</button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('animationCanvas');
+        const ctx = canvas.getContext('2d');
+        const CANVAS_WIDTH = canvas.width;
+        const CANVAS_HEIGHT = canvas.height;
+
+        // ========== 物理参数（轨道半径=磁场半径，严格满足聚焦条件）==========
+        const MAGNETIC_B = 0.02;       // 磁感应强度（垂直纸面向里）
+        const FIELD_RADIUS = 150;      // 所有磁场圆半径统一
+
+        // 左列：上下两个相切的磁场圆
+        const FIELD_LEFT_X = 200;
+        const FIELD_LEFT_UPPER_Y = 170;  // 左上磁场圆心Y
+        const FIELD_LEFT_LOWER_Y = 470;  // 左下磁场圆心Y
+        const LEFT_TANGENT_Y = 320;      // 左列上下磁场切点Y坐标
+
+        // 右列：上下两个相切的磁场圆
+        const FIELD_RIGHT_X = 600;
+        const FIELD_RIGHT_UPPER_Y = 170; // 右上磁场圆心Y
+        const FIELD_RIGHT_LOWER_Y = 470; // 右下磁场圆心Y
+        const RIGHT_TANGENT_Y = 320;     // 右列上下磁场切点Y坐标
+
+        // 粒子发射源：左列磁场的切点位置
+        const SOURCE_X = FIELD_LEFT_X;
+        const SOURCE_Y = LEFT_TANGENT_Y;
+
+        // 粒子参数
+        const PARTICLE_Q = 1;          // 正电荷
+        const PARTICLE_M = 1;          // 粒子质量
+        const PARTICLE_SPEED = 3;      // 粒子初速度大小
+        const PARTICLE_DRAW_RADIUS = 4;
+        const PARTICLE_COUNT = 7;      // 7种颜色对应7个粒子
+        const MAX_ANGLE = 50;          // 最大发射偏角（度，相对于竖直向下方向）
+
+        // 粒子颜色：红、橙、黄、绿、青、蓝、紫
+        const PARTICLE_COLORS = [
+            '#ff3b30',
+            '#ff9500',
+            '#ffcc00',
+            '#34c759',
+            '#5ac8fa',
+            '#007aff',
+            '#af52de'
+        ];
+
+        // 背景色：浅蓝黑色
+        const BG_COLOR = '#16213e';
+
+        // 洛伦兹力加速度系数
+        const FORCE_FACTOR = PARTICLE_Q * MAGNETIC_B / PARTICLE_M;
+
+        // 时间步长（RK2积分，兼顾精度与流畅度）
+        const DT = 0.4;
+
+        // ========== 控制变量 ==========
+        let isPaused = false;
+        const pauseBtn = document.getElementById('pauseBtn');
+        const resetBtn = document.getElementById('resetBtn');
+
+        // ========== 粒子系统 ==========
+        let particles = [];
+
+        // 初始化粒子：从发射源按不同角度向下发射
+        function initParticles() {
+            particles = [];
+            const angleStep = (MAX_ANGLE * 2) / (PARTICLE_COUNT - 1);
+
+            for (let i = 0; i < PARTICLE_COUNT; i++) {
+                const angle = (-MAX_ANGLE + i * angleStep) * Math.PI / 180;
+                const vx = PARTICLE_SPEED * Math.sin(angle);
+                const vy = PARTICLE_SPEED * Math.cos(angle);
+
+                particles.push({
+                    x: SOURCE_X,
+                    y: SOURCE_Y,
+                    vx: vx,
+                    vy: vy,
+                    color: PARTICLE_COLORS[i],
+                    trail: []
+                });
+            }
+        }
+
+        // 判断点是否在指定圆形磁场内
+        function isInMagneticField(x, y, centerX, centerY, radius) {
+            const dx = x - centerX;
+            const dy = y - centerY;
+            return dx * dx + dy * dy <= radius * radius;
+        }
+
+        // 计算指定位置、速度下的洛伦兹加速度
+        function getAcceleration(x, y, vx, vy) {
+            const inLowerLeft = isInMagneticField(x, y, FIELD_LEFT_X, FIELD_LEFT_LOWER_Y, FIELD_RADIUS);
+            const inUpperLeft = isInMagneticField(x, y, FIELD_LEFT_X, FIELD_LEFT_UPPER_Y, FIELD_RADIUS);
+            const inLowerRight = isInMagneticField(x, y, FIELD_RIGHT_X, FIELD_RIGHT_LOWER_Y, FIELD_RADIUS);
+            const inUpperRight = isInMagneticField(x, y, FIELD_RIGHT_X, FIELD_RIGHT_UPPER_Y, FIELD_RADIUS);
+            
+            if (inLowerLeft || inUpperLeft || inLowerRight || inUpperRight) {
+                return {
+                    ax: FORCE_FACTOR * vy,
+                    ay: -FORCE_FACTOR * vx
+                };
+            } else {
+                return { ax: 0, ay: 0 };
+            }
+        }
+
+        // 更新粒子运动（二阶龙格-库塔 RK2 中点积分法）
+        function updateParticles() {
+            particles.forEach((p, index) => {
+                // 记录轨迹
+                p.trail.push({ x: p.x, y: p.y });
+                if (p.trail.length > 1200) {
+                    p.trail.shift();
+                }
+
+                // --- RK2 积分步骤 ---
+                // 第一步：当前状态的加速度
+                const acc1 = getAcceleration(p.x, p.y, p.vx, p.vy);
+                
+                // 计算中点速度和中点位置
+                const midVx = p.vx + acc1.ax * DT / 2;
+                const midVy = p.vy + acc1.ay * DT / 2;
+                const midX = p.x + p.vx * DT / 2;
+                const midY = p.y + p.vy * DT / 2;
+                
+                // 第二步：中点状态的加速度
+                const acc2 = getAcceleration(midX, midY, midVx, midVy);
+                
+                // 用中点加速度更新速度和位置
+                p.vx += acc2.ax * DT;
+                p.vy += acc2.ay * DT;
+                p.x += midVx * DT;
+                p.y += midVy * DT;
+
+                // 异常飞出画布时重置
+                if (p.x < -50 || p.x > CANVAS_WIDTH + 50 || p.y < -50 || p.y > CANVAS_HEIGHT + 50) {
+                    resetParticle(p, index);
+                }
+            });
+        }
+
+        // 重置单个粒子到发射源
+        function resetParticle(p, index) {
+            const angleStep = (MAX_ANGLE * 2) / (PARTICLE_COUNT - 1);
+            const angle = (-MAX_ANGLE + index * angleStep) * Math.PI / 180;
+            
+            p.x = SOURCE_X;
+            p.y = SOURCE_Y;
+            p.vx = PARTICLE_SPEED * Math.sin(angle);
+            p.vy = PARTICLE_SPEED * Math.cos(angle);
+            p.trail = [];
+        }
+
+        // ========== 绘制函数 ==========
+        function draw() {
+            // 绘制背景
+            ctx.fillStyle = BG_COLOR;
+            ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+
+            // 绘制顶部红色标注文字
+            ctx.fillStyle = '#ff3333';
+            ctx.font = 'bold 18px "Microsoft Yahei", sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'top';
+            ctx.fillText('磁聚焦磁发散条件：轨迹圆半径等于磁场圆半径', CANVAS_WIDTH / 2, 15);
+
+            // 绘制四个磁场区域（左下、左上、右下、右上）
+            drawMagneticField(FIELD_LEFT_X, FIELD_LEFT_LOWER_Y, FIELD_RADIUS);
+            drawMagneticField(FIELD_LEFT_X, FIELD_LEFT_UPPER_Y, FIELD_RADIUS);
+            drawMagneticField(FIELD_RIGHT_X, FIELD_RIGHT_LOWER_Y, FIELD_RADIUS);
+            drawMagneticField(FIELD_RIGHT_X, FIELD_RIGHT_UPPER_Y, FIELD_RADIUS);
+
+            // 绘制粒子轨迹与粒子本体
+            particles.forEach(p => {
+                // 绘制半透明轨迹
+                if (p.trail.length > 1) {
+                    ctx.beginPath();
+                    ctx.moveTo(p.trail[0].x, p.trail[0].y);
+                    for (let i = 1; i < p.trail.length; i++) {
+                        ctx.lineTo(p.trail[i].x, p.trail[i].y);
+                    }
+                    ctx.strokeStyle = p.color + '70';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                }
+
+                // 绘制粒子
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, PARTICLE_DRAW_RADIUS, 0, Math.PI * 2);
+                ctx.fillStyle = p.color;
+                ctx.fill();
+            });
+        }
+
+        // 绘制单个圆形匀强磁场区域 + 磁感线（叉号表示垂直纸面向里）
+        function drawMagneticField(cx, cy, r) {
+            // 绘制磁场区域半透明背景
+            ctx.beginPath();
+            ctx.arc(cx, cy, r, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(100, 180, 255, 0.15)';
+            ctx.fill();
+            ctx.strokeStyle = 'rgba(100, 180, 255, 0.4)';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+
+            // 绘制磁感线叉号
+            const spacing = 28;
+            const crossSize = 6;
+            ctx.strokeStyle = 'rgba(150, 200, 255, 0.35)';
+            ctx.lineWidth = 1;
+
+            for (let x = cx - r + spacing; x < cx + r; x += spacing) {
+                for (let y = cy - r + spacing; y < cy + r; y += spacing) {
+                    const dx = x - cx;
+                    const dy = y - cy;
+                    if (dx * dx + dy * dy <= r * r) {
+                        ctx.beginPath();
+                        ctx.moveTo(x - crossSize, y - crossSize);
+                        ctx.lineTo(x + crossSize, y + crossSize);
+                        ctx.moveTo(x + crossSize, y - crossSize);
+                        ctx.lineTo(x - crossSize, y + crossSize);
+                        ctx.stroke();
+                    }
+                }
+            }
+        }
+
+        // ========== 按钮交互 ==========
+        pauseBtn.addEventListener('click', () => {
+            isPaused = !isPaused;
+            pauseBtn.textContent = isPaused ? '继续' : '暂停';
+        });
+
+        resetBtn.addEventListener('click', () => {
+            initParticles();
+            isPaused = false;
+            pauseBtn.textContent = '暂停';
+        });
+
+        // ========== 动画主循环 ==========
+        function animate() {
+            if (!isPaused) {
+                updateParticles();
+            }
+            draw();
+            requestAnimationFrame(animate);
+        }
+
+        // 启动动画
+        initParticles();
+        animate();
+    </script>
+
+  <script>
+  // 返回主页（滚动位置已在主页点击链接时保存）
+  function saveScrollAndReturn() {
+    window.location.href = '../index.html';
+  }
+  
+  // 禁用右键菜单
+  document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+  });
+  
+  // 禁用开发者工具快捷键
+  document.addEventListener('keydown', function(e) {
+    // ESC返回主页 - 保存滚动位置
+    if (e.keyCode === 27) {
+      saveScrollAndReturn();
+      return false;
+    }
+    // F12
+    if (e.keyCode === 123) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+U
+    if (e.ctrlKey && e.keyCode === 85) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+I
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 73) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+J
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 74) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+C
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 67) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+S
+    if (e.ctrlKey && e.keyCode === 83) {
+      e.preventDefault();
+      return false;
+    }
+  });
+  
+  // 禁用选择
+  document.addEventListener('selectstart', function(e) {
+    // 允许输入框选择
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+      return true;
+    }
+    e.preventDefault();
+    return false;
+  });
+  </script>
+</body>
+</html>
