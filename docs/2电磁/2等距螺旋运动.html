@@ -1,0 +1,880 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta charset="UTF-8">
+    <meta charset="UTF-8">
+    <meta charset="UTF-8">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>红色小球 · 等距螺旋运动 | 分运动解析</title>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+      background-color: #0a0a14;
+    }
+    #info {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      color: #e0d8cc;
+      background: rgba(10, 10, 20, 0.7);
+      backdrop-filter: blur(10px);
+      padding: 15px 25px;
+      border-radius: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      pointer-events: none;
+    }
+    #info h1 {
+      margin: 0;
+      font-size: 1.8rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      color: #ff7060;
+      text-shadow: 0 0 20px rgba(255, 80, 60, 0.5);
+    }
+    #info p {
+      margin: 6px 0 0;
+      font-size: 0.9rem;
+      color: #b0a8c0;
+    }
+    .controls-hint {
+      position: absolute;
+      bottom: 25px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 25px;
+      background: rgba(10, 10, 20, 0.75);
+      backdrop-filter: blur(12px);
+      padding: 12px 28px;
+      border-radius: 40px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: #c0b8d0;
+      font-size: 0.85rem;
+      letter-spacing: 0.04em;
+      pointer-events: none;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .controls-hint span {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .controls-hint i {
+      font-style: normal;
+      opacity: 0.7;
+    }
+    #toggle-decomp {
+      position: absolute;
+      bottom: 100px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(10, 10, 20, 0.8);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      color: #e0d8cc;
+      padding: 10px 24px;
+      border-radius: 30px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      letter-spacing: 0.04em;
+      transition: all 0.3s;
+      pointer-events: auto;
+      z-index: 20;
+    }
+    #toggle-decomp:hover {
+      background: rgba(255, 80, 60, 0.3);
+      border-color: #ff7060;
+      color: #ffffff;
+    }
+    #toggle-decomp.active {
+      background: rgba(255, 80, 60, 0.4);
+      border-color: #ff5040;
+      box-shadow: 0 0 20px rgba(255, 70, 50, 0.5);
+    }
+    @media (max-width: 700px) {
+      #info { top: 10px; left: 10px; padding: 10px 18px; }
+      #info h1 { font-size: 1.4rem; }
+      .controls-hint { gap: 12px; padding: 10px 20px; font-size: 0.75rem; bottom: 15px; }
+      #toggle-decomp { bottom: 80px; padding: 8px 20px; font-size: 0.8rem; }
+    }
+  </style>
+
+  <style>
+  body {
+    background-color: #1a2332 !important;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+  }
+  
+  .qilai-back-btn {
+    position: fixed;
+    top: 10px;
+    left: 15px;
+    z-index: 100000;
+    padding: 8px 16px;
+    background: rgba(0, 150, 200, 0.2);
+    border: 1px solid rgba(100, 180, 255, 0.5);
+    color: #8ab4f8;
+    font-size: 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.3s;
+    backdrop-filter: blur(5px);
+    font-family: "Microsoft YaHei", sans-serif;
+  }
+  
+  .qilai-back-btn:hover {
+    background: rgba(0, 150, 200, 0.4);
+    box-shadow: 0 0 15px rgba(100, 180, 255, 0.3);
+    color: #fff;
+  }
+  
+  .qilai-watermark {
+    position: fixed;
+    bottom: 15px;
+    right: 15px;
+    z-index: 99998;
+    font-size: 12px;
+    color: rgba(138, 180, 248, 0.35);
+    text-align: right;
+    line-height: 1.8;
+    pointer-events: none;
+    user-select: none;
+    font-family: "Microsoft YaHei", sans-serif;
+  }
+  
+  .qilai-watermark .title {
+    font-size: 14px;
+    font-weight: bold;
+    color: rgba(138, 180, 248, 0.45);
+    margin-bottom: 4px;
+    letter-spacing: 1px;
+  }
+  </style>
+</head>
+<body>
+  <a href="javascript:void(0);" class="qilai-back-btn" onclick="saveScrollAndReturn();">← 返回主页</a>
+  
+  <div class="qilai-watermark">
+    <div class="title">齐老师动画</div>
+    QQ 3398528250<br>
+    抖音 35320300542
+  </div>
+
+  <div id="info">
+    <h1>🔴 等距螺旋运动</h1>
+    <p>红色小球 · 轨迹可见 · 空间坐标系 · 分运动显示</p>
+  </div>
+  <div class="controls-hint">
+    <span><i>🖱️</i> 拖拽旋转</span>
+    <span><i>📌</i> 滚轮缩放</span>
+    <span><i>✋</i> 右键平移</span>
+    <span><i>🔄</i> R 重置</span>
+    <span><i>⏯️</i> A 自动旋转</span>
+    <span><i>📐</i> D 分运动</span>
+  </div>
+  <button id="toggle-decomp" class="active">📐 隐藏分运动</button>
+
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+      }
+    }
+  </script>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+    // ---------- 场景初始化 ----------
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color('#0a0a14');
+    
+    // 星空背景
+    const starsGeometry = new THREE.BufferGeometry();
+    const starsCount = 400;
+    const starsPositions = new Float32Array(starsCount * 3);
+    for (let i = 0; i < starsCount * 3; i += 3) {
+      starsPositions[i] = (Math.random() - 0.5) * 35;
+      starsPositions[i+1] = (Math.random() - 0.5) * 20 + 4;
+      starsPositions[i+2] = (Math.random() - 0.5) * 35;
+    }
+    starsGeometry.setAttribute('position', new THREE.BufferAttribute(starsPositions, 3));
+    const starsMaterial = new THREE.PointsMaterial({ color: '#8899cc', size: 0.04, transparent: true, opacity: 0.6 });
+    const stars = new THREE.Points(starsGeometry, starsMaterial);
+    scene.add(stars);
+
+    // 相机
+    const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.5, 50);
+    camera.position.set(7, 4.5, 9);
+    camera.lookAt(0, 4, 0);
+
+    // 渲染器
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.2;
+    document.body.appendChild(renderer.domElement);
+
+    // 轨道控制器
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.target.set(0, 4, 0);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.08;
+    controls.autoRotate = true;
+    controls.autoRotateSpeed = 0.6;
+    controls.minDistance = 3.5;
+    controls.maxDistance = 18;
+    controls.maxPolarAngle = Math.PI * 0.78;
+    controls.minPolarAngle = 0.15;
+    controls.update();
+
+    renderer.domElement.addEventListener('pointerdown', () => document.body.style.cursor = 'grabbing');
+    window.addEventListener('pointerup', () => document.body.style.cursor = 'grab');
+
+    // ---------- 光照 ----------
+    scene.add(new THREE.AmbientLight('#3a3060', 2.0));
+    scene.add(new THREE.HemisphereLight('#c8d0ff', '#302838', 0.9));
+    
+    const dirLight = new THREE.DirectionalLight('#ffffff', 4.5);
+    dirLight.position.set(8, 12, 4);
+    dirLight.castShadow = true;
+    dirLight.shadow.mapSize.width = 2048;
+    dirLight.shadow.mapSize.height = 2048;
+    dirLight.shadow.camera.near = 0.5;
+    dirLight.shadow.camera.far = 40;
+    dirLight.shadow.camera.left = -10;
+    dirLight.shadow.camera.right = 10;
+    dirLight.shadow.camera.top = 10;
+    dirLight.shadow.camera.bottom = -2;
+    dirLight.shadow.bias = -0.0003;
+    scene.add(dirLight);
+    
+    const fillLight1 = new THREE.DirectionalLight('#ffc080', 2.0);
+    fillLight1.position.set(-3, 3, -2);
+    scene.add(fillLight1);
+    
+    const fillLight2 = new THREE.DirectionalLight('#8090c0', 1.5);
+    fillLight2.position.set(0, -0.5, 3);
+    scene.add(fillLight2);
+
+    // ---------- 螺旋参数 ----------
+    const RADIUS = 2.0;
+    const HEIGHT = 8.0;
+    const TURNS = 4;
+    const PITCH = HEIGHT / TURNS;
+
+    class HelixCurve extends THREE.Curve {
+      constructor(radius, height, turns) {
+        super();
+        this.radius = radius;
+        this.height = height;
+        this.turns = turns;
+      }
+      getPoint(t) {
+        const angle = t * this.turns * Math.PI * 2;
+        return new THREE.Vector3(
+          this.radius * Math.cos(angle),
+          t * this.height,
+          this.radius * Math.sin(angle)
+        );
+      }
+    }
+    const helixCurve = new HelixCurve(RADIUS, HEIGHT, TURNS);
+
+    // ---------- 轨迹 ----------
+    const tubeGeo = new THREE.TubeGeometry(helixCurve, 300, 0.08, 24, false);
+    const tubeMat = new THREE.MeshStandardMaterial({ 
+      color: '#d4955a', 
+      roughness: 0.3, 
+      metalness: 0.75,
+      emissive: '#331100',
+      emissiveIntensity: 0.2
+    });
+    const tube = new THREE.Mesh(tubeGeo, tubeMat);
+    tube.castShadow = true;
+    tube.receiveShadow = true;
+    scene.add(tube);
+
+    const linePoints = helixCurve.getPoints(400);
+    const lineGeo = new THREE.BufferGeometry().setFromPoints(linePoints);
+    const lineMat = new THREE.LineBasicMaterial({ color: '#ffaa80', transparent: true, opacity: 0.45 });
+    const centerLine = new THREE.Line(lineGeo, lineMat);
+    scene.add(centerLine);
+
+    // 中心虚线轴
+    const axisPoints = [new THREE.Vector3(0, -0.5, 0), new THREE.Vector3(0, HEIGHT + 0.5, 0)];
+    const axisGeo = new THREE.BufferGeometry().setFromPoints(axisPoints);
+    const axisMat = new THREE.LineDashedMaterial({ color: '#667788', dashSize: 0.6, gapSize: 0.4 });
+    const axisLine = new THREE.Line(axisGeo, axisMat);
+    axisLine.computeLineDistances();
+    scene.add(axisLine);
+
+    // 底部网格
+    const grid = new THREE.GridHelper(12, 24, '#3a3550', '#1e1c2a');
+    grid.position.y = -0.05;
+    scene.add(grid);
+
+    // 底部投影圆
+    const projPoints = [];
+    for (let i = 0; i <= 128; i++) {
+      const angle = (i / 128) * Math.PI * 2;
+      projPoints.push(new THREE.Vector3(RADIUS * Math.cos(angle), 0, RADIUS * Math.sin(angle)));
+    }
+    const projGeo = new THREE.BufferGeometry().setFromPoints(projPoints);
+    const projLine = new THREE.Line(projGeo, new THREE.LineBasicMaterial({ color: '#554466', transparent: true, opacity: 0.5 }));
+    scene.add(projLine);
+
+    // ---------- 空间坐标系 (带箭头) ----------
+    function createAxis() {
+      const axisGroup = new THREE.Group();
+      
+      const arrowLength = 3.2;
+      const arrowRadius = 0.06;
+      const coneLength = 0.25;
+      const coneRadius = 0.15;
+      
+      // X轴 - 红色
+      const xArrow = new THREE.ArrowHelper(
+        new THREE.Vector3(1, 0, 0), 
+        new THREE.Vector3(0, 0, 0), 
+        arrowLength, 0xff4040, coneLength, coneRadius
+      );
+      // Y轴 - 绿色
+      const yArrow = new THREE.ArrowHelper(
+        new THREE.Vector3(0, 1, 0), 
+        new THREE.Vector3(0, 0, 0), 
+        arrowLength, 0x40ff40, coneLength, coneRadius
+      );
+      // Z轴 - 蓝色
+      const zArrow = new THREE.ArrowHelper(
+        new THREE.Vector3(0, 0, 1), 
+        new THREE.Vector3(0, 0, 0), 
+        arrowLength, 0x4080ff, coneLength, coneRadius
+      );
+      
+      axisGroup.add(xArrow);
+      axisGroup.add(yArrow);
+      axisGroup.add(zArrow);
+      
+      // 轴标签 (使用sprite)
+      const makeLabel = (text, position, color) => {
+        const canvas = document.createElement('canvas');
+        canvas.width = 64; canvas.height = 64;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = color;
+        ctx.font = 'bold 36px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(text, 32, 32);
+        const texture = new THREE.CanvasTexture(canvas);
+        const material = new THREE.SpriteMaterial({ map: texture, depthTest: false, depthWrite: false });
+        const sprite = new THREE.Sprite(material);
+        sprite.position.copy(position);
+        sprite.scale.set(0.6, 0.6, 1);
+        return sprite;
+      };
+      
+      axisGroup.add(makeLabel('X', new THREE.Vector3(arrowLength + 0.3, 0.1, 0), '#ff8080'));
+      axisGroup.add(makeLabel('Y', new THREE.Vector3(0, arrowLength + 0.3, 0), '#80ff80'));
+      axisGroup.add(makeLabel('Z', new THREE.Vector3(0, 0.1, arrowLength + 0.3), '#8080ff'));
+      
+      return axisGroup;
+    }
+    const coordinateAxes = createAxis();
+    coordinateAxes.position.set(-2.8, -0.2, -2.8);
+    scene.add(coordinateAxes);
+
+    // ---------- 红色小球 ----------
+    const ballRadius = 0.28;
+    const ballGeo = new THREE.SphereGeometry(ballRadius, 64, 64);
+    const ballMat = new THREE.MeshStandardMaterial({ 
+      color: '#e02020',
+      roughness: 0.15, 
+      metalness: 0.1,
+      emissive: '#cc0000',
+      emissiveIntensity: 0.9
+    });
+    const ball = new THREE.Mesh(ballGeo, ballMat);
+    ball.castShadow = true;
+    ball.receiveShadow = true;
+    scene.add(ball);
+
+    // 红色光晕
+    const glowCanvas = document.createElement('canvas');
+    glowCanvas.width = 128; glowCanvas.height = 128;
+    const ctx = glowCanvas.getContext('2d');
+    const gradient = ctx.createRadialGradient(64, 64, 0, 64, 64, 64);
+    gradient.addColorStop(0, 'rgba(255, 60, 40, 1)');
+    gradient.addColorStop(0.2, 'rgba(255, 40, 20, 0.9)');
+    gradient.addColorStop(0.5, 'rgba(200, 0, 0, 0.4)');
+    gradient.addColorStop(0.8, 'rgba(80, 0, 0, 0.05)');
+    gradient.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, 128, 128);
+    const glowTexture = new THREE.CanvasTexture(glowCanvas);
+    const glowSprite = new THREE.Sprite(new THREE.SpriteMaterial({ 
+      map: glowTexture, 
+      blending: THREE.AdditiveBlending, 
+      transparent: true, 
+      opacity: 0.9,
+      depthWrite: false,
+      depthTest: true
+    }));
+    glowSprite.scale.set(1.8, 1.8, 1);
+    ball.add(glowSprite);
+
+    const pointLight = new THREE.PointLight('#ff4040', 10, 5);
+    ball.add(pointLight);
+
+    // ---------- 分运动可视化组件 ----------
+    const decompGroup = new THREE.Group();
+    scene.add(decompGroup);
+
+    // 水平投影点（紫色小球）
+    const projDotGeo = new THREE.SphereGeometry(0.15, 32, 32);
+    const projDotMat = new THREE.MeshStandardMaterial({ color: '#c060ff', roughness: 0.3, emissive: '#6020a0', emissiveIntensity: 0.8 });
+    const projDot = new THREE.Mesh(projDotGeo, projDotMat);
+    projDot.castShadow = true;
+    projDot.receiveShadow = true;
+    decompGroup.add(projDot);
+
+    // 竖直连线 (红色小球到水平投影点)
+    const verticalLinePoints = [new THREE.Vector3(0,0,0), new THREE.Vector3(0,0,0)];
+    const verticalLineGeo = new THREE.BufferGeometry().setFromPoints(verticalLinePoints);
+    const verticalLineMat = new THREE.LineDashedMaterial({ color: '#ffaa00', dashSize: 0.3, gapSize: 0.15, linewidth: 1 });
+    const verticalLine = new THREE.Line(verticalLineGeo, verticalLineMat);
+    decompGroup.add(verticalLine);
+
+    // 水平圆周轨迹 (动态更新位置到小球当前高度)
+    const circlePoints = [];
+    const circleSegments = 120;
+    for (let i = 0; i <= circleSegments; i++) {
+      const angle = (i / circleSegments) * Math.PI * 2;
+      circlePoints.push(new THREE.Vector3(RADIUS * Math.cos(angle), 0, RADIUS * Math.sin(angle)));
+    }
+    const circleGeo = new THREE.BufferGeometry().setFromPoints(circlePoints);
+    const circleLineMat = new THREE.LineBasicMaterial({ color: '#c060ff', transparent: true, opacity: 0.7, depthTest: true });
+    const circleLine = new THREE.Line(circleGeo, circleLineMat);
+    decompGroup.add(circleLine);
+
+    // 竖直轴线 (动态更新到小球水平位置)
+    const verticalAxisPoints = [new THREE.Vector3(0, -0.5, 0), new THREE.Vector3(0, HEIGHT + 0.5, 0)];
+    const verticalAxisGeo = new THREE.BufferGeometry().setFromPoints(verticalAxisPoints);
+    const verticalAxisLineMat = new THREE.LineDashedMaterial({ color: '#ffaa00', dashSize: 0.4, gapSize: 0.25, opacity: 0.6, transparent: true });
+    const verticalAxisLine = new THREE.Line(verticalAxisGeo, verticalAxisLineMat);
+    decompGroup.add(verticalAxisLine);
+
+    // ---------- UI控制 ----------
+    const toggleBtn = document.getElementById('toggle-decomp');
+    let showDecomposition = true;
+
+    function updateDecompVisibility() {
+      decompGroup.visible = showDecomposition;
+      if (showDecomposition) {
+        toggleBtn.textContent = '📐 隐藏分运动';
+        toggleBtn.classList.add('active');
+      } else {
+        toggleBtn.textContent = '📐 显示分运动';
+        toggleBtn.classList.remove('active');
+      }
+    }
+
+    toggleBtn.addEventListener('click', () => {
+      showDecomposition = !showDecomposition;
+      updateDecompVisibility();
+    });
+
+    // 键盘切换 D 键
+    window.addEventListener('keydown', (e) => {
+      if (e.key.toLowerCase() === 'd') {
+        showDecomposition = !showDecomposition;
+        updateDecompVisibility();
+      }
+    });
+
+    // ---------- 动画循环 ----------
+    const clock = new THREE.Clock();
+    const CYCLE_DURATION = 6.5;
+
+    function animate() {
+      requestAnimationFrame(animate);
+      
+      const elapsed = clock.getElapsedTime();
+      const t = (elapsed % CYCLE_DURATION) / CYCLE_DURATION;
+      
+      const ballPos = helixCurve.getPoint(t);
+      ball.position.copy(ballPos);
+      
+      // 更新分运动组件
+      if (showDecomposition) {
+        // 水平投影点 (保持y=0，或者跟随小球高度？这里投影到y=0平面显示圆周运动)
+        const projPos = ballPos.clone();
+        projPos.y = 0;
+        projDot.position.copy(projPos);
+        
+        // 竖直连线 (从小球到地面投影点)
+        verticalLinePoints[0].copy(ballPos);
+        verticalLinePoints[1].copy(projPos);
+        verticalLineGeo.setFromPoints(verticalLinePoints);
+        verticalLine.computeLineDistances();
+        
+        // 水平圆周轨迹移到小球当前高度
+        circleLine.position.y = ballPos.y;
+        
+        // 竖直轴线移到小球水平位置
+        verticalAxisLine.position.x = ballPos.x;
+        verticalAxisLine.position.z = ballPos.z;
+        verticalAxisLine.computeLineDistances();
+      }
+      
+      // 光效
+      const pulse = 1 + Math.sin(elapsed * 5) * 0.1;
+      glowSprite.scale.set(1.8 * pulse, 1.8 * pulse, 1);
+      pointLight.intensity = 9 + Math.sin(elapsed * 7) * 1.5;
+      
+      stars.rotation.y += 0.0001;
+      stars.rotation.x += 0.00005;
+      
+      controls.update();
+      renderer.render(scene, camera);
+    }
+
+    // ---------- 窗口自适应 ----------
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    // ---------- 键盘快捷键 ----------
+    window.addEventListener('keydown', (e) => {
+      const key = e.key.toLowerCase();
+      if (key === 'r') {
+        camera.position.set(7, 4.5, 9);
+        controls.target.set(0, HEIGHT/2, 0);
+      } else if (key === 't') {
+        camera.position.set(0, HEIGHT + 5, 0.5);
+        controls.target.set(0, HEIGHT/2, 0);
+      } else if (key === 'f') {
+        camera.position.set(0, HEIGHT/2, 9);
+        controls.target.set(0, HEIGHT/2, 0);
+      } else if (key === 's') {
+        camera.position.set(9, HEIGHT/2, 0);
+        controls.target.set(0, HEIGHT/2, 0);
+      } else if (key === 'a') {
+        controls.autoRotate = !controls.autoRotate;
+      }
+      controls.update();
+    });
+
+    // 初始化位置
+    ball.position.copy(helixCurve.getPoint(0));
+    updateDecompVisibility();
+    animate();
+  </script>
+
+<style>
+.back-btn {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    padding: 10px 20px;
+    background: rgba(0, 150, 200, 0.3);
+    border: 1px solid #00ffff;
+    color: white;
+    font-size: 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    z-index: 9999;
+    transition: 0.3s;
+    backdrop-filter: blur(5px);
+}
+.back-btn:hover {
+    background: rgba(0, 150, 200, 0.6);
+    box-shadow: 0 0 15px #00ffff;
+}
+</style>
+<button class="back-btn" onclick="goBack()">⬅️ 返回</button>
+<script>
+function goBack() {
+    history.back();
+}
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        goBack();
+    }
+});
+</script>
+
+
+<div class="watermark">齐老师动画</div>
+<style>
+.watermark {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    font-size: 14px;
+    color: rgba(0, 255, 255, 0.3);
+    z-index: 9998;
+    pointer-events: none;
+    user-select: none;
+}
+</style>
+
+
+<script>
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+});
+</script>
+
+
+<style>
+.back-btn {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    padding: 10px 20px;
+    background: rgba(0, 150, 200, 0.3);
+    border: 1px solid #00ffff;
+    color: white;
+    font-size: 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    z-index: 9999;
+    transition: 0.3s;
+    backdrop-filter: blur(5px);
+}
+.back-btn:hover {
+    background: rgba(0, 150, 200, 0.6);
+    box-shadow: 0 0 15px #00ffff;
+}
+</style>
+<button class="back-btn" onclick="goBack()">⬅️ 返回</button>
+<script>
+function goBack() {
+    history.back();
+}
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        goBack();
+    }
+});
+</script>
+
+
+<div class="watermark">齐老师动画</div>
+<style>
+.watermark {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    font-size: 14px;
+    color: rgba(0, 255, 255, 0.3);
+    z-index: 9998;
+    pointer-events: none;
+    user-select: none;
+}
+</style>
+
+
+<script>
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+});
+</script>
+
+
+<style>
+.back-btn {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    padding: 10px 20px;
+    background: rgba(0, 150, 200, 0.3);
+    border: 1px solid #00ffff;
+    color: white;
+    font-size: 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    z-index: 9999;
+    transition: 0.3s;
+    backdrop-filter: blur(5px);
+}
+.back-btn:hover {
+    background: rgba(0, 150, 200, 0.6);
+    box-shadow: 0 0 15px #00ffff;
+}
+</style>
+<button class="back-btn" onclick="goBack()">⬅️ 返回</button>
+<script>
+function goBack() {
+    history.back();
+}
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        goBack();
+    }
+});
+</script>
+
+
+<div class="watermark">齐老师动画</div>
+<style>
+.watermark {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    font-size: 14px;
+    color: rgba(0, 255, 255, 0.3);
+    z-index: 9998;
+    pointer-events: none;
+    user-select: none;
+}
+</style>
+
+
+<script>
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+});
+</script>
+
+
+<style>
+.back-btn {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    padding: 10px 20px;
+    background: rgba(0, 150, 200, 0.3);
+    border: 1px solid #00ffff;
+    color: white;
+    font-size: 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    z-index: 9999;
+    transition: 0.3s;
+    backdrop-filter: blur(5px);
+}
+.back-btn:hover {
+    background: rgba(0, 150, 200, 0.6);
+    box-shadow: 0 0 15px #00ffff;
+}
+</style>
+<button class="back-btn" onclick="goBack()">⬅️ 返回</button>
+<script>
+function goBack() {
+    history.back();
+}
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        goBack();
+    }
+});
+</script>
+
+
+<div class="watermark">齐老师动画</div>
+<style>
+.watermark {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    font-size: 14px;
+    color: rgba(0, 255, 255, 0.3);
+    z-index: 9998;
+    pointer-events: none;
+    user-select: none;
+}
+</style>
+
+
+<script>
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+});
+</script>
+
+
+  <script>
+  // 返回主页（滚动位置已在主页点击链接时保存）
+  function saveScrollAndReturn() {
+    window.location.href = '../index.html';
+  }
+  
+  // 禁用右键菜单
+  document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+  });
+  
+  // 禁用开发者工具快捷键
+  document.addEventListener('keydown', function(e) {
+    // ESC返回主页 - 保存滚动位置
+    if (e.keyCode === 27) {
+      saveScrollAndReturn();
+      return false;
+    }
+    // F12
+    if (e.keyCode === 123) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+U
+    if (e.ctrlKey && e.keyCode === 85) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+I
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 73) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+J
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 74) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+C
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 67) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+S
+    if (e.ctrlKey && e.keyCode === 83) {
+      e.preventDefault();
+      return false;
+    }
+  });
+  
+  // 禁用选择
+  document.addEventListener('selectstart', function(e) {
+    // 允许输入框选择
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+      return true;
+    }
+    e.preventDefault();
+    return false;
+  });
+  </script>
+</body>
+</html>
