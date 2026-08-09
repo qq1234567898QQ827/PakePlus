@@ -1,0 +1,1013 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>速度选择器 · 高中物理动画</title>
+    <style>
+        :root {
+            --bg: #1a1a2e;
+            --surface: #16213e;
+            --text: #e0e0e0;
+            --accent: #4da6ff;
+            --gold: #f0c060;
+        }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background: var(--bg);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', 'Helvetica Neue', sans-serif;
+            padding: 20px;
+            flex-direction: column;
+            gap: 18px;
+        }
+        .main-container {
+            background: var(--surface);
+            border-radius: 22px;
+            padding: 18px 22px;
+            box-shadow: 0 15px 45px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.06);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+        }
+        .title {
+            color: #fff;
+            font-size: 1.35rem;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .badge {
+            background: #e94560;
+            color: #fff;
+            font-size: 0.68rem;
+            padding: 4px 12px;
+            border-radius: 20px;
+            letter-spacing: 0.05em;
+            font-weight: 600;
+        }
+        .badge.live {
+            background: #0f9;
+            color: #111;
+            animation: pulse-badge 1.2s ease-in-out infinite;
+        }
+        @keyframes pulse-badge {
+            0%,
+            100% {
+                box-shadow: 0 0 8px #0f9;
+            }
+            50% {
+                box-shadow: 0 0 24px #0f9, 0 0 50px #0f9;
+            }
+        }
+        canvas {
+            display: block;
+            border-radius: 14px;
+            background: #0b0f17;
+            box-shadow: inset 0 0 70px rgba(0, 0, 0, 0.5);
+            max-width: 100%;
+            height: auto;
+        }
+        .control-panel {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 14px;
+            justify-content: center;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.03);
+            padding: 12px 20px;
+            border-radius: 40px;
+            backdrop-filter: blur(8px);
+        }
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: #ccc;
+            font-size: 0.8rem;
+            font-weight: 500;
+            letter-spacing: 0.03em;
+            flex-wrap: wrap;
+        }
+        button {
+            background: rgba(255, 255, 255, 0.07);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #ddd;
+            padding: 7px 14px;
+            border-radius: 26px;
+            font-size: 0.78rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            letter-spacing: 0.03em;
+            backdrop-filter: blur(4px);
+            white-space: nowrap;
+            user-select: none;
+        }
+        button:hover {
+            background: rgba(255, 255, 255, 0.14);
+            border-color: var(--accent);
+            color: #fff;
+            box-shadow: 0 0 14px rgba(77, 166, 255, 0.4);
+        }
+        button.active {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: #000;
+            font-weight: 700;
+            box-shadow: 0 0 18px var(--accent);
+        }
+        .btn-sm {
+            padding: 5px 10px;
+            font-size: 0.7rem;
+            min-width: 28px;
+        }
+        .legend-row {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+            color: #bbb;
+            font-size: 0.78rem;
+            letter-spacing: 0.03em;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .legend-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+            flex-shrink: 0;
+        }
+        .legend-dot.proton {
+            background: #ff5e5b;
+            box-shadow: 0 0 8px #ff5e5b;
+        }
+        .legend-dot.field {
+            background: #4da6ff;
+            box-shadow: 0 0 6px #4da6ff;
+        }
+        .legend-dot.mag {
+            background: #ffcc00;
+            box-shadow: 0 0 6px #ffcc00;
+            border-radius: 2px;
+            width: 12px;
+            height: 3px;
+        }
+        .legend-dot.trail {
+            background: #ff3333;
+            width: 14px;
+            height: 3px;
+            border-radius: 2px;
+            box-shadow: 0 0 6px #ff0000;
+        }
+        .info-row {
+            display: flex;
+            gap: 14px;
+            flex-wrap: wrap;
+            justify-content: center;
+            color: #bbb;
+            font-size: 0.75rem;
+            letter-spacing: 0.03em;
+        }
+        .info-row span {
+            background: rgba(255, 255, 255, 0.04);
+            padding: 4px 10px;
+            border-radius: 14px;
+            white-space: nowrap;
+        }
+        .info-row .val {
+            color: #f0c060;
+            font-weight: 600;
+        }
+        .info-row .match {
+            color: #0f9;
+            font-weight: 700;
+        }
+        .info-row .warn {
+            color: #ff9060;
+            font-weight: 600;
+        }
+    </style>
+
+  <style>
+  body {
+    background-color: #1a2332 !important;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+  }
+  
+  .qilai-back-btn {
+    position: fixed;
+    top: 10px;
+    left: 15px;
+    z-index: 100000;
+    padding: 8px 16px;
+    background: rgba(0, 150, 200, 0.2);
+    border: 1px solid rgba(100, 180, 255, 0.5);
+    color: #8ab4f8;
+    font-size: 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.3s;
+    backdrop-filter: blur(5px);
+    font-family: "Microsoft YaHei", sans-serif;
+  }
+  
+  .qilai-back-btn:hover {
+    background: rgba(0, 150, 200, 0.4);
+    box-shadow: 0 0 15px rgba(100, 180, 255, 0.3);
+    color: #fff;
+  }
+  
+  .qilai-watermark {
+    position: fixed;
+    bottom: 15px;
+    right: 15px;
+    z-index: 99998;
+    font-size: 12px;
+    color: rgba(138, 180, 248, 0.35);
+    text-align: right;
+    line-height: 1.8;
+    pointer-events: none;
+    user-select: none;
+    font-family: "Microsoft YaHei", sans-serif;
+  }
+  
+  .qilai-watermark .title {
+    font-size: 14px;
+    font-weight: bold;
+    color: rgba(138, 180, 248, 0.45);
+    margin-bottom: 4px;
+    letter-spacing: 1px;
+  }
+  </style>
+</head>
+<body>
+  <a href="javascript:void(0);" class="qilai-back-btn" onclick="saveScrollAndReturn();">← 返回主页</a>
+  
+  <div class="qilai-watermark">
+    <div class="title">齐老师动画</div>
+    QQ 3398528250<br>
+    抖音 35320300542
+  </div>
+
+    <div class="main-container">
+        <div class="title">
+            ⚡ 速度选择器 · 正交电磁场
+            <span class="badge live">● 实时</span>
+            <span class="badge">v₀ = E/B 时直线通过</span>
+        </div>
+        <canvas id="mainCanvas"></canvas>
+
+        <!-- 控制面板 -->
+        <div class="control-panel">
+            <div class="control-group">
+                <span>⚡电场 E</span>
+                <button id="btnEdown" class="btn-sm" title="减小电场">−</button>
+                <span class="val" id="valE" style="min-width:36px;text-align:center;">60</span>
+                <button id="btnEup" class="btn-sm" title="增大电场">+</button>
+            </div>
+            <div class="control-group">
+                <span>🧲磁场 B</span>
+                <button id="btnBdown" class="btn-sm" title="减小磁场">−</button>
+                <span class="val" id="valB" style="min-width:36px;text-align:center;">0.30</span>
+                <button id="btnBup" class="btn-sm" title="增大磁场">+</button>
+            </div>
+            <div class="control-group">
+                <span>🚀入射速度 vₓ</span>
+                <button id="btnVdown" class="btn-sm" title="减小速度">−</button>
+                <span class="val" id="valV" style="min-width:44px;text-align:center;">200</span>
+                <button id="btnVup" class="btn-sm" title="增大速度">+</button>
+            </div>
+            <div class="control-group">
+                <button id="btnReset" title="重置粒子">↺ 重置</button>
+            </div>
+        </div>
+
+        <div class="info-row" id="infoRow">
+            <span>选择速度 v<sub>select</sub> = <span class="val" id="infoVselect">200</span> px/s</span>
+            <span>电场力 F<sub>E</sub> ↓ | 洛伦兹力 F<sub>B</sub> ↑</span>
+            <span id="infoMatch">状态: <span class="match">● 匹配</span></span>
+        </div>
+
+        <div class="legend-row">
+            <span class="legend-item"><span class="legend-dot proton"></span> 正电荷 (+q)</span>
+            <span class="legend-item"><span class="legend-dot field"></span> 电场线 E↓</span>
+            <span class="legend-item"><span class="legend-dot mag"></span> 磁场 B⊗ (向里)</span>
+            <span class="legend-item"><span class="legend-dot trail"></span> 运动轨迹</span>
+            <span class="legend-item">📐 上板A(+) / 下板B(−)</span>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            const canvas = document.getElementById('mainCanvas');
+            const ctx = canvas.getContext('2d');
+
+            // ---------- 画布尺寸 ----------
+            const W = 960;
+            const H = 560;
+            canvas.width = W;
+            canvas.height = H;
+
+            function resizeCanvas() {
+                const maxWidth = Math.min(window.innerWidth - 36, 960);
+                const scale = maxWidth / W;
+                canvas.style.width = maxWidth + 'px';
+                canvas.style.height = (H * scale) + 'px';
+            }
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+
+            // ---------- 极板几何参数 ----------
+            const plateLeftX = 80;
+            const plateRightX = 680;
+            const plateTopY = 70;
+            const plateBottomY = 370;
+            const plateThickness = 14;
+            const plateTopSurfY = plateTopY;
+            const plateBotSurfY = plateBottomY;
+            const midY = (plateTopY + plateBottomY) / 2;
+            const plateLength = plateRightX - plateLeftX;
+
+            const protonStartX = plateLeftX;
+            const protonStartY = midY;
+
+            // ---------- 物理参数 ----------
+            let E_accel = 60; // 电场产生的向下加速度 px/s²
+            let B_coeff = 0.30; // 磁场系数 (洛伦兹力加速度 = B_coeff * v_x，方向向上)
+            let vx_input = 200; // 粒子入射水平速度 px/s
+
+            const timeScale = 0.6;
+
+            // ---------- 粒子状态 ----------
+            let proton = { x: protonStartX, y: protonStartY, vy: 0, time: 0, active: true };
+            let trailPoints = [];
+            let vyHistory = [];
+            const MAX_TRAIL = 6000;
+            const MAX_VY_HISTORY = 4000;
+
+            let animStartRealTime = null;
+            let lastRealTime = null;
+            let animationId = null;
+
+            // DOM元素
+            const valE = document.getElementById('valE');
+            const valB = document.getElementById('valB');
+            const valV = document.getElementById('valV');
+            const infoVselect = document.getElementById('infoVselect');
+            const infoMatch = document.getElementById('infoMatch');
+
+            function getVselect() {
+                if (B_coeff < 0.001) return 9999;
+                return E_accel / B_coeff;
+            }
+
+            function getNetAccel() {
+                // 净加速度 = E_accel (向下) - B_coeff * vx_input (向上)
+                return E_accel - B_coeff * vx_input;
+            }
+
+            function updateInfoDisplay() {
+                valE.textContent = E_accel;
+                valB.textContent = B_coeff.toFixed(2);
+                valV.textContent = vx_input;
+                const vs = getVselect();
+                infoVselect.textContent = vs.toFixed(0);
+                const netA = getNetAccel();
+                if (Math.abs(netA) < 0.5) {
+                    infoMatch.innerHTML = '状态: <span class="match">● 匹配 (合力≈0)</span>';
+                } else if (netA > 0) {
+                    infoMatch.innerHTML = '状态: <span class="warn">↓ 电场力 > 洛伦兹力</span>';
+                } else {
+                    infoMatch.innerHTML = '状态: <span class="warn">↑ 洛伦兹力 > 电场力</span>';
+                }
+            }
+
+            function resetParticle() {
+                proton = { x: protonStartX, y: protonStartY, vy: 0, time: 0, active: true };
+                trailPoints = [{ x: proton.x, y: proton.y }];
+                vyHistory = [{ time: 0, vy: 0 }];
+                animStartRealTime = null;
+                lastRealTime = null;
+            }
+
+            function resetSimulation() {
+                if (animationId) { cancelAnimationFrame(animationId);
+                    animationId = null; }
+                resetParticle();
+                updateInfoDisplay();
+                animationId = requestAnimationFrame(animate);
+            }
+
+            // 按钮事件
+            document.getElementById('btnEdown').addEventListener('click', () => {
+                E_accel = Math.max(10, E_accel - 10);
+                updateInfoDisplay();
+                resetParticle();
+            });
+            document.getElementById('btnEup').addEventListener('click', () => {
+                E_accel = Math.min(200, E_accel + 10);
+                updateInfoDisplay();
+                resetParticle();
+            });
+            document.getElementById('btnBdown').addEventListener('click', () => {
+                B_coeff = Math.max(0.05, B_coeff - 0.05);
+                updateInfoDisplay();
+                resetParticle();
+            });
+            document.getElementById('btnBup').addEventListener('click', () => {
+                B_coeff = Math.min(1.00, B_coeff + 0.05);
+                updateInfoDisplay();
+                resetParticle();
+            });
+            document.getElementById('btnVdown').addEventListener('click', () => {
+                vx_input = Math.max(40, vx_input - 20);
+                updateInfoDisplay();
+                resetParticle();
+            });
+            document.getElementById('btnVup').addEventListener('click', () => {
+                vx_input = Math.min(500, vx_input + 20);
+                updateInfoDisplay();
+                resetParticle();
+            });
+            document.getElementById('btnReset').addEventListener('click', () => {
+                resetSimulation();
+            });
+
+            updateInfoDisplay();
+
+            // ---------- 绘制函数 ----------
+            function drawPlate(x1, y1, x2, y2, thickness, label, isTop) {
+                const grad = ctx.createLinearGradient(0, y1, 0, y1 + thickness);
+                grad.addColorStop(0, '#c9a96e');
+                grad.addColorStop(0.5, '#e8d5a3');
+                grad.addColorStop(1, '#8b6914');
+                ctx.fillStyle = grad;
+                ctx.strokeStyle = '#5c3d0e';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.roundRect(x1, y1, x2 - x1, thickness, 6);
+                ctx.fill();
+                ctx.stroke();
+                ctx.strokeStyle = 'rgba(255,255,255,0.35)';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(x1 + 8, y1 + 2);
+                ctx.lineTo(x2 - 8, y1 + 2);
+                ctx.stroke();
+                ctx.fillStyle = '#fff';
+                ctx.font = 'bold 15px "PingFang SC","Microsoft YaHei",sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                const labelX = x1 - 30;
+                const labelY = y1 + thickness / 2;
+                ctx.beginPath();
+                ctx.arc(labelX, labelY, 14, 0, Math.PI * 2);
+                ctx.fillStyle = '#1a1a2e';
+                ctx.fill();
+                ctx.strokeStyle = '#f0c060';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                ctx.fillStyle = '#f0c060';
+                ctx.fillText(label, labelX, labelY);
+                // 极性标注
+                const signX = x1 - 30;
+                const signY = isTop ? y1 - 10 : y1 + thickness + 10;
+                ctx.fillStyle = isTop ? '#ff4444' : '#4488ff';
+                ctx.font = 'bold 14px "PingFang SC","Microsoft YaHei",sans-serif';
+                ctx.fillText(isTop ? '(+)' : '(−)', signX, signY);
+            }
+
+            function drawFieldArrows() {
+                const arrowCount = 9;
+                const spacing = (plateRightX - plateLeftX) / (arrowCount + 1);
+                const arrowColor = '#4da6ff';
+                for (let i = 1; i <= arrowCount; i++) {
+                    const ax = plateLeftX + i * spacing;
+                    const startY = plateTopSurfY + 14;
+                    const endY = plateBotSurfY - 14;
+                    ctx.save();
+                    ctx.globalAlpha = 0.22;
+                    ctx.strokeStyle = 'rgba(77,166,255,0.45)';
+                    ctx.lineWidth = 3;
+                    ctx.setLineDash([7, 5]);
+                    ctx.beginPath();
+                    ctx.moveTo(ax, startY);
+                    ctx.lineTo(ax, endY);
+                    ctx.stroke();
+                    ctx.restore();
+                    ctx.strokeStyle = arrowColor;
+                    ctx.lineWidth = 1.6;
+                    ctx.setLineDash([6, 4]);
+                    ctx.beginPath();
+                    ctx.moveTo(ax, startY);
+                    ctx.lineTo(ax, endY);
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+                    // 箭头头部
+                    const tipX = ax;
+                    const tipY = endY;
+                    ctx.fillStyle = arrowColor;
+                    ctx.beginPath();
+                    ctx.moveTo(tipX, tipY);
+                    ctx.lineTo(tipX - 5, tipY - 10);
+                    ctx.lineTo(tipX + 5, tipY - 10);
+                    ctx.closePath();
+                    ctx.fill();
+                }
+            }
+
+            function drawMagSymbols() {
+                // 磁场符号 × (垂直纸面向里)
+                const cols = 8;
+                const rows = 5;
+                const spacingX = (plateRightX - plateLeftX) / (cols + 1);
+                const spacingY = (plateBotSurfY - plateTopSurfY) / (rows + 1);
+                ctx.fillStyle = '#ffcc00';
+                ctx.font = 'bold 16px "Segoe UI","PingFang SC",sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.shadowColor = 'rgba(255,200,0,0.4)';
+                ctx.shadowBlur = 4;
+                for (let r = 1; r <= rows; r++) {
+                    for (let c = 1; c <= cols; c++) {
+                        const mx = plateLeftX + c * spacingX;
+                        const my = plateTopSurfY + r * spacingY;
+                        // 用×字符
+                        ctx.fillText('×', mx, my);
+                    }
+                }
+                ctx.shadowBlur = 0;
+                // 图例标注
+                const legendX = plateRightX + 40;
+                const legendY = midY - 40;
+                ctx.fillStyle = '#ffcc00';
+                ctx.font = 'bold 13px "PingFang SC","Microsoft YaHei",sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('B⊗', legendX, legendY);
+                ctx.fillText('(向里)', legendX, legendY + 16);
+            }
+
+            function drawProton(x, y) {
+                const glowGrad = ctx.createRadialGradient(x, y, 2, x, y, 16);
+                glowGrad.addColorStop(0, 'rgba(255,120,100,0.9)');
+                glowGrad.addColorStop(0.4, 'rgba(255,80,60,0.5)');
+                glowGrad.addColorStop(1, 'rgba(255,50,30,0)');
+                ctx.fillStyle = glowGrad;
+                ctx.beginPath();
+                ctx.arc(x, y, 16, 0, Math.PI * 2);
+                ctx.fill();
+                const bodyGrad = ctx.createRadialGradient(x - 1.5, y - 1.5, 1, x, y, 7);
+                bodyGrad.addColorStop(0, '#fff');
+                bodyGrad.addColorStop(0.35, '#ffccaa');
+                bodyGrad.addColorStop(0.7, '#ff5e5b');
+                bodyGrad.addColorStop(1, '#c0392b');
+                ctx.fillStyle = bodyGrad;
+                ctx.beginPath();
+                ctx.arc(x, y, 7, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = 'rgba(255,255,255,0.6)';
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+                ctx.fillStyle = '#fff';
+                ctx.font = 'bold 9px "Segoe UI","PingFang SC",sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('+q', x, y);
+            }
+
+            function drawForceArrows(x, y) {
+                const netA = getNetAccel();
+                const FeLen = 28; // 电场力箭头长度(向下)
+                const FbLen = 28 * (B_coeff * vx_input) / Math.max(E_accel, 1);
+                const clampedFbLen = Math.min(FbLen, 50);
+
+                // 电场力 - 红色向下
+                const feStartY = y + 10;
+                const feEndY = feStartY + FeLen;
+                ctx.strokeStyle = '#ff4444';
+                ctx.lineWidth = 2.5;
+                ctx.setLineDash([]);
+                ctx.beginPath();
+                ctx.moveTo(x, feStartY);
+                ctx.lineTo(x, feEndY);
+                ctx.stroke();
+                ctx.fillStyle = '#ff4444';
+                ctx.beginPath();
+                ctx.moveTo(x, feEndY);
+                ctx.lineTo(x - 6, feEndY - 9);
+                ctx.lineTo(x + 6, feEndY - 9);
+                ctx.closePath();
+                ctx.fill();
+                ctx.fillStyle = '#ff8888';
+                ctx.font = 'bold 10px "PingFang SC","Microsoft YaHei",sans-serif';
+                ctx.textAlign = 'left';
+                ctx.fillText('Fᴇ', x + 8, feStartY + FeLen / 2);
+
+                // 洛伦兹力 - 绿色向上
+                const fbStartY = y - 10;
+                const fbEndY = fbStartY - clampedFbLen;
+                ctx.strokeStyle = '#44ff44';
+                ctx.lineWidth = 2.5;
+                ctx.beginPath();
+                ctx.moveTo(x, fbStartY);
+                ctx.lineTo(x, fbEndY);
+                ctx.stroke();
+                ctx.fillStyle = '#44ff44';
+                ctx.beginPath();
+                ctx.moveTo(x, fbEndY);
+                ctx.lineTo(x - 6, fbEndY + 9);
+                ctx.lineTo(x + 6, fbEndY + 9);
+                ctx.closePath();
+                ctx.fill();
+                ctx.fillStyle = '#88ff88';
+                ctx.font = 'bold 10px "PingFang SC","Microsoft YaHei",sans-serif';
+                ctx.textAlign = 'left';
+                ctx.fillText('Fʙ', x + 8, fbStartY - clampedFbLen / 2);
+            }
+
+            function drawTrail() {
+                if (trailPoints.length < 2) return;
+                ctx.save();
+                ctx.strokeStyle = '#ff4444';
+                ctx.lineWidth = 2;
+                ctx.setLineDash([6, 4]);
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+                ctx.shadowColor = 'rgba(255,60,60,0.4)';
+                ctx.shadowBlur = 5;
+                ctx.beginPath();
+                ctx.moveTo(trailPoints[0].x, trailPoints[0].y);
+                for (let i = 1; i < trailPoints.length; i++) {
+                    ctx.lineTo(trailPoints[i].x, trailPoints[i].y);
+                }
+                ctx.stroke();
+                ctx.setLineDash([]);
+                ctx.shadowBlur = 0;
+                ctx.restore();
+            }
+
+            function drawVyGraph() {
+                const graphW = 200;
+                const graphH = 130;
+                const graphX = W - graphW - 18;
+                const graphY = H - graphH - 18;
+                const graphRight = graphX + graphW;
+                const graphBottom = graphY + graphH;
+
+                ctx.fillStyle = 'rgba(13,17,23,0.88)';
+                ctx.strokeStyle = 'rgba(255,255,255,0.22)';
+                ctx.lineWidth = 1.3;
+                ctx.beginPath();
+                ctx.roundRect(graphX - 8, graphY - 8, graphW + 18, graphH + 24, 8);
+                ctx.fill();
+                ctx.stroke();
+
+                ctx.fillStyle = '#ccc';
+                ctx.font = 'bold 10px "PingFang SC","Microsoft YaHei",sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('vᵧ - t (↓正)', graphX + graphW / 2, graphY + 2);
+
+                const axisY = graphY + graphH / 2;
+                const axisX = graphX;
+                ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(graphX, axisY);
+                ctx.lineTo(graphRight, axisY);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(axisX, graphY);
+                ctx.lineTo(axisX, graphBottom);
+                ctx.stroke();
+
+                const vyMax = Math.max(Math.abs(E_accel) * 1.5, 30);
+                const tScale = graphW / 4;
+                const vScale = (graphH / 2) / vyMax;
+
+                ctx.fillStyle = '#aaa';
+                ctx.font = '8px "PingFang SC","Microsoft YaHei",sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'top';
+                for (let tTick = 0; tTick <= 4; tTick += 1) {
+                    const tx = graphX + tTick * tScale;
+                    if (tx <= graphRight) {
+                        ctx.fillText(tTick + 's', tx, axisY + 3);
+                    }
+                }
+
+                ctx.textAlign = 'right';
+                ctx.textBaseline = 'middle';
+                for (let vTick = -vyMax; vTick <= vyMax; vTick += vyMax / 2) {
+                    const vy = graphY + (vTick + vyMax) * vScale;
+                    if (vy >= graphY && vy <= graphBottom) {
+                        ctx.fillText(Math.round(vTick) + '', axisX - 4, vy);
+                    }
+                }
+
+                if (vyHistory.length >= 2) {
+                    ctx.strokeStyle = '#ff9060';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    let first = true;
+                    for (let i = 0; i < vyHistory.length; i++) {
+                        const p = vyHistory[i];
+                        const px = graphX + p.time * tScale;
+                        const py = graphY + (p.vy + vyMax) * vScale;
+                        if (px > graphRight + 4) break;
+                        if (first) { ctx.moveTo(px, py);
+                            first = false; } else ctx.lineTo(px, py);
+                    }
+                    ctx.stroke();
+                }
+                if (vyHistory.length > 0) {
+                    const last = vyHistory[vyHistory.length - 1];
+                    const dotX = graphX + last.time * tScale;
+                    const dotY = graphY + (last.vy + vyMax) * vScale;
+                    if (dotX >= graphX - 3 && dotX <= graphRight + 3 && dotY >= graphY - 3 && dotY <= graphBottom + 3) {
+                        ctx.fillStyle = '#ff9060';
+                        ctx.beginPath();
+                        ctx.arc(dotX, dotY, 4, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                }
+            }
+
+            function drawTopAnnotation() {
+                const text = '速度选择器：只有 v = E/B 的粒子能直线通过';
+                const x = W / 2;
+                const y = 28;
+                ctx.font = 'bold 14px "PingFang SC","Microsoft YaHei",sans-serif';
+                const m = ctx.measureText(text);
+                const bw = m.width + 26;
+                const bh = 30;
+                ctx.fillStyle = 'rgba(20,20,40,0.78)';
+                ctx.strokeStyle = 'rgba(255,200,100,0.55)';
+                ctx.lineWidth = 1.3;
+                ctx.beginPath();
+                ctx.roundRect(x - bw / 2, y - bh / 2, bw, bh, 8);
+                ctx.fill();
+                ctx.stroke();
+                ctx.fillStyle = '#f0c060';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(text, x, y);
+            }
+
+            function drawExitIndicator() {
+                // 出口指示
+                const ex = plateRightX;
+                const ey = midY;
+                ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+                ctx.lineWidth = 1.5;
+                ctx.setLineDash([4, 6]);
+                ctx.beginPath();
+                ctx.moveTo(ex, ey - 18);
+                ctx.lineTo(ex, ey + 18);
+                ctx.stroke();
+                ctx.setLineDash([]);
+                ctx.fillStyle = '#fff';
+                ctx.font = 'bold 10px "PingFang SC","Microsoft YaHei",sans-serif';
+                ctx.textAlign = 'left';
+                ctx.fillText('出口', ex + 6, ey);
+            }
+
+            function drawFrame() {
+                ctx.clearRect(0, 0, W, H);
+
+                // 网格
+                ctx.strokeStyle = 'rgba(255,255,255,0.025)';
+                ctx.lineWidth = 0.5;
+                for (let gx = 0; gx < W; gx += 30) {
+                    ctx.beginPath();
+                    ctx.moveTo(gx, 0);
+                    ctx.lineTo(gx, H);
+                    ctx.stroke();
+                }
+                for (let gy = 0; gy < H; gy += 30) {
+                    ctx.beginPath();
+                    ctx.moveTo(0, gy);
+                    ctx.lineTo(W, gy);
+                    ctx.stroke();
+                }
+
+                drawTopAnnotation();
+
+                // 极板
+                drawPlate(plateLeftX, plateTopSurfY - plateThickness, plateRightX, plateTopSurfY - plateThickness,
+                    plateThickness, 'A', true);
+                drawPlate(plateLeftX, plateBotSurfY, plateRightX, plateBotSurfY, plateThickness, 'B', false);
+
+                // 电场线
+                drawFieldArrows();
+
+                // 磁场符号
+                drawMagSymbols();
+
+                // 出口
+                drawExitIndicator();
+
+                // 轨迹
+                drawTrail();
+
+                // 质子
+                if (proton.active && proton.x <= W + 20 && proton.y >= 0 && proton.y <= H) {
+                    drawProton(proton.x, proton.y);
+                    // 力箭头
+                    if (proton.x >= plateLeftX && proton.x <= plateRightX) {
+                        drawForceArrows(proton.x, proton.y);
+                    }
+                }
+
+                // 初速度箭头
+                const ax = protonStartX - 50;
+                const ay = midY;
+                ctx.strokeStyle = '#ff9060';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(ax + 8, ay);
+                ctx.lineTo(ax + 36, ay);
+                ctx.stroke();
+                ctx.fillStyle = '#ff9060';
+                ctx.beginPath();
+                ctx.moveTo(ax + 36, ay);
+                ctx.lineTo(ax + 26, ay - 5);
+                ctx.lineTo(ax + 26, ay + 5);
+                ctx.closePath();
+                ctx.fill();
+                ctx.fillStyle = '#ffccaa';
+                ctx.font = 'bold 10px "PingFang SC","Microsoft YaHei",sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('vₓ=' + vx_input + '', ax + 4, ay - 14);
+
+                // vy-t图
+                drawVyGraph();
+
+                // 右下角公式
+                const fx = W - 20;
+                const fy = H - 20;
+                ctx.fillStyle = 'rgba(20,20,40,0.75)';
+                ctx.strokeStyle = 'rgba(255,200,100,0.5)';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.roundRect(fx - 200, fy - 28, 200, 28, 6);
+                ctx.fill();
+                ctx.stroke();
+                ctx.fillStyle = '#f0c060';
+                ctx.font = 'bold 12px "PingFang SC","Microsoft YaHei",sans-serif';
+                ctx.textAlign = 'right';
+                ctx.fillText('平衡条件: qE = qvB  →  v_select = E/B', fx - 10, fy - 11);
+            }
+
+            // ---------- 动画循环 ----------
+            function animate(timestamp) {
+                if (animStartRealTime === null) {
+                    animStartRealTime = timestamp;
+                    lastRealTime = timestamp;
+                    animationId = requestAnimationFrame(animate);
+                    return;
+                }
+                const realDt = (timestamp - lastRealTime) / 1000;
+                const simDt = Math.min(realDt * timeScale, 0.04);
+                if (simDt <= 0) {
+                    animationId = requestAnimationFrame(animate);
+                    return;
+                }
+
+                if (proton.active) {
+                    let a_y;
+                    if (proton.x >= plateRightX) {
+                        a_y = 0; // 离开极板区域后匀速
+                    } else if (proton.x < plateLeftX) {
+                        a_y = 0; // 还没进入电场
+                    } else {
+                        a_y = getNetAccel(); // 在极板间
+                    }
+
+                    proton.vy += a_y * simDt;
+                    proton.y += proton.vy * simDt + 0.5 * a_y * simDt * simDt;
+                    proton.x += vx_input * simDt;
+                    proton.time += simDt;
+
+                    // 碰板检测
+                    if (proton.x <= plateRightX && proton.x >= plateLeftX) {
+                        if (proton.y >= plateBotSurfY) {
+                            proton.y = plateBotSurfY;
+                            proton.vy = 0;
+                            proton.active = false;
+                        } else if (proton.y <= plateTopSurfY) {
+                            proton.y = plateTopSurfY;
+                            proton.vy = 0;
+                            proton.active = false;
+                        }
+                    }
+
+                    // 记录轨迹
+                    if (proton.x >= plateLeftX - 5 && proton.x <= W + 15 && proton.y >= 0 && proton.y <= H) {
+                        trailPoints.push({ x: proton.x, y: proton.y });
+                        if (trailPoints.length > MAX_TRAIL) trailPoints.shift();
+                    }
+
+                    vyHistory.push({ time: proton.time, vy: proton.vy });
+                    if (vyHistory.length > MAX_VY_HISTORY) vyHistory.shift();
+
+                    // 超出画布则停止
+                    if (proton.x > W + 30 || proton.y > H + 30 || proton.y < -30) {
+                        proton.active = false;
+                    }
+                }
+
+                drawFrame();
+                lastRealTime = timestamp;
+                animationId = requestAnimationFrame(animate);
+            }
+
+            resetSimulation();
+        })();
+    </script>
+
+  <script>
+  // 返回主页（滚动位置已在主页点击链接时保存）
+  function saveScrollAndReturn() {
+    window.location.href = '../index.html';
+  }
+  
+  // 禁用右键菜单
+  document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+  });
+  
+  // 禁用开发者工具快捷键
+  document.addEventListener('keydown', function(e) {
+    // ESC返回主页 - 保存滚动位置
+    if (e.keyCode === 27) {
+      saveScrollAndReturn();
+      return false;
+    }
+    // F12
+    if (e.keyCode === 123) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+U
+    if (e.ctrlKey && e.keyCode === 85) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+I
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 73) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+J
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 74) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+C
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 67) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+S
+    if (e.ctrlKey && e.keyCode === 83) {
+      e.preventDefault();
+      return false;
+    }
+  });
+  
+  // 禁用选择
+  document.addEventListener('selectstart', function(e) {
+    // 允许输入框选择
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+      return true;
+    }
+    e.preventDefault();
+    return false;
+  });
+  </script>
+</body>
+</html>
