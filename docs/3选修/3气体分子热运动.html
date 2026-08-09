@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>气体分子热运动模拟 - 高中物理</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            /* 科技感渐变背景 */
+            background: linear-gradient(135deg, #0d1117 0%, #1a1f35 50%, #0f172a 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            color: white;
+            background-attachment: fixed;
+        }
+
+        .title {
+            font-size: 32px;
+            margin-bottom: 8px;
+            color: #00e5ff;
+            text-shadow: 0 0 15px rgba(0, 229, 255, 0.6);
+            text-align: center;
+        }
+
+        .subtitle {
+            font-size: 16px;
+            color: #cbd5e1;
+            margin-bottom: 25px;
+            text-align: center;
+        }
+
+        .canvas-container {
+            position: relative;
+            background: rgba(255, 255, 255, 0.04);
+            border-radius: 18px;
+            padding: 25px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(0, 229, 255, 0.25);
+        }
+
+        #simCanvas {
+            border-radius: 12px;
+            background: #0a0f1d;
+            display: block;
+        }
+
+        .panel {
+            margin-top: 25px;
+            width: 100%;
+            max-width: 820px;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 22px;
+            border-radius: 16px;
+            border: 1px solid rgba(0, 229, 255, 0.22);
+        }
+
+        .slider-group {
+            margin-bottom: 20px;
+        }
+
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 16px;
+            color: #e2e8f0;
+        }
+
+        .val {
+            color: #00e5ff;
+            font-weight: bold;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 8px;
+            border-radius: 5px;
+            background: rgba(255, 255, 255, 0.12);
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: #00e5ff;
+            cursor: pointer;
+            box-shadow: 0 0 12px rgba(0, 229, 255, 0.8);
+            transition: 0.2s;
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.15);
+            box-shadow: 0 0 20px rgba(0, 229, 255, 1);
+        }
+
+        .data-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 16px;
+            margin-top: 20px;
+        }
+
+        .data-card {
+            background: rgba(0, 229, 255, 0.1);
+            padding: 16px;
+            border-radius: 12px;
+            border: 1px solid rgba(0, 229, 255, 0.3);
+            text-align: center;
+            transition: 0.2s;
+        }
+
+        .data-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0, 229, 255, 0.15);
+        }
+
+        .card-title {
+            font-size: 14px;
+            color: #94a3b8;
+            margin-bottom: 6px;
+        }
+
+        .card-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #00e5ff;
+        }
+
+        .tips {
+            margin-top: 18px;
+            text-align: center;
+            color: #64748b;
+            font-size: 14px;
+        }
+    </style>
+
+  <style>
+  body {
+    background-color: #1a2332 !important;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+  }
+  
+  .qilai-back-btn {
+    position: fixed;
+    top: 10px;
+    left: 15px;
+    z-index: 100000;
+    padding: 8px 16px;
+    background: rgba(0, 150, 200, 0.2);
+    border: 1px solid rgba(100, 180, 255, 0.5);
+    color: #8ab4f8;
+    font-size: 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.3s;
+    backdrop-filter: blur(5px);
+    font-family: "Microsoft YaHei", sans-serif;
+  }
+  
+  .qilai-back-btn:hover {
+    background: rgba(0, 150, 200, 0.4);
+    box-shadow: 0 0 15px rgba(100, 180, 255, 0.3);
+    color: #fff;
+  }
+  
+  .qilai-watermark {
+    position: fixed;
+    bottom: 15px;
+    right: 15px;
+    z-index: 99998;
+    font-size: 12px;
+    color: rgba(138, 180, 248, 0.35);
+    text-align: right;
+    line-height: 1.8;
+    pointer-events: none;
+    user-select: none;
+    font-family: "Microsoft YaHei", sans-serif;
+  }
+  
+  .qilai-watermark .title {
+    font-size: 14px;
+    font-weight: bold;
+    color: rgba(138, 180, 248, 0.45);
+    margin-bottom: 4px;
+    letter-spacing: 1px;
+  }
+  </style>
+</head>
+<body>
+  <a href="javascript:void(0);" class="qilai-back-btn" onclick="saveScrollAndReturn();">← 返回主页</a>
+  
+  <div class="qilai-watermark">
+    <div class="title">齐老师动画</div>
+    QQ 3398528250<br>
+    抖音 35320300542
+  </div>
+
+    <h1 class="title">气体分子热运动物理模拟</h1>
+    <p class="subtitle">温度↑ 分子运动↑ | 体积↓ 分子动能↑ | 实时显示平均动能</p>
+
+    <div class="canvas-container">
+        <canvas id="simCanvas" width="820" height="400"></canvas>
+    </div>
+
+    <div class="panel">
+        <div class="slider-group">
+            <div class="slider-label">
+                <span>🌡️ 温度调节</span>
+                <span class="val" id="tempVal">50</span>
+            </div>
+            <input type="range" id="tempSlider" min="10" max="120" value="50">
+        </div>
+
+        <div class="data-grid">
+            <div class="data-card">
+                <div class="card-title">气体体积</div>
+                <div class="card-value" id="volText">65%</div>
+            </div>
+            <div class="data-card">
+                <div class="card-title">平均动能</div>
+                <div class="card-value" id="kineticText">0.25</div>
+            </div>
+            <div class="data-card">
+                <div class="card-title">运动状态</div>
+                <div class="card-value" id="stateText">中等</div>
+            </div>
+        </div>
+
+        <div class="tips">
+            操作：拖动滑块调节温度 | 鼠标拖动红色活塞压缩/拉伸气体
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('simCanvas');
+        const ctx = canvas.getContext('2d');
+        const W = canvas.width, H = canvas.height;
+
+        // 物理模拟配置
+        const sim = {
+            moleCount: 180,    // 分子数量
+            temp: 50,          // 温度
+            pistonX: 680,      // 活塞位置
+            pistonW: 22,       // 活塞宽度
+            minPiston: 220,    // 最左压缩位置
+            maxPiston: 780,    // 最右拉伸位置
+            drag: false,       // 是否拖动活塞
+            molecules: []      // 分子数组
+        };
+
+        // 初始化分子
+        function initMolecules() {
+            sim.molecules = [];
+            const left = 120, top = 100, bottom = 300;
+            for (let i = 0; i < sim.moleCount; i++) {
+                sim.molecules.push({
+                    x: left + 10 + Math.random() * (sim.pistonX - left - 20),
+                    y: top + 10 + Math.random() * (bottom - top - 20),
+                    vx: (Math.random() - 0.5) * 4,
+                    vy: (Math.random() - 0.5) * 4,
+                    r: 3.5,
+                    color: `hsl(${180 + Math.random() * 50}, 100%, 65%)`
+                });
+            }
+        }
+
+        // 绘制气缸与活塞
+        function drawCylinder() {
+            const left = 120, top = 100, bottom = 300;
+            ctx.strokeStyle = '#00e5ff';
+            ctx.lineWidth = 3;
+            ctx.shadowColor = 'rgba(0,229,255,0.6)';
+            ctx.shadowBlur = 18;
+
+            ctx.beginPath();
+            ctx.moveTo(left, top); ctx.lineTo(left, bottom);
+            ctx.moveTo(left, top); ctx.lineTo(sim.pistonX, top);
+            ctx.moveTo(left, bottom); ctx.lineTo(sim.pistonX, bottom);
+            ctx.stroke();
+
+            // 绘制活塞
+            ctx.fillStyle = '#ff5c33';
+            ctx.shadowColor = 'rgba(255,92,51,0.7)';
+            ctx.shadowBlur = 22;
+            ctx.fillRect(sim.pistonX, top - 6, sim.pistonW, bottom - top + 12);
+            ctx.shadowBlur = 0;
+        }
+
+        // 更新分子运动与碰撞
+        function updateMolecules() {
+            const left = 120, top = 100, bottom = 300;
+            const speed = sim.temp / 40; // 温度决定速度
+
+            for (let m of sim.molecules) {
+                // 运动
+                m.x += m.vx * speed;
+                m.y += m.vy * speed;
+
+                // 碰撞反弹
+                if (m.x - m.r < left) { m.x = left + m.r; m.vx *= -1; }
+                if (m.x + m.r > sim.pistonX) { m.x = sim.pistonX - m.r; m.vx *= -1; }
+                if (m.y - m.r < top || m.y + m.r > bottom) { m.y = Math.max(top + m.r, Math.min(bottom - m.r, m.y)); m.vy *= -1; }
+            }
+        }
+
+        // 绘制分子
+        function drawMolecules() {
+            for (let m of sim.molecules) {
+                ctx.beginPath();
+                ctx.arc(m.x, m.y, m.r, 0, Math.PI * 2);
+                ctx.fillStyle = m.color;
+                ctx.fill();
+            }
+        }
+
+        // 计算平均动能（物理公式：动能与温度正相关）
+        function getAvgKinetic() {
+            const volFactor = (780 - 120) / (sim.pistonX - 120); // 体积越小系数越大
+            return (sim.temp * 0.005 * volFactor).toFixed(2);
+        }
+
+        // 更新数据面板
+        function updateUI() {
+            document.getElementById('tempVal').textContent = sim.temp;
+            
+            const vol = Math.round(((sim.pistonX - 120) / (780 - 120)) * 100);
+            document.getElementById('volText').textContent = vol + '%';
+            
+            const ek = getAvgKinetic();
+            document.getElementById('kineticText').textContent = ek;
+
+            let state;
+            if (sim.temp < 30) state = "缓慢";
+            else if (sim.temp < 70) state = "中等";
+            else state = "剧烈";
+            document.getElementById('stateText').textContent = state;
+        }
+
+        // 动画主循环
+        function animate() {
+            ctx.clearRect(0, 0, W, H);
+            drawCylinder();
+            updateMolecules();
+            drawMolecules();
+            requestAnimationFrame(animate);
+        }
+
+        // 温度滑块事件
+        document.getElementById('tempSlider').addEventListener('input', e => {
+            sim.temp = +e.target.value;
+            updateUI();
+        });
+
+        // 活塞拖动事件
+        canvas.addEventListener('mousedown', e => {
+            const rect = canvas.getBoundingClientRect();
+            const mx = e.clientX - rect.left;
+            if (mx >= sim.pistonX && mx <= sim.pistonX + sim.pistonW) sim.drag = true;
+        });
+
+        canvas.addEventListener('mousemove', e => {
+            if (!sim.drag) return;
+            const rect = canvas.getBoundingClientRect();
+            const mx = e.clientX - rect.left;
+            if (mx >= sim.minPiston && mx <= sim.maxPiston) {
+                sim.pistonX = mx;
+                updateUI();
+            }
+        });
+
+        canvas.addEventListener('mouseup', () => sim.drag = false);
+        canvas.addEventListener('mouseleave', () => sim.drag = false);
+
+        // 启动模拟
+        initMolecules();
+        updateUI();
+        animate();
+    </script>
+
+  <script>
+  // 返回主页（滚动位置已在主页点击链接时保存）
+  function saveScrollAndReturn() {
+    window.location.href = '../index.html';
+  }
+  
+  // 禁用右键菜单
+  document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+  });
+  
+  // 禁用开发者工具快捷键
+  document.addEventListener('keydown', function(e) {
+    // ESC返回主页 - 保存滚动位置
+    if (e.keyCode === 27) {
+      saveScrollAndReturn();
+      return false;
+    }
+    // F12
+    if (e.keyCode === 123) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+U
+    if (e.ctrlKey && e.keyCode === 85) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+I
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 73) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+J
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 74) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+C
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 67) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+S
+    if (e.ctrlKey && e.keyCode === 83) {
+      e.preventDefault();
+      return false;
+    }
+  });
+  
+  // 禁用选择
+  document.addEventListener('selectstart', function(e) {
+    // 允许输入框选择
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+      return true;
+    }
+    e.preventDefault();
+    return false;
+  });
+  </script>
+</body>
+</html>
