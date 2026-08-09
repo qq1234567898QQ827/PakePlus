@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>动态平衡 · 相似三角形 (力三角形右置)</title>
+    <style>
+        :root {
+            --bg: #1a1a2e;
+            --panel-bg: #16213e;
+            --text: #e0e0e0;
+            --accent: #ff6b6b;
+            --gold: #f0c060;
+            --highlight: #4ecdc4;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: var(--bg);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            user-select: none;
+            padding: 20px;
+        }
+        .container {
+            background: var(--panel-bg);
+            border-radius: 20px;
+            padding: 20px 24px 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.06);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 14px;
+            max-width: 920px;
+            width: 100%;
+        }
+        .header { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; justify-content: center; }
+        .header h1 {
+            font-size: 1.55rem; font-weight: 700; color: #fff; letter-spacing: 0.03em;
+            background: linear-gradient(135deg, #ff6b6b, #ffa07a);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+        }
+        .badge { background: rgba(255,107,107,0.18); color: #ff6b6b; font-size: 0.8rem; font-weight: 600; padding: 4px 12px; border-radius: 20px; white-space: nowrap; }
+        canvas {
+            display: block; border-radius: 14px; cursor: default;
+            background: #0f0f1a; box-shadow: inset 0 2px 10px rgba(0,0,0,0.5), 0 4px 16px rgba(0,0,0,0.4);
+            max-width: 100%; height: auto; touch-action: none;
+        }
+        .controls { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+        .btn {
+            padding: 9px 18px; border: none; border-radius: 25px; font-size: 0.9rem; font-weight: 600;
+            cursor: pointer; letter-spacing: 0.03em; transition: all 0.25s ease; font-family: inherit; white-space: nowrap;
+        }
+        .btn-auto { background: #4ecdc4; color: #0a0a15; }
+        .btn-auto:hover { background: #5edfd6; box-shadow: 0 4px 18px rgba(78,205,196,0.4); transform: translateY(-1px); }
+        .btn-auto.paused { background: #e07b5a; color: #fff; }
+        .btn-auto.paused:hover { background: #f08c6b; box-shadow: 0 4px 18px rgba(224,123,90,0.4); }
+        .btn-reset { background: rgba(255,255,255,0.08); color: #ccc; border: 1px solid rgba(255,255,255,0.15); }
+        .btn-reset:hover { background: rgba(255,255,255,0.15); color: #fff; }
+        .btn-hint { background: rgba(240,192,96,0.15); color: var(--gold); border: 1px solid rgba(240,192,96,0.3); font-size: 0.8rem; padding: 7px 14px; }
+        .btn-hint:hover { background: rgba(240,192,96,0.25); }
+        .legend { display: flex; gap: 16px; flex-wrap: wrap; justify-content: center; font-size: 0.78rem; color: #bbb; }
+        .legend span { display: flex; align-items: center; gap: 5px; }
+        .legend .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+        .dot-red { background: #ff4444; box-shadow: 0 0 8px #ff4444; }
+        .dot-black { background: #888; box-shadow: 0 0 6px #888; }
+        .dot-blue { background: #5b9bd5; box-shadow: 0 0 8px #5b9bd5; }
+        .dot-purple { background: #b66dff; box-shadow: 0 0 10px #b66dff; }
+        .info-tip { font-size: 0.75rem; color: #777; text-align: center; }
+    </style>
+
+  <style>
+  body {
+    background-color: #1a2332 !important;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+  }
+  
+  .qilai-back-btn {
+    position: fixed;
+    top: 10px;
+    left: 15px;
+    z-index: 100000;
+    padding: 8px 16px;
+    background: rgba(0, 150, 200, 0.2);
+    border: 1px solid rgba(100, 180, 255, 0.5);
+    color: #8ab4f8;
+    font-size: 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.3s;
+    backdrop-filter: blur(5px);
+    font-family: "Microsoft YaHei", sans-serif;
+  }
+  
+  .qilai-back-btn:hover {
+    background: rgba(0, 150, 200, 0.4);
+    box-shadow: 0 0 15px rgba(100, 180, 255, 0.3);
+    color: #fff;
+  }
+  
+  .qilai-watermark {
+    position: fixed;
+    bottom: 15px;
+    right: 15px;
+    z-index: 99998;
+    font-size: 12px;
+    color: rgba(138, 180, 248, 0.35);
+    text-align: right;
+    line-height: 1.8;
+    pointer-events: none;
+    user-select: none;
+    font-family: "Microsoft YaHei", sans-serif;
+  }
+  
+  .qilai-watermark .title {
+    font-size: 14px;
+    font-weight: bold;
+    color: rgba(138, 180, 248, 0.45);
+    margin-bottom: 4px;
+    letter-spacing: 1px;
+  }
+  </style>
+</head>
+<body>
+  <a href="javascript:void(0);" class="qilai-back-btn" onclick="saveScrollAndReturn();">← 返回主页</a>
+  
+  <div class="qilai-watermark">
+    <div class="title">齐老师动画</div>
+    QQ 3398528250<br>
+    抖音 35320300542
+  </div>
+
+<div class="container">
+    <div class="header">
+        <h1>动态平衡 · 相似三角形</h1>
+        <span class="badge">力三角形右置</span>
+    </div>
+    <canvas id="mainCanvas" width="880" height="520"></canvas>
+    <div class="controls">
+        <button class="btn btn-auto" id="btnAuto">🔁 自动摆动中</button>
+        <button class="btn btn-reset" id="btnReset">↺ 重置</button>
+        <button class="btn btn-hint" id="btnHint">💡 显示相似关系</button>
+    </div>
+    <div class="legend">
+        <span><span class="dot dot-red"></span> 绳子拉力 <b>T</b></span>
+        <span><span class="dot dot-black"></span> 杆支持力 <b>N</b></span>
+        <span><span class="dot dot-blue"></span> 重力 <b>G</b></span>
+        <span><span class="dot dot-purple"></span> 紫色小球</span>
+    </div>
+    <div class="info-tip">🖱 拖动<b>左手柄</b>或<b>紫色小球</b>调节 &nbsp;|&nbsp; 力三角形位于重力右侧</div>
+</div>
+
+<script>
+    (function() {
+        const canvas = document.getElementById('mainCanvas');
+        const ctx = canvas.getContext('2d');
+        const btnAuto = document.getElementById('btnAuto');
+        const btnReset = document.getElementById('btnReset');
+        const btnHint = document.getElementById('btnHint');
+
+        // ---------- 固定几何参数 ----------
+        const wallX = 310;
+        const O = { x: wallX, y: 370 };
+        const B = { x: wallX, y: 118 };
+        const rodLength = 215;
+        const OB_length = O.y - B.y;
+        const totalRopeLength = 420;
+        const pulleyRadius = 13;
+        const ballRadius = 16;
+
+        // ---------- 状态变量 ----------
+        const handXMin = 5;
+        const handXMax = 300;
+        let handX = 150;
+        let isAutoSwing = true;
+        let showSimilarityHighlight = true;
+        let isDraggingHand = false;
+        let isDraggingBall = false;
+        let swingTime = 0;
+        const swingPeriod = 4.2;
+
+        // ---------- 几何计算 ----------
+        function getABLen() {
+            const leftLen = B.x - handX;
+            return Math.max(37, Math.min(totalRopeLength - leftLen, 467));
+        }
+
+        function computeAPosition(abLen) {
+            const d = OB_length;
+            const minAB = Math.abs(rodLength - d);
+            const maxAB = rodLength + d;
+            const clampedAB = Math.max(minAB, Math.min(abLen, maxAB));
+            const a = (rodLength * rodLength - clampedAB * clampedAB + d * d) / (2 * d);
+            const h_sq = rodLength * rodLength - a * a;
+            if (h_sq < 0) return null;
+            const h = Math.sqrt(h_sq);
+            const Px = O.x + (a / d) * (B.x - O.x);
+            const Py = O.y + (a / d) * (B.y - O.y);
+            const dx = (B.y - O.y) * (h / d);
+            const dy = (O.x - B.x) * (h / d);
+            const A1 = { x: Px + dx, y: Py + dy };
+            const A2 = { x: Px - dx, y: Py - dy };
+            if (A1.x > A2.x) {
+                return A1.x > wallX + 5 ? A1 : A2;
+            } else {
+                return A2.x > wallX + 5 ? A2 : A1;
+            }
+        }
+
+        function getCurrentA() {
+            return computeAPosition(getABLen());
+        }
+
+        function getForceScale() {
+            return 95 / OB_length;
+        }
+
+        // ---------- 绘制函数 ----------
+        function drawWall() {
+            const grad = ctx.createLinearGradient(wallX - 30, 0, wallX + 8, 0);
+            grad.addColorStop(0, '#3a3a50'); grad.addColorStop(0.55, '#5a5a72'); grad.addColorStop(1, '#6e6e85');
+            ctx.fillStyle = grad;
+            ctx.beginPath(); ctx.rect(wallX - 28, 40, wallX + 10, 440); ctx.fill();
+            ctx.strokeStyle = '#888899'; ctx.lineWidth = 2.5;
+            ctx.beginPath(); ctx.moveTo(wallX, 38); ctx.lineTo(wallX, 478); ctx.stroke();
+            ctx.fillStyle = '#999'; ctx.font = 'italic 12px "Segoe UI","PingFang SC",sans-serif';
+            ctx.textAlign = 'right'; ctx.fillText('竖直墙', wallX - 36, 260);
+        }
+
+        function drawHinge() {
+            ctx.fillStyle = '#5a5a6e';
+            ctx.beginPath(); ctx.moveTo(O.x - 6, O.y - 18); ctx.lineTo(O.x + 14, O.y - 8); ctx.lineTo(O.x + 14, O.y + 8); ctx.lineTo(O.x - 6, O.y + 18); ctx.closePath(); ctx.fill();
+            ctx.strokeStyle = '#777788'; ctx.lineWidth = 1.8; ctx.stroke();
+            const hingeGrad = ctx.createRadialGradient(O.x - 1, O.y - 2, 2, O.x, O.y, 9);
+            hingeGrad.addColorStop(0, '#e8e8f0'); hingeGrad.addColorStop(0.5, '#b0b0c0'); hingeGrad.addColorStop(1, '#5a5a6e');
+            ctx.fillStyle = hingeGrad; ctx.beginPath(); ctx.arc(O.x, O.y, 8.5, 0, Math.PI * 2); ctx.fill();
+            ctx.strokeStyle = '#444455'; ctx.lineWidth = 2; ctx.stroke();
+            ctx.fillStyle = '#333'; ctx.beginPath(); ctx.arc(O.x, O.y, 3, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = '#ccc'; ctx.font = 'bold 13px "Segoe UI","PingFang SC",sans-serif';
+            ctx.textAlign = 'right'; ctx.fillText('O (铰链)', O.x - 18, O.y + 5);
+        }
+
+        function drawPulley() {
+            const pGrad = ctx.createRadialGradient(B.x - 2, B.y - 3, 3, B.x, B.y, pulleyRadius);
+            pGrad.addColorStop(0, '#f5f5fa'); pGrad.addColorStop(0.4, '#c8c8d8'); pGrad.addColorStop(1, '#6e6e80');
+            ctx.fillStyle = pGrad; ctx.beginPath(); ctx.arc(B.x, B.y, pulleyRadius, 0, Math.PI * 2); ctx.fill();
+            ctx.strokeStyle = '#4a4a58'; ctx.lineWidth = 2.5; ctx.stroke();
+            ctx.fillStyle = '#3a3a48'; ctx.beginPath(); ctx.arc(B.x, B.y, 4.5, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = '#5a5a6e'; ctx.fillRect(B.x - 6, B.y - pulleyRadius - 14, 12, 16);
+            ctx.strokeStyle = '#666677'; ctx.lineWidth = 1.5; ctx.strokeRect(B.x - 6, B.y - pulleyRadius - 14, 12, 16);
+            ctx.fillStyle = '#ccc'; ctx.font = 'bold 12px "Segoe UI","PingFang SC",sans-serif';
+            ctx.textAlign = 'right'; ctx.fillText('B (定滑轮)', B.x - 20, B.y - pulleyRadius - 20);
+        }
+
+        function drawRod(A) {
+            const rodGrad = ctx.createLinearGradient(O.x, O.y, A.x, A.y);
+            rodGrad.addColorStop(0, '#2a2a2a'); rodGrad.addColorStop(0.5, '#4a4a4a'); rodGrad.addColorStop(1, '#1a1a1a');
+            ctx.strokeStyle = rodGrad; ctx.lineWidth = 5.5; ctx.lineCap = 'round';
+            ctx.beginPath(); ctx.moveTo(O.x, O.y); ctx.lineTo(A.x, A.y); ctx.stroke();
+            ctx.strokeStyle = 'rgba(255,255,255,0.15)'; ctx.lineWidth = 1.2;
+            ctx.beginPath(); ctx.moveTo(O.x + 1.5, O.y + 1.5); ctx.lineTo(A.x + 1.5, A.y + 1.5); ctx.stroke();
+        }
+
+        function drawBall(A) {
+            const glow = ctx.createRadialGradient(A.x, A.y, ballRadius*0.6, A.x, A.y, ballRadius*2.2);
+            glow.addColorStop(0, 'rgba(180,100,255,0.5)'); glow.addColorStop(1, 'rgba(180,100,255,0)');
+            ctx.fillStyle = glow; ctx.beginPath(); ctx.arc(A.x, A.y, ballRadius*2.2, 0, Math.PI*2); ctx.fill();
+            const ballGrad = ctx.createRadialGradient(A.x-3, A.y-5, ballRadius*0.2, A.x, A.y, ballRadius);
+            ballGrad.addColorStop(0, '#e8c8ff'); ballGrad.addColorStop(0.35, '#b66dff'); ballGrad.addColorStop(0.75, '#7b3fc4'); ballGrad.addColorStop(1, '#3d1a6e');
+            ctx.fillStyle = ballGrad; ctx.beginPath(); ctx.arc(A.x, A.y, ballRadius, 0, Math.PI*2); ctx.fill();
+            ctx.strokeStyle = '#5a2d99'; ctx.lineWidth = 2.5; ctx.stroke();
+            ctx.fillStyle = 'rgba(255,255,255,0.7)'; ctx.beginPath(); ctx.arc(A.x-4, A.y-6, 3.5, 0, Math.PI*2); ctx.fill();
+            ctx.fillStyle = '#e8d0ff'; ctx.font = 'bold 13px "Segoe UI","PingFang SC",sans-serif';
+            ctx.textAlign = 'left'; ctx.fillText('A (小球)', A.x + ballRadius + 7, A.y + 4);
+        }
+
+        function drawRope(A) {
+            const handPos = { x: handX, y: B.y };
+            const dxAB = A.x - B.x;
+            const dyAB = A.y - B.y;
+            const dAB = Math.sqrt(dxAB*dxAB + dyAB*dyAB);
+            const ux = dxAB / dAB;
+            const uy = dyAB / dAB;
+            const n1x = -uy, n1y = ux;
+            const n2x = uy, n2y = -ux;
+            const dot1 = n1y * (-1);
+            const dot2 = n2y * (-1);
+            const useN1 = dot1 > dot2;
+            const nx = useN1 ? n1x : n2x;
+            const ny = useN1 ? n1y : n2y;
+            const exitX = B.x + pulleyRadius * nx;
+            const exitY = B.y + pulleyRadius * ny;
+            const exitAngle = Math.atan2(ny, nx);
+
+            const entryX = B.x;
+            const entryY = B.y - pulleyRadius;
+            const entryAngle = -Math.PI / 2;
+
+            // 左侧水平段
+            ctx.strokeStyle = '#ff3333'; ctx.lineWidth = 3.2; ctx.lineCap = 'round';
+            ctx.beginPath();
+            ctx.moveTo(handPos.x, handPos.y);
+            ctx.lineTo(entryX, entryY);
+            ctx.stroke();
+
+            // 滑轮上侧圆弧
+            ctx.strokeStyle = '#ff3333'; ctx.lineWidth = 3.2;
+            ctx.beginPath();
+            const anticlockwise = exitAngle > entryAngle;
+            ctx.arc(B.x, B.y, pulleyRadius - 1.5, entryAngle, exitAngle, anticlockwise);
+            ctx.stroke();
+
+            // 右侧段
+            ctx.beginPath();
+            ctx.moveTo(exitX, exitY);
+            ctx.lineTo(A.x, A.y);
+            ctx.stroke();
+
+            // 高光线
+            ctx.strokeStyle = 'rgba(255,150,150,0.4)'; ctx.lineWidth = 0.9;
+            ctx.beginPath(); ctx.moveTo(handPos.x, handPos.y + 0.6); ctx.lineTo(entryX, entryY + 0.6); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(exitX + 0.6, exitY + 0.6); ctx.lineTo(A.x + 0.6, A.y + 0.6); ctx.stroke();
+
+            drawHand(handPos);
+        }
+
+        function drawHand(pos) {
+            ctx.fillStyle = '#e0a070'; ctx.shadowColor = 'rgba(0,0,0,0.5)'; ctx.shadowBlur = 6;
+            ctx.beginPath(); ctx.roundRect(pos.x - 16, pos.y - 10, 32, 20, 8); ctx.fill();
+            ctx.shadowColor = 'transparent'; ctx.shadowBlur = 0;
+            ctx.strokeStyle = '#8b5a3c'; ctx.lineWidth = 2; ctx.stroke();
+            ctx.fillStyle = '#d18a5a';
+            for (let i = -8; i <= 8; i += 4) {
+                ctx.beginPath(); ctx.arc(pos.x + i, pos.y - 2, 3, 0, Math.PI, false); ctx.fill();
+            }
+            ctx.fillStyle = '#ff8888'; ctx.font = 'bold 12px "Segoe UI","PingFang SC",sans-serif';
+            ctx.textAlign = 'center'; ctx.fillText('手', pos.x, pos.y - 18);
+        }
+
+        // 力三角形绘制在重力右侧：重力从球心向下，N从重力末端沿杆方向（O→A）指向右上方，T从N末端沿绳方向（A→B）指回球心
+        function drawForceTriangleAtA(A, abLen) {
+            const scale = getForceScale();
+            const G_len = 95;
+            const N_len = rodLength * scale;
+            const T_len = abLen * scale;
+
+            // 方向：N 沿 O→A (从铰链指向小球)
+            const dxOA = A.x - O.x;
+            const dyOA = A.y - O.y;
+            const dOA = Math.sqrt(dxOA*dxOA + dyOA*dyOA);
+            const dirOx = dxOA / dOA;
+            const dirOy = dyOA / dOA;
+
+            // T 沿 A→B (从小球指向滑轮)
+            const dxAB = B.x - A.x;
+            const dyAB = B.y - A.y;
+            const dAB = Math.sqrt(dxAB*dxAB + dyAB*dyAB);
+            const dirABx = dxAB / dAB;
+            const dirABy = dyAB / dAB;
+
+            const P0 = { x: A.x, y: A.y };                     // 球心，重力起点
+            const P1 = { x: P0.x, y: P0.y + G_len };          // 重力末端
+            const P2 = {                                        // N末端 (P1 + N向量)
+                x: P1.x + N_len * dirOx,
+                y: P1.y + N_len * dirOy
+            };
+            // 验证闭合：P2 + T向量 ≈ P0 (T方向为A→B)
+            // 由于N_len和T_len根据相似比计算，理论上闭合
+
+            // 半透明填充
+            ctx.fillStyle = 'rgba(255,255,200,0.08)';
+            ctx.beginPath();
+            ctx.moveTo(P0.x, P0.y);
+            ctx.lineTo(P1.x, P1.y);
+            ctx.lineTo(P2.x, P2.y);
+            ctx.closePath();
+            ctx.fill();
+
+            // 绘制箭头
+            drawForceArrow(P0, P1, '#5b9bd5', 'G', 'left');   // 重力
+            drawForceArrow(P1, P2, '#999', 'N', 'right');     // 支持力
+            drawForceArrow(P2, P0, '#ff4444', 'T', 'right');  // 拉力
+
+            if (showSimilarityHighlight) {
+                ctx.fillStyle = 'rgba(255,220,100,0.9)';
+                ctx.font = 'italic bold 12px "Segoe UI","PingFang SC",sans-serif';
+                ctx.textAlign = 'left';
+                ctx.fillText('∽ 几何三角形 OAB', P0.x + 35, P0.y - 15);
+            }
+        }
+
+        function drawForceArrow(from, to, color, label, side) {
+            const dx = to.x - from.x;
+            const dy = to.y - from.y;
+            const len = Math.sqrt(dx*dx + dy*dy);
+            if (len < 2) return;
+            const ux = dx / len;
+            const uy = dy / len;
+            const head = 11;
+            const sx = to.x - ux * head;
+            const sy = to.y - uy * head;
+
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 3.2;
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            ctx.moveTo(from.x, from.y);
+            ctx.lineTo(sx, sy);
+            ctx.stroke();
+
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.moveTo(to.x, to.y);
+            ctx.lineTo(sx - uy * 6, sy + ux * 6);
+            ctx.lineTo(sx + uy * 6, sy - ux * 6);
+            ctx.closePath();
+            ctx.fill();
+
+            const off = 12;
+            let lx, ly;
+            if (side === 'left') {
+                lx = (from.x + to.x) / 2 - uy * off;
+                ly = (from.y + to.y) / 2 + ux * off;
+            } else {
+                lx = (from.x + to.x) / 2 + uy * off;
+                ly = (from.y + to.y) / 2 - ux * off;
+            }
+            ctx.fillStyle = color;
+            ctx.font = 'bold 13px "Segoe UI","PingFang SC",sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(label, lx, ly);
+        }
+
+        function drawAll() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            const A = getCurrentA();
+            if (!A) {
+                handX = (handXMin + handXMax) / 2;
+                const newA = getCurrentA();
+                if (!newA) return;
+                drawAllWithA(newA);
+                return;
+            }
+            drawAllWithA(A);
+        }
+
+        function drawAllWithA(A) {
+            const abLen = getABLen();
+            drawWall();
+            drawRod(A);
+            drawHinge();
+            drawPulley();
+            drawRope(A);
+            drawBall(A);
+            drawForceTriangleAtA(A, abLen);
+
+            ctx.fillStyle = '#aaa';
+            ctx.font = '12px "Segoe UI","PingFang SC",sans-serif';
+            ctx.textAlign = 'left';
+            ctx.fillText(`手水平位置: ${handX.toFixed(1)} px`, 18, 30);
+            ctx.fillText(`AB绳长: ${abLen.toFixed(1)} px`, 18, 50);
+        }
+
+        // ---------- 交互 ----------
+        function getMousePos(e) {
+            const rect = canvas.getBoundingClientRect();
+            return { x: (e.clientX - rect.left) * (canvas.width/rect.width), y: (e.clientY - rect.top) * (canvas.height/rect.height) };
+        }
+        function getTouchPos(e) {
+            if (!e.touches.length) return null;
+            const rect = canvas.getBoundingClientRect();
+            return { x: (e.touches[0].clientX - rect.left) * (canvas.width/rect.width), y: (e.touches[0].clientY - rect.top) * (canvas.height/rect.height) };
+        }
+        function isNearHand(pos) { return Math.abs(pos.x - handX) < 22 && Math.abs(pos.y - B.y) < 18; }
+        function isNearBall(pos, A) { return A && Math.hypot(pos.x-A.x, pos.y-A.y) < ballRadius+14; }
+
+        canvas.addEventListener('mousedown', e => {
+            const pos = getMousePos(e);
+            const A = getCurrentA();
+            if (A && isNearBall(pos, A)) { isDraggingBall = true; if(isAutoSwing){isAutoSwing=false;updateAutoButton();} }
+            else if (isNearHand(pos)) { isDraggingHand = true; if(isAutoSwing){isAutoSwing=false;updateAutoButton();} }
+        });
+        canvas.addEventListener('mousemove', e => {
+            const pos = getMousePos(e);
+            if (isDraggingHand) {
+                handX = Math.max(handXMin, Math.min(handXMax, pos.x));
+                drawAll();
+            } else if (isDraggingBall) {
+                const A = getCurrentA(); if (!A) return;
+                const angleRad = Math.atan2(O.y - pos.y, pos.x - O.x);
+                let angleDeg = Math.max(15, Math.min(65, angleRad * 180/Math.PI));
+                const newA = {
+                    x: O.x + rodLength * Math.cos(angleDeg * Math.PI/180),
+                    y: O.y - rodLength * Math.sin(angleDeg * Math.PI/180)
+                };
+                const newAB = Math.hypot(newA.x - B.x, newA.y - B.y);
+                const newHandX = B.x - (totalRopeLength - newAB);
+                if (newHandX >= handXMin && newHandX <= handXMax) {
+                    handX = newHandX;
+                    drawAll();
+                }
+            } else {
+                canvas.style.cursor = isNearHand(pos) ? 'ew-resize' : (getCurrentA() && isNearBall(pos, getCurrentA()) ? 'grab' : 'default');
+            }
+        });
+        canvas.addEventListener('mouseup', () => { isDraggingHand = isDraggingBall = false; canvas.style.cursor = 'default'; });
+        canvas.addEventListener('mouseleave', () => { isDraggingHand = isDraggingBall = false; canvas.style.cursor = 'default'; });
+        canvas.addEventListener('touchstart', e => {
+            e.preventDefault(); const pos = getTouchPos(e); if(!pos) return;
+            const A = getCurrentA();
+            if (A && isNearBall(pos, A)) { isDraggingBall = true; if(isAutoSwing){isAutoSwing=false;updateAutoButton();} }
+            else if (isNearHand(pos)) { isDraggingHand = true; if(isAutoSwing){isAutoSwing=false;updateAutoButton();} }
+        }, {passive: false});
+        canvas.addEventListener('touchmove', e => {
+            e.preventDefault(); const pos = getTouchPos(e); if(!pos) return;
+            if (isDraggingHand) {
+                handX = Math.max(handXMin, Math.min(handXMax, pos.x));
+                drawAll();
+            } else if (isDraggingBall) {
+                const A = getCurrentA(); if(!A) return;
+                const angleRad = Math.atan2(O.y - pos.y, pos.x - O.x);
+                let angleDeg = Math.max(15, Math.min(65, angleRad * 180/Math.PI));
+                const newA = {
+                    x: O.x + rodLength * Math.cos(angleDeg * Math.PI/180),
+                    y: O.y - rodLength * Math.sin(angleDeg * Math.PI/180)
+                };
+                const newAB = Math.hypot(newA.x - B.x, newA.y - B.y);
+                const newHandX = B.x - (totalRopeLength - newAB);
+                if (newHandX >= handXMin && newHandX <= handXMax) {
+                    handX = newHandX;
+                    drawAll();
+                }
+            }
+        }, {passive: false});
+        canvas.addEventListener('touchend', e => { e.preventDefault(); isDraggingHand = isDraggingBall = false; });
+
+        function updateAutoButton() {
+            btnAuto.textContent = isAutoSwing ? '🔁 自动摆动中' : '▶ 手动模式（拖动手或球）';
+            btnAuto.classList.toggle('paused', !isAutoSwing);
+        }
+        btnAuto.addEventListener('click', () => { isAutoSwing = !isAutoSwing; updateAutoButton(); if(isAutoSwing) swingTime = 0; });
+        btnReset.addEventListener('click', () => { handX = 150; swingTime = 0; if(!isAutoSwing){isAutoSwing=true;updateAutoButton();} drawAll(); });
+        btnHint.addEventListener('click', () => {
+            showSimilarityHighlight = !showSimilarityHighlight;
+            btnHint.textContent = showSimilarityHighlight ? '💡 隐藏相似关系' : '💡 显示相似关系';
+            btnHint.style.background = showSimilarityHighlight ? 'rgba(240,192,96,0.15)' : 'rgba(240,192,96,0.06)';
+            drawAll();
+        });
+
+        let lastTime = performance.now();
+        function animate(ts) {
+            const dt = Math.min((ts - lastTime)/1000, 0.1); lastTime = ts;
+            if (isAutoSwing && !isDraggingHand && !isDraggingBall) {
+                swingTime += dt;
+                handX = (handXMax+handXMin)/2 + (handXMax-handXMin)/2 * Math.sin(swingTime/swingPeriod*Math.PI*2);
+            }
+            drawAll();
+            requestAnimationFrame(animate);
+        }
+
+        updateAutoButton();
+        btnHint.textContent = showSimilarityHighlight ? '💡 隐藏相似关系' : '💡 显示相似关系';
+        drawAll();
+        requestAnimationFrame(animate);
+    })();
+</script>
+
+  <script>
+  // 返回主页（滚动位置已在主页点击链接时保存）
+  function saveScrollAndReturn() {
+    window.location.href = '../index.html';
+  }
+  
+  // 禁用右键菜单
+  document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+  });
+  
+  // 禁用开发者工具快捷键
+  document.addEventListener('keydown', function(e) {
+    // ESC返回主页 - 保存滚动位置
+    if (e.keyCode === 27) {
+      saveScrollAndReturn();
+      return false;
+    }
+    // F12
+    if (e.keyCode === 123) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+U
+    if (e.ctrlKey && e.keyCode === 85) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+I
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 73) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+J
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 74) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+C
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 67) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+S
+    if (e.ctrlKey && e.keyCode === 83) {
+      e.preventDefault();
+      return false;
+    }
+  });
+  
+  // 禁用选择
+  document.addEventListener('selectstart', function(e) {
+    // 允许输入框选择
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+      return true;
+    }
+    e.preventDefault();
+    return false;
+  });
+  </script>
+</body>
+</html>
