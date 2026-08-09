@@ -1,0 +1,882 @@
+<!doctype html>
+<html lang="zh-CN">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>万有引力变轨模拟器：霍曼转移演示</title>
+  <style>
+        * {
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            background: linear-gradient(145deg, #0a0f1e 0%, #0c1222 100%);
+            display: flex;
+            justify-content: flex-start;
+            align-items: center;
+            font-family: 'Segoe UI', 'Poppins', 'Orbitron', 'Courier New', monospace;
+            padding: 20px 0 20px 20px;
+        }
+
+        .sim-card {
+            background: rgba(10, 20, 30, 0.65);
+            backdrop-filter: blur(4px);
+            border-radius: 2.5rem;
+            box-shadow: 0 25px 45px rgba(0, 0, 0, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.1);
+            padding: 1.2rem;
+            border: 1px solid rgba(72, 187, 255, 0.25);
+            display: flex;
+            flex-direction: row;
+            align-items: flex-start;
+            gap: 0.8rem;
+        }
+
+        canvas {
+            display: block;
+            margin: 0;
+            border-radius: 1.8rem;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5), inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+            background: #010314;
+            cursor: crosshair;
+            width: 100%;
+            height: auto;
+        }
+
+        .controls {
+            background: rgba(0, 5, 15, 0.75);
+            backdrop-filter: blur(12px);
+            border-radius: 1.8rem;
+            padding: 1.2rem 1.4rem;
+            min-width: 260px;
+            border: 1px solid rgba(0, 255, 255, 0.2);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+            flex-shrink: 0;
+        }
+
+        .panel-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            text-align: center;
+            margin-bottom: 1rem;
+            color: #7df9ff;
+            text-shadow: 0 0 5px #00ccff;
+            letter-spacing: 1px;
+            border-bottom: 1px dashed #2c5a7a;
+            display: inline-block;
+            width: 100%;
+        }
+
+        .button-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin: 12px 0;
+            align-items: stretch;
+        }
+
+        button {
+            background: #101f2e;
+            border: none;
+            font-family: inherit;
+            font-weight: 600;
+            font-size: 0.85rem;
+            padding: 10px 14px;
+            border-radius: 3rem;
+            color: #e2f0ff;
+            cursor: pointer;
+            transition: 0.2s;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(4px);
+            border: 1px solid #2f6080;
+            width: 100%;
+        }
+
+        button.primary {
+            background: #1e4a6b;
+            border-color: #3cc0ff;
+            color: white;
+            text-shadow: 0 0 3px cyan;
+        }
+
+        button.warning {
+            background: #5a3e1f;
+            border-color: #ffb347;
+        }
+
+        button.danger {
+            background: #4a1e2a;
+            border-color: #ff6f6f;
+        }
+
+        button.success {
+            background: #0f4c3a;
+            border-color: #3ae0a0;
+        }
+
+        button.neutral {
+            background: #2a2f3f;
+            border-color: #7f8c9a;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            filter: brightness(1.1);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
+        }
+
+        button:active {
+            transform: translateY(1px);
+        }
+
+        /* 按钮点击高亮闪烁动画 */
+        @keyframes btnFlash {
+            0% { filter: brightness(1); }
+            50% { filter: brightness(1.7); box-shadow: 0 0 18px currentColor; }
+            100% { filter: brightness(1); }
+        }
+        .btn-flash {
+            animation: btnFlash 0.4s ease-out;
+        }
+
+        .info-note {
+            font-size: 0.7rem;
+            text-align: center;
+            color: #6e9fbb;
+            margin-top: 12px;
+            border-top: 1px solid #1f4058;
+            padding-top: 8px;
+        }
+
+        @media (max-width: 780px) {
+            .sim-card {
+                flex-direction: column;
+            }
+            .controls {
+                width: 90%;
+                margin: 0 auto;
+            }
+            button {
+                padding: 8px 12px;
+                font-size: 0.75rem;
+            }
+        }
+    </style>
+  <meta name="copyright" content="学科网（zxxk.com）版权所有">
+  <meta name="signature" content="QQABYYKQogigAAIAABhCAQWgCgOYkgCAAKgGQAAcoAAAiBNABAA=">
+ 
+  <style>
+  body {
+    background-color: #1a2332 !important;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+  }
+  
+  .qilai-back-btn {
+    position: fixed;
+    top: 10px;
+    left: 15px;
+    z-index: 100000;
+    padding: 8px 16px;
+    background: rgba(0, 150, 200, 0.2);
+    border: 1px solid rgba(100, 180, 255, 0.5);
+    color: #8ab4f8;
+    font-size: 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.3s;
+    backdrop-filter: blur(5px);
+    font-family: "Microsoft YaHei", sans-serif;
+  }
+  
+  .qilai-back-btn:hover {
+    background: rgba(0, 150, 200, 0.4);
+    box-shadow: 0 0 15px rgba(100, 180, 255, 0.3);
+    color: #fff;
+  }
+  
+  .qilai-watermark {
+    position: fixed;
+    bottom: 15px;
+    right: 15px;
+    z-index: 99998;
+    font-size: 12px;
+    color: rgba(138, 180, 248, 0.35);
+    text-align: right;
+    line-height: 1.8;
+    pointer-events: none;
+    user-select: none;
+    font-family: "Microsoft YaHei", sans-serif;
+  }
+  
+  .qilai-watermark .title {
+    font-size: 14px;
+    font-weight: bold;
+    color: rgba(138, 180, 248, 0.45);
+    margin-bottom: 4px;
+    letter-spacing: 1px;
+  }
+  </style>
+</head>
+ <body>
+  <a href="javascript:void(0);" class="qilai-back-btn" onclick="saveScrollAndReturn();">← 返回主页</a>
+  
+  <div class="qilai-watermark">
+    <div class="title">齐老师动画</div>
+    QQ 3398528250<br>
+    抖音 35320300542
+  </div>
+
+  <div class="sim-card">
+    <canvas id="orbitCanvas" width="900" height="600" style="width:100%; height:auto; max-width:900px; aspect-ratio:900/600"></canvas>
+    <div class="controls">
+     <div class="panel-title">
+      齐老师动画
+     </div>
+     <div class="button-group">
+      <button id="btnHohmann1" class="success">✨ 第一次点火加速</button>
+      <button id="btnHohmann2" class="primary">🔥 第二次点火加速</button>
+      <button id="btnReset" class="danger">🔄 重置 (低圆轨道)</button>
+      <button id="btnClearTrail" class="neutral">🗑️ 清空轨迹</button>
+      <button id="btnPause" class="">⏸️ 暂停/运行</button>
+      <button id="btnSpeed" class="neutral">⏩ 倍速 1x</button>
+     </div>
+     <div class="info-note">
+      💡 <strong>霍曼变轨原理</strong>：低轨第一次点火加速 → 进入椭圆转移轨道 → 远地点第二次点火加速 → 进入外侧高圆轨道。
+      <br>
+       🎯 先点击【第一次点火加速】进入椭圆轨道，再点击【第二次点火加速】，卫星将自动在远地点完成变轨。
+      <br>
+       ✨ 轨迹分色显示：<span style="color:#98e898">低圆轨</span> / <span style="color:#ffd766">转移椭圆</span> / <span style="color:#7bc8ff">高圆轨</span>
+     </div><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABsAAAAcCAIAAAAfs1O6AAAAsUlEQVR4nO2T2xKDIAxEs5b/Ll9u6siICSRcbB/6wI7DIISTkFUwM9Hx4BrJeqVqLheVcBI9eVvQWWUYXjG+regpQYwUqpxTFAOKq4/dM6PKNWaxmDzpQNAU0p7WuJbLSdmZHNGuC92YgxibOU0H0sQ8gkw0C5G1DBpVfo+SJWtp49TuppeK7rBvURF2K926Y9+YIIle++sz7q9yLzHv3bRTCl9fttT2W9wiLuIi/gHxA3QdNdBqUvVIAAAAAElFTkSuQmCC" style="position: absolute; left: -99999px; top: -99999px; opacity: 0; pointer-events: none; width: 1px; height: 1px;">
+    </div>
+  </div>
+  <script>
+    (function(){
+        // ---------- 物理常量 ----------
+        const G = 1.0;
+        const M = 800.0;
+        const GM = G * M;
+        
+        // 中心天体半径
+        const CENTER_RADIUS = 6.0;
+        const COLLIDE_RADIUS = CENTER_RADIUS + 0.25;
+        
+        // 初始轨道条件
+        const INIT_RADIUS = 10.0;
+        const CIRCULAR_VEL = Math.sqrt(GM / INIT_RADIUS);
+        const TARGET_HIGH_RADIUS = 20.0;
+        
+        // 模拟时间相关 - 变步长积分
+        let timeScale = 1;
+        let jetTimer = 0;
+        let secondBurnScheduled = false;
+        
+        // 轨道阶段：0=低圆轨道 1=椭圆转移轨道 2=高圆轨道
+        let currentOrbitPhase = 0;
+        const phaseColors = {
+            0: { main: '#98e898', glow: '#4ade80' },
+            1: { main: '#ffd766', glow: '#fbbf24' },
+            2: { main: '#7bc8ff', glow: '#38bdf8' }
+        };
+        
+        // 卫星状态
+        let pos = { x: INIT_RADIUS, y: 0 };
+        let vel = { x: 0, y: CIRCULAR_VEL };
+        
+        // 轨迹存储 + 性能限制
+        let trailPoints = [];
+        const MAX_TRAIL_POINTS = 20000; // 轨迹点上限，防止卡顿
+        let trailSampleCounter = 0;
+        const TRAIL_SAMPLE_RATE = 2; // 每N步采样1个轨迹点
+        
+        // 控制标志
+        let simulationRunning = true;
+        
+        // 轨道极值
+        let minRadius = INIT_RADIUS;
+        let maxRadius = INIT_RADIUS;
+        
+        // Canvas相关
+        const canvas = document.getElementById('orbitCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // 视图变换参数 + 星空离屏缓存
+        let viewScale = 1;
+        let starCacheCanvas = document.createElement('canvas');
+        let starCacheCtx = starCacheCanvas.getContext('2d');
+        
+        function updateViewScale() {
+            const w = canvas.width;
+            const h = canvas.height;
+            const physRange = 25.5;
+            const scaleX = w / (physRange * 2);
+            const scaleY = h / (physRange * 2);
+            viewScale = Math.min(scaleX, scaleY);
+            rebuildStarCache(); // 视图变化时重新生成星空缓存
+        }
+        
+        // 预渲染星空到离屏画布，避免每帧重复绘制
+        function rebuildStarCache() {
+            const w = canvas.width;
+            const h = canvas.height;
+            starCacheCanvas.width = w;
+            starCacheCanvas.height = h;
+            starCacheCtx.fillStyle = "#010314";
+            starCacheCtx.fillRect(0, 0, w, h);
+            starCacheCtx.globalAlpha = 0.6;
+            for(let i=0;i<300;i++){
+                if(i%2 === 0) continue;
+                starCacheCtx.fillStyle = `rgba(255,240,200,${Math.random()*0.3+0.1})`;
+                starCacheCtx.fillRect( (i*131)%w, (i*253)%h, 1.2, 1.2);
+            }
+            starCacheCtx.globalAlpha = 1;
+        }
+        
+        // 物理->屏幕坐标
+        function physToScreen(physX, physY) {
+            const w = canvas.width;
+            const h = canvas.height;
+            const cx = w / 2;
+            const cy = h / 2;
+            return {
+                x: cx + physX * viewScale,
+                y: cy - physY * viewScale
+            };
+        }
+        
+        // 计算加速度
+        function computeAcceleration(p) {
+            const r2 = p.x*p.x + p.y*p.y;
+            const r = Math.sqrt(r2);
+            if (r < 0.1) return { x: 0, y: 0 };
+            const factor = -GM / (r2 * r);
+            return { x: factor * p.x, y: factor * p.y };
+        }
+        
+        // 圆化轨道（远地点第二次点火）
+        function circularizeOrbit() {
+            if (!simulationRunning) return;
+            const r = Math.hypot(pos.x, pos.y);
+            if (r < CENTER_RADIUS + 0.2) return;
+            const v_circ = Math.sqrt(GM / r);
+            const rx = pos.x / r;
+            const ry = pos.y / r;
+            const tangentCCW = { x: -ry, y: rx };
+            const tangentCW = { x: ry, y: -rx };
+            let chosenTangent = tangentCCW;
+            const dotCCW = vel.x * tangentCCW.x + vel.y * tangentCCW.y;
+            const dotCW = vel.x * tangentCW.x + vel.y * tangentCW.y;
+            if (dotCW > dotCCW) chosenTangent = tangentCW;
+            vel.x = chosenTangent.x * v_circ;
+            vel.y = chosenTangent.y * v_circ;
+        }
+        
+        // 半隐式欧拉积分 - 核心优化：变步长
+        function integrate(dt) {
+            const rCurr = Math.hypot(pos.x, pos.y);
+            if (rCurr < COLLIDE_RADIUS) {
+                if(simulationRunning){
+                    simulationRunning = false;
+                    alert("⚠️ 卫星坠毁! 点击「重置」重新发射 🚀");
+                }
+                return;
+            }
+            
+            // --------------------------
+            // 核心优化：变步长积分
+            // 根据轨道曲率（径向速度）动态调整积分步长
+            // --------------------------
+            const r = Math.hypot(pos.x, pos.y);
+            const radialVel = (pos.x * vel.x + pos.y * vel.y) / r; // 径向速度
+            const adaptiveStep = Math.min(0.01, Math.max(0.001, Math.abs(radialVel) * 0.5)); // 动态步长
+            // 轨道越平缓（径向速度越小），步长越大，保证速度
+            // 轨道越弯曲（径向速度越大，如过近/远地点），步长越小，保证精度
+            
+            let remainingTime = dt;
+            while (remainingTime > 0) {
+                const step = Math.min(adaptiveStep, remainingTime);
+                
+                const acc = computeAcceleration(pos);
+                // 速度更新
+                vel.x += acc.x * step;
+                vel.y += acc.y * step;
+                // 位置更新
+                pos.x += vel.x * step;
+                pos.y += vel.y * step;
+                
+                remainingTime -= step;
+            }
+            
+            // --------------------------
+            // 核心优化：圆形轨道速度修正
+            // 当处于圆轨道阶段时，周期性修正速度，确保轨道完美闭合
+            // --------------------------
+            if (currentOrbitPhase === 0 || currentOrbitPhase === 2) {
+                const r_new = Math.hypot(pos.x, pos.y);
+                const expectedVel = Math.sqrt(GM / r_new);
+                const currentVel = Math.hypot(vel.x, vel.y);
+                // 小幅度修正，避免突变
+                if (Math.abs(currentVel - expectedVel) > 0.01) {
+                    const ratio = expectedVel / currentVel;
+                    vel.x *= ratio;
+                    vel.y *= ratio;
+                }
+            }
+            
+            if (r < minRadius) minRadius = r;
+            if (r > maxRadius) maxRadius = r;
+            if(minRadius < CENTER_RADIUS) minRadius = CENTER_RADIUS;
+            
+            // 检测第二次点火触发条件
+            if (secondBurnScheduled) {
+                const r_new = Math.hypot(pos.x, pos.y);
+                const radialVel_new = (pos.x * vel.x + pos.y * vel.y) / r_new;
+                if (radialVel_new <= 0.01 && r_new >= TARGET_HIGH_RADIUS * 0.96) {
+                    circularizeOrbit();
+                    secondBurnScheduled = false;
+                    jetTimer = 0.9;
+                    currentOrbitPhase = 2;
+                }
+            }
+        }
+        
+        // 重置状态
+        function resetSimulation() {
+            pos = { x: INIT_RADIUS, y: 0 };
+            vel = { x: 0, y: CIRCULAR_VEL };
+            trailPoints = [];
+            trailSampleCounter = 0;
+            currentOrbitPhase = 0;
+            addTrailPoint(pos.x, pos.y);
+            minRadius = INIT_RADIUS;
+            maxRadius = INIT_RADIUS;
+            simulationRunning = true;
+            secondBurnScheduled = false;
+            jetTimer = 0;
+            draw();
+        }
+        
+        // 仅清空轨迹
+        function clearTrailOnly() {
+            trailPoints = [];
+            trailSampleCounter = 0;
+            addTrailPoint(pos.x, pos.y);
+            draw();
+        }
+        
+        // 添加轨迹点（带采样 + 上限控制）
+        function addTrailPoint(x, y) {
+            trailSampleCounter++;
+            if (trailSampleCounter < TRAIL_SAMPLE_RATE) return;
+            trailSampleCounter = 0;
+            
+            trailPoints.push({ x, y, phase: currentOrbitPhase });
+            // 超出上限时删除最早的点
+            if (trailPoints.length > MAX_TRAIL_POINTS) {
+                trailPoints.splice(0, trailPoints.length - MAX_TRAIL_POINTS);
+            }
+        }
+        
+        // 第一次点火（霍曼转移近地点加速）
+        function applyHohmannTransferBoost() {
+            if (!simulationRunning) return;
+            const r_current = Math.hypot(pos.x, pos.y);
+            const a_trans = (r_current + TARGET_HIGH_RADIUS) / 2;
+            const v_circ_current = Math.sqrt(GM / r_current);
+            const deltaV_ideal = v_circ_current * ( Math.sqrt(2 * TARGET_HIGH_RADIUS / (r_current + TARGET_HIGH_RADIUS)) - 1 );
+            if (deltaV_ideal <= 0) return;
+            const spd = Math.hypot(vel.x, vel.y);
+            if (spd > 0.01) {
+                const tx = vel.x / spd;
+                const ty = vel.y / spd;
+                vel.x += tx * deltaV_ideal;
+                vel.y += ty * deltaV_ideal;
+            } else {
+                const angle = Math.atan2(pos.y, pos.x);
+                const tangentX = -Math.sin(angle);
+                const tangentY = Math.cos(angle);
+                vel.x += tangentX * deltaV_ideal;
+                vel.y += tangentY * deltaV_ideal;
+            }
+            jetTimer = 0.9;
+            currentOrbitPhase = 1;
+        }
+        
+        // 预约第二次点火
+        function scheduleSecondBurn() {
+            if (!simulationRunning) return;
+            secondBurnScheduled = true;
+        }
+        
+        // 切换倍速
+        function toggleSpeed() {
+            if (timeScale === 1) timeScale = 2;
+            else if (timeScale === 2) timeScale = 4;
+            else if (timeScale === 4) timeScale = 8;
+            else timeScale = 1;
+            document.getElementById('btnSpeed').innerText = `⏩ 倍速 ${timeScale}x`;
+        }
+        
+        // 暂停/恢复
+        function togglePause() {
+            simulationRunning = !simulationRunning;
+        }
+
+        // 按钮闪烁反馈
+        function flashButton(btn) {
+            btn.classList.add('btn-flash');
+            setTimeout(() => btn.classList.remove('btn-flash'), 400);
+        }
+        
+        // 绘图函数
+        function draw() {
+            if (!ctx) return;
+            const w = canvas.width;
+            const h = canvas.height;
+            ctx.clearRect(0, 0, w, h);
+            
+            // 直接粘贴缓存的星空背景，避免每帧循环绘制
+            ctx.drawImage(starCacheCanvas, 0, 0);
+            
+            // 绘制分阶段轨迹
+            if(trailPoints.length > 1) {
+                let segments = [];
+                let currentPhase = trailPoints[0].phase;
+                let segStart = 0;
+                for (let i = 1; i < trailPoints.length; i++) {
+                    if (trailPoints[i].phase !== currentPhase) {
+                        segments.push({ start: segStart, end: i-1, phase: currentPhase });
+                        currentPhase = trailPoints[i].phase;
+                        segStart = i;
+                    }
+                }
+                segments.push({ start: segStart, end: trailPoints.length-1, phase: currentPhase });
+
+                // 单层轨迹绘制（移除高开销的第二层描边）
+                segments.forEach(seg => {
+                    const color = phaseColors[seg.phase];
+                    ctx.beginPath();
+                    ctx.lineWidth = 2;
+                    ctx.lineCap = 'round';
+                    ctx.lineJoin = 'round';
+                    ctx.shadowBlur = 2;
+                    ctx.shadowColor = color.glow;
+                    const first = physToScreen(trailPoints[seg.start].x, trailPoints[seg.start].y);
+                    ctx.moveTo(first.x, first.y);
+                    for (let i = seg.start + 1; i <= seg.end; i++) {
+                        const p = physToScreen(trailPoints[i].x, trailPoints[i].y);
+                        ctx.lineTo(p.x, p.y);
+                    }
+                    ctx.strokeStyle = color.main;
+                    ctx.stroke();
+                });
+                ctx.shadowBlur = 0;
+            }
+            
+            // 绘制中心天体
+            const centerScreen = physToScreen(0, 0);
+            const radiusPx = CENTER_RADIUS * viewScale;
+            const grad = ctx.createRadialGradient(centerScreen.x-5, centerScreen.y-5, 5, centerScreen.x, centerScreen.y, radiusPx+3);
+            grad.addColorStop(0, '#87ceeb');
+            grad.addColorStop(0.7, '#1e90ff');
+            grad.addColorStop(1, '#0066cc');
+            ctx.shadowBlur = 20;
+            ctx.shadowColor = "#87cefa";
+            ctx.beginPath();
+            ctx.arc(centerScreen.x, centerScreen.y, radiusPx, 0, Math.PI*2);
+            ctx.fillStyle = grad;
+            ctx.fill();
+            ctx.shadowBlur = 10;
+            ctx.beginPath();
+            ctx.arc(centerScreen.x, centerScreen.y, radiusPx*0.85, 0, Math.PI*2);
+            ctx.fillStyle = "#b0e0e6";
+            ctx.fill();
+            ctx.shadowBlur = 0;
+            
+            // 地球文字
+            ctx.font = `bold ${radiusPx*0.6}px 'Segoe UI', sans-serif`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+            ctx.shadowBlur = 6;
+            ctx.shadowColor = '#87ceeb';
+            ctx.fillText('地球', centerScreen.x, centerScreen.y);
+            ctx.shadowBlur = 0;
+            
+            // 绘制航天器
+            const satScreen = physToScreen(pos.x, pos.y);
+            ctx.save();
+            ctx.translate(satScreen.x, satScreen.y);
+            
+            const screenVelY = -vel.y;
+            const tangentAngle = Math.atan2(screenVelY, vel.x);
+            ctx.rotate(tangentAngle);
+            
+            // 尾部喷气
+            if (jetTimer > 0) {
+                const flameLength = 80 * (jetTimer / 0.9);
+                ctx.beginPath();
+                ctx.moveTo(-8, 0);
+                ctx.lineTo(-8 - flameLength, -12);
+                ctx.lineTo(-8 - flameLength * 0.75, 0);
+                ctx.lineTo(-8 - flameLength, 12);
+                ctx.closePath();
+                const flameGradOuter = ctx.createLinearGradient(-8, 0, -8 - flameLength, 0);
+                flameGradOuter.addColorStop(0, 'rgba(255, 200, 50, 0.9)');
+                flameGradOuter.addColorStop(0.4, 'rgba(255, 120, 0, 0.7)');
+                flameGradOuter.addColorStop(1, 'rgba(255, 50, 0, 0)');
+                ctx.fillStyle = flameGradOuter;
+                ctx.shadowBlur = 20;
+                ctx.shadowColor = '#ff7700';
+                ctx.fill();
+                
+                ctx.beginPath();
+                ctx.moveTo(-8, 0);
+                ctx.lineTo(-8 - flameLength * 0.6, -5);
+                ctx.lineTo(-8 - flameLength * 0.45, 0);
+                ctx.lineTo(-8 - flameLength * 0.6, 5);
+                ctx.closePath();
+                const flameGradInner = ctx.createLinearGradient(-8, 0, -8 - flameLength * 0.6, 0);
+                flameGradInner.addColorStop(0, '#ffffff');
+                flameGradInner.addColorStop(0.5, '#fff2b0');
+                flameGradInner.addColorStop(1, 'rgba(255, 220, 100, 0)');
+                ctx.fillStyle = flameGradInner;
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = '#ffee88';
+                ctx.fill();
+                ctx.shadowBlur = 0;
+            }
+            
+            ctx.shadowBlur = 6;
+            ctx.shadowColor = "#3cc";
+            // 主体舱体
+            ctx.beginPath();
+            ctx.ellipse(0, 0, 8, 5, 0, 0, Math.PI*2);
+            ctx.fillStyle = "#2c3e50";
+            ctx.fill();
+            ctx.beginPath();
+            ctx.ellipse(0, 0, 7, 4, 0, 0, Math.PI*2);
+            ctx.fillStyle = "#34495e";
+            ctx.fill();
+            // 前端整流罩
+            ctx.beginPath();
+            ctx.moveTo(6, 0);
+            ctx.lineTo(10, -3);
+            ctx.lineTo(10, 3);
+            ctx.closePath();
+            ctx.fillStyle = "#7f8c8d";
+            ctx.fill();
+            // 太阳能板
+            ctx.fillStyle = "#1abc9c";
+            ctx.beginPath();
+            ctx.rect(-15, -8, 12, 16);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.rect(3, -8, 12, 16);
+            ctx.fill();
+            // 太阳能板条纹
+            ctx.fillStyle = "#16a085";
+            ctx.beginPath();
+            ctx.rect(-15, -6, 12, 3);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.rect(-15, 0, 12, 3);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.rect(-15, 6, 12, 3);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.rect(3, -6, 12, 3);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.rect(3, 0, 12, 3);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.rect(3, 6, 12, 3);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+            
+            ctx.restore();
+            
+            // 参考圆
+            const targetHighPx = TARGET_HIGH_RADIUS * viewScale;
+            ctx.beginPath();
+            ctx.arc(centerScreen.x, centerScreen.y, targetHighPx, 0, Math.PI*2);
+            ctx.strokeStyle = "rgba(60, 200, 255, 0.35)";
+            ctx.setLineDash([8, 12]);
+            ctx.lineWidth = 1.2;
+            ctx.stroke();
+            const initOrbitPx = INIT_RADIUS * viewScale;
+            ctx.beginPath();
+            ctx.arc(centerScreen.x, centerScreen.y, initOrbitPx, 0, Math.PI*2);
+            ctx.strokeStyle = "rgba(150, 220, 100, 0.35)";
+            ctx.stroke();
+            ctx.setLineDash([]);
+            
+            // 标注文字
+            ctx.font = "bold 12px 'Segoe UI', monospace";
+            ctx.shadowBlur = 0;
+            if(targetHighPx > 20){
+                ctx.fillStyle = "#5f9fff";
+                ctx.fillText("目标高轨", centerScreen.x - targetHighPx + 5, centerScreen.y - 8);
+            }
+        }
+        
+        // 物理更新循环
+        let lastFrameTime = null;
+        function updatePhysics(deltaTimeSec) {
+            deltaTimeSec *= timeScale;
+            
+            if (jetTimer > 0) {
+                jetTimer -= deltaTimeSec;
+                if (jetTimer < 0) jetTimer = 0;
+            }
+            
+            if (!simulationRunning) return;
+            if (deltaTimeSec > 0.033 * timeScale) deltaTimeSec = 0.033 * timeScale;
+            
+            integrate(deltaTimeSec);
+            addTrailPoint(pos.x, pos.y);
+        }
+        
+        // 动画循环
+        function animationFrame(nowMs) {
+            if (!lastFrameTime) {
+                lastFrameTime = nowMs;
+                requestAnimationFrame(animationFrame);
+                return;
+            }
+            let delta = Math.min(0.033, (nowMs - lastFrameTime) / 1000);
+            if (delta > 0.001) {
+                updatePhysics(delta);
+                draw();
+            }
+            lastFrameTime = nowMs;
+            requestAnimationFrame(animationFrame);
+        }
+        
+        // 窗口尺寸适配
+        function resizeCanvas() {
+            const maxWidth = Math.min(900, window.innerWidth - 320);
+            canvas.style.width = `${maxWidth}px`;
+            canvas.width = maxWidth;
+            canvas.height = maxWidth * 0.66;
+            updateViewScale();
+            draw();
+        }
+        
+        // 初始化UI事件
+        function bindEvents() {
+            document.getElementById('btnHohmann1').addEventListener('click', (e) => {
+                applyHohmannTransferBoost();
+                flashButton(e.target);
+            });
+            document.getElementById('btnHohmann2').addEventListener('click', (e) => {
+                scheduleSecondBurn();
+                flashButton(e.target);
+            });
+            document.getElementById('btnSpeed').addEventListener('click', (e) => {
+                toggleSpeed();
+                flashButton(e.target);
+            });
+            document.getElementById('btnReset').addEventListener('click', (e) => {
+                resetSimulation();
+                flashButton(e.target);
+            });
+            document.getElementById('btnClearTrail').addEventListener('click', (e) => {
+                clearTrailOnly();
+                flashButton(e.target);
+            });
+            document.getElementById('btnPause').addEventListener('click', (e) => {
+                togglePause();
+                const btn = e.target;
+                btn.innerHTML = simulationRunning ? "⏸️ 暂停/运行" : "▶️ 启动";
+                flashButton(btn);
+            });
+            window.addEventListener('resize', () => {
+                resizeCanvas();
+                draw();
+            });
+        }
+        
+        // 初始化
+        function init() {
+            resizeCanvas();
+            resetSimulation();
+            bindEvents();
+            draw();
+            lastFrameTime = null;
+            requestAnimationFrame(animationFrame);
+        }
+        
+        init();
+    })();
+  </script>
+ 
+  <script>
+  // 返回主页（滚动位置已在主页点击链接时保存）
+  function saveScrollAndReturn() {
+    window.location.href = '../index.html';
+  }
+  
+  // 禁用右键菜单
+  document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+  });
+  
+  // 禁用开发者工具快捷键
+  document.addEventListener('keydown', function(e) {
+    // ESC返回主页 - 保存滚动位置
+    if (e.keyCode === 27) {
+      saveScrollAndReturn();
+      return false;
+    }
+    // F12
+    if (e.keyCode === 123) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+U
+    if (e.ctrlKey && e.keyCode === 85) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+I
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 73) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+J
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 74) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+C
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 67) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+S
+    if (e.ctrlKey && e.keyCode === 83) {
+      e.preventDefault();
+      return false;
+    }
+  });
+  
+  // 禁用选择
+  document.addEventListener('selectstart', function(e) {
+    // 允许输入框选择
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+      return true;
+    }
+    e.preventDefault();
+    return false;
+  });
+  </script>
+</body>
+</html>
