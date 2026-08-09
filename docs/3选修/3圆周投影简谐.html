@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, maximum-scale=2.0, minimum-scale=0.5">
+  <title>圆周投影·简谐运动 | 大片级物理可视化</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: radial-gradient(circle at 20% 20%, #0a0f1a, #03050a);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Inter', 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', system-ui, sans-serif;
+      padding: 20px;
+      margin: 0;
+    }
+
+    .canvas-wrapper {
+      position: relative;
+      border-radius: 2.5rem;
+      background: rgba(12, 20, 35, 0.7);
+      backdrop-filter: blur(20px);
+      box-shadow: 0 30px 50px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.08), inset 0 0 40px rgba(0, 160, 255, 0.15);
+      padding: 15px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      transition: all 0.3s ease;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: auto;
+      border-radius: 2rem;
+      background: #050a14;
+      box-shadow: inset 0 0 80px rgba(0, 100, 255, 0.2);
+      touch-action: none;
+      cursor: default;
+    }
+
+    .control-panel {
+      width: 100%;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+      margin-top: 18px;
+      padding: 10px 20px;
+      background: rgba(8, 15, 28, 0.6);
+      backdrop-filter: blur(18px);
+      border-radius: 60px;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      box-shadow: 0 15px 30px rgba(0,0,0,0.6);
+    }
+
+    .slider-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: #ccddee;
+      font-weight: 500;
+      letter-spacing: 0.5px;
+      background: rgba(255,255,255,0.05);
+      padding: 6px 18px;
+      border-radius: 40px;
+      backdrop-filter: blur(5px);
+    }
+
+    .slider-group label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.9rem;
+      white-space: nowrap;
+    }
+
+    .slider-group input[type="range"] {
+      width: 110px;
+      height: 5px;
+      -webkit-appearance: none;
+      background: linear-gradient(to right, #00c8ff, #6a4ef0);
+      border-radius: 5px;
+      outline: none;
+      cursor: pointer;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 20px;
+      height: 20px;
+      background: white;
+      border-radius: 50%;
+      box-shadow: 0 0 20px #00a6ff, 0 0 8px #ffffff;
+      border: 2px solid #ffffff;
+      transition: 0.2s;
+    }
+
+    .value-badge {
+      background: #0b1525;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-weight: 600;
+      color: #7dd3fc;
+      min-width: 65px;
+      text-align: center;
+      font-size: 0.9rem;
+      border: 1px solid #2e4060;
+    }
+
+    button {
+      background: rgba(20, 35, 60, 0.7);
+      border: 1px solid rgba(100, 180, 255, 0.3);
+      color: #e0f0ff;
+      padding: 10px 20px;
+      border-radius: 40px;
+      font-weight: 600;
+      font-size: 0.9rem;
+      letter-spacing: 0.8px;
+      backdrop-filter: blur(10px);
+      cursor: pointer;
+      transition: all 0.25s;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+      white-space: nowrap;
+    }
+
+    button:hover {
+      background: #1e3b5a;
+      border-color: #6bb5ff;
+      box-shadow: 0 0 18px #0077ff80;
+      color: white;
+    }
+
+    button.active {
+      background: #0066cc;
+      border-color: #99ccff;
+      box-shadow: 0 0 25px #0066ff;
+    }
+
+    .legend {
+      display: flex;
+      gap: 20px;
+      color: #a0b8d0;
+      font-size: 0.8rem;
+      margin-left: 10px;
+      flex-wrap: wrap;
+    }
+
+    .legend span {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    @media (max-width: 750px) {
+      .control-panel {
+        gap: 12px;
+        padding: 12px;
+      }
+      .slider-group {
+        padding: 4px 12px;
+      }
+      button {
+        padding: 8px 14px;
+      }
+    }
+  </style>
+
+  <style>
+  body {
+    background-color: #1a2332 !important;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+  }
+  
+  .qilai-back-btn {
+    position: fixed;
+    top: 10px;
+    left: 15px;
+    z-index: 100000;
+    padding: 8px 16px;
+    background: rgba(0, 150, 200, 0.2);
+    border: 1px solid rgba(100, 180, 255, 0.5);
+    color: #8ab4f8;
+    font-size: 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.3s;
+    backdrop-filter: blur(5px);
+    font-family: "Microsoft YaHei", sans-serif;
+  }
+  
+  .qilai-back-btn:hover {
+    background: rgba(0, 150, 200, 0.4);
+    box-shadow: 0 0 15px rgba(100, 180, 255, 0.3);
+    color: #fff;
+  }
+  
+  .qilai-watermark {
+    position: fixed;
+    bottom: 15px;
+    right: 15px;
+    z-index: 99998;
+    font-size: 12px;
+    color: rgba(138, 180, 248, 0.35);
+    text-align: right;
+    line-height: 1.8;
+    pointer-events: none;
+    user-select: none;
+    font-family: "Microsoft YaHei", sans-serif;
+  }
+  
+  .qilai-watermark .title {
+    font-size: 14px;
+    font-weight: bold;
+    color: rgba(138, 180, 248, 0.45);
+    margin-bottom: 4px;
+    letter-spacing: 1px;
+  }
+  </style>
+</head>
+<body>
+  <a href="javascript:void(0);" class="qilai-back-btn" onclick="saveScrollAndReturn();">← 返回主页</a>
+  
+  <div class="qilai-watermark">
+    <div class="title">齐老师动画</div>
+    QQ 3398528250<br>
+    抖音 35320300542
+  </div>
+
+<div style="max-width: 950px; width: 100%;">
+  <div class="canvas-wrapper">
+    <canvas id="physicsCanvas" width="900" height="500" aria-label="匀速圆周运动投影为简谐运动的动画演示"></canvas>
+    <div class="control-panel">
+      <div class="slider-group">
+        <label>📐 投影方向 <span style="color:#7dd3fc;">φ</span></label>
+        <input type="range" id="angleSlider" min="0" max="360" value="45" step="0.5">
+        <span class="value-badge" id="angleDisplay">45.0°</span>
+      </div>
+      <div class="slider-group">
+        <label>⚡ 角速度</label>
+        <input type="range" id="speedSlider" min="0.3" max="2.8" value="1.0" step="0.1">
+        <span class="value-badge" id="speedDisplay">1.0x</span>
+      </div>
+      <button id="playPauseBtn">⏯️ 暂停</button>
+      <button id="resetBtn">↺ 重置</button>
+      <div class="legend">
+        <span><span style="color:#ff5e7e;">●</span> 质点</span>
+        <span><span style="color:#3bc9ff;">●</span> 投影</span>
+        <span><span style="border-bottom:2px dashed #6d8aff;">--</span> 投影轴</span>
+      </div>
+    </div>
+  </div>
+  <div style="text-align: center; margin-top: 12px; color: #6b7f9a; font-size: 0.8rem; letter-spacing: 1px;">
+    ✦ 拖动左侧圆周区域可改变投影方向 ✦ 点击暂停欣赏波形 ✦
+  </div>
+</div>
+
+<script>
+  (function() {
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // DOM 元素
+    const angleSlider = document.getElementById('angleSlider');
+    const angleDisplay = document.getElementById('angleDisplay');
+    const speedSlider = document.getElementById('speedSlider');
+    const speedDisplay = document.getElementById('speedDisplay');
+    const playPauseBtn = document.getElementById('playPauseBtn');
+    const resetBtn = document.getElementById('resetBtn');
+
+    // ---------- 固定参数 ----------
+    const CIRCLE_CENTER_X = 220;
+    const CIRCLE_CENTER_Y = 260;
+    const RADIUS = 150;
+    const WAVE_LEFT = 400;
+    const WAVE_RIGHT = 870;
+    const WAVE_WIDTH = WAVE_RIGHT - WAVE_LEFT;
+    const WAVE_CENTER_Y = CIRCLE_CENTER_Y;
+    const WAVE_TOP = WAVE_CENTER_Y - RADIUS;
+    const WAVE_BOTTOM = WAVE_CENTER_Y + RADIUS;
+    const BUFFER_SIZE = Math.floor(WAVE_WIDTH * 0.9);
+
+    // ---------- 状态变量 ----------
+    let phi = 45 * Math.PI / 180;
+    let phiDeg = 45;
+    let angularSpeed = 1.0;
+    let baseOmega = (2 * Math.PI) / 5.5;
+    let omega = baseOmega * angularSpeed;
+    let theta = 0;
+    let isPaused = false;
+    let lastTimestamp = 0;
+
+    let displacementBuffer = new Array(BUFFER_SIZE).fill(0);
+    let isDragging = false;
+
+    // ---------- 辅助函数 ----------
+    function getProjection(angle) {
+      return RADIUS * Math.cos(angle - phi);
+    }
+
+    function initBuffer() {
+      const disp = getProjection(theta);
+      displacementBuffer.fill(disp);
+    }
+
+    function resetSimulation() {
+      theta = 0;
+      angularSpeed = 1.0;
+      omega = baseOmega;
+      phiDeg = 45;
+      phi = 45 * Math.PI / 180;
+      isPaused = false;
+      
+      angleSlider.value = 45;
+      speedSlider.value = 1.0;
+      updateLabels();
+      initBuffer();
+      
+      playPauseBtn.textContent = '⏯️ 暂停';
+      playPauseBtn.classList.remove('active');
+      lastTimestamp = 0;
+    }
+
+    function updateLabels() {
+      angleDisplay.textContent = phiDeg.toFixed(1) + '°';
+      speedDisplay.textContent = angularSpeed.toFixed(1) + 'x';
+    }
+
+    function updatePhiFromMouse(clientX, clientY) {
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+      
+      const mouseCanvasX = (clientX - rect.left) * scaleX;
+      const mouseCanvasY = (clientY - rect.top) * scaleY;
+      
+      const dx = mouseCanvasX - CIRCLE_CENTER_X;
+      const dy = CIRCLE_CENTER_Y - mouseCanvasY;
+      
+      let angle = Math.atan2(dy, dx);
+      if (angle < 0) angle += 2 * Math.PI;
+      
+      phi = angle;
+      phiDeg = (phi * 180 / Math.PI);
+      angleSlider.value = phiDeg;
+      updateLabels();
+    }
+
+    function isNearCircle(clientX, clientY) {
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+      const mx = (clientX - rect.left) * scaleX;
+      const my = (clientY - rect.top) * scaleY;
+      const dist = Math.hypot(mx - CIRCLE_CENTER_X, my - CIRCLE_CENTER_Y);
+      return dist < RADIUS + 40 && mx < WAVE_LEFT - 20;
+    }
+
+    // ---------- 事件绑定 ----------
+    canvas.addEventListener('mousedown', (e) => {
+      if (isNearCircle(e.clientX, e.clientY)) {
+        isDragging = true;
+        updatePhiFromMouse(e.clientX, e.clientY);
+        canvas.style.cursor = 'grabbing';
+        e.preventDefault();
+      }
+    });
+
+    window.addEventListener('mousemove', (e) => {
+      if (isDragging) {
+        updatePhiFromMouse(e.clientX, e.clientY);
+      } else {
+        canvas.style.cursor = isNearCircle(e.clientX, e.clientY) ? 'grab' : 'default';
+      }
+    });
+
+    window.addEventListener('mouseup', () => {
+      if (isDragging) {
+        isDragging = false;
+        canvas.style.cursor = 'default';
+      }
+    });
+
+    canvas.addEventListener('touchstart', (e) => {
+      if (e.touches.length === 1 && isNearCircle(e.touches[0].clientX, e.touches[0].clientY)) {
+        isDragging = true;
+        updatePhiFromMouse(e.touches[0].clientX, e.touches[0].clientY);
+        e.preventDefault();
+      }
+    }, { passive: false });
+
+    canvas.addEventListener('touchmove', (e) => {
+      if (isDragging && e.touches.length === 1) {
+        updatePhiFromMouse(e.touches[0].clientX, e.touches[0].clientY);
+        e.preventDefault();
+      }
+    }, { passive: false });
+
+    canvas.addEventListener('touchend', () => {
+      isDragging = false;
+    });
+
+    angleSlider.addEventListener('input', (e) => {
+      phiDeg = parseFloat(e.target.value);
+      phi = phiDeg * Math.PI / 180;
+      updateLabels();
+    });
+
+    speedSlider.addEventListener('input', (e) => {
+      angularSpeed = parseFloat(e.target.value);
+      omega = baseOmega * angularSpeed;
+      updateLabels();
+    });
+
+    playPauseBtn.addEventListener('click', () => {
+      isPaused = !isPaused;
+      if (isPaused) {
+        playPauseBtn.textContent = '▶️ 播放';
+        playPauseBtn.classList.add('active');
+        lastTimestamp = 0;
+      } else {
+        playPauseBtn.textContent = '⏯️ 暂停';
+        playPauseBtn.classList.remove('active');
+      }
+    });
+
+    resetBtn.addEventListener('click', resetSimulation);
+
+    // ---------- 绘制函数 (大片风格，仅保留投影轴虚线) ----------
+    function drawBackground() {
+      const grad = ctx.createRadialGradient(CIRCLE_CENTER_X, CIRCLE_CENTER_Y, 50, CIRCLE_CENTER_X, CIRCLE_CENTER_Y, 400);
+      grad.addColorStop(0, 'rgba(20, 40, 80, 0.5)');
+      grad.addColorStop(0.6, 'rgba(5, 10, 25, 0.9)');
+      grad.addColorStop(1, '#03050f');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      
+      for (let i = 0; i < 45; i++) {
+        const sx = (i * 37 + 12) % canvas.width;
+        const sy = (i * 53 + 7) % canvas.height;
+        ctx.fillStyle = `rgba(255, 255, 255, ${0.3 + Math.sin(i*2)*0.2})`;
+        ctx.beginPath();
+        ctx.arc(sx, sy, 1 + (i%3)*0.6, 0, Math.PI*2);
+        ctx.fill();
+      }
+    }
+
+    function drawCircleView() {
+      const cx = CIRCLE_CENTER_X;
+      const cy = CIRCLE_CENTER_Y;
+      
+      const axisDX = Math.cos(phi);
+      const axisDY = -Math.sin(phi);
+      
+      // --- 绘制投影轴 (虚线，保留) ---
+      ctx.save();
+      ctx.shadowColor = '#3a6eff';
+      ctx.shadowBlur = 14;
+      ctx.beginPath();
+      ctx.strokeStyle = '#5d8eff';
+      ctx.lineWidth = 2.5;
+      ctx.setLineDash([12, 10]);
+      ctx.moveTo(cx - (RADIUS+38) * axisDX, cy - (RADIUS+38) * axisDY);
+      ctx.lineTo(cx + (RADIUS+38) * axisDX, cy + (RADIUS+38) * axisDY);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.shadowColor = 'transparent';
+      ctx.shadowBlur = 0;
+      
+      // 轴端点装饰
+      const tipX = cx + (RADIUS+30) * axisDX;
+      const tipY = cy + (RADIUS+30) * axisDY;
+      ctx.fillStyle = '#aac9ff';
+      ctx.shadowColor = '#0066ff';
+      ctx.shadowBlur = 15;
+      ctx.beginPath();
+      ctx.arc(tipX, tipY, 6, 0, 2*Math.PI);
+      ctx.fill();
+      ctx.shadowColor = 'transparent';
+      
+      // 绘制大圆
+      ctx.beginPath();
+      ctx.arc(cx, cy, RADIUS, 0, 2 * Math.PI);
+      ctx.strokeStyle = '#2f4f8f';
+      ctx.lineWidth = 2.8;
+      ctx.shadowColor = '#0077ff';
+      ctx.shadowBlur = 18;
+      ctx.stroke();
+      ctx.shadowColor = 'transparent';
+      
+      // 圆心
+      ctx.fillStyle = '#c0d4ff';
+      ctx.shadowBlur = 10;
+      ctx.shadowColor = '#003cff';
+      ctx.beginPath();
+      ctx.arc(cx, cy, 5, 0, 2*Math.PI);
+      ctx.fill();
+      
+      // 质点位置
+      const pointX = cx + RADIUS * Math.cos(theta);
+      const pointY = cy - RADIUS * Math.sin(theta);
+      
+      // 投影点计算
+      const vecX = pointX - cx;
+      const vecY = pointY - cy;
+      const projLength = vecX * axisDX + vecY * axisDY;
+      const projX = cx + projLength * axisDX;
+      const projY = cy + projLength * axisDY;
+      
+      // ---- 垂线已被删除（原紫色虚线） ----
+      
+      // 投影点 (蓝球发光)
+      ctx.beginPath();
+      ctx.arc(projX, projY, 9, 0, 2*Math.PI);
+      ctx.fillStyle = '#2ad4ff';
+      ctx.shadowColor = '#00b7ff';
+      ctx.shadowBlur = 22;
+      ctx.fill();
+      ctx.strokeStyle = 'white';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      
+      // 运动质点 (橙红发光)
+      ctx.beginPath();
+      ctx.arc(pointX, pointY, 10, 0, 2*Math.PI);
+      ctx.fillStyle = '#ff5e7e';
+      ctx.shadowColor = '#ff3366';
+      ctx.shadowBlur = 24;
+      ctx.fill();
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 2.5;
+      ctx.stroke();
+      
+      ctx.shadowColor = 'transparent';
+      
+      // 角度指示弧 (保留实线风格，但不再使用虚线)
+      ctx.beginPath();
+      ctx.arc(cx, cy, 38, -theta, 0);
+      ctx.strokeStyle = '#ffaa5e';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([]);  // 实线
+      ctx.stroke();
+      
+      return { projX, projY, pointX, pointY };
+    }
+
+    function drawWaveform() {
+      ctx.fillStyle = 'rgba(4, 12, 28, 0.75)';
+      ctx.shadowColor = '#001122';
+      ctx.shadowBlur = 15;
+      ctx.fillRect(WAVE_LEFT, WAVE_TOP, WAVE_WIDTH, RADIUS*2);
+      ctx.shadowColor = 'transparent';
+      
+      ctx.strokeStyle = '#1e3350';
+      ctx.lineWidth = 0.8;
+      for (let y = WAVE_TOP; y <= WAVE_BOTTOM; y += RADIUS/4) {
+        ctx.beginPath();
+        ctx.moveTo(WAVE_LEFT, y);
+        ctx.lineTo(WAVE_RIGHT, y);
+        ctx.strokeStyle = '#1a2c44';
+        ctx.stroke();
+      }
+      
+      ctx.beginPath();
+      ctx.moveTo(WAVE_LEFT, WAVE_CENTER_Y);
+      ctx.lineTo(WAVE_RIGHT, WAVE_CENTER_Y);
+      ctx.strokeStyle = '#4a5f80';
+      ctx.lineWidth = 1.8;
+      ctx.stroke();
+      
+      if (displacementBuffer.length < 2) return;
+      
+      ctx.beginPath();
+      ctx.strokeStyle = '#3cc5ff';
+      ctx.lineWidth = 3.2;
+      ctx.shadowColor = '#0099ff';
+      ctx.shadowBlur = 16;
+      
+      const step = WAVE_WIDTH / (displacementBuffer.length - 1);
+      let firstPoint = true;
+      
+      for (let i = 0; i < displacementBuffer.length; i++) {
+        const x = WAVE_LEFT + i * step;
+        const disp = displacementBuffer[i];
+        const y = WAVE_CENTER_Y - disp;
+        const clampedY = Math.min(WAVE_BOTTOM, Math.max(WAVE_TOP, y));
+        
+        if (firstPoint) {
+          ctx.moveTo(x, clampedY);
+          firstPoint = false;
+        } else {
+          ctx.lineTo(x, clampedY);
+        }
+      }
+      ctx.stroke();
+      ctx.shadowColor = 'transparent';
+      
+      const currentDisp = getProjection(theta);
+      const currentY = WAVE_CENTER_Y - currentDisp;
+      ctx.beginPath();
+      ctx.arc(WAVE_RIGHT-2, Math.min(WAVE_BOTTOM, Math.max(WAVE_TOP, currentY)), 8, 0, 2*Math.PI);
+      ctx.fillStyle = '#ff5e7e';
+      ctx.shadowColor = '#ff3366';
+      ctx.shadowBlur = 18;
+      ctx.fill();
+      ctx.strokeStyle = 'white';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.shadowColor = 'transparent';
+      
+      return { currentY: Math.min(WAVE_BOTTOM, Math.max(WAVE_TOP, currentY)) };
+    }
+
+    // 连接线已被完全移除，不再绘制
+    function drawConnection(projInfo, waveInfo) {
+      // 原水平虚线已删除
+    }
+
+    // ---------- 动画循环 ----------
+    function animate(timestamp) {
+      if (!isPaused) {
+        if (lastTimestamp === 0) lastTimestamp = timestamp;
+        let deltaTime = Math.min(100, timestamp - lastTimestamp);
+        const dTheta = omega * (deltaTime / 1000);
+        theta += dTheta;
+        
+        const currentProj = getProjection(theta);
+        displacementBuffer.push(currentProj);
+        displacementBuffer.shift();
+        
+        lastTimestamp = timestamp;
+      } else {
+        lastTimestamp = 0;
+      }
+      
+      drawBackground();
+      const projInfo = drawCircleView();
+      const waveInfo = drawWaveform();
+      drawConnection(projInfo, waveInfo); // 已为空函数，无效果
+      
+      ctx.fillStyle = '#d0e4ff';
+      ctx.font = '500 13px "Inter", "PingFang SC", sans-serif';
+      ctx.fillText(`θ = ${(theta % (2*Math.PI) * 180 / Math.PI).toFixed(1)}°`, CIRCLE_CENTER_X + RADIUS + 25, CIRCLE_CENTER_Y - 25);
+      ctx.fillText(`位移 = ${(getProjection(theta)/RADIUS).toFixed(3)} R`, CIRCLE_CENTER_X + RADIUS + 25, CIRCLE_CENTER_Y + 10);
+      
+      requestAnimationFrame(animate);
+    }
+
+    initBuffer();
+    updateLabels();
+    requestAnimationFrame(animate);
+  })();
+</script>
+
+  <script>
+  // 返回主页（滚动位置已在主页点击链接时保存）
+  function saveScrollAndReturn() {
+    window.location.href = '../index.html';
+  }
+  
+  // 禁用右键菜单
+  document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+  });
+  
+  // 禁用开发者工具快捷键
+  document.addEventListener('keydown', function(e) {
+    // ESC返回主页 - 保存滚动位置
+    if (e.keyCode === 27) {
+      saveScrollAndReturn();
+      return false;
+    }
+    // F12
+    if (e.keyCode === 123) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+U
+    if (e.ctrlKey && e.keyCode === 85) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+I
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 73) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+J
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 74) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+C
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 67) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+S
+    if (e.ctrlKey && e.keyCode === 83) {
+      e.preventDefault();
+      return false;
+    }
+  });
+  
+  // 禁用选择
+  document.addEventListener('selectstart', function(e) {
+    // 允许输入框选择
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+      return true;
+    }
+    e.preventDefault();
+    return false;
+  });
+  </script>
+</body>
+</html>
