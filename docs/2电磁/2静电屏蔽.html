@@ -1,0 +1,1007 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>静电屏蔽交互动画</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #16202a;
+      --muted: #657281;
+      --line: #d7dee8;
+      --panel: #f7f9fc;
+      --blue: #2563eb;
+      --cyan: #0891b2;
+      --red: #dc2626;
+      --amber: #d97706;
+      --green: #16803f;
+      --metal: #8792a2;
+      --shadow: 0 18px 48px rgba(33, 44, 60, 0.16);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Microsoft YaHei", "PingFang SC", system-ui, sans-serif;
+      background: #eaf0f6;
+      color: var(--ink);
+    }
+
+    .app {
+      min-height: 100vh;
+      display: grid;
+      grid-template-rows: auto 1fr;
+    }
+
+    header {
+      padding: 18px clamp(16px, 3vw, 36px) 12px;
+      border-bottom: 1px solid rgba(110, 124, 143, 0.25);
+      background: rgba(255, 255, 255, 0.82);
+      backdrop-filter: blur(10px);
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(22px, 3vw, 34px);
+      line-height: 1.16;
+      letter-spacing: 0;
+    }
+
+    .subtitle {
+      margin: 8px 0 0;
+      max-width: 880px;
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.6;
+    }
+
+    main {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 340px;
+      gap: 16px;
+      padding: 16px clamp(12px, 2vw, 24px) 20px;
+      min-height: 0;
+    }
+
+    .stage-wrap,
+    .side {
+      min-width: 0;
+    }
+
+    .stage-wrap {
+      position: relative;
+      overflow: hidden;
+      border: 1px solid rgba(112, 126, 146, 0.32);
+      border-radius: 8px;
+      background: #fdfefe;
+      box-shadow: var(--shadow);
+      min-height: 570px;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      min-height: 570px;
+    }
+
+    .readout {
+      position: absolute;
+      left: 14px;
+      top: 14px;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(110px, auto));
+      gap: 8px;
+      pointer-events: none;
+    }
+
+    .metric {
+      border: 1px solid rgba(119, 133, 154, 0.34);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.88);
+      padding: 9px 11px;
+      box-shadow: 0 10px 28px rgba(60, 72, 90, 0.08);
+    }
+
+    .metric b {
+      display: block;
+      font-size: 18px;
+      line-height: 1.2;
+    }
+
+    .metric span {
+      display: block;
+      margin-top: 2px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .side {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .panel {
+      border: 1px solid rgba(112, 126, 146, 0.32);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.92);
+      box-shadow: 0 12px 34px rgba(33, 44, 60, 0.1);
+      padding: 14px;
+    }
+
+    .panel h2 {
+      margin: 0 0 12px;
+      font-size: 16px;
+      line-height: 1.25;
+      letter-spacing: 0;
+    }
+
+    .segmented {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      padding: 4px;
+      border-radius: 8px;
+      background: #edf2f7;
+      border: 1px solid #dbe3ee;
+    }
+
+    button {
+      appearance: none;
+      border: 1px solid transparent;
+      border-radius: 6px;
+      background: transparent;
+      color: var(--ink);
+      font: inherit;
+      min-height: 38px;
+      cursor: pointer;
+      transition: background 160ms ease, border-color 160ms ease, transform 160ms ease;
+    }
+
+    button:hover {
+      border-color: #b6c2d2;
+    }
+
+    button:active {
+      transform: translateY(1px);
+    }
+
+    button.active {
+      background: #ffffff;
+      border-color: #b9c7d8;
+      box-shadow: 0 6px 14px rgba(47, 64, 84, 0.1);
+      font-weight: 700;
+    }
+
+    .control {
+      display: grid;
+      gap: 8px;
+      margin-top: 14px;
+    }
+
+    .label-row {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 10px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .label-row strong {
+      color: var(--ink);
+      font-size: 14px;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--cyan);
+    }
+
+    .toggle-grid {
+      display: grid;
+      gap: 8px;
+    }
+
+    .toggle {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 9px 10px;
+      border: 1px solid #dce4ef;
+      border-radius: 8px;
+      background: #fbfcfe;
+      font-size: 14px;
+    }
+
+    .toggle input {
+      width: 18px;
+      height: 18px;
+      accent-color: var(--cyan);
+      flex: 0 0 auto;
+    }
+
+    .legend {
+      display: grid;
+      gap: 9px;
+      font-size: 14px;
+      color: var(--muted);
+    }
+
+    .legend-row {
+      display: grid;
+      grid-template-columns: 18px 1fr;
+      gap: 8px;
+      align-items: center;
+      min-height: 22px;
+    }
+
+    .swatch {
+      width: 18px;
+      height: 10px;
+      border-radius: 999px;
+      background: var(--blue);
+    }
+
+    .swatch.red { background: var(--red); }
+    .swatch.cyan { background: var(--cyan); }
+    .swatch.gray { background: var(--metal); }
+    .swatch.green { background: var(--green); }
+
+    .note {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.62;
+    }
+
+    .formula {
+      margin-top: 10px;
+      padding: 10px;
+      border-left: 4px solid var(--cyan);
+      background: #eef8fb;
+      color: #174052;
+      font-size: 14px;
+      line-height: 1.55;
+      border-radius: 0 6px 6px 0;
+    }
+
+    .footer-note {
+      font-size: 12px;
+      color: #798696;
+      line-height: 1.55;
+    }
+
+    @media (max-width: 920px) {
+      main {
+        grid-template-columns: 1fr;
+      }
+
+      .stage-wrap,
+      canvas {
+        min-height: 520px;
+      }
+
+      .readout {
+        grid-template-columns: 1fr;
+        max-width: 170px;
+      }
+    }
+
+    @media (max-width: 560px) {
+      header {
+        padding-top: 14px;
+      }
+
+      main {
+        padding: 10px;
+      }
+
+      .stage-wrap,
+      canvas {
+        min-height: 470px;
+      }
+
+      .readout {
+        position: static;
+        grid-template-columns: repeat(3, 1fr);
+        padding: 8px;
+        max-width: none;
+        background: rgba(248, 250, 252, 0.96);
+        border-bottom: 1px solid rgba(112, 126, 146, 0.24);
+      }
+
+      .metric {
+        padding: 7px;
+      }
+
+      .metric b {
+        font-size: 15px;
+      }
+
+      .metric span {
+        font-size: 11px;
+      }
+    }
+  </style>
+
+  <style>
+  body {
+    background-color: #1a2332 !important;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+  }
+  
+  .qilai-back-btn {
+    position: fixed;
+    top: 10px;
+    left: 15px;
+    z-index: 100000;
+    padding: 8px 16px;
+    background: rgba(0, 150, 200, 0.2);
+    border: 1px solid rgba(100, 180, 255, 0.5);
+    color: #8ab4f8;
+    font-size: 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.3s;
+    backdrop-filter: blur(5px);
+    font-family: "Microsoft YaHei", sans-serif;
+  }
+  
+  .qilai-back-btn:hover {
+    background: rgba(0, 150, 200, 0.4);
+    box-shadow: 0 0 15px rgba(100, 180, 255, 0.3);
+    color: #fff;
+  }
+  
+  .qilai-watermark {
+    position: fixed;
+    bottom: 15px;
+    right: 15px;
+    z-index: 99998;
+    font-size: 12px;
+    color: rgba(138, 180, 248, 0.35);
+    text-align: right;
+    line-height: 1.8;
+    pointer-events: none;
+    user-select: none;
+    font-family: "Microsoft YaHei", sans-serif;
+  }
+  
+  .qilai-watermark .title {
+    font-size: 14px;
+    font-weight: bold;
+    color: rgba(138, 180, 248, 0.45);
+    margin-bottom: 4px;
+    letter-spacing: 1px;
+  }
+  </style>
+</head>
+<body>
+  <a href="javascript:void(0);" class="qilai-back-btn" onclick="saveScrollAndReturn();">← 返回主页</a>
+  
+  <div class="qilai-watermark">
+    <div class="title">齐老师动画</div>
+    QQ 3398528250<br>
+    抖音 35320300542
+  </div>
+
+  <div class="app">
+    <header>
+      <h1>静电屏蔽交互动画</h1>
+      <p class="subtitle">导体达到静电平衡时，电荷重新分布在表面，使导体材料内部电场为零；闭合导体壳的空腔也能隔绝外部静电场。</p>
+    </header>
+
+    <main>
+      <section class="stage-wrap" aria-label="静电屏蔽动画">
+        <div class="readout" aria-live="polite">
+          <div class="metric">
+            <b id="insideValue">0</b>
+            <span id="fieldRegionLabel">壳内电场</span>
+          </div>
+          <div class="metric">
+            <b id="surfaceValue">弱</b>
+            <span>表面感应电荷</span>
+          </div>
+          <div class="metric">
+            <b id="modeValue">外场</b>
+            <span>当前情景</span>
+          </div>
+        </div>
+        <canvas id="stage" width="1100" height="680"></canvas>
+      </section>
+
+      <aside class="side">
+        <section class="panel">
+          <h2>情景</h2>
+          <div class="segmented" role="group" aria-label="情景选择">
+            <button id="externalBtn" class="active" type="button">外部电场</button>
+            <button id="internalBtn" type="button">内部电荷</button>
+          </div>
+
+          <div class="control">
+            <div class="label-row">
+              <strong id="strengthLabel">外电场强度</strong>
+              <span id="strengthText">70%</span>
+            </div>
+            <input id="strength" type="range" min="15" max="100" value="70" />
+          </div>
+
+          <div class="control">
+            <div class="label-row">
+              <strong>导体壳样式</strong>
+              <span id="shellText">完整金属壳</span>
+            </div>
+            <input id="mesh" type="range" min="0" max="1" value="0" />
+          </div>
+        </section>
+
+        <section class="panel">
+          <h2>显示</h2>
+          <div class="toggle-grid">
+            <label class="toggle">电力线 <input id="showLines" type="checkbox" checked /></label>
+            <label class="toggle">表面电荷 <input id="showCharges" type="checkbox" checked /></label>
+            <label class="toggle">电场探针 <input id="showProbe" type="checkbox" checked /></label>
+          </div>
+        </section>
+
+        <section class="panel">
+          <h2>图例</h2>
+          <div class="legend">
+            <div class="legend-row"><span class="swatch cyan"></span><span>蓝绿色箭头：外部电场方向</span></div>
+            <div class="legend-row"><span class="swatch red"></span><span>红色“+”：正感应电荷</span></div>
+            <div class="legend-row"><span class="swatch"></span><span>蓝色“-”：负感应电荷</span></div>
+            <div class="legend-row"><span class="swatch gray"></span><span>灰色环：导体壳截面</span></div>
+            <div class="legend-row"><span class="swatch green"></span><span>绿色区域：屏蔽后的零电场</span></div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <h2>物理结论</h2>
+          <p id="explain" class="note">外部静电场使导体壳两侧出现等量异号的感应电荷。感应电荷产生的附加电场与外电场在壳内相互抵消，所以空腔内电场近似为 0。</p>
+          <div id="formula" class="formula">静电平衡：E<sub>导体内</sub> = 0，电荷只分布在导体表面。</div>
+        </section>
+
+        <div class="footer-note">提示：金属网罩的屏蔽效果与网孔尺寸有关；高中阶段常把闭合金属壳视为理想静电屏蔽。</div>
+      </aside>
+    </main>
+  </div>
+
+  <script>
+    const canvas = document.getElementById("stage");
+    const ctx = canvas.getContext("2d");
+    const state = {
+      mode: "external",
+      strength: 70,
+      mesh: 0,
+      showLines: true,
+      showCharges: true,
+      showProbe: true,
+      time: 0
+    };
+
+    const els = {
+      externalBtn: document.getElementById("externalBtn"),
+      internalBtn: document.getElementById("internalBtn"),
+      strength: document.getElementById("strength"),
+      mesh: document.getElementById("mesh"),
+      showLines: document.getElementById("showLines"),
+      showCharges: document.getElementById("showCharges"),
+      showProbe: document.getElementById("showProbe"),
+      strengthText: document.getElementById("strengthText"),
+      strengthLabel: document.getElementById("strengthLabel"),
+      shellText: document.getElementById("shellText"),
+      insideValue: document.getElementById("insideValue"),
+      surfaceValue: document.getElementById("surfaceValue"),
+      modeValue: document.getElementById("modeValue"),
+      fieldRegionLabel: document.getElementById("fieldRegionLabel"),
+      explain: document.getElementById("explain"),
+      formula: document.getElementById("formula")
+    };
+
+    function fitCanvas() {
+      const ratio = window.devicePixelRatio || 1;
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = Math.max(600, Math.floor(rect.width * ratio));
+      canvas.height = Math.max(420, Math.floor(rect.height * ratio));
+      ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+    }
+
+    window.addEventListener("resize", fitCanvas);
+    fitCanvas();
+
+    function setMode(mode) {
+      state.mode = mode;
+      els.externalBtn.classList.toggle("active", mode === "external");
+      els.internalBtn.classList.toggle("active", mode === "internal");
+      els.strengthLabel.textContent = mode === "external" ? "外电场强度" : "内部电荷量";
+      els.modeValue.textContent = mode === "external" ? "外场" : "内源";
+      els.fieldRegionLabel.textContent = mode === "external" ? "壳内电场" : "壳外电场";
+      els.explain.textContent = mode === "external"
+        ? "外部静电场使导体壳两侧出现等量异号的感应电荷。感应电荷产生的附加电场与外电场在壳内相互抵消，所以空腔内电场近似为 0。"
+        : "内部点电荷会在导体壳内表面感应出异号电荷。若外壳接地，多余电荷流入或流出大地，外部区域电场近似为 0。";
+      els.formula.innerHTML = mode === "external"
+        ? "静电平衡：E<sub>导体内</sub> = 0，电荷只分布在导体表面。"
+        : "接地屏蔽：内部电力线终止于内表面，外部测得 E<sub>外</sub> ≈ 0。";
+    }
+
+    els.externalBtn.addEventListener("click", () => setMode("external"));
+    els.internalBtn.addEventListener("click", () => setMode("internal"));
+    els.strength.addEventListener("input", event => {
+      state.strength = Number(event.target.value);
+      els.strengthText.textContent = `${state.strength}%`;
+    });
+    els.mesh.addEventListener("input", event => {
+      state.mesh = Number(event.target.value);
+      els.shellText.textContent = state.mesh ? "金属网罩" : "完整金属壳";
+    });
+    els.showLines.addEventListener("change", event => state.showLines = event.target.checked);
+    els.showCharges.addEventListener("change", event => state.showCharges = event.target.checked);
+    els.showProbe.addEventListener("change", event => state.showProbe = event.target.checked);
+
+    function dims() {
+      const w = canvas.clientWidth;
+      const h = canvas.clientHeight;
+      const cx = w * 0.49;
+      const cy = h * 0.52;
+      const outer = Math.min(w, h) * 0.22;
+      const inner = outer * 0.58;
+      return { w, h, cx, cy, outer, inner };
+    }
+
+    function clear(d) {
+      const grid = ctx.createLinearGradient(0, 0, d.w, d.h);
+      grid.addColorStop(0, "#fbfdff");
+      grid.addColorStop(1, "#eef5f8");
+      ctx.fillStyle = grid;
+      ctx.fillRect(0, 0, d.w, d.h);
+
+      ctx.save();
+      ctx.globalAlpha = 0.46;
+      ctx.strokeStyle = "#dbe5ef";
+      ctx.lineWidth = 1;
+      const step = 42;
+      for (let x = -step; x < d.w + step; x += step) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x + d.h * 0.18, d.h);
+        ctx.stroke();
+      }
+      for (let y = step; y < d.h; y += step) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(d.w, y);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    function drawShieldedZone(d) {
+      ctx.save();
+      ctx.fillStyle = "rgba(22, 128, 63, 0.10)";
+      ctx.strokeStyle = "rgba(22, 128, 63, 0.36)";
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([7, 7]);
+      if (state.mode === "external") {
+        ctx.beginPath();
+        ctx.arc(d.cx, d.cy, d.inner * 0.92, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+      } else {
+        ctx.beginPath();
+        ctx.rect(0, 0, d.w, d.h);
+        ctx.arc(d.cx, d.cy, d.outer * 1.02, 0, Math.PI * 2, true);
+        ctx.fill("evenodd");
+        ctx.beginPath();
+        ctx.arc(d.cx, d.cy, d.outer * 1.02, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    function drawShell(d) {
+      const grad = ctx.createRadialGradient(d.cx - d.outer * 0.3, d.cy - d.outer * 0.45, d.inner, d.cx, d.cy, d.outer * 1.05);
+      grad.addColorStop(0, "#e8edf3");
+      grad.addColorStop(0.5, "#a9b3c1");
+      grad.addColorStop(1, "#626d7b");
+
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(d.cx, d.cy, d.outer, 0, Math.PI * 2);
+      ctx.arc(d.cx, d.cy, d.inner, 0, Math.PI * 2, true);
+      ctx.fillStyle = grad;
+      ctx.fill("evenodd");
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = "#5d6876";
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.arc(d.cx, d.cy, d.inner, 0, Math.PI * 2);
+      ctx.strokeStyle = "#f8fbff";
+      ctx.lineWidth = 3;
+      ctx.stroke();
+
+      if (state.mesh) {
+        ctx.beginPath();
+        ctx.arc(d.cx, d.cy, d.outer, 0, Math.PI * 2);
+        ctx.arc(d.cx, d.cy, d.inner, 0, Math.PI * 2, true);
+        ctx.clip("evenodd");
+        ctx.strokeStyle = "rgba(255,255,255,0.72)";
+        ctx.lineWidth = 2;
+        for (let a = 0; a < Math.PI * 2; a += Math.PI / 16) {
+          const x1 = d.cx + Math.cos(a) * d.inner * 0.96;
+          const y1 = d.cy + Math.sin(a) * d.inner * 0.96;
+          const x2 = d.cx + Math.cos(a) * d.outer * 1.02;
+          const y2 = d.cy + Math.sin(a) * d.outer * 1.02;
+          ctx.beginPath();
+          ctx.moveTo(x1, y1);
+          ctx.lineTo(x2, y2);
+          ctx.stroke();
+        }
+        for (let r = d.inner + 12; r < d.outer; r += 18) {
+          ctx.beginPath();
+          ctx.arc(d.cx, d.cy, r, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+      }
+
+      ctx.restore();
+    }
+
+    function drawArrow(x1, y1, x2, y2, color, width = 2.2, alpha = 1) {
+      const angle = Math.atan2(y2 - y1, x2 - x1);
+      const head = 8;
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      ctx.strokeStyle = color;
+      ctx.fillStyle = color;
+      ctx.lineWidth = width;
+      ctx.lineCap = "round";
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(x2, y2);
+      ctx.lineTo(x2 - Math.cos(angle - 0.55) * head, y2 - Math.sin(angle - 0.55) * head);
+      ctx.lineTo(x2 - Math.cos(angle + 0.55) * head, y2 - Math.sin(angle + 0.55) * head);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    }
+
+    function externalFieldVector(x, y, d) {
+      const dx = x - d.cx;
+      const dy = y - d.cy;
+      const r = Math.hypot(dx, dy);
+      if (r < d.outer * 1.04) return [0, 0];
+      const theta = Math.atan2(dy, dx);
+      const a2 = d.outer * d.outer;
+      const r2 = r * r;
+      const er = 1 + a2 / r2;
+      const et = -(1 - a2 / r2);
+      const ex = er * Math.cos(theta) * Math.cos(theta) - et * Math.sin(theta) * Math.sin(theta);
+      const ey = er * Math.cos(theta) * Math.sin(theta) + et * Math.sin(theta) * Math.cos(theta);
+      return [ex, ey];
+    }
+
+    function drawExternalField(d) {
+      const amp = state.strength / 100;
+      if (state.showLines) {
+        ctx.save();
+        ctx.lineWidth = 2;
+        ctx.lineCap = "round";
+        ctx.strokeStyle = "rgba(8, 145, 178, 0.56)";
+        ctx.setLineDash([10, 16]);
+        ctx.lineDashOffset = -state.time * (0.7 + amp * 0.7);
+        const seeds = 13;
+        for (let i = 0; i < seeds; i++) {
+          const y0 = d.h * (0.16 + 0.68 * i / (seeds - 1));
+          const points = [];
+          let x = d.w * 0.05;
+          let y = y0;
+          for (let s = 0; s < 220; s++) {
+            const [ex, ey] = externalFieldVector(x, y, d);
+            const mag = Math.hypot(ex, ey);
+            if (mag < 0.05) break;
+            points.push([x, y]);
+            x += ex / mag * 7;
+            y += ey / mag * 7;
+            if (x > d.w * 0.96 || y < 24 || y > d.h - 24) break;
+          }
+          if (points.length > 3) {
+            ctx.beginPath();
+            ctx.moveTo(points[0][0], points[0][1]);
+            for (let p = 1; p < points.length; p++) ctx.lineTo(points[p][0], points[p][1]);
+            ctx.stroke();
+            const end = points[Math.max(1, points.length - 2)];
+            const next = points[points.length - 1];
+            drawArrow(end[0] - 0.1, end[1], next[0], next[1], "#0891b2", 2, 0.75);
+          }
+        }
+        ctx.restore();
+      }
+
+      ctx.save();
+      for (let y = d.h * 0.18; y <= d.h * 0.83; y += 54) {
+        for (let x = d.w * 0.12; x <= d.w * 0.88; x += 86) {
+          const r = Math.hypot(x - d.cx, y - d.cy);
+          if (r < d.outer * 1.08) continue;
+          const [ex, ey] = externalFieldVector(x, y, d);
+          const m = Math.hypot(ex, ey);
+          if (m < 0.05) continue;
+          const len = 17 + 15 * amp * Math.min(1.4, m);
+          drawArrow(x - ex / m * len * 0.45, y - ey / m * len * 0.45, x + ex / m * len * 0.55, y + ey / m * len * 0.55, "#0f8da4", 1.8, 0.56);
+        }
+      }
+      ctx.restore();
+    }
+
+    function drawInternalChargeField(d) {
+      const amp = state.strength / 100;
+      const chargeX = d.cx - d.inner * 0.32;
+      const chargeY = d.cy + Math.sin(state.time * 0.015) * d.inner * 0.08;
+
+      if (state.showLines) {
+        ctx.save();
+        ctx.strokeStyle = "rgba(8, 145, 178, 0.58)";
+        ctx.lineWidth = 2;
+        ctx.setLineDash([10, 14]);
+        ctx.lineDashOffset = -state.time * (0.8 + amp * 0.8);
+        const count = 20;
+        for (let i = 0; i < count; i++) {
+          const angle = i / count * Math.PI * 2 + Math.sin(state.time * 0.01) * 0.03;
+          const ex = Math.cos(angle);
+          const ey = Math.sin(angle);
+          let x = chargeX + ex * 18;
+          let y = chargeY + ey * 18;
+          const pts = [[x, y]];
+          for (let s = 0; s < 80; s++) {
+            const vx = x - chargeX;
+            const vy = y - chargeY;
+            const mag = Math.hypot(vx, vy) || 1;
+            x += vx / mag * 5.5;
+            y += vy / mag * 5.5;
+            pts.push([x, y]);
+            if (Math.hypot(x - d.cx, y - d.cy) > d.inner * 0.94) break;
+          }
+          ctx.beginPath();
+          ctx.moveTo(pts[0][0], pts[0][1]);
+          for (let p = 1; p < pts.length; p++) ctx.lineTo(pts[p][0], pts[p][1]);
+          ctx.stroke();
+          const p1 = pts[Math.max(1, pts.length - 4)];
+          const p2 = pts[pts.length - 1];
+          drawArrow(p1[0], p1[1], p2[0], p2[1], "#0891b2", 1.8, 0.7);
+        }
+        ctx.restore();
+      }
+
+      ctx.save();
+      const glow = ctx.createRadialGradient(chargeX, chargeY, 4, chargeX, chargeY, 42);
+      glow.addColorStop(0, "rgba(220,38,38,0.42)");
+      glow.addColorStop(1, "rgba(220,38,38,0)");
+      ctx.fillStyle = glow;
+      ctx.beginPath();
+      ctx.arc(chargeX, chargeY, 42, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(chargeX, chargeY, 16, 0, Math.PI * 2);
+      ctx.fillStyle = "#dc2626";
+      ctx.fill();
+      ctx.fillStyle = "#fff";
+      ctx.font = "700 22px Microsoft YaHei, sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText("+", chargeX, chargeY + 1);
+      ctx.restore();
+
+      ctx.save();
+      ctx.globalAlpha = 0.28;
+      ctx.strokeStyle = "#16803f";
+      ctx.lineWidth = 2;
+      ctx.setLineDash([8, 9]);
+      for (let y = d.h * 0.22; y < d.h * 0.82; y += 58) {
+        const x1 = d.cx + d.outer * 1.3;
+        drawArrow(x1, y, x1 + 46, y, "#16803f", 1.7, 0.45);
+      }
+      ctx.restore();
+    }
+
+    function drawCharges(d) {
+      if (!state.showCharges) return;
+      const amp = state.strength / 100;
+      ctx.save();
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.font = `700 ${Math.max(12, d.outer * 0.12)}px Microsoft YaHei, sans-serif`;
+
+      if (state.mode === "external") {
+        for (let i = 0; i < 42; i++) {
+          const a = i / 42 * Math.PI * 2;
+          const x = d.cx + Math.cos(a) * (d.outer + 10);
+          const y = d.cy + Math.sin(a) * (d.outer + 10);
+          const density = Math.abs(Math.cos(a));
+          if (density < 0.23) continue;
+          ctx.globalAlpha = 0.36 + density * amp * 0.64;
+          ctx.fillStyle = Math.cos(a) > 0 ? "#dc2626" : "#2563eb";
+          ctx.fillText(Math.cos(a) > 0 ? "+" : "−", x, y);
+        }
+      } else {
+        for (let i = 0; i < 34; i++) {
+          const a = i / 34 * Math.PI * 2;
+          const bias = 0.55 + 0.45 * Math.max(0, -Math.cos(a));
+          const x = d.cx + Math.cos(a) * (d.inner - 10);
+          const y = d.cy + Math.sin(a) * (d.inner - 10);
+          ctx.globalAlpha = 0.35 + bias * amp * 0.6;
+          ctx.fillStyle = "#2563eb";
+          ctx.fillText("−", x, y);
+        }
+
+        ctx.font = `700 ${Math.max(10, d.outer * 0.09)}px Microsoft YaHei, sans-serif`;
+        ctx.fillStyle = "#16803f";
+        ctx.globalAlpha = 0.78;
+        ctx.fillText("接地", d.cx + d.outer * 1.05, d.cy + d.outer * 0.82);
+      }
+      ctx.restore();
+    }
+
+    function drawProbe(d) {
+      if (!state.showProbe) return;
+      ctx.save();
+      const t = state.time * 0.018;
+      const px = state.mode === "external"
+        ? d.cx + Math.cos(t) * d.inner * 0.45
+        : d.cx + d.outer * 1.55 + Math.cos(t) * d.outer * 0.12;
+      const py = state.mode === "external"
+        ? d.cy + Math.sin(t * 0.8) * d.inner * 0.35
+        : d.cy + Math.sin(t * 0.8) * d.outer * 0.32;
+      ctx.strokeStyle = "#16803f";
+      ctx.fillStyle = "#ffffff";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(px, py, 15, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      drawArrow(px - 4, py, px - 4, py, "#16803f", 2, 0.9);
+      ctx.fillStyle = "#16803f";
+      ctx.font = "700 12px Microsoft YaHei, sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(state.mode === "external" ? "E=0" : "外部E≈0", px, py - 27);
+      ctx.restore();
+    }
+
+    function drawLabels(d) {
+      ctx.save();
+      ctx.fillStyle = "#1f2937";
+      ctx.font = "700 15px Microsoft YaHei, sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText("闭合导体壳", d.cx, d.cy + d.outer + 34);
+
+      ctx.font = "13px Microsoft YaHei, sans-serif";
+      ctx.fillStyle = state.mode === "external" ? "#16803f" : "#0f7489";
+      ctx.fillText(state.mode === "external" ? "空腔：静电屏蔽区" : "空腔：内部电场存在", d.cx, d.cy + 4);
+
+      if (state.mode === "external") {
+        ctx.fillStyle = "#0f7489";
+        ctx.textAlign = "left";
+        ctx.fillText("外部电场", d.w * 0.07, d.h * 0.11);
+        ctx.fillStyle = "#dc2626";
+        ctx.textAlign = "center";
+        ctx.fillText("正感应电荷", d.cx + d.outer * 1.32, d.cy - d.outer * 0.52);
+        ctx.fillStyle = "#2563eb";
+        ctx.fillText("负感应电荷", d.cx - d.outer * 1.34, d.cy - d.outer * 0.52);
+      } else {
+        ctx.fillStyle = "#dc2626";
+        ctx.textAlign = "left";
+        ctx.fillText("内部点电荷", d.cx - d.inner * 0.9, d.cy - d.inner * 0.62);
+        ctx.fillStyle = "#16803f";
+        ctx.fillText("外部：E≈0", d.cx + d.outer * 1.22, d.cy - d.outer * 0.65);
+        ctx.fillText("壳外：静电屏蔽区", d.cx + d.outer * 1.46, d.cy + d.outer * 0.48);
+      }
+      ctx.restore();
+    }
+
+    function updateReadout() {
+      els.insideValue.textContent = state.mode === "external" ? "0" : "0";
+      const label = state.strength < 40 ? "弱" : state.strength < 75 ? "中" : "强";
+      els.surfaceValue.textContent = label;
+      els.strengthText.textContent = `${state.strength}%`;
+    }
+
+    function draw() {
+      state.time += 1;
+      const d = dims();
+      clear(d);
+      drawShieldedZone(d);
+
+      if (state.mode === "external") {
+        drawExternalField(d);
+      } else {
+        drawInternalChargeField(d);
+      }
+
+      drawShell(d);
+      drawCharges(d);
+      drawProbe(d);
+      drawLabels(d);
+      updateReadout();
+      requestAnimationFrame(draw);
+    }
+
+    draw();
+  </script>
+
+  <script>
+  // 返回主页（滚动位置已在主页点击链接时保存）
+  function saveScrollAndReturn() {
+    window.location.href = '../index.html';
+  }
+  
+  // 禁用右键菜单
+  document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+  });
+  
+  // 禁用开发者工具快捷键
+  document.addEventListener('keydown', function(e) {
+    // ESC返回主页 - 保存滚动位置
+    if (e.keyCode === 27) {
+      saveScrollAndReturn();
+      return false;
+    }
+    // F12
+    if (e.keyCode === 123) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+U
+    if (e.ctrlKey && e.keyCode === 85) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+I
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 73) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+J
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 74) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+C
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 67) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+S
+    if (e.ctrlKey && e.keyCode === 83) {
+      e.preventDefault();
+      return false;
+    }
+  });
+  
+  // 禁用选择
+  document.addEventListener('selectstart', function(e) {
+    // 允许输入框选择
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+      return true;
+    }
+    e.preventDefault();
+    return false;
+  });
+  </script>
+</body>
+</html>
