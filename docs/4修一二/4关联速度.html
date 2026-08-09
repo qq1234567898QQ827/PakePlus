@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>关联速度模型 · 定滑轮绳连接体</title>
+    <style>
+        body { margin: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; background: #1a1a2e; font-family: 'PingFang SC', sans-serif; }
+        canvas { background: #f5f0e6; border-radius: 16px; box-shadow: 0 0 30px rgba(0,0,0,0.4); }
+        .controls { margin-top: 15px; display: flex; gap: 15px; background: rgba(0,0,0,0.6); padding: 12px 24px; border-radius: 40px; backdrop-filter: blur(10px); }
+        button { padding: 8px 20px; border-radius: 20px; border: none; font-weight: bold; cursor: pointer; transition: 0.2s; font-size: 16px; }
+        .play { background: #2ecc71; color: white; } .pause { background: #e67e22; color: white; } .reset { background: #e74c3c; color: white; }
+        button:hover { opacity: 0.85; transform: scale(1.05); }
+    </style>
+
+  <style>
+  body {
+    background-color: #1a2332 !important;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+  }
+  
+  .qilai-back-btn {
+    position: fixed;
+    top: 10px;
+    left: 15px;
+    z-index: 100000;
+    padding: 8px 16px;
+    background: rgba(0, 150, 200, 0.2);
+    border: 1px solid rgba(100, 180, 255, 0.5);
+    color: #8ab4f8;
+    font-size: 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.3s;
+    backdrop-filter: blur(5px);
+    font-family: "Microsoft YaHei", sans-serif;
+  }
+  
+  .qilai-back-btn:hover {
+    background: rgba(0, 150, 200, 0.4);
+    box-shadow: 0 0 15px rgba(100, 180, 255, 0.3);
+    color: #fff;
+  }
+  
+  .qilai-watermark {
+    position: fixed;
+    bottom: 15px;
+    right: 15px;
+    z-index: 99998;
+    font-size: 12px;
+    color: rgba(138, 180, 248, 0.35);
+    text-align: right;
+    line-height: 1.8;
+    pointer-events: none;
+    user-select: none;
+    font-family: "Microsoft YaHei", sans-serif;
+  }
+  
+  .qilai-watermark .title {
+    font-size: 14px;
+    font-weight: bold;
+    color: rgba(138, 180, 248, 0.45);
+    margin-bottom: 4px;
+    letter-spacing: 1px;
+  }
+  </style>
+</head>
+<body>
+  <a href="javascript:void(0);" class="qilai-back-btn" onclick="saveScrollAndReturn();">← 返回主页</a>
+  
+  <div class="qilai-watermark">
+    <div class="title">齐老师动画</div>
+    QQ 3398528250<br>
+    抖音 35320300542
+  </div>
+
+    <canvas id="canvas" width="900" height="500"></canvas>
+    <div class="controls">
+        <button class="play" id="playBtn">▶ 播放</button>
+        <button class="pause" id="pauseBtn">⏸ 暂停</button>
+        <button class="reset" id="resetBtn">↺ 重置</button>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        // ---------- 参数 ----------
+        const groundY = 400;
+        const platformY = 195;
+        const ropeY = 185;
+        const sheaveX = 450;
+        const sheaveY = 197;
+        const sheaveR = 12;
+        const H = groundY - sheaveY; // 203
+
+        const tableLeft = 30;
+        const INIT_PERSON_X = 430;
+        const INIT_CAR_X = 870;
+        const V0 = 0.4;
+
+        const L1_init = sheaveX - INIT_PERSON_X;
+        const dx_init = INIT_CAR_X - sheaveX;
+        const L2_init = Math.sqrt(dx_init*dx_init + H*H);
+        const L_total = L1_init + L2_init;
+
+        let personX = INIT_PERSON_X;
+        let carX = INIT_CAR_X;
+        let L1 = L1_init, L2 = L2_init;
+        let running = true;
+        let stoppedByAngle = false;
+
+        // 工具函数
+        function drawArrow(x1, y1, x2, y2, color, width = 3) {
+            const dx = x2 - x1, dy = y2 - y1, len = Math.sqrt(dx*dx+dy*dy);
+            if (len < 1) return;
+            const ux = dx/len, uy = dy/len;
+            ctx.strokeStyle = color; ctx.lineWidth = width; ctx.lineCap = 'round';
+            ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2 - ux*10, y2 - uy*10); ctx.stroke();
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.moveTo(x2, y2);
+            ctx.lineTo(x2 - ux*10 + uy*5, y2 - uy*10 - ux*5);
+            ctx.lineTo(x2 - ux*10 - uy*5, y2 - uy*10 + ux*5);
+            ctx.closePath(); ctx.fill();
+        }
+
+        function drawDashed(x1, y1, x2, y2) {
+            ctx.save(); ctx.strokeStyle = '#888'; ctx.lineWidth = 1.5; ctx.setLineDash([5,4]);
+            ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke(); ctx.restore();
+        }
+
+        function update() {
+            if (!running) return;
+            personX -= V0;
+            if (personX < 30) personX = 30;
+            L1 = sheaveX - personX;
+            L2 = L_total - L1;
+            const dxSq = L2*L2 - H*H;
+            if (dxSq < 0) { carX = sheaveX; running = false; return; }
+            carX = sheaveX + Math.sqrt(dxSq);
+            if (carX > 870) carX = 870;
+
+            const dx = carX - sheaveX;
+            const alpha = Math.atan2(H, dx);
+            const alphaDeg = alpha * 180 / Math.PI;
+            if (alphaDeg >= 80) {
+                running = false;
+                stoppedByAngle = true;
+            }
+        }
+
+        function getRopePoints() {
+            const leftTan = { x: sheaveX, y: sheaveY - sheaveR };
+            const contactAngle = -70 * Math.PI / 180;
+            const rightContact = {
+                x: sheaveX + sheaveR * Math.cos(contactAngle),
+                y: sheaveY + sheaveR * Math.sin(contactAngle)
+            };
+            return { left: leftTan, right: rightContact };
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            const { left, right } = getRopePoints();
+            const dx = carX - sheaveX;
+            const alpha = Math.atan2(H, dx);
+            const cosAlpha = Math.cos(alpha);
+            const vCar = cosAlpha > 0.001 ? V0 / cosAlpha : 999;
+            const alphaDeg = alpha * 180 / Math.PI;
+
+            // 天空与地面
+            ctx.fillStyle = '#d4e6f1'; ctx.fillRect(0, 0, canvas.width, groundY);
+            ctx.fillStyle = '#a48c6c'; ctx.fillRect(0, groundY, canvas.width, canvas.height - groundY);
+
+            // 高台
+            ctx.fillStyle = '#8c7b6a';
+            ctx.fillRect(tableLeft, platformY-5, sheaveX-10 - tableLeft, 12);
+            ctx.fillStyle = '#7b6b5a';
+            ctx.fillRect(sheaveX-20, platformY, 16, groundY - platformY);
+            ctx.fillRect(tableLeft, platformY, 12, groundY - platformY);
+            ctx.fillRect(tableLeft + 80, platformY, 12, groundY - platformY);
+
+            // 定滑轮
+            ctx.fillStyle = '#aaa'; ctx.beginPath(); ctx.arc(sheaveX, sheaveY, sheaveR, 0, 2*Math.PI); ctx.fill();
+            ctx.strokeStyle = '#333'; ctx.lineWidth = 2.5; ctx.stroke();
+            ctx.fillStyle = '#444'; ctx.beginPath(); ctx.arc(sheaveX, sheaveY, 2.5, 0, 2*Math.PI); ctx.fill();
+
+            // 绳子
+            ctx.strokeStyle = '#111'; ctx.lineWidth = 4; ctx.lineCap = 'round';
+            ctx.beginPath(); ctx.moveTo(personX, ropeY); ctx.lineTo(left.x, left.y); ctx.stroke();
+            ctx.beginPath();
+            ctx.arc(sheaveX, sheaveY, sheaveR, -Math.PI/2, -70 * Math.PI/180, false);
+            ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(right.x, right.y); ctx.lineTo(carX, groundY); ctx.stroke();
+
+            // 角度α（黑色虚线圆弧）
+            if (dx > 15 && alphaDeg < 80) {
+                ctx.save();
+                ctx.translate(carX, groundY);
+                const startAngle = Math.PI;
+                const endAngle = Math.PI + alpha;
+                ctx.strokeStyle = '#000';
+                ctx.lineWidth = 2;
+                ctx.setLineDash([5, 4]);
+                ctx.beginPath();
+                ctx.arc(0, 0, 42, startAngle, endAngle, false);
+                ctx.stroke();
+                ctx.setLineDash([]);
+                const labelAngle = startAngle + alpha / 2;
+                const labelR = 48;
+                ctx.fillStyle = '#000';
+                ctx.font = 'bold 15px "PingFang SC"';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('α', labelR * Math.cos(labelAngle), labelR * Math.sin(labelAngle));
+                ctx.restore();
+            }
+
+            // 小车红色质点
+            const dotR = 6;
+            ctx.fillStyle = '#e74c3c';
+            ctx.beginPath(); ctx.arc(carX, groundY, dotR, 0, 2*Math.PI); ctx.fill();
+            ctx.strokeStyle = '#c0392b';
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+
+            // 速度矢量分解（角度<80°时绘制）
+            if (alphaDeg < 80 && dx > 5) {
+                const vecOriginX = carX, vecOriginY = groundY;
+                const vScale = 315, maxLen = 300;
+                const vCarLen = Math.min(vCar * vScale, maxLen);
+                const blackEndX = vecOriginX - vCarLen, blackEndY = vecOriginY;
+                drawArrow(vecOriginX, vecOriginY, blackEndX, blackEndY, '#1a1a1a', 3.5);
+
+                const ropeDx = -(carX - sheaveX) / L2;
+                const ropeDy = -(groundY - sheaveY) / L2;
+                const vParLen = Math.min(V0 * vScale, maxLen);
+                const yellowEndX = vecOriginX + ropeDx * vParLen;
+                const yellowEndY = vecOriginY + ropeDy * vParLen;
+                drawArrow(vecOriginX, vecOriginY, yellowEndX, yellowEndY, '#f1c40f', 3.2);
+
+                drawArrow(yellowEndX, yellowEndY, blackEndX, blackEndY, '#3498db', 3.2);
+                drawDashed(blackEndX, blackEndY, yellowEndX, yellowEndY);
+
+                ctx.fillStyle = '#1a1a1a'; ctx.font = 'bold 14px "PingFang SC"';
+                ctx.fillText('v车', blackEndX - 30, blackEndY - 12);
+                ctx.fillStyle = '#c9a220';
+                ctx.fillText('v∥', yellowEndX + 12, yellowEndY - 10);
+                ctx.fillStyle = '#2980b9';
+                ctx.fillText('v⊥', (yellowEndX + blackEndX)/2 - 35, (yellowEndY + blackEndY)/2 - 12);
+            }
+
+            // 人物
+            const pFootY = platformY;
+            const pHeadY = pFootY - 55;
+            const pShoulderY = pFootY - 38;
+            ctx.fillStyle = '#2c3e50';
+            ctx.fillRect(personX-10, pFootY-16, 8, 16);
+            ctx.fillRect(personX+2, pFootY-16, 8, 16);
+            ctx.fillStyle = '#111';
+            ctx.fillRect(personX-11, pFootY-4, 10, 6);
+            ctx.fillRect(personX, pFootY-4, 10, 6);
+            ctx.fillStyle = '#2980b9';
+            ctx.fillRect(personX-13, pShoulderY-4, 26, 24);
+            ctx.fillStyle = '#f1c40f';
+            ctx.fillRect(personX-13, pShoulderY-2, 26, 4);
+            ctx.fillStyle = '#f5cba7';
+            ctx.beginPath(); ctx.arc(personX, pHeadY, 13, 0, 2*Math.PI); ctx.fill();
+            ctx.fillStyle = '#000';
+            ctx.beginPath(); ctx.arc(personX-5, pHeadY-3, 2, 0, 2*Math.PI); ctx.fill();
+            ctx.beginPath(); ctx.arc(personX+5, pHeadY-3, 2, 0, 2*Math.PI); ctx.fill();
+            ctx.strokeStyle = '#c0392b'; ctx.lineWidth = 1.5;
+            ctx.beginPath(); ctx.arc(personX, pHeadY+6, 3, 0, Math.PI); ctx.stroke();
+            ctx.fillStyle = '#e67e22';
+            ctx.beginPath(); ctx.arc(personX, pHeadY-8, 14, Math.PI, 0); ctx.fill();
+            ctx.strokeStyle = '#2980b9'; ctx.lineWidth = 4.5; ctx.lineCap = 'round';
+            ctx.beginPath(); ctx.moveTo(personX+8, pShoulderY); ctx.lineTo(personX+20, ropeY); ctx.stroke();
+            ctx.fillStyle = '#f5cba7';
+            ctx.beginPath(); ctx.arc(personX+20, ropeY, 4.5, 0, 2*Math.PI); ctx.fill();
+
+            // 人的速度箭头
+            const vScalePerson = 315;
+            drawArrow(personX, pShoulderY-20, personX - V0 * vScalePerson, pShoulderY-20, '#e74c3c', 3);
+            ctx.fillStyle = '#c0392b'; ctx.font = 'bold 13px "PingFang SC"';
+            ctx.fillText('v₀', personX - V0 * vScalePerson - 25, pShoulderY-28);
+
+            // 速度关系公式
+            ctx.fillStyle = 'rgba(0,0,0,0.75)';
+            ctx.font = 'bold 18px "PingFang SC", "Microsoft YaHei", sans-serif';
+            ctx.textAlign = 'center';
+            let vCarText = alphaDeg < 80 ? vCar.toFixed(2) : '∞';
+            ctx.fillText(`v车 = v₀ / cosα = ${vCarText} m/s`, canvas.width/2, 28);
+
+            // 新增：沿绳分速度相等的标注
+            ctx.font = 'bold 17px "PingFang SC", "Microsoft YaHei", sans-serif';
+            ctx.fillText('沿绳方向分速度大小相等：v∥(人) = v∥(车) = v₀', canvas.width/2, 56);
+
+            // 角度达到80°停止提示
+            if (stoppedByAngle || alphaDeg >= 80) {
+                ctx.fillStyle = 'rgba(220, 50, 50, 0.9)';
+                ctx.font = 'bold 20px "PingFang SC"';
+                ctx.fillText('绳子角度已达80°，动画停止', canvas.width/2, 82);
+            }
+
+            // 标注
+            ctx.fillStyle = '#000'; ctx.font = 'bold 12px "PingFang SC"';
+            ctx.fillText('定滑轮', sheaveX-30, sheaveY-20);
+            ctx.fillText('高台', tableLeft + 5, platformY-12);
+            ctx.fillText('地面', 830, groundY-8);
+        }
+
+        function loop() {
+            update();
+            draw();
+            requestAnimationFrame(loop);
+        }
+
+        document.getElementById('playBtn').addEventListener('click', () => {
+            if (stoppedByAngle || (Math.atan2(H, carX - sheaveX) * 180 / Math.PI) >= 80) return;
+            running = true;
+        });
+        document.getElementById('pauseBtn').addEventListener('click', () => { running = false; });
+        document.getElementById('resetBtn').addEventListener('click', () => {
+            personX = INIT_PERSON_X;
+            carX = INIT_CAR_X;
+            L1 = L1_init;
+            L2 = L2_init;
+            running = true;
+            stoppedByAngle = false;
+        });
+        window.addEventListener('keydown', (e) => {
+            if (e.code === 'Space') {
+                e.preventDefault();
+                const alphaDeg = Math.atan2(H, carX - sheaveX) * 180 / Math.PI;
+                if (alphaDeg >= 80) return;
+                running = !running;
+            } else if (e.code === 'KeyR') {
+                document.getElementById('resetBtn').click();
+            }
+        });
+
+        loop();
+    </script>
+
+  <script>
+  // 返回主页（滚动位置已在主页点击链接时保存）
+  function saveScrollAndReturn() {
+    window.location.href = '../index.html';
+  }
+  
+  // 禁用右键菜单
+  document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+  });
+  
+  // 禁用开发者工具快捷键
+  document.addEventListener('keydown', function(e) {
+    // ESC返回主页 - 保存滚动位置
+    if (e.keyCode === 27) {
+      saveScrollAndReturn();
+      return false;
+    }
+    // F12
+    if (e.keyCode === 123) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+U
+    if (e.ctrlKey && e.keyCode === 85) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+I
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 73) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+J
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 74) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+C
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 67) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+S
+    if (e.ctrlKey && e.keyCode === 83) {
+      e.preventDefault();
+      return false;
+    }
+  });
+  
+  // 禁用选择
+  document.addEventListener('selectstart', function(e) {
+    // 允许输入框选择
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+      return true;
+    }
+    e.preventDefault();
+    return false;
+  });
+  </script>
+</body>
+</html>
