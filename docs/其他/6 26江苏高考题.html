@@ -1,0 +1,1229 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>三球弹簧碰撞动画</title>
+  <style>
+    :root {
+      --bg: #f5f7fb;
+      --panel: #ffffff;
+      --ink: #172033;
+      --muted: #617089;
+      --line: #dce3ef;
+      --rail: #9aa8b8;
+      --blue: #1479c9;
+      --green: #2f9d55;
+      --orange: #e18a1a;
+      --red: #d93a3a;
+      --violet: #7659c7;
+      --shadow: 0 18px 45px rgba(28, 43, 74, 0.12);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Microsoft YaHei", "PingFang SC", system-ui, sans-serif;
+      color: var(--ink);
+      background:
+        linear-gradient(#e7ecf5 1px, transparent 1px),
+        linear-gradient(90deg, #e7ecf5 1px, transparent 1px),
+        var(--bg);
+      background-size: 42px 42px;
+    }
+
+    .app {
+      width: min(1380px, calc(100vw - 28px));
+      margin: 18px auto 28px;
+    }
+
+    header {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 20px;
+      margin-bottom: 14px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(24px, 3vw, 38px);
+      letter-spacing: 0;
+      line-height: 1.15;
+    }
+
+    .subtitle {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.55;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      min-height: 34px;
+      padding: 0 12px;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: rgba(255,255,255,.86);
+      color: #36506d;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1.6fr) minmax(310px, .8fr);
+      gap: 16px;
+      align-items: start;
+    }
+
+    .stageWrap,
+    .panel,
+    .formula,
+    .chartBox {
+      background: rgba(255,255,255,.94);
+      border: 1px solid rgba(202, 213, 229, .86);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+    }
+
+    .stageWrap {
+      overflow: hidden;
+    }
+
+    .toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--line);
+      background: #fbfcff;
+    }
+
+    .state {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      height: 26px;
+      padding: 0 9px;
+      border-radius: 999px;
+      background: #eef3f8;
+      border: 1px solid #dfe7f0;
+      color: #40526a;
+    }
+
+    .buttons {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .speedControl {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      height: 34px;
+      padding: 0 10px;
+      border: 1px solid #cbd6e4;
+      border-radius: 7px;
+      background: #fff;
+      color: #30445d;
+      font-size: 13px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .speedControl input {
+      width: 92px;
+      accent-color: #176fb2;
+    }
+
+    .speedControl output {
+      min-width: 34px;
+      color: #0f5f9e;
+      text-align: right;
+    }
+
+    button {
+      height: 34px;
+      border: 1px solid #cbd6e4;
+      border-radius: 7px;
+      background: #fff;
+      color: #1f2d3e;
+      font-weight: 700;
+      cursor: pointer;
+      padding: 0 12px;
+      transition: transform .16s ease, border-color .16s ease, background .16s ease;
+    }
+
+    button:hover { transform: translateY(-1px); border-color: #9fb2c7; }
+    button.primary { background: #176fb2; border-color: #176fb2; color: #fff; }
+    button.warn { background: #fff7e8; border-color: #edc57f; color: #7a4b0b; }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: auto;
+      background: linear-gradient(180deg, rgba(248,250,254,.92), rgba(239,244,251,.92));
+    }
+
+    .panel {
+      padding: 14px;
+    }
+
+    .panel h2,
+    .formula h2,
+    .chartBox h2 {
+      margin: 0 0 12px;
+      font-size: 17px;
+      line-height: 1.35;
+    }
+
+    .control {
+      margin: 13px 0;
+      padding-bottom: 13px;
+      border-bottom: 1px solid #edf1f6;
+    }
+
+    .control:last-child {
+      border-bottom: 0;
+      padding-bottom: 0;
+    }
+
+    .controlTop {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      font-size: 14px;
+      color: #314258;
+      margin-bottom: 8px;
+    }
+
+    .value {
+      font-weight: 800;
+      color: #0f5f9e;
+      white-space: nowrap;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: #176fb2;
+    }
+
+    .resultGrid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .metric {
+      min-height: 72px;
+      padding: 10px;
+      border: 1px solid #dfe7f0;
+      border-radius: 8px;
+      background: #fbfcff;
+    }
+
+    .metric .label {
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom: 5px;
+    }
+
+    .metric .num {
+      font-size: 20px;
+      font-weight: 850;
+      color: #172033;
+    }
+
+    .metric .unit {
+      font-size: 12px;
+      color: var(--muted);
+      margin-left: 3px;
+    }
+
+    .formula {
+      margin-top: 16px;
+      padding: 16px;
+    }
+
+    .steps {
+      display: grid;
+      gap: 10px;
+    }
+
+    .step {
+      border-left: 4px solid var(--blue);
+      padding: 10px 12px;
+      background: #f8fbff;
+      border-radius: 0 8px 8px 0;
+      line-height: 1.65;
+      color: #2c3c50;
+      font-size: 14px;
+    }
+
+    .step:nth-child(2) { border-left-color: var(--green); background: #f7fcf8; }
+    .step:nth-child(3) { border-left-color: var(--orange); background: #fffaf2; }
+
+    .math {
+      display: block;
+      margin-top: 5px;
+      color: #111827;
+      font-family: Cambria, "Times New Roman", serif;
+      font-size: 17px;
+      overflow-wrap: anywhere;
+    }
+
+    .chartBox {
+      margin-top: 16px;
+      padding: 12px 14px 14px;
+    }
+
+    #chart {
+      width: 100%;
+      height: 180px;
+      border: 1px solid #dfe7f0;
+      border-radius: 8px;
+      background: #fff;
+    }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .key {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .swatch {
+      width: 16px;
+      height: 4px;
+      border-radius: 4px;
+      background: var(--blue);
+    }
+
+    .swatch.red { background: var(--red); }
+    .swatch.green { background: var(--green); }
+    .swatch.orange { background: var(--orange); }
+
+    .status {
+      margin-top: 12px;
+      padding: 11px 12px;
+      border: 1px solid #d9e7d8;
+      border-radius: 8px;
+      background: #f4fbf3;
+      color: #285f2f;
+      line-height: 1.55;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .status.off {
+      border-color: #efd4d4;
+      background: #fff6f6;
+      color: #8c2727;
+    }
+
+    @media (max-width: 980px) {
+      header { align-items: flex-start; flex-direction: column; }
+      .layout { grid-template-columns: 1fr; }
+      .badge { white-space: normal; }
+      .toolbar { align-items: flex-start; flex-direction: column; }
+      .buttons { width: 100%; flex-wrap: wrap; }
+      button { flex: 1 1 auto; }
+      .speedControl { flex: 1 1 180px; justify-content: center; }
+    }
+  </style>
+
+  <style>
+  body {
+    background-color: #1a2332 !important;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+  }
+  
+  .qilai-back-btn {
+    position: fixed;
+    top: 10px;
+    left: 15px;
+    z-index: 100000;
+    padding: 8px 16px;
+    background: rgba(0, 150, 200, 0.2);
+    border: 1px solid rgba(100, 180, 255, 0.5);
+    color: #8ab4f8;
+    font-size: 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.3s;
+    backdrop-filter: blur(5px);
+    font-family: "Microsoft YaHei", sans-serif;
+  }
+  
+  .qilai-back-btn:hover {
+    background: rgba(0, 150, 200, 0.4);
+    box-shadow: 0 0 15px rgba(100, 180, 255, 0.3);
+    color: #fff;
+  }
+  
+  .qilai-watermark {
+    position: fixed;
+    bottom: 15px;
+    right: 15px;
+    z-index: 99998;
+    font-size: 12px;
+    color: rgba(138, 180, 248, 0.35);
+    text-align: right;
+    line-height: 1.8;
+    pointer-events: none;
+    user-select: none;
+    font-family: "Microsoft YaHei", sans-serif;
+  }
+  
+  .qilai-watermark .title {
+    font-size: 14px;
+    font-weight: bold;
+    color: rgba(138, 180, 248, 0.45);
+    margin-bottom: 4px;
+    letter-spacing: 1px;
+  }
+  </style>
+</head>
+<body>
+  <a href="javascript:void(0);" class="qilai-back-btn" onclick="saveScrollAndReturn();">← 返回主页</a>
+  
+  <div class="qilai-watermark">
+    <div class="title">齐老师动画</div>
+    QQ 3398528250<br>
+    抖音 35320300542
+  </div>
+
+  <main class="app">
+    <header>
+      <div>
+        <h1>三球弹簧碰撞动画</h1>
+        <p class="subtitle">D 与 A 对心弹性碰撞，随后 A 带动上下轨道中的 B、C 通过两根相同弹簧运动。</p>
+      </div>
+      <div class="badge">默认：m<sub>B</sub> = m<sub>C</sub> = 3m/5，m<sub>A</sub> = m</div>
+    </header>
+
+    <section class="layout">
+      <div>
+        <section class="stageWrap">
+          <div class="toolbar">
+            <div class="state">
+              <span class="pill" id="timePill">t = 0.000 s</span>
+              <span class="pill" id="phasePill">碰撞前</span>
+              <span class="pill" id="meetPill">首次原长：待计算</span>
+            </div>
+            <div class="buttons">
+              <button class="primary" id="playBtn">播放</button>
+              <button id="pauseBtn">暂停</button>
+              <label class="speedControl" for="speedRange">
+                <span>倍速</span>
+                <input id="speedRange" type="range" min="0.1" max="1" step="0.1" value="1">
+                <output id="speedVal">1.0x</output>
+              </label>
+              <button class="warn" id="resetBtn">复位</button>
+              <button id="criticalBtn">设为恰好再次碰撞</button>
+            </div>
+          </div>
+          <canvas id="scene" width="980" height="520" aria-label="三球弹簧碰撞动画"></canvas>
+        </section>
+
+        <section class="formula">
+          <h2>三问结论</h2>
+          <div class="steps">
+            <div class="step">
+              （1）碰撞时间极短，B、C 来不及参与；D 与静止的 A 发生一维弹性碰撞。
+              <span class="math">v<sub>A0</sub> = 2M/(M + m) · v<sub>0</sub></span>
+            </div>
+            <div class="step">
+              （2）A、B、C 速度第一次相等时，两弹簧总势能最大；上下对称，所以每根弹簧分到一半。
+              <span class="math">E<sub>每根,max</sub> = 2αmM²v<sub>0</sub>² / [(1 + 2α)(M + m)²]</span>
+              <span class="math">原题默认 α = 3/5：E<sub>每根,max</sub> = 6mM²v<sub>0</sub>² / [11(M + m)²]</span>
+            </div>
+            <div class="step">
+              （3）第一次恢复原长时，A、B、C 位于同一竖线；这条竖线按质心速度前进。恰好再碰撞要求 v<sub>D</sub> 等于 A、B、C 系统的质心速度。
+              <span class="math">M/m = (1 + 2α)/(2α - 1)，α = 3/5 时 M/m = 11</span>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <aside>
+        <section class="panel">
+          <h2>参数</h2>
+          <div class="control">
+            <div class="controlTop"><span>A 的质量 m</span><span class="value" id="mVal">0.20 kg</span></div>
+            <input id="mA" type="range" min="0.10" max="1.00" step="0.01" value="0.20">
+          </div>
+          <div class="control">
+            <div class="controlTop"><span>B、C 与 A 的质量比 α</span><span class="value" id="alphaVal">0.60</span></div>
+            <input id="alpha" type="range" min="0.52" max="2.00" step="0.01" value="0.60">
+          </div>
+          <div class="control">
+            <div class="controlTop"><span>D 与 A 的质量比 M/m</span><span class="value" id="ratioVal">11.00</span></div>
+            <input id="ratio" type="range" min="1.05" max="18.00" step="0.01" value="11.00">
+          </div>
+          <div class="control">
+            <div class="controlTop"><span>D 初速度 v0</span><span class="value" id="v0Val">4.60 m/s</span></div>
+            <input id="v0" type="range" min="1.00" max="8.00" step="0.05" value="4.60">
+          </div>
+          <div class="control">
+            <div class="controlTop"><span>弹簧劲度系数 k</span><span class="value" id="kVal">20 N/m</span></div>
+            <input id="k" type="range" min="5" max="80" step="1" value="20">
+          </div>
+
+          <div class="resultGrid">
+            <div class="metric">
+              <div class="label">碰后 A 速度</div>
+              <div><span class="num" id="uA">0.000</span><span class="unit">m/s</span></div>
+            </div>
+            <div class="metric">
+              <div class="label">碰后 D 速度</div>
+              <div><span class="num" id="uD">0.000</span><span class="unit">m/s</span></div>
+            </div>
+            <div class="metric">
+              <div class="label">每根弹簧最大势能</div>
+              <div><span class="num" id="eMax">0.000</span><span class="unit">J</span></div>
+            </div>
+            <div class="metric">
+              <div class="label">临界质量比</div>
+              <div><span class="num" id="rCrit">0.000</span></div>
+            </div>
+          </div>
+          <div class="status" id="statusBox">正在计算</div>
+        </section>
+
+        <section class="chartBox">
+          <h2>速度与势能</h2>
+          <canvas id="chart" width="420" height="180" aria-label="速度与势能曲线"></canvas>
+          <div class="legend">
+            <span class="key"><span class="swatch"></span>A 速度</span>
+            <span class="key"><span class="swatch red"></span>D 速度</span>
+            <span class="key"><span class="swatch green"></span>B、C 速度</span>
+            <span class="key"><span class="swatch orange"></span>单根弹簧势能</span>
+          </div>
+        </section>
+      </aside>
+    </section>
+  </main>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const scene = $("scene");
+    const ctx = scene.getContext("2d");
+    const chart = $("chart");
+    const cctx = chart.getContext("2d");
+
+    const controls = {
+      mA: $("mA"),
+      alpha: $("alpha"),
+      ratio: $("ratio"),
+      v0: $("v0"),
+      k: $("k")
+    };
+
+    let samples = [];
+    let sim = {};
+    let playing = false;
+    let playSpeed = 1;
+    let startStamp = 0;
+    let simTime = -0.85;
+    let lastDraw = 0;
+
+    function params() {
+      const m = Number(controls.mA.value);
+      const alpha = Number(controls.alpha.value);
+      const ratio = Number(controls.ratio.value);
+      const M = ratio * m;
+      const v0 = Number(controls.v0.value);
+      const k = Number(controls.k.value);
+      const L0 = 1.0;
+      return { m, alpha, mb: alpha * m, M, ratio, v0, k, L0 };
+    }
+
+    function derivatives(s, p) {
+      const dx = s.xA - s.xB;
+      const len = Math.hypot(dx, p.L0);
+      const ext = len - p.L0;
+      const oneSpringForce = p.k * ext * dx / len;
+      return {
+        xA: s.vA,
+        xB: s.vB,
+        vA: -2 * oneSpringForce / p.m,
+        vB: oneSpringForce / p.mb
+      };
+    }
+
+    function rk4(s, p, dt) {
+      const k1 = derivatives(s, p);
+      const s2 = {
+        xA: s.xA + k1.xA * dt / 2,
+        xB: s.xB + k1.xB * dt / 2,
+        vA: s.vA + k1.vA * dt / 2,
+        vB: s.vB + k1.vB * dt / 2
+      };
+      const k2 = derivatives(s2, p);
+      const s3 = {
+        xA: s.xA + k2.xA * dt / 2,
+        xB: s.xB + k2.xB * dt / 2,
+        vA: s.vA + k2.vA * dt / 2,
+        vB: s.vB + k2.vB * dt / 2
+      };
+      const k3 = derivatives(s3, p);
+      const s4 = {
+        xA: s.xA + k3.xA * dt,
+        xB: s.xB + k3.xB * dt,
+        vA: s.vA + k3.vA * dt,
+        vB: s.vB + k3.vB * dt
+      };
+      const k4 = derivatives(s4, p);
+      return {
+        xA: s.xA + dt * (k1.xA + 2*k2.xA + 2*k3.xA + k4.xA) / 6,
+        xB: s.xB + dt * (k1.xB + 2*k2.xB + 2*k3.xB + k4.xB) / 6,
+        vA: s.vA + dt * (k1.vA + 2*k2.vA + 2*k3.vA + k4.vA) / 6,
+        vB: s.vB + dt * (k1.vB + 2*k2.vB + 2*k3.vB + k4.vB) / 6
+      };
+    }
+
+    function springEnergyEach(s, p) {
+      const dx = s.xA - s.xB;
+      const len = Math.hypot(dx, p.L0);
+      const ext = len - p.L0;
+      return 0.5 * p.k * ext * ext;
+    }
+
+    function recalc() {
+      const p = params();
+      const uA = 2 * p.M / (p.M + p.m) * p.v0;
+      const uD = (p.M - p.m) / (p.M + p.m) * p.v0;
+      const vCM = p.m * uA / (p.m + 2 * p.mb);
+      const eEach = 2 * p.alpha * p.m * p.M * p.M * p.v0 * p.v0 / ((1 + 2 * p.alpha) * (p.M + p.m) * (p.M + p.m));
+      const rCrit = (1 + 2 * p.alpha) / (2 * p.alpha - 1);
+
+      $("mVal").textContent = `${p.m.toFixed(2)} kg`;
+      $("alphaVal").textContent = p.alpha.toFixed(2);
+      $("ratioVal").textContent = p.ratio.toFixed(2);
+      $("v0Val").textContent = `${p.v0.toFixed(2)} m/s`;
+      $("kVal").textContent = `${p.k.toFixed(0)} N/m`;
+      $("uA").textContent = uA.toFixed(3);
+      $("uD").textContent = uD.toFixed(3);
+      $("eMax").textContent = eEach.toFixed(3);
+      $("rCrit").textContent = rCrit.toFixed(3);
+
+      const dt = 0.002;
+      const maxT = 8;
+      const visualRadiusSum = 49;
+
+      function runSimulation(contactGap) {
+        let state = { xA: 0, xB: 0, vA: uA, vB: 0, xD: -contactGap, vD: uD };
+        const runSamples = [{ t: 0, ...state, e: 0, dX: state.xD }];
+        let firstReturn = null;
+        let collisions = [];
+        let stopAt = maxT;
+        let maxESeen = 0;
+        let maxX = 0;
+        let lastDx = 0;
+        let hasStretched = false;
+
+        for (let t = dt; t <= maxT; t += dt) {
+          const prev = state;
+          let next = rk4(prev, p, dt);
+          next.xD = prev.xD + prev.vD * dt;
+          next.vD = prev.vD;
+
+          const rawDx = next.xA - next.xB;
+          if (hasStretched && lastDx > 0 && rawDx <= 0 && !firstReturn) {
+            const frac = lastDx / (lastDx - rawDx);
+            const tHit = t - dt + frac * dt;
+            const xCommon = prev.xA + frac * (next.xA - prev.xA);
+            const xD = prev.xD + frac * (next.xD - prev.xD);
+            firstReturn = { t: tHit, xCommon, xD, miss: xD + contactGap - xCommon };
+            stopAt = Math.min(maxT, tHit * 5);
+          }
+
+          const prevGap = prev.xA - prev.xD;
+          const nextGap = next.xA - next.xD;
+          const catching = (prev.vD - prev.vA) > 0.001;
+          if (t > dt && prevGap > contactGap && nextGap <= contactGap && catching) {
+            const frac = (prevGap - contactGap) / (prevGap - nextGap);
+            const tColl = t - dt + frac * dt;
+            let atColl = rk4(prev, p, dt * frac);
+            atColl.xD = prev.xD + prev.vD * dt * frac;
+            atColl.vD = prev.vD;
+            atColl.xD = atColl.xA - contactGap;
+
+            const beforeVA = atColl.vA;
+            const beforeVD = atColl.vD;
+            const afterVD = ((p.M - p.m) * beforeVD + 2 * p.m * beforeVA) / (p.M + p.m);
+            const afterVA = (2 * p.M * beforeVD + (p.m - p.M) * beforeVA) / (p.M + p.m);
+            atColl.vA = afterVA;
+            atColl.vD = afterVD;
+            collisions.push({
+              t: tColl,
+              xA: atColl.xA,
+              xD: atColl.xD,
+              x: atColl.xA - contactGap / 2,
+              beforeVA,
+              beforeVD,
+              afterVA,
+              afterVD
+            });
+            runSamples.push({ t: tColl, ...atColl, e: springEnergyEach(atColl, p), dX: atColl.xD, collision: true });
+
+            const remain = dt * (1 - frac);
+            next = rk4(atColl, p, remain);
+            next.xD = atColl.xD + atColl.vD * remain;
+            next.vD = atColl.vD;
+          }
+
+          state = next;
+          const dx = state.xA - state.xB;
+          const e = springEnergyEach(state, p);
+          const dX = state.xD;
+          maxESeen = Math.max(maxESeen, e);
+          maxX = Math.max(maxX, state.xA, state.xB, dX);
+          runSamples.push({ t, ...state, e, dX });
+          if (Math.abs(dx) > 0.004) hasStretched = true;
+          if (hasStretched && lastDx > 0 && dx <= 0 && !firstReturn) {
+            const frac = lastDx / (lastDx - dx);
+            const tHit = t - dt + frac * dt;
+            const xCommon = prev.xA + frac * (state.xA - prev.xA);
+            const xD = prev.xD + frac * (state.xD - prev.xD);
+            firstReturn = { t: tHit, xCommon, xD, miss: xD + contactGap - xCommon };
+            stopAt = Math.min(maxT, tHit * 5);
+          }
+          if (t >= stopAt) break;
+          lastDx = dx;
+        }
+
+        return { samples: runSamples, firstReturn, collisions, maxESeen, maxX: Math.max(maxX, 1), contactGap };
+      }
+
+      let contactGap = 0.55;
+      let result = null;
+      for (let pass = 0; pass < 3; pass++) {
+        result = runSimulation(contactGap);
+        const scaleGuess = Math.min(95, 560 / Math.max(2.2, result.maxX + 1.4));
+        contactGap = visualRadiusSum / scaleGuess;
+      }
+      samples = result.samples;
+
+      sim = { p, uA, uD, vCM, eEach, rCrit, firstReturn: result.firstReturn, collisions: result.collisions, maxESeen: result.maxESeen, maxX: result.maxX, contactGap: result.contactGap };
+
+      const delta = uD - vCM;
+      const ok = Math.abs(delta) < 0.015 * Math.max(1, p.v0);
+      const status = $("statusBox");
+      if (ok) {
+        status.classList.remove("off");
+        status.textContent = `恰好条件成立：vD 与 A、B、C 质心速度几乎相等，第一次原长时会再次碰撞。`;
+      } else {
+        status.classList.add("off");
+        const direction = delta > 0 ? "D 偏快，会提前追上 A" : "D 偏慢，第一次原长时仍落后于 A";
+        status.textContent = `${direction}。把 M/m 调到 ${rCrit.toFixed(3)} 可满足第三问。`;
+      }
+      $("meetPill").textContent = sim.firstReturn ? `首次原长：${sim.firstReturn.t.toFixed(3)} s` : "首次原长：未捕捉";
+
+      drawScene(simTime);
+      drawChart();
+    }
+
+    function interp(t) {
+      if (t <= 0) {
+        const p = sim.p || params();
+        const gap = sim.contactGap || 0;
+        return { t, xA: 0, xB: 0, xD: -gap + p.v0 * t, vA: 0, vB: 0, vD: p.v0, e: 0, dX: -gap + p.v0 * t };
+      }
+      if (!samples.length) return { t: 0, xA: 0, xB: 0, xD: 0, vA: 0, vB: 0, vD: 0, e: 0, dX: 0 };
+      if (t >= samples[samples.length - 1].t) return samples[samples.length - 1];
+      let lo = 0;
+      let hi = samples.length - 1;
+      while (hi - lo > 1) {
+        const mid = (lo + hi) >> 1;
+        if (samples[mid].t <= t) lo = mid;
+        else hi = mid;
+      }
+      const i = lo;
+      const a = samples[i];
+      const b = samples[i + 1];
+      const f = b.t === a.t ? 0 : (t - a.t) / (b.t - a.t);
+      return {
+        t,
+        xA: a.xA + (b.xA - a.xA) * f,
+        xB: a.xB + (b.xB - a.xB) * f,
+        xD: a.xD + (b.xD - a.xD) * f,
+        vA: a.vA + (b.vA - a.vA) * f,
+        vB: a.vB + (b.vB - a.vB) * f,
+        vD: a.vD + (b.vD - a.vD) * f,
+        e: a.e + (b.e - a.e) * f,
+        dX: a.dX + (b.dX - a.dX) * f
+      };
+    }
+
+    function drawSpring(x1, y1, x2, y2, color) {
+      const coils = 17;
+      const amp = 7;
+      const dx = x2 - x1;
+      const dy = y2 - y1;
+      const len = Math.hypot(dx, dy);
+      const ux = dx / len;
+      const uy = dy / len;
+      const nx = -uy;
+      const ny = ux;
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      for (let i = 1; i < coils; i++) {
+        const t = i / coils;
+        const off = (i % 2 ? amp : -amp);
+        ctx.lineTo(x1 + dx * t + nx * off, y1 + dy * t + ny * off);
+      }
+      ctx.lineTo(x2, y2);
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 3;
+      ctx.stroke();
+    }
+
+    function ball(x, y, r, color, label) {
+      const g = ctx.createRadialGradient(x - r*0.35, y - r*0.4, r*0.15, x, y, r);
+      g.addColorStop(0, "#fff");
+      g.addColorStop(0.22, color);
+      g.addColorStop(1, shade(color, -35));
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.fillStyle = g;
+      ctx.fill();
+      ctx.strokeStyle = "rgba(20,32,51,.22)";
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.fillStyle = "#fff";
+      ctx.font = "800 18px Microsoft YaHei";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(label, x, y + 1);
+    }
+
+    function shade(hex, percent) {
+      const n = parseInt(hex.slice(1), 16);
+      const amt = Math.round(2.55 * percent);
+      const r = Math.max(0, Math.min(255, (n >> 16) + amt));
+      const g = Math.max(0, Math.min(255, ((n >> 8) & 255) + amt));
+      const b = Math.max(0, Math.min(255, (n & 255) + amt));
+      return `rgb(${r},${g},${b})`;
+    }
+
+    function arrow(x, y, length, color, text) {
+      ctx.strokeStyle = color;
+      ctx.fillStyle = color;
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(x + length, y);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(x + length, y);
+      ctx.lineTo(x + length - 11, y - 6);
+      ctx.lineTo(x + length - 11, y + 6);
+      ctx.closePath();
+      ctx.fill();
+      ctx.font = "700 13px Microsoft YaHei";
+      ctx.textAlign = "left";
+      ctx.fillText(text, x + length + 8, y);
+    }
+
+    function velocityArrow(x, y, v, color, text) {
+      const dir = v >= 0 ? 1 : -1;
+      const length = Math.max(22, Math.min(92, Math.abs(v) * 12)) * dir;
+      ctx.strokeStyle = color;
+      ctx.fillStyle = color;
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(x + length, y);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(x + length, y);
+      ctx.lineTo(x + length - dir * 11, y - 6);
+      ctx.lineTo(x + length - dir * 11, y + 6);
+      ctx.closePath();
+      ctx.fill();
+      ctx.font = "700 13px Microsoft YaHei";
+      ctx.textAlign = dir > 0 ? "left" : "right";
+      ctx.fillText(text, x + length + dir * 8, y);
+    }
+
+    function drawScene(t) {
+      const w = scene.width;
+      const h = scene.height;
+      const p = sim.p || params();
+      const s = interp(t);
+      ctx.clearRect(0, 0, w, h);
+
+      const topY = 142;
+      const midY = 260;
+      const botY = 378;
+      const origin = 285;
+      const usable = 560;
+      const scale = Math.min(95, usable / Math.max(2.2, sim.maxX + 1.4));
+      const contactGap = sim.contactGap || 0;
+      const ballR = Math.max(16, Math.min(30, contactGap * scale / 2));
+      const railBallR = Math.max(18, Math.min(28, ballR));
+      const xA = origin + s.xA * scale;
+      const xB = origin + s.xB * scale;
+      const xD = origin + s.xD * scale;
+
+      ctx.save();
+      ctx.strokeStyle = "#d7dee8";
+      ctx.lineWidth = 1;
+      for (let x = 0; x <= w; x += 42) {
+        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke();
+      }
+      for (let y = 0; y <= h; y += 42) {
+        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+      }
+      ctx.restore();
+
+      [topY, botY].forEach((y) => {
+        ctx.strokeStyle = "#b8c2cf";
+        ctx.lineWidth = 10;
+        ctx.beginPath();
+        ctx.moveTo(70, y);
+        ctx.lineTo(w - 50, y);
+        ctx.stroke();
+        ctx.strokeStyle = "#758396";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(70, y - 7);
+        ctx.lineTo(w - 50, y - 7);
+        ctx.moveTo(70, y + 7);
+        ctx.lineTo(w - 50, y + 7);
+        ctx.stroke();
+      });
+
+      ctx.setLineDash([8, 8]);
+      ctx.strokeStyle = "#9aa8b8";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(70, midY);
+      ctx.lineTo(w - 50, midY);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      if (t >= 0) {
+        drawSpring(xA, midY - ballR, xB, topY + railBallR, "#6f7e8f");
+        drawSpring(xA, midY + ballR, xB, botY - railBallR, "#6f7e8f");
+      } else {
+        drawSpring(origin, midY - ballR, origin, topY + railBallR, "#6f7e8f");
+        drawSpring(origin, midY + ballR, origin, botY - railBallR, "#6f7e8f");
+      }
+
+      ball(xB, topY, railBallR, "#2f9d55", "B");
+      ball(xB, botY, railBallR, "#e18a1a", "C");
+      ball(xA, midY, ballR, "#1479c9", "A");
+      ball(xD, midY, ballR, "#d93a3a", "D");
+
+      if (t < 0) {
+        arrow(xD + 32, midY, 74, "#d93a3a", "v0");
+      } else {
+        velocityArrow(xA + (s.vA >= 0 ? ballR + 9 : -ballR - 9), midY - 28, s.vA, "#1479c9", "vA");
+        velocityArrow(xD + (s.vD >= 0 ? ballR + 8 : -ballR - 8), midY + 28, s.vD, "#d93a3a", "vD");
+        velocityArrow(xB + (s.vB >= 0 ? railBallR + 7 : -railBallR - 7), topY, s.vB, "#2f9d55", "vB");
+      }
+
+      const cmX = origin + (t > 0 ? sim.vCM * t : 0) * scale;
+      ctx.strokeStyle = "#7659c7";
+      ctx.lineWidth = 2;
+      ctx.setLineDash([6, 6]);
+      ctx.beginPath();
+      ctx.moveTo(cmX, 84);
+      ctx.lineTo(cmX, 430);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = "#7659c7";
+      ctx.font = "700 13px Microsoft YaHei";
+      ctx.fillText("A-B-C 质心竖线", cmX + 8, 94);
+
+      if (sim.firstReturn) {
+        const markX = origin + sim.firstReturn.xCommon * scale;
+        ctx.strokeStyle = "#2b7f45";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(markX, 104);
+        ctx.lineTo(markX, 416);
+        ctx.stroke();
+        ctx.fillStyle = "#2b7f45";
+        ctx.fillText("第一次原长位置", markX + 8, 414);
+      }
+
+      if (sim.collisions && sim.collisions.length) {
+        for (const collision of sim.collisions) {
+          if (Math.abs(t - collision.t) < 0.12) {
+            const cx = origin + collision.x * scale;
+            const pulse = Math.max(8, 42 - Math.abs(t - collision.t) * 120);
+            ctx.strokeStyle = "#d93a3a";
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.arc(cx, midY, pulse, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.fillStyle = "#d93a3a";
+            ctx.font = "800 14px Microsoft YaHei";
+            ctx.textAlign = "center";
+            ctx.fillText("D-A 碰撞", cx, midY - 56);
+          }
+        }
+      }
+
+      const eRatio = Math.min(1, s.e / Math.max(0.001, sim.eEach));
+      ctx.fillStyle = "rgba(255,255,255,.88)";
+      ctx.strokeStyle = "#dfe7f0";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.roundRect(24, 28, 250, 68, 8);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = "#30445d";
+      ctx.font = "700 13px Microsoft YaHei";
+      ctx.fillText("单根弹簧势能", 42, 53);
+      ctx.fillStyle = "#edf2f7";
+      ctx.fillRect(42, 65, 190, 12);
+      ctx.fillStyle = "#e18a1a";
+      ctx.fillRect(42, 65, 190 * eRatio, 12);
+      ctx.fillStyle = "#617089";
+      ctx.font = "12px Microsoft YaHei";
+      ctx.fillText(`${s.e.toFixed(3)} J / ${sim.eEach.toFixed(3)} J`, 42, 91);
+
+      $("timePill").textContent = `t = ${Math.max(t, 0).toFixed(3)} s`;
+      $("phasePill").textContent = t < 0 ? "碰撞前" : (sim.firstReturn && t >= sim.firstReturn.t ? "第一次原长后" : "碰撞后弹簧作用");
+    }
+
+    function drawChart() {
+      cctx.clearRect(0, 0, chart.width, chart.height);
+      cctx.fillStyle = "#fff";
+      cctx.fillRect(0, 0, chart.width, chart.height);
+      cctx.strokeStyle = "#e5ebf3";
+      cctx.lineWidth = 1;
+      for (let i = 1; i < 5; i++) {
+        const y = i * chart.height / 5;
+        cctx.beginPath(); cctx.moveTo(34, y); cctx.lineTo(chart.width - 10, y); cctx.stroke();
+      }
+      const endT = samples.length ? samples[samples.length - 1].t : 3;
+      const maxV = Math.max(
+        1,
+        ...samples.flatMap(s => [Math.abs(s.vA || 0), Math.abs(s.vB || 0), Math.abs(s.vD || 0)])
+      );
+      const maxE = Math.max(sim.eEach, 0.001);
+      const left = 34, right = chart.width - 10, top = 12, bottom = chart.height - 24;
+      const xOf = (t) => left + (right - left) * t / endT;
+      const yV = (v) => bottom - (bottom - top) * ((v + maxV) / (2 * maxV));
+      const yE = (e) => bottom - (bottom - top) * (e / maxE);
+
+      cctx.strokeStyle = "#d8e0eb";
+      cctx.lineWidth = 1;
+      cctx.beginPath();
+      cctx.moveTo(left, yV(0));
+      cctx.lineTo(right, yV(0));
+      cctx.stroke();
+
+      function path(color, getter, yGetter) {
+        cctx.beginPath();
+        cctx.strokeStyle = color;
+        cctx.lineWidth = 2.5;
+        let moved = false;
+        for (const s of samples) {
+          if (s.t > endT) break;
+          const x = xOf(s.t);
+          const y = yGetter(getter(s));
+          if (!moved) { cctx.moveTo(x, y); moved = true; }
+          else cctx.lineTo(x, y);
+        }
+        cctx.stroke();
+      }
+
+      path("#1479c9", s => s.vA, yV);
+      path("#2f9d55", s => s.vB, yV);
+      path("#d93a3a", s => s.vD, yV);
+      path("#e18a1a", s => s.e, yE);
+
+      if (sim.firstReturn) {
+        cctx.strokeStyle = "#7659c7";
+        cctx.setLineDash([5, 5]);
+        cctx.beginPath();
+        cctx.moveTo(xOf(sim.firstReturn.t), top);
+        cctx.lineTo(xOf(sim.firstReturn.t), bottom);
+        cctx.stroke();
+        cctx.setLineDash([]);
+      }
+
+      if (sim.collisions && sim.collisions.length) {
+        cctx.strokeStyle = "#d93a3a";
+        cctx.setLineDash([4, 4]);
+        for (const collision of sim.collisions) {
+          if (collision.t <= endT) {
+            cctx.beginPath();
+            cctx.moveTo(xOf(collision.t), top);
+            cctx.lineTo(xOf(collision.t), bottom);
+            cctx.stroke();
+          }
+        }
+        cctx.setLineDash([]);
+      }
+
+      cctx.fillStyle = "#617089";
+      cctx.font = "12px Microsoft YaHei";
+      cctx.fillText("0", 18, bottom + 4);
+      cctx.fillText(`${endT.toFixed(2)}s`, right - 42, bottom + 18);
+    }
+
+    function animate(stamp) {
+      if (!playing) return;
+      if (!startStamp) startStamp = stamp;
+      const dt = Math.min(0.04, (stamp - lastDraw) / 1000 || 0.016);
+      lastDraw = stamp;
+      simTime += dt * 0.9 * playSpeed;
+      const end = samples.length ? samples[samples.length - 1].t : 5;
+      if (simTime > end) simTime = -0.85;
+      drawScene(simTime);
+      requestAnimationFrame(animate);
+    }
+
+    Object.values(controls).forEach((el) => {
+      el.addEventListener("input", () => {
+        simTime = -0.85;
+        recalc();
+      });
+    });
+
+    $("playBtn").addEventListener("click", () => {
+      if (!playing) {
+        playing = true;
+        startStamp = 0;
+        lastDraw = performance.now();
+        requestAnimationFrame(animate);
+      }
+    });
+
+    $("pauseBtn").addEventListener("click", () => {
+      playing = false;
+    });
+
+    $("speedRange").addEventListener("input", () => {
+      playSpeed = Number($("speedRange").value);
+      $("speedVal").textContent = `${playSpeed.toFixed(1)}x`;
+    });
+
+    $("resetBtn").addEventListener("click", () => {
+      playing = false;
+      simTime = -0.85;
+      drawScene(simTime);
+    });
+
+    $("criticalBtn").addEventListener("click", () => {
+      const p = params();
+      const rc = (1 + 2 * p.alpha) / (2 * p.alpha - 1);
+      controls.ratio.value = Math.max(Number(controls.ratio.min), Math.min(Number(controls.ratio.max), rc)).toFixed(2);
+      simTime = -0.85;
+      recalc();
+    });
+
+    if (!CanvasRenderingContext2D.prototype.roundRect) {
+      CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, r) {
+        const rr = Math.min(r, w / 2, h / 2);
+        this.moveTo(x + rr, y);
+        this.arcTo(x + w, y, x + w, y + h, rr);
+        this.arcTo(x + w, y + h, x, y + h, rr);
+        this.arcTo(x, y + h, x, y, rr);
+        this.arcTo(x, y, x + w, y, rr);
+        return this;
+      };
+    }
+
+    recalc();
+    drawScene(simTime);
+  </script>
+
+  <script>
+  // 返回主页（滚动位置已在主页点击链接时保存）
+  function saveScrollAndReturn() {
+    window.location.href = '../index.html';
+  }
+  
+  // 禁用右键菜单
+  document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+  });
+  
+  // 禁用开发者工具快捷键
+  document.addEventListener('keydown', function(e) {
+    // ESC返回主页 - 保存滚动位置
+    if (e.keyCode === 27) {
+      saveScrollAndReturn();
+      return false;
+    }
+    // F12
+    if (e.keyCode === 123) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+U
+    if (e.ctrlKey && e.keyCode === 85) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+I
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 73) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+J
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 74) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+Shift+C
+    if (e.ctrlKey && e.shiftKey && e.keyCode === 67) {
+      e.preventDefault();
+      return false;
+    }
+    // Ctrl+S
+    if (e.ctrlKey && e.keyCode === 83) {
+      e.preventDefault();
+      return false;
+    }
+  });
+  
+  // 禁用选择
+  document.addEventListener('selectstart', function(e) {
+    // 允许输入框选择
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+      return true;
+    }
+    e.preventDefault();
+    return false;
+  });
+  </script>
+</body>
+</html>
