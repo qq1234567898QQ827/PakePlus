@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>高中物理 · 立体示波管 (透明极板 · 浅蓝黑背景)</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: 'PingFang SC', 'Microsoft YaHei', 'Helvetica Neue', sans-serif;
+            background-color: #1a2733;
+        }
+        #container {
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        #canvas-wrapper {
+            flex: 1;
+            min-height: 0;
+            background: #1a2733;
+            position: relative;
+        }
+        canvas {
+            display: block;
+        }
+        .ui-panel {
+            background: rgba(20, 30, 40, 0.9);
+            backdrop-filter: blur(10px);
+            border-top: 1px solid #3a4a5a;
+            padding: 12px 20px;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            box-shadow: 0 -4px 15px rgba(0,0,0,0.3);
+            z-index: 10;
+        }
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: #2a3a4a;
+            padding: 8px 15px;
+            border-radius: 12px;
+            border: 1px solid #4a5a6a;
+        }
+        .control-group label {
+            font-size: 0.85em;
+            font-weight: 600;
+            color: #ddd;
+            white-space: nowrap;
+        }
+        .control-group .val {
+            font-weight: 700;
+            color: #ff6b6b;
+            min-width: 50px;
+            text-align: right;
+            font-family: 'SF Mono', 'Consolas', monospace;
+        }
+        .control-group.vx .val {
+            color: #ffb347;
+        }
+        input[type="range"] {
+            width: 120px;
+            cursor: pointer;
+            accent-color: #ff6b6b;
+        }
+        .vx input[type="range"] {
+            accent-color: #ffb347;
+        }
+        button {
+            background: #2a3a4a;
+            border: 1px solid #5a6a7a;
+            padding: 10px 22px;
+            border-radius: 20px;
+            font-weight: 600;
+            color: #eee;
+            cursor: pointer;
+            transition: all 0.2s;
+            letter-spacing: 0.03em;
+            white-space: nowrap;
+        }
+        button:hover {
+            background: #3a4a5a;
+        }
+        button.active {
+            background: #c0392b;
+            color: white;
+            border-color: #a83227;
+        }
+        .legend {
+            font-size: 0.75em;
+            color: #aaa;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+        .legend span::before {
+            content: "";
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #ff6b6b;
+            margin-right: 4px;
+            vertical-align: middle;
+        }
+        .legend .dash::before {
+            border-radius: 0;
+            width: 14px;
+            height: 0;
+            border-top: 2px dashed #ff6b6b;
+            background: transparent;
+        }
+        @media (max-width: 700px) {
+            .ui-panel {
+                gap: 8px;
+                padding: 10px;
+            }
+            .control-group {
+                padding: 6px 10px;
+                gap: 5px;
+            }
+            input[type="range"] {
+                width: 80px;
+            }
+            .legend {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body><a id="back-home-btn" href="index.html" title="返回主页" style="position:fixed;left:14px;top:50%;transform:translateY(-50%);width:46px;height:46px;line-height:44px;text-align:center;background:rgba(18,32,48,0.88);border:1px solid rgba(143,216,255,0.45);border-radius:50%;color:#8fd8ff;font-size:24px;z-index:99998;text-decoration:none;box-shadow:0 2px 12px rgba(0,0,0,0.5),0 0 0 1px rgba(143,216,255,0.08) inset;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);cursor:pointer;">&#8592;</a><div style="position:fixed;top:0;left:0;right:0;height:34px;line-height:34px;text-align:center;background:linear-gradient(90deg,rgba(15,25,38,0.92),rgba(25,45,65,0.92),rgba(15,25,38,0.92));color:#8fd8ff;font-size:15px;letter-spacing:2px;font-weight:600;z-index:99999;box-shadow:0 2px 8px rgba(0,0,0,0.5);font-family:'PingFang SC','Microsoft YaHei',sans-serif;pointer-events:none;">齐老师动画抖音 35320300542</div>
+    <div id="container">
+        <div id="canvas-wrapper"></div>
+        <div class="ui-panel">
+            <div class="control-group">
+                <label>🔴 垂直偏转 V<sub>Y</sub></label>
+                <input type="range" id="vySlider" min="-50" max="50" value="0" step="0.5">
+                <span class="val" id="vyVal">0 V</span>
+            </div>
+            <div class="control-group vx">
+                <label>🟠 水平偏转 V<sub>X</sub></label>
+                <input type="range" id="vxSlider" min="-50" max="50" value="0" step="0.5">
+                <span class="val" id="vxVal">0 V</span>
+            </div>
+            <div class="control-group">
+                <label>⚡ 发射频率</label>
+                <input type="range" id="freqSlider" min="5" max="50" value="25" step="1">
+                <span class="val" id="freqVal" style="color:#4db8ff;">25 个/秒</span>
+            </div>
+            <button id="autoScanBtn">▶ 开始扫描</button>
+            <div class="legend">
+                <span>电子粒子</span>
+                <span class="dash">轨迹虚线</span>
+                <span style="color:#ddd;">加速 1500V</span>
+            </div>
+        </div>
+    </div>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+        // ---------- DOM ----------
+        const container = document.getElementById('canvas-wrapper');
+        const vySlider = document.getElementById('vySlider');
+        const vxSlider = document.getElementById('vxSlider');
+        const freqSlider = document.getElementById('freqSlider');
+        const vyValEl = document.getElementById('vyVal');
+        const vxValEl = document.getElementById('vxVal');
+        const freqValEl = document.getElementById('freqVal');
+        const autoScanBtn = document.getElementById('autoScanBtn');
+
+        // ---------- 场景初始化 ----------
+        const scene = new THREE.Scene();
+        // 浅蓝黑色背景
+        scene.background = new THREE.Color('#1a2733');
+        scene.fog = new THREE.Fog('#1a2733', 8, 25);
+
+        const camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.5, 50);
+        camera.position.set(7, 4.5, 6.5);
+        camera.lookAt(0, 0.2, 1.5);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(container.clientWidth, container.clientHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        container.appendChild(renderer.domElement);
+
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.target.set(0, 0.2, 1.8);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.rotateSpeed = 0.8;
+        controls.maxPolarAngle = Math.PI;
+        controls.minDistance = 4;
+        controls.maxDistance = 18;
+        controls.update();
+
+        // 光照
+        const ambientLight = new THREE.AmbientLight(0xffffff, 1.4);
+        scene.add(ambientLight);
+        const dirLight = new THREE.DirectionalLight(0xffffff, 2.2);
+        dirLight.position.set(5, 10, 3);
+        dirLight.castShadow = true;
+        dirLight.receiveShadow = true;
+        dirLight.shadow.mapSize.width = 1024;
+        dirLight.shadow.mapSize.height = 1024;
+        dirLight.shadow.camera.near = 0.5;
+        dirLight.shadow.camera.far = 30;
+        dirLight.shadow.camera.left = -8;
+        dirLight.shadow.camera.right = 8;
+        dirLight.shadow.camera.top = 6;
+        dirLight.shadow.camera.bottom = -4;
+        scene.add(dirLight);
+        const fillLight = new THREE.DirectionalLight(0xccddff, 0.9);
+        fillLight.position.set(-3, 1, -2);
+        scene.add(fillLight);
+
+        // ---------- 物理参数 ----------
+        const maxVoltage = 50;
+        const vz = 3.2;
+        const yEntryZ = -0.3;
+        const yExitZ = 1.3;
+        const yPlateLen = yExitZ - yEntryZ;
+        const xEntryZ = 1.7;
+        const xExitZ = 3.3;
+        const xPlateLen = xExitZ - xEntryZ;
+        const screenZ = 5.82;
+        const t1_y = yPlateLen / vz;
+        const t2_y = (screenZ - yExitZ) / vz;
+        const k_acc_y = 1.25 / (t1_y * (t1_y / 2 + t2_y)) / maxVoltage;
+        const t1_x = xPlateLen / vz;
+        const t2_x = (screenZ - xExitZ) / vz;
+        const k_acc_x = 1.25 / (t1_x * (t1_x / 2 + t2_x)) / maxVoltage;
+
+        let vyVoltage = 0;
+        let vxVoltage = 0;
+        let autoScanActive = false;
+        let autoScanTime = 0;
+        let emitInterval = 0.04; // 默认每秒25个
+
+        // ---------- 示波管模型（无玻璃外壳） ----------
+        const tubeGroup = new THREE.Group();
+        scene.add(tubeGroup);
+
+        // 【已删除】管颈、锥形过渡、管体（半透明玻璃圆柱/圆锥）
+
+        // ---------- 荧光屏（半径1.6875，竖直放置） ----------
+        const screenRadius = 1.35 * 1.25; // 1.6875
+        const screenGeom = new THREE.CylinderGeometry(screenRadius, screenRadius, 0.15, 32);
+        const screenMat = new THREE.MeshStandardMaterial({
+            color: 0xd4e8c0,
+            roughness: 0.5,
+            emissive: new THREE.Color(0x335533),
+            emissiveIntensity: 0.25,
+        });
+        const screenMesh = new THREE.Mesh(screenGeom, screenMat);
+        screenMesh.position.set(0, 0, 5.75);
+        screenMesh.rotation.x = Math.PI / 2; // 竖直放置，法线沿Z轴
+        screenMesh.castShadow = true;
+        screenMesh.receiveShadow = true;
+        tubeGroup.add(screenMesh);
+
+        // 屏幕边框
+        const screenRingGeom = new THREE.TorusGeometry(screenRadius + 0.03, 0.06, 16, 48);
+        const screenRing = new THREE.Mesh(screenRingGeom, new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 0.5,
+            metalness: 0.6 }));
+        screenRing.position.set(0, 0, 5.82);
+        screenRing.rotation.x = 0; // 环面在XY平面，法线Z
+        tubeGroup.add(screenRing);
+
+        // ---------- 电子枪 ----------
+        function addGunPart(geom, posZ, color = 0x666666) {
+            const mesh = new THREE.Mesh(geom, new THREE.MeshStandardMaterial({ color, metalness: 0.7, roughness: 0.4 }));
+            mesh.position.set(0, 0, posZ);
+            mesh.castShadow = true;
+            mesh.receiveShadow = true;
+            tubeGroup.add(mesh);
+            return mesh;
+        }
+        const ringGeom = new THREE.TorusGeometry(0.35, 0.08, 8, 24);
+        addGunPart(ringGeom, -4.3).rotation.x = Math.PI / 2;
+        addGunPart(ringGeom, -3.9).rotation.x = Math.PI / 2;
+        addGunPart(new THREE.CylinderGeometry(0.25, 0.25, 0.2, 16), -3.6, 0x555555);
+        addGunPart(new THREE.CylinderGeometry(0.2, 0.2, 0.15, 16), -3.3, 0x5a5a5a);
+        const filamentGlow = new THREE.Mesh(
+            new THREE.SphereGeometry(0.15, 16, 16),
+            new THREE.MeshBasicMaterial({ color: 0xffaa30 })
+        );
+        filamentGlow.position.set(0, 0, -4.15);
+        tubeGroup.add(filamentGlow);
+
+        // ---------- 半透明偏转板 ----------
+        function createPlate(w, h, d, color = 0xaaaaaa) {
+            const geom = new THREE.BoxGeometry(w, h, d);
+            const mat = new THREE.MeshStandardMaterial({
+                color: color,
+                metalness: 0.5,
+                roughness: 0.4,
+                transparent: true,
+                opacity: 0.35,
+                depthWrite: false
+            });
+            const mesh = new THREE.Mesh(geom, mat);
+            mesh.castShadow = true;
+            mesh.receiveShadow = true;
+            return mesh;
+        }
+
+        // Y偏转板（上下）
+        const yPlateW = 2.4;
+        const yPlateH = 0.12;
+        const yPlateD = yPlateLen;
+        const yGap = 1.6;
+        const yPlateY = yGap / 2;
+        const yPlateZ = (yEntryZ + yExitZ) / 2;
+        const yPlateTop = createPlate(yPlateW, yPlateH, yPlateD, 0x9a9a9a);
+        yPlateTop.position.set(0, yPlateY, yPlateZ);
+        tubeGroup.add(yPlateTop);
+        const yPlateBottom = createPlate(yPlateW, yPlateH, yPlateD, 0x8a8a8a);
+        yPlateBottom.position.set(0, -yPlateY, yPlateZ);
+        tubeGroup.add(yPlateBottom);
+
+        // X偏转板（左右）
+        const xPlateW = 0.12;
+        const xPlateH = 2.2;
+        const xPlateD = xPlateLen;
+        const xGap = 1.6;
+        const xPlateX = xGap / 2;
+        const xPlateZ = (xEntryZ + xExitZ) / 2;
+        const xPlateLeft = createPlate(xPlateW, xPlateH, xPlateD, 0xb0a090);
+        xPlateLeft.position.set(-xPlateX, 0, xPlateZ);
+        tubeGroup.add(xPlateLeft);
+        const xPlateRight = createPlate(xPlateW, xPlateH, xPlateD, 0xb0a090);
+        xPlateRight.position.set(xPlateX, 0, xPlateZ);
+        tubeGroup.add(xPlateRight);
+
+        // ---------- 粒子系统 ----------
+        const particleGeom = new THREE.SphereGeometry(0.07, 8, 8);
+        const particleMat = new THREE.MeshBasicMaterial({ color: 0xff3333 });
+        const maxParticles = 80;
+        const particlePool = [];
+        for (let i = 0; i < maxParticles; i++) {
+            const mesh = new THREE.Mesh(particleGeom, particleMat);
+            mesh.visible = false;
+            mesh.castShadow = false;
+            mesh.receiveShadow = false;
+            scene.add(mesh);
+            particlePool.push({ mesh, alive: false, t: 0, vy: 0, vx: 0 });
+        }
+
+        function emitParticle() {
+            for (const p of particlePool) {
+                if (!p.alive) {
+                    p.alive = true;
+                    p.t = 0;
+                    p.vy = 0;
+                    p.vx = 0;
+                    p.mesh.visible = true;
+                    p.mesh.position.set(0, 0, -3.5);
+                    return;
+                }
+            }
+            const oldest = particlePool[0];
+            oldest.alive = true;
+            oldest.t = 0;
+            oldest.vy = 0;
+            oldest.vx = 0;
+            oldest.mesh.visible = true;
+            oldest.mesh.position.set(0, 0, -3.5);
+        }
+
+        // 屏幕光点
+        const spotGeom = new THREE.SphereGeometry(0.18, 16, 16);
+        const spotMat = new THREE.MeshBasicMaterial({ color: 0xff4444, transparent: true, opacity: 0 });
+        const screenSpot = new THREE.Mesh(spotGeom, spotMat);
+        screenSpot.position.set(0, 0, screenZ);
+        scene.add(screenSpot);
+        let spotAlpha = 0;
+        let spotPos = new THREE.Vector3(0, 0, screenZ);
+
+        // 红色虚线轨迹
+        const maxTrajectoryPoints = 200;
+        const trajectoryPositions = new Float32Array(maxTrajectoryPoints * 3);
+        const trajectoryGeom = new THREE.BufferGeometry();
+        trajectoryGeom.setAttribute('position', new THREE.BufferAttribute(trajectoryPositions, 3));
+        trajectoryGeom.setDrawRange(0, 0);
+        const trajectoryLine = new THREE.Line(
+            trajectoryGeom,
+            new THREE.LineDashedMaterial({ color: 0xff3333, dashSize: 0.4, gapSize: 0.25, linewidth: 1 })
+        );
+        trajectoryLine.computeLineDistances();
+        scene.add(trajectoryLine);
+
+        function updateTrajectory(vy, vx) {
+            const points = [];
+            const zStart = -3.5;
+            const zEnd = screenZ;
+            const step = 0.08;
+            for (let z = zStart; z <= zEnd; z += step) {
+                let y = 0, x = 0;
+                if (z < yEntryZ) {
+                    y = 0; x = 0;
+                } else if (z < yExitZ) {
+                    const t = (z - yEntryZ) / vz;
+                    y = 0.5 * k_acc_y * vy * t * t;
+                    x = 0;
+                } else if (z < xEntryZ) {
+                    const yExit = 0.5 * k_acc_y * vy * t1_y * t1_y;
+                    const vyExit = k_acc_y * vy * t1_y;
+                    y = yExit + vyExit * (z - yExitZ) / vz;
+                    x = 0;
+                } else if (z < xExitZ) {
+                    const yExit = 0.5 * k_acc_y * vy * t1_y * t1_y;
+                    const vyExit = k_acc_y * vy * t1_y;
+                    y = yExit + vyExit * (z - yExitZ) / vz;
+                    const t_x = (z - xEntryZ) / vz;
+                    x = 0.5 * k_acc_x * vx * t_x * t_x;
+                } else {
+                    const yExit = 0.5 * k_acc_y * vy * t1_y * t1_y;
+                    const vyExit = k_acc_y * vy * t1_y;
+                    y = yExit + vyExit * (z - yExitZ) / vz;
+                    const xExitVal = 0.5 * k_acc_x * vx * t1_x * t1_x;
+                    const vxExit = k_acc_x * vx * t1_x;
+                    x = xExitVal + vxExit * (z - xExitZ) / vz;
+                }
+                points.push(new THREE.Vector3(x, y, z));
+            }
+            const count = Math.min(points.length, maxTrajectoryPoints);
+            for (let i = 0; i < count; i++) {
+                const p = points[i];
+                trajectoryPositions[i * 3] = p.x;
+                trajectoryPositions[i * 3 + 1] = p.y;
+                trajectoryPositions[i * 3 + 2] = p.z;
+            }
+            trajectoryGeom.attributes.position.needsUpdate = true;
+            trajectoryGeom.setDrawRange(0, count);
+            trajectoryLine.computeLineDistances();
+        }
+
+        // ---------- UI 事件 ----------
+        vySlider.addEventListener('input', () => {
+            if (autoScanActive) {
+                autoScanActive = false;
+                autoScanBtn.textContent = '▶ 开始扫描';
+                autoScanBtn.classList.remove('active');
+            }
+            vyVoltage = parseFloat(vySlider.value);
+            vyValEl.textContent = vyVoltage.toFixed(1) + ' V';
+        });
+        vxSlider.addEventListener('input', () => {
+            vxVoltage = parseFloat(vxSlider.value);
+            vxValEl.textContent = vxVoltage.toFixed(1) + ' V';
+        });
+        freqSlider.addEventListener('input', () => {
+            const freq = parseFloat(freqSlider.value);
+            emitInterval = 1 / freq;
+            freqValEl.textContent = freq + ' 个/秒';
+        });
+        autoScanBtn.addEventListener('click', () => {
+            autoScanActive = !autoScanActive;
+            if (autoScanActive) {
+                autoScanBtn.textContent = '⏸ 停止扫描';
+                autoScanBtn.classList.add('active');
+                autoScanTime = 0;
+                if (Math.abs(vyVoltage) < 1) vyVoltage = -maxVoltage;
+            } else {
+                autoScanBtn.textContent = '▶ 开始扫描';
+                autoScanBtn.classList.remove('active');
+            }
+        });
+
+        // ---------- 动画循环 ----------
+        let lastTime = performance.now() / 1000;
+        let emitAccum = 0;
+
+        function animate(timestamp) {
+            const now = timestamp / 1000;
+            let dt = now - lastTime;
+            if (dt <= 0) dt = 0.016;
+            if (dt > 0.1) dt = 0.1;
+            lastTime = now;
+
+            if (autoScanActive) {
+                autoScanTime += dt;
+                vyVoltage = maxVoltage * Math.sin(autoScanTime * 1.8);
+                vySlider.value = vyVoltage;
+                vyValEl.textContent = vyVoltage.toFixed(1) + ' V';
+            }
+
+            emitAccum += dt;
+            while (emitAccum >= emitInterval) {
+                emitAccum -= emitInterval;
+                emitParticle();
+            }
+
+            for (const p of particlePool) {
+                if (!p.alive) continue;
+                p.t += dt;
+                const z = -3.5 + p.t * vz;
+                if (z >= screenZ) {
+                    p.alive = false;
+                    p.mesh.visible = false;
+                    spotPos.set(p.mesh.position.x, p.mesh.position.y, screenZ);
+                    spotAlpha = 1.0;
+                    continue;
+                }
+                let ay = 0, ax = 0;
+                if (z >= yEntryZ && z < yExitZ) ay = k_acc_y * vyVoltage;
+                if (z >= xEntryZ && z < xExitZ) ax = k_acc_x * vxVoltage;
+                p.vy += ay * dt;
+                p.vx += ax * dt;
+                p.mesh.position.x += p.vx * dt;
+                p.mesh.position.y += p.vy * dt;
+                p.mesh.position.z = z;
+                if (Math.abs(p.mesh.position.y) > 1.6) p.mesh.position.y = Math.sign(p.mesh.position.y) * 1.6;
+                if (Math.abs(p.mesh.position.x) > 1.6) p.mesh.position.x = Math.sign(p.mesh.position.x) * 1.6;
+            }
+
+            if (spotAlpha > 0) {
+                spotAlpha -= dt * 2.0;
+                if (spotAlpha < 0) spotAlpha = 0;
+                spotMat.opacity = spotAlpha * 0.9;
+                screenSpot.position.copy(spotPos);
+            }
+
+            updateTrajectory(vyVoltage, vxVoltage);
+
+            controls.update();
+            renderer.render(scene, camera);
+            requestAnimationFrame(animate);
+        }
+
+        window.addEventListener('resize', () => {
+            camera.aspect = container.clientWidth / container.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(container.clientWidth, container.clientHeight);
+        });
+
+        // 初始化
+        updateTrajectory(0, 0);
+        freqValEl.textContent = '25 个/秒';
+        emitInterval = 0.04;
+
+        requestAnimationFrame(animate);
+
+        console.log('✅ 3D示波管已启动 | 玻璃外壳已移除 | 背景浅蓝黑');
+    </script>
+
+<script>
+(function(){
+  var IS_HOME = (location.pathname.split('/').pop() === 'index.html' || location.pathname.split('/').pop() === '');
+
+  /* 1. 禁用右键菜单 */
+  document.addEventListener('contextmenu', function(e){ e.preventDefault(); try{ e.returnValue = false; }catch(_){} return false; });
+  /* 2. 鼠标右键按下直接吞掉 */
+  document.addEventListener('mousedown', function(e){ if(e.button === 2){ e.preventDefault(); return false; } });
+  document.addEventListener('mouseup',   function(e){ if(e.button === 2){ e.preventDefault(); return false; } });
+
+  /* 3. 禁用快捷键 */
+  document.addEventListener('keydown', function(e){
+    var k = (e.key || '').toLowerCase();
+    var ctrl = e.ctrlKey || e.metaKey;
+    var blocked = false;
+    /* F12 */
+    if(e.key === 'F12'){ blocked = true; }
+    /* Ctrl+U / S / P / C / V / X */
+    if(ctrl && ['u','s','p','c','v','x'].indexOf(k) >= 0){ blocked = true; }
+    /* Ctrl+Shift+I / J / C */
+    if(ctrl && e.shiftKey && ['i','j','c'].indexOf(k) >= 0){ blocked = true; }
+    if(blocked){ e.preventDefault(); try{ e.returnValue = false; }catch(_){} return false; }
+    /* ESC 返回主页 */
+    if(e.key === 'Escape' && !IS_HOME){
+      location.href = 'index.html';
+    }
+  });
+
+  /* 4. 禁用文本选择（input/textarea 放行） */
+  document.addEventListener('selectstart', function(e){
+    var tag = (e.target.tagName || '').toUpperCase();
+    if(tag !== 'INPUT' && tag !== 'TEXTAREA'){ e.preventDefault(); return false; }
+  });
+  /* 5. 禁用拖拽 */
+  document.addEventListener('dragstart', function(e){ e.preventDefault(); return false; });
+
+  /* 6. 注入 user-select 样式（input/textarea 仍可选） */
+  var style = document.createElement('style');
+  style.textContent = 'body{-webkit-user-select:none;-moz-user-select:none;-ms-user-select:none;user-select:none;}input,textarea{-webkit-user-select:text;-moz-user-select:text;-ms-user-select:text;user-select:text;}img{-webkit-user-drag:none;user-drag:none;}';
+  (document.head || document.documentElement).appendChild(style);
+
+  /* 7. 主页滚动位置记忆 */
+  if(IS_HOME){
+    window.addEventListener('load', function(){
+      var saved = parseInt(localStorage.getItem('qilai_scroll_top') || '0', 10);
+      if(saved > 0){ window.scrollTo(0, saved); }
+    });
+    document.addEventListener('click', function(e){
+      var a = e.target.closest ? e.target.closest('a') : null;
+      if(a){ localStorage.setItem('qilai_scroll_top', String(window.scrollY)); }
+    }, true);
+  }
+})();
+
+</script>
+</body>
+</html>
