@@ -1,687 +1,265 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>齐老师动画 - 高中物理动画合集</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            background: #1a2332;
-            font-family: 'Microsoft YaHei', 'PingFang SC', 'Segoe UI', sans-serif;
-            min-height: 100vh;
-            color: #e0e8f0;
-            padding: 40px 20px;
-        }
-        
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-        }
-        
-        /* 页面标题 */
-        .page-header {
-            text-align: center;
-            margin-bottom: 40px;
-        }
-        
-        .page-title {
-            font-size: 42px;
-            font-weight: 700;
-            color: #8ab4f8;
-            letter-spacing: 4px;
-            margin-bottom: 12px;
-            text-shadow: 0 2px 20px rgba(138, 180, 248, 0.3);
-        }
-        
-        .page-subtitle {
-            font-size: 16px;
-            color: #6b7a90;
-            letter-spacing: 2px;
-        }
-        
-        /* 分类列表 - 上下排列 */
-        .categories-list {
-            display: flex;
-            flex-direction: column;
-            gap: 24px;
-        }
-        
-        /* 分类卡片 */
-        .category-card {
-            background: #222d3d;
-            border-radius: 16px;
-            padding: 24px;
-            border: 1px solid #2a3a50;
-            transition: all 0.3s ease;
-        }
-        
-        .category-card:hover {
-            border-color: var(--accent-color);
-            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
-        }
-        
-        .category-header {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            margin-bottom: 20px;
-            padding-bottom: 16px;
-            border-bottom: 1px solid #2a3a50;
-        }
-        
-        .category-icon {
-            font-size: 28px;
-        }
-        
-        .category-title {
-            font-size: 22px;
-            font-weight: 600;
-            color: var(--accent-color);
-            flex: 1;
-        }
-        
-        .category-count {
-            font-size: 14px;
-            color: #6b7a90;
-            background: #1a2332;
-            padding: 6px 14px;
-            border-radius: 14px;
-        }
-        
-        /* 文件列表 - 网格布局，全部展开 */
-        .file-list {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-            gap: 10px;
-        }
-        
-        .file-link {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 10px 14px;
-            background: #1a2332;
-            border-radius: 8px;
-            text-decoration: none;
-            color: #b0bec5;
-            font-size: 14px;
-            transition: all 0.2s ease;
-            border: 1px solid transparent;
-        }
-        
-        .file-link:hover {
-            background: #2a3a50;
-            color: #8ab4f8;
-            border-color: var(--accent-color);
-            transform: translateY(-2px);
-        }
-        
-        .file-icon {
-            font-size: 14px;
-            flex-shrink: 0;
-        }
-        
-        .file-name {
-            flex: 1;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        
-        /* 水印 */
-        .watermark {
-            position: fixed;
-            bottom: 15px;
-            right: 20px;
-            font-size: 12px;
-            color: rgba(138, 180, 248, 0.35);
-            text-align: right;
-            line-height: 1.6;
-            pointer-events: none;
-            z-index: 9999;
-        }
-        
-        /* 页脚统计 */
-        .page-footer {
-            text-align: center;
-            margin-top: 40px;
-            padding-top: 30px;
-            border-top: 1px solid #2a3a50;
-            color: #6b7a90;
-            font-size: 14px;
-        }
-        
-        .total-count {
-            color: #8ab4f8;
-            font-weight: 600;
-            font-size: 18px;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>齐老师动画 - 高中物理交互式动画合集</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background-color: #1a2332;
+      font-family: "Microsoft YaHei", "微软雅黑", sans-serif;
+      color: #e0e6ed;
+      min-height: 100vh;
+    }
+    .header {
+      text-align: center;
+      padding: 50px 20px 40px;
+      background: linear-gradient(135deg, #1a2332 0%, #2a3a52 100%);
+      border-bottom: 2px solid rgba(100, 150, 200, 0.3);
+    }
+    .header h1 {
+      font-size: 48px;
+      color: #8ab4f8;
+      letter-spacing: 10px;
+      margin-bottom: 15px;
+      text-shadow: 0 0 30px rgba(138, 180, 248, 0.4);
+    }
+    .header .subtitle {
+      font-size: 18px;
+      color: #8899aa;
+      letter-spacing: 3px;
+      margin-bottom: 25px;
+    }
+    .stats {
+      display: flex;
+      justify-content: center;
+      gap: 25px;
+      flex-wrap: wrap;
+    }
+    .stat-item {
+      background: rgba(100, 150, 200, 0.1);
+      padding: 12px 25px;
+      border-radius: 10px;
+      border: 1px solid rgba(100, 150, 200, 0.2);
+    }
+    .stat-item .num {
+      font-size: 28px;
+      font-weight: bold;
+      color: #8ab4f8;
+    }
+    .stat-item .label {
+      font-size: 14px;
+      color: #8899aa;
+      margin-left: 8px;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 40px 20px 60px;
+    }
+    .module-section { margin-bottom: 50px; }
+    .module-title {
+      font-size: 26px;
+      font-weight: bold;
+      margin-bottom: 20px;
+      padding-left: 18px;
+      border-left: 5px solid #8ab4f8;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .module-title .count {
+      font-size: 14px;
+      color: #8899aa;
+      font-weight: normal;
+      margin-left: 10px;
+    }
+    .anim-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 12px;
+    }
+    .anim-card {
+      background: rgba(100, 150, 200, 0.08);
+      border: 1px solid rgba(100, 150, 200, 0.2);
+      border-radius: 10px;
+      padding: 16px;
+      text-decoration: none;
+      color: #c0d0e0;
+      transition: all 0.3s;
+      display: block;
+      position: relative;
+      overflow: hidden;
+      font-size: 14px;
+    }
+    .anim-card:hover {
+      background: rgba(100, 150, 200, 0.2);
+      border-color: rgba(138, 180, 248, 0.5);
+      color: #8ab4f8;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+    }
+    .anim-card .anim-name {
+      font-weight: 500;
+      line-height: 1.4;
+    }
+    .footer {
+      text-align: center;
+      padding: 30px;
+      color: #556677;
+      font-size: 14px;
+      border-top: 1px solid rgba(100, 150, 200, 0.1);
+    }
+    .footer .watermark { margin-top: 8px; color: #445566; }
+  </style>
 </head>
 <body>
-    <div class="container">
-        <header class="page-header">
-            <h1 class="page-title">齐老师动画</h1>
-            <p class="page-subtitle">高中物理动画合集 · 可视化学习</p>
-        </header>
-        
-        <div class="categories-list">
-            
-            <div class="category-card" style="--accent-color: #ff6b6b">
-                <div class="category-header">
-                    <span class="category-icon">⚡</span>
-                    <h2 class="category-title">动量模块</h2>
-                    <span class="category-count">12 个动画</span>
-                </div>
-                <div class="file-list">
-                    
-                <a href="1动量模块/1人船模型.html" class="file-link">
-                    <span class="file-icon">📄</span>
-                    <span class="file-name">人船模型</span>
-                </a>
-            
-                <a href="1动量模块/1子弹打木块.html" class="file-link">
-                    <span class="file-icon">📄</span>
-                    <span class="file-name">子弹打木块</span>
-                </a>
-            
-                <a href="1动量模块/1小球冲凹槽.html" class="file-link">
-                    <span class="file-icon">📄</span>
-                    <span class="file-name">小球冲凹槽</span>
-                </a>
-            
-                <a href="1动量模块/1小球凹槽块固定.html" class="file-link">
-                    <span class="file-icon">📄</span>
-                    <span class="file-name">小球凹槽块固定</span>
-                </a>
-            
-                <a href="1动量模块/1小球凹槽物块不固定.html" class="file-link">
-                    <span class="file-icon">📄</span>
-                    <span class="file-name">小球凹槽物块不固定</span>
-                </a>
-            
-                <a href="1动量模块/1小球落入凹槽.html" class="file-link">
-                    <span class="file-icon">📄</span>
-                    <span class="file-name">小球落入凹槽</span>
-                </a>
-            
-                <a href="1动量模块/1斜面动量守恒动画.html" class="file-link">
-                    <span class="file-icon">📄</span>
-                    <span class="file-name">斜面动量守恒动画</span>
-                </a>
-            
-                <a href="1动量模块/1球落两凹槽.html" class="file-link">
-                    <span class="file-icon">📄</span>
-                    <span class="file-name">球落两凹槽</span>
-                </a>
-            
-                <a href="1动量模块/1碰撞.html" class="file-link">
-                    <span class="file-icon">📄</span>
-                    <span class="file-name">碰撞</span>
-                </a>
-            
-                <a href="1动量模块/1碰撞弹簧.html" class="file-link">
-                    <span class="file-icon">📄</span>
-                    <span class="file-name">碰撞弹簧</span>
-                </a>
-            
-                <a href="1动量模块/1碰撞毛毛虫.html" class="file-link">
-                    <span class="file-icon">📄</span>
-                    <span class="file-name">碰撞毛毛虫</span>
-                </a>
-            
-                <a href="1动量模块/1碰撞球形变.html" class="file-link">
-                    <span class="file-icon">📄</span>
-                    <span class="file-name">碰撞球形变</span>
-                </a>
-            
-                </div>
-            </div>
-        
-            <div class="category-card" style="--accent-color: #4ecdc4">
-                <div class="category-header">
-                    <span class="category-icon">⚡</span>
-                    <h2 class="category-title">电磁模块</h2>
-                    <span class="category-count">14 个动画</span>
-                </div>
-                <div class="file-list">
-                    
-                <a href="2电磁模块/2右手螺旋变换.html" class="file-link">
-                    <span class="file-icon">📄</span>
-                    <span class="file-name">右手螺旋变换</span>
-                </a>
-            
-                <a href="2电磁模块/2放射源磁偏转多个.html" class="file-link">
-                    <span class="file-icon">📄</span>
-                    <span class="file-name">放射源磁偏转多个</span>
-                </a>
-            
-                <a href="2电磁模块/2放射源磁偏转彩色.html" class="file-link">
-                    <span class="file-icon">📄</span>
-                    <span class="file-name">放射源磁偏转彩色</span>
-                </a>
-            
-                <a href="2电磁模块/2晾衣架可调.html" class="file-link">
-                    <span class="file-icon">📄</span>
-                    <span class="file-name">晾衣架可调</span>
-                </a>
-            
-                <a href="2电磁模块/2游标卡尺.html" class="file-link">
-                    <span class="file-icon">📄</span>
-                    <span class="file-name">游标卡尺</span>
-                </a>
-            
-                <a href="2电磁模块/2电势图.html" class="file-link">
-                    <span class="file-icon">📄</span>
-                    <span class="file-name">电势图</span>
-                </a>
-            
-                <a href="2电磁模块/2电场线待修.html" class="file-link">
-                    <span class="file-icon">📄</span>
-                    <span class="file-name">电场线待修</span>
-                </a>
-            
-                <a href="2电磁模块/2磁偏转.html" class="file-link">
-                    <span class="file-icon">📄</span>
-                    <span class="file-name">磁偏转</span>
-                </a>
-            
-                <a href="2电磁模块/2磁偏转终版.html" class="file-link">
-                    <span class="file-icon">📄</span>
-                    <span class="file-name">磁偏转终版</span>
-                </a>
-            
-                <a href="2电磁模块/2等距螺旋运动.html" class="file-link">
-                    <span class="file-icon">📄</span>
-                    <span class="file-name">等距螺旋运动</span>
-                </a>
-            
-                <a href="2电磁模块/2组合场.html" class="file-link">
-                    <span class="file-icon">📄</span>
-                    <span class="file-name">组合场</span>
-                </a>
-            
-                <a href="2电磁模块/2螺旋前进可调.html" class="file-link">
-                    <span class="file-icon">📄</span>
-                    <span class="file-name">螺旋前进可调</span>
-                </a>
-            
-                <a href="2电磁模块/2螺旋测微器.html" class="file-link">
-                    <span class="file-icon">📄</span>
-                    <span class="file-name">螺旋测微器</span>
-                </a>
-            
-                <a href="2电磁模块/2配速法.html" class="file-link">
-                    <span class="file-icon">📄</span>
-                    <span class="file-name">配速法</span>
-                </a>
-            
-                </div>
-            </div>
-        
-            <div class="category-card" style="--accent-color: #a855f7">
-                <div class="category-header">
-                    <span class="category-icon">🔬</span>
-                    <h2 class="category-title">选修模块</h2>
-                    <span class="category-count">26 个动画</span>
-                </div>
-                <div class="file-list">
-                    
-                <a href="3选修模块/3光折射玻璃柱.html" class="file-link">
-                    <span class="file-icon">📄</span>
-                    <span class="file-name">光折射玻璃柱</span>
-                </a>
-            
-                <a href="3选修模块/3光折射玻璃砖.html" class="file-link">
-                    <span class="file-icon">📄</span>
-                    <span class="file-name">光折射玻璃砖</span>
-                </a>
-            
-                <a href="3选修模块/3光电效应1.html" class="file-link">
-                    <span class="file-icon">📄</span>
-                    <span class="file-name">光电效应1</span>
-                </a>
-            
-                <a href="3选修模块/3光电效应2.html" class="file-link">
-                    <span class="file-icon">📄</span>
-                    <span class="file-name">光电效应2</span>
-                </a>
-            
-                <a href="3选修模块/3光电效应3.html" class="file-link">
-                    <span class="file-icon">📄</span>
-                    <span class="file-name">光电效应3</span>
-                </a>
-            
-                <a href="3选修模块/3光纤.html" class="file-link">
-                    <span class="file-icon">📄</span>
-                    <span class="file-name">光纤</span>
-                </a>
-            
-                <a href="3选修模块/3全反射调节入射角.html" class="file-link">
-                    <span class="file-icon">📄</span>
-                    <span class="file-name">全反射调节入射角</span>
-                </a>
-            
-                <a href="3选修模块/3劈尖干涉凹凸-.html" class="file-link">
-                    <span class="file-icon">📄</span>
-                    <span class="file-name">劈尖干涉凹凸-</span>
-                </a>
-            
-                <a href="3选修模块/3双圆周相位差.html" class="file-link">
-                    <span class="file-icon">📄</span>
-                    <span class="file-name">双圆周相位差</span>
-                </a>
-            
-                <a href="3选修模块/3双弹簧振子相位差.html" class="file-link">
-                    <span class="file-icon">📄</span>
-                    <span class="file-name">双弹簧振子相位差</span>
-                </a>
-            
-                <a href="3选修模块/3双缝干涉.html" class="file-link">
-                    <span class="file-icon">📄</span>
-                    <span class="file-name">双缝干涉</span>
-                </a>
-            
-                <a href="3选修模块/3圆周投影简谐.html" class="file-link">
-                    <span class="file-icon">📄</span>
-                    <span class="file-name">圆周投影简谐</span>
-                </a>
-            
-                <a href="3选修模块/3地球隧道.html" class="file-link">
-                    <span class="file-icon">📄</span>
-                    <span class="file-name">地球隧道</span>
-                </a>
-            
-                <a href="3选修模块/3多普勒效应.html" class="file-link">
-                    <span class="file-icon">📄</span>
-                    <span class="file-name">多普勒效应</span>
-                </a>
-            
-                <a href="3选修模块/3干涉加强点减弱点.html" class="file-link">
-                    <span class="file-icon">📄</span>
-                    <span class="file-name">干涉加强点减弱点</span>
-                </a>
-            
-                <a href="3选修模块/3干涉起振方向相同.html" class="file-link">
-                    <span class="file-icon">📄</span>
-                    <span class="file-name">干涉起振方向相同</span>
-                </a>
-            
-                <a href="3选修模块/3弹簧振子.html" class="file-link">
-                    <span class="file-icon">📄</span>
-                    <span class="file-name">弹簧振子</span>
-                </a>
-            
-                <a href="3选修模块/3打气筒篮球.html" class="file-link">
-                    <span class="file-icon">📄</span>
-                    <span class="file-name">打气筒篮球</span>
-                </a>
-            
-                <a href="3选修模块/3折射三棱镜.html" class="file-link">
-                    <span class="file-icon">📄</span>
-                    <span class="file-name">折射三棱镜</span>
-                </a>
-            
-                <a href="3选修模块/3折射全反射.html" class="file-link">
-                    <span class="file-icon">📄</span>
-                    <span class="file-name">折射全反射</span>
-                </a>
-            
-                <a href="3选修模块/3气体分子热运动.html" class="file-link">
-                    <span class="file-icon">📄</span>
-                    <span class="file-name">气体分子热运动</span>
-                </a>
-            
-                <a href="3选修模块/3沙摆.html" class="file-link">
-                    <span class="file-icon">📄</span>
-                    <span class="file-name">沙摆</span>
-                </a>
-            
-                <a href="3选修模块/3波的叠加周期不同.html" class="file-link">
-                    <span class="file-icon">📄</span>
-                    <span class="file-name">波的叠加周期不同</span>
-                </a>
-            
-                <a href="3选修模块/3波的干涉xy轴.html" class="file-link">
-                    <span class="file-icon">📄</span>
-                    <span class="file-name">波的干涉xy轴</span>
-                </a>
-            
-                <a href="3选修模块/3湖底点线光源全反射.html" class="file-link">
-                    <span class="file-icon">📄</span>
-                    <span class="file-name">湖底点线光源全反射</span>
-                </a>
-            
-                <a href="3选修模块/3简谐横波形成过程.html" class="file-link">
-                    <span class="file-icon">📄</span>
-                    <span class="file-name">简谐横波形成过程</span>
-                </a>
-            
-                </div>
-            </div>
-        
-            <div class="category-card" style="--accent-color: #3b82f6">
-                <div class="category-header">
-                    <span class="category-icon">📐</span>
-                    <h2 class="category-title">必修一二模块</h2>
-                    <span class="category-count">31 个动画</span>
-                </div>
-                <div class="file-list">
-                    
-                <a href="4修一二模块/4一定高度斜上抛.html" class="file-link">
-                    <span class="file-icon">📄</span>
-                    <span class="file-name">一定高度斜上抛</span>
-                </a>
-            
-                <a href="4修一二模块/4三星系统.html" class="file-link">
-                    <span class="file-icon">📄</span>
-                    <span class="file-name">三星系统</span>
-                </a>
-            
-                <a href="4修一二模块/4三维传送带.html" class="file-link">
-                    <span class="file-icon">📄</span>
-                    <span class="file-name">三维传送带</span>
-                </a>
-            
-                <a href="4修一二模块/4三角形四边形定则.html" class="file-link">
-                    <span class="file-icon">📄</span>
-                    <span class="file-name">三角形四边形定则</span>
-                </a>
-            
-                <a href="4修一二模块/4传送带.html" class="file-link">
-                    <span class="file-icon">📄</span>
-                    <span class="file-name">传送带</span>
-                </a>
-            
-                <a href="4修一二模块/4动态三角形.html" class="file-link">
-                    <span class="file-icon">📄</span>
-                    <span class="file-name">动态三角形</span>
-                </a>
-            
-                <a href="4修一二模块/4包络线.html" class="file-link">
-                    <span class="file-icon">📄</span>
-                    <span class="file-name">包络线</span>
-                </a>
-            
-                <a href="4修一二模块/4双星系统.html" class="file-link">
-                    <span class="file-icon">📄</span>
-                    <span class="file-name">双星系统</span>
-                </a>
-            
-                <a href="4修一二模块/4变轨.html" class="file-link">
-                    <span class="file-icon">📄</span>
-                    <span class="file-name">变轨</span>
-                </a>
-            
-                <a href="4修一二模块/4各种卫星.html" class="file-link">
-                    <span class="file-icon">📄</span>
-                    <span class="file-name">各种卫星</span>
-                </a>
-            
-                <a href="4修一二模块/4四星系统.html" class="file-link">
-                    <span class="file-icon">📄</span>
-                    <span class="file-name">四星系统</span>
-                </a>
-            
-                <a href="4修一二模块/4圆锥摆.html" class="file-link">
-                    <span class="file-icon">📄</span>
-                    <span class="file-name">圆锥摆</span>
-                </a>
-            
-                <a href="4修一二模块/4太阳地球月亮.html" class="file-link">
-                    <span class="file-icon">📄</span>
-                    <span class="file-name">太阳地球月亮</span>
-                </a>
-            
-                <a href="4修一二模块/4宇宙速度.html" class="file-link">
-                    <span class="file-icon">📄</span>
-                    <span class="file-name">宇宙速度</span>
-                </a>
-            
-                <a href="4修一二模块/4小球冲竖直圆轨.html" class="file-link">
-                    <span class="file-icon">📄</span>
-                    <span class="file-name">小球冲竖直圆轨</span>
-                </a>
-            
-                <a href="4修一二模块/4小球半圆柱.html" class="file-link">
-                    <span class="file-icon">📄</span>
-                    <span class="file-name">小球半圆柱</span>
-                </a>
-            
-                <a href="4修一二模块/4小船过河.html" class="file-link">
-                    <span class="file-icon">📄</span>
-                    <span class="file-name">小船过河</span>
-                </a>
-            
-                <a href="4修一二模块/4开普勒第二定律.html" class="file-link">
-                    <span class="file-icon">📄</span>
-                    <span class="file-name">开普勒第二定律</span>
-                </a>
-            
-                <a href="4修一二模块/4拉格朗日点.html" class="file-link">
-                    <span class="file-icon">📄</span>
-                    <span class="file-name">拉格朗日点</span>
-                </a>
-            
-                <a href="4修一二模块/4摩擦角全反力.html" class="file-link">
-                    <span class="file-icon">📄</span>
-                    <span class="file-name">摩擦角全反力</span>
-                </a>
-            
-                <a href="4修一二模块/4斜上抛.html" class="file-link">
-                    <span class="file-icon">📄</span>
-                    <span class="file-name">斜上抛</span>
-                </a>
-            
-                <a href="4修一二模块/4斜上抛挡板.html" class="file-link">
-                    <span class="file-icon">📄</span>
-                    <span class="file-name">斜上抛挡板</span>
-                </a>
-            
-                <a href="4修一二模块/4星下点.html" class="file-link">
-                    <span class="file-icon">📄</span>
-                    <span class="file-name">星下点</span>
-                </a>
-            
-                <a href="4修一二模块/4板块.html" class="file-link">
-                    <span class="file-icon">📄</span>
-                    <span class="file-name">板块</span>
-                </a>
-            
-                <a href="4修一二模块/4竖直面圆周运动.html" class="file-link">
-                    <span class="file-icon">📄</span>
-                    <span class="file-name">竖直面圆周运动</span>
-                </a>
-            
-                <a href="4修一二模块/4自由落体+简谐运动.html" class="file-link">
-                    <span class="file-icon">📄</span>
-                    <span class="file-name">自由落体+简谐运动</span>
-                </a>
-            
-                <a href="4修一二模块/4辅助圆1.html" class="file-link">
-                    <span class="file-icon">📄</span>
-                    <span class="file-name">辅助圆1</span>
-                </a>
-            
-                <a href="4修一二模块/4辅助圆2.html" class="file-link">
-                    <span class="file-icon">📄</span>
-                    <span class="file-name">辅助圆2</span>
-                </a>
-            
-                <a href="4修一二模块/4追及相遇孙悟空.html" class="file-link">
-                    <span class="file-icon">📄</span>
-                    <span class="file-name">追及相遇孙悟空</span>
-                </a>
-            
-                <a href="4修一二模块/4飞机投弹.html" class="file-link">
-                    <span class="file-icon">📄</span>
-                    <span class="file-name">飞机投弹</span>
-                </a>
-            
-                <a href="4修一二模块/4齿轮链条.html" class="file-link">
-                    <span class="file-icon">📄</span>
-                    <span class="file-name">齿轮链条</span>
-                </a>
-            
-                </div>
-            </div>
-        
-        </div>
-        
-        <footer class="page-footer">
-            <p>共 <span class="total-count" id="totalCount">0</span> 个精彩动画</p>
-        </footer>
+  <div class="header">
+    <h1>齐老师动画</h1>
+    <div class="subtitle">高中物理交互式动画 · 全覆盖</div>
+    <div class="stats">
+      <div class="stat-item"><span class="num">10</span><span class="label">个动画</span></div>
+      <div class="stat-item"><span class="num">6</span><span class="label">个模块</span></div>
+      <div class="stat-item"><span class="num">高中物理</span><span class="label">全覆盖</span></div>
     </div>
-    
-    <!-- 水印 -->
-    <div class="watermark">
-        QQ 3398528250<br>
-        抖音 35320300542
+  </div>
+  
+  <div class="container">
+    <div class="module-section">
+      <div class="module-title">
+        <span>动量模块</span>
+        <span class="count">(1 个)</span>
+      </div>
+      <div class="anim-grid">
+        <a href="1动量/1小球凹槽块不固定2.html" class="anim-card">
+          <div class="anim-name">小球凹槽块不固定2</div>
+        </a>
+      </div>
     </div>
-    
-    <script>
-        // 计算总动画数
-        (function() {
-            var cards = document.querySelectorAll('.category-card');
-            var total = 0;
-            cards.forEach(function(card) {
-                var count = card.querySelector('.category-count').textContent;
-                total += parseInt(count) || 0;
-            });
-            document.getElementById('totalCount').textContent = total;
-        })();
-        
-        // 禁用右键菜单
-        document.addEventListener('contextmenu', function(e) {
-            e.preventDefault();
-            return false;
-        });
-        
-        // 禁用开发者工具快捷键
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'F12' || e.keyCode === 123) {
-                e.preventDefault();
-                return false;
-            }
-            if ((e.ctrlKey || e.metaKey) && (e.key === 'u' || e.keyCode === 85)) {
-                e.preventDefault();
-                return false;
-            }
-            if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'i' || e.keyCode === 73)) {
-                e.preventDefault();
-                return false;
-            }
-            if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'j' || e.keyCode === 74)) {
-                e.preventDefault();
-                return false;
-            }
-        });
-    </script>
+    <div class="module-section">
+      <div class="module-title">
+        <span>电磁模块</span>
+        <span class="count">(2 个)</span>
+      </div>
+      <div class="anim-grid">
+        <a href="2电磁/2电路实验室2.html" class="anim-card">
+          <div class="anim-name">电路实验室2</div>
+        </a>
+        <a href="2电磁/2示波器.html" class="anim-card">
+          <div class="anim-name">示波器</div>
+        </a>
+      </div>
+    </div>
+    <div class="module-section">
+      <div class="module-title">
+        <span>选修模块</span>
+        <span class="count">(2 个)</span>
+      </div>
+      <div class="anim-grid">
+        <a href="3选修/3波的干涉xy轴.html" class="anim-card">
+          <div class="anim-name">波的干涉xy轴</div>
+        </a>
+        <a href="3选修/3牛顿环.html" class="anim-card">
+          <div class="anim-name">牛顿环</div>
+        </a>
+      </div>
+    </div>
+    <div class="module-section">
+      <div class="module-title">
+        <span>必修一</span>
+        <span class="count">(2 个)</span>
+      </div>
+      <div class="anim-grid">
+        <a href="4必修一/4倾斜传送带 - .html" class="anim-card">
+          <div class="anim-name">倾斜传送带 -</div>
+        </a>
+        <a href="4必修一/4追及警察抓小偷 .html" class="anim-card">
+          <div class="anim-name">追及警察抓小偷</div>
+        </a>
+      </div>
+    </div>
+    <div class="module-section">
+      <div class="module-title">
+        <span>必修二</span>
+        <span class="count">(1 个)</span>
+      </div>
+      <div class="anim-grid">
+        <a href="5必修二/5小球冲固定半圆轨.html" class="anim-card">
+          <div class="anim-name">小球冲固定半圆轨</div>
+        </a>
+      </div>
+    </div>
+    <div class="module-section">
+      <div class="module-title">
+        <span>其他</span>
+        <span class="count">(2 个)</span>
+      </div>
+      <div class="anim-grid">
+        <a href="6其他/6函数图像生成器.html" class="anim-card">
+          <div class="anim-name">函数图像生成器</div>
+        </a>
+        <a href="6其他/6数学物理画板.html" class="anim-card">
+          <div class="anim-name">数学物理画板</div>
+        </a>
+      </div>
+    </div>
+  </div>
+  
+  <div class="footer">
+    齐老师动画 · 高中物理交互式动画合集<br>
+    <div class="watermark">QQ 3398528250 / 抖音 35320300542</div>
+  </div>
+  
+  <script>
+  function saveScrollPosition() {
+    localStorage.setItem('qilai_scroll_top', window.scrollY);
+  }
+  function restoreScrollPosition() {
+    const savedScrollTop = localStorage.getItem('qilai_scroll_top');
+    if (savedScrollTop) {
+      window.scrollTo(0, parseInt(savedScrollTop));
+    }
+  }
+  window.addEventListener('load', restoreScrollPosition);
+  document.addEventListener('DOMContentLoaded', function() {
+    const links = document.querySelectorAll('.anim-card');
+    links.forEach(function(link) {
+      link.addEventListener('click', saveScrollPosition);
+    });
+  });
+  document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    return false;
+  });
+  document.addEventListener('mousedown', function(e) {
+    if (e.button === 2) {
+      e.preventDefault();
+      e.stopPropagation();
+      return false;
+    }
+  });
+  document.addEventListener('keydown', function(e) {
+    if (e.keyCode === 123) { e.preventDefault(); e.stopPropagation(); return false; }
+    if (e.ctrlKey && e.keyCode === 85) { e.preventDefault(); e.stopPropagation(); return false; }
+    if (e.ctrlKey && e.shiftKey && (e.keyCode === 73 || e.keyCode === 74 || e.keyCode === 67)) { e.preventDefault(); e.stopPropagation(); return false; }
+    if (e.ctrlKey && e.keyCode === 83) { e.preventDefault(); e.stopPropagation(); return false; }
+    if (e.ctrlKey && e.keyCode === 80) { e.preventDefault(); e.stopPropagation(); return false; }
+  });
+  document.addEventListener('copy', function(e) { e.preventDefault(); return false; });
+  document.addEventListener('paste', function(e) { e.preventDefault(); return false; });
+  document.addEventListener('cut', function(e) { e.preventDefault(); return false; });
+  document.addEventListener('selectstart', function(e) {
+    if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
+      e.preventDefault();
+      return false;
+    }
+  });
+  document.addEventListener('dragstart', function(e) {
+    e.preventDefault();
+    return false;
+  });
+  </script>
 </body>
 </html>
